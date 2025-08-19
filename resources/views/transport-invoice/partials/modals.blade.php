@@ -87,6 +87,7 @@
                                  <th>Consignor Name</th>
                                  <th>Source</th>
                                  <th>Destination</th>
+                                 <th>Total Charges</th>
                               </tr>
                            </thead>
                            <tbody>
@@ -766,7 +767,7 @@
    aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-         <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.saleInvoice') }}"
+         <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.transportInvoice') }}"
             data-redirect="{{ $redirect_url }}" enctype='multipart/form-data'>
             @csrf
             <input type="hidden" name="action_type" id="action_type">

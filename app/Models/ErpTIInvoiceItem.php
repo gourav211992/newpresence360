@@ -46,10 +46,10 @@ protected $table = 'erp_ti_invoice_items';
     {
         return $this -> hasMany(ErpInvoiceItemAttribute::class, 'invoice_item_id');
     }
-
-    public function bundles(){
+     public function bundles(){
         return $this->hasMany(ErpPslipItemDetail::class,'dn_item_id');
     }
+
     public function packets(){
         return $this->hasMany(ErpInvoiceItemPacket::class,'invoice_item_id');
     }
@@ -136,16 +136,16 @@ protected $table = 'erp_ti_invoice_items';
 
     public function getCgstValueAttribute()
     {
-        $tedRecords = ErpSaleInvoiceTed::where('invoice_item_id', $this->id)
-            ->where('ti_invoice_id', $this->ti_invoice_id)
+        $tedRecords = ErpTransportInvoiceTed::where('invoice_item_id', $this->id)
+            ->where('transport_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
             ->sum('ted_amount');
 
-        $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
+        $tedRecord = ErpTransportInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('ti_invoice_id', $this->ti_invoice_id)
+            ->where('transport_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
@@ -160,15 +160,15 @@ protected $table = 'erp_ti_invoice_items';
 
     public function getSgstValueAttribute()
     {
-        $tedRecords = ErpSaleInvoiceTed::where('invoice_item_id', $this->id)
+        $tedRecords = ErpTransportInvoiceTed::where('invoice_item_id', $this->id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'SGST')
             ->sum('ted_amount');
         
-            $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
+            $tedRecord = ErpTransportInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('ti_invoice_id', $this->ti_invoice_id)
+            ->where('transport_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'SGST')
@@ -183,15 +183,15 @@ protected $table = 'erp_ti_invoice_items';
 
     public function getIgstValueAttribute()
     {
-        $tedRecords = ErpSaleInvoiceTed::where('invoice_item_id', $this->id)
+        $tedRecords = ErpTransportInvoiceTed::where('invoice_item_id', $this->id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'IGST')
             ->sum('ted_amount');
         
-            $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
+            $tedRecord = ErpTransportInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('ti_invoice_id', $this->ti_invoice_id)
+            ->where('transport_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'IGST')
@@ -206,15 +206,15 @@ protected $table = 'erp_ti_invoice_items';
 
     public function getCessValueAttribute()
     {
-        $tedRecords = ErpSaleInvoiceTed::where('invoice_item_id', $this->id)
+        $tedRecords = ErpTransportInvoiceTed::where('invoice_item_id', $this->id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CESS')
             ->sum('ted_amount');
         
-            $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
+            $tedRecord = ErpTransportInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('ti_invoice_id', $this->ti_invoice_id)
+            ->where('transport_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CESS')

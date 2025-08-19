@@ -188,7 +188,14 @@ class ErpTIInvoiceItemHistory extends Model
         }
         return $stockBalanceQty;
     }
-
+     public function lorry()
+    {
+        return $this -> belongsTo(ErpLorryReceipt::class, 'lr_id');
+    }
+ public function bundles(){
+        return $this->hasMany(ErpPslipItemDetail::class,'dn_item_id');
+    }
+   
     public function hsn()
     {
         return $this -> belongsTo(Hsn::class);

@@ -36,7 +36,7 @@ class TaxHelper
         if ($taxPatterns->isEmpty()) {
             return $taxDetails; 
         }
-
+        
         foreach ($taxPatterns as $taxPattern) {
             $taxGroup = $taxPattern->taxGroup;
 

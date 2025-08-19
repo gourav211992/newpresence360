@@ -1,4 +1,4 @@
-const order = null;
+const order = window.pageData.order;
 const editOrder = window.pageData.editOrder;  // Convert string to boolean
 const revNoQuery = window.pageData.revNoQuery;
 const orderId = window.pageData.orderId;
@@ -39,6 +39,7 @@ var taxInputs = [];
 
 function getItemTax(itemIndex)
 {
+    console.log(itemIndex);
     const itemId = document.getElementById(`items_dropdown_${itemIndex}_value`).value;
     const itemQty = document.getElementById('item_qty_' + itemIndex).value;
     const itemValue = document.getElementById('item_value_' + itemIndex).value;
@@ -55,6 +56,8 @@ function getItemTax(itemIndex)
     const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
     const billToCountryId = $("#current_billing_country_id").val();
     const billToStateId = $("#current_billing_state_id").val();
+    console.log(billToCountryId);
+    console.log(billToStateId);
     let itemPrice = 0;
     if (itemQty > 0) {
         itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
@@ -1239,30 +1242,43 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
     });
 });
 
-function viewModeScript(disable = true)
-{
-    if ((!editOrder || revNoQuery) && order) {
-        document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
-                // element.disabled = disable;
-                element.style.pointerEvents = disable ? "none" : "auto";
-                if (disable) {
+function viewModeScript(disable = true) {
+    if (orderId && !editOrder) {
+        
+    document.querySelectorAll('input, textarea, select').forEach(element => {
+        if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
+            
+            if (disable) {
+                element.setAttribute('disabled', true);
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                     element.setAttribute('readonly', true);
-                } else {
-                    element.removeAttribute('readonly');
                 }
+                
+            } else {
+                element.removeAttribute('disabled');
+                element.removeAttribute('readonly');
+                $('#series_id_input').prop('disabled', true);
+               
             }
-        });
-        //Disable all submit and cancel buttons
-        document.querySelectorAll('.can_hide').forEach(element => {
-            element.style.display = disable ? "none" : "";
-        });
-        //Remove add delete button
-        document.getElementById('add_delete_item_section').style.display = disable ? "none" : "";
-    } else {
-        return;
-    }
+        }
+    });
+    if(disable)
+       $('#select_lorry_button').prop('disabled', true);
+    else
+         $('#select_lorry_button').removeAttr('disabled');
+
+    // Toggle submit & cancel buttons
+    document.querySelectorAll('.can_hide').forEach(element => {
+        element.style.display = disable ? "none" : "";
+    });
+
+    // Toggle add/delete section
+    const addDeleteSection = document.getElementById('add_delete_item_section');
+    if (addDeleteSection) {
+        addDeleteSection.style.display = disable ? "none" : "";
+    }}
 }
+
 
 function amendConfirm()
 {
@@ -1327,7 +1343,7 @@ function submitAmend()
     let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
     $("#action_type_main").val("amendment");
     $("#amendConfirmPopup").modal('hide');
-    $("#sale_invoice_form").submit();
+    $("#transport_invoice_form").submit();
 }
 
 let isProgrammaticChange = false; // Flag to prevent recursion
@@ -1472,6 +1488,7 @@ function submitForm(status) {
 }
 function onItemClick(itemRowId)
 {
+    console.log(itemRowId);
     const docType = $("#service_id_input").val();
     const invoiceToFollowParam = $("invoice_to_follow_input").val() == "yes";
 
@@ -1591,6 +1608,7 @@ function onItemClick(itemRowId)
     const itemId = document.getElementById('items_dropdown_'+ itemRowId + '_value').value;
     const uomId = document.getElementById('uom_dropdown_'+ itemRowId ).value;
     const qtyrow = document.getElementById('item_picked_qty_' + itemRowId) ?? document.getElementById('item_qty_' + itemRowId);
+    console.log(itemId,uomId);
     if (itemId && uomId) {
         $.ajax({
             url: invDets,
@@ -1613,30 +1631,43 @@ function onItemClick(itemRowId)
 
                 if (Array.isArray(data?.lrDetails) && data.lrDetails.length > 0) {
                     let html = '';
+                    let lrs = '';
                     html+= `
                     <span class="badge rounded-pill badge-light-primary"><strong>HSN Code</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
                     `;
                     data.lrDetails.forEach(lr => {
                         
                         html += `
+                            
+                            <span class="badge rounded-pill badge-light-primary">
+                                <strong>Service</strong>: <span>${lr.item_name}</span>
+                            </span>
+                           
+                        `;
+                        lrs += `
+                        <span class="badge rounded-pill badge-light-primary">
+                                <strong>LR Date</strong>: <span>${lr.document_date}</span>
+                            </span>
                             <span class="badge rounded-pill badge-light-primary">
                                 <strong>Point Charges</strong>: <span>${lr.points_charges}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>LR Charges</strong>: <span>${lr.total_charges}</span>
+                                <strong>LR Charges</strong>: <span>${lr.lr_charges}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
                                 <strong>Freight Charges</strong>: <span>${lr.freight_charges}</span>
                             </span>
-                        `;
+                            `;
                     });
+                    
+                    
                 if (data?.item && data?.item?.category && data?.item?.sub_category) {
                    
                 }
                     document.getElementById('current_item_cat_hsn').innerHTML = html;
 
                    
-                    document.getElementById('current_item_inventory_details').innerHTML = '';
+                    document.getElementById('current_item_inventory_details').innerHTML = lrs;
                     document.getElementById('current_item_stocks_row').style.display = "none";
                     document.getElementById('current_item_lot_no_row').style.display = "none";
 
@@ -2755,4 +2786,9 @@ function updateHeaderExpenses()
     }
     getTotalOrderExpenses();
 
+}
+function getTax(){
+  document.querySelectorAll("#item_header tr").forEach((row, index) => {
+     getItemTax(index);
+});
 }

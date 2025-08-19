@@ -121,7 +121,7 @@
                               <div class="col-md-3">
                                  <label class="form-label">Reference From</label>
                               </div>
-                              <div class="col-md-2 action-button" id="lorry_receipt_selection">
+                              <div class="col-md-3 action-button" id="lorry_receipt_selection">
                                  <button type="button" id="select_lorry_button"
                                     data-bs-toggle="modal" data-bs-target="#pullPopUpLr"
                                     class="btn btn-outline-primary btn-sm mb-0">
@@ -350,9 +350,9 @@
                                              <th width="150px">LR No.</th>
                                              <th width="240px">Source</th>
                                              <th width="240px">Destination</th>
-                                             <th class="numeric-alignment">Points</th>
-                                             <th class="numeric-alignment">No. of Articles</th>
-                                             <th class="numeric-alignment">Weight</th>
+                                             <th>Points</th>
+                                             <th>No. of Articles</th>
+                                             <th>Weight</th>
                                              <th class="numeric-alignment">Discount</th>
                                              <th class="numeric-alignment" width="150px">Total
                                              </th>
@@ -2025,6 +2025,8 @@ function reEnableSelectedPullType(type = "so") {
 }
 
 function processOrder(type = "lr") {
+  const mainTableItem = document.getElementById("item_header");
+  mainTableItem.innerHTML = "";
   const allCheckBoxes = document.getElementsByClassName("po_checkbox");
   const docType = $("#service_id_input").val();
   const invoiceToFollowParam = $("#service_id_input").val() == "dnote";
@@ -2158,7 +2160,7 @@ function processOrder(type = "lr") {
               ].getAttribute("display-address");
               $("#current_pickup_address").text(displayAddress);
             }
-            const mainTableItem = document.getElementById("item_header");
+            
             // Remove previous items if any
             // const allRowsCheck = document.getElementsByClassName('item_row_checks');
             // for (let index = 0; index < allRowsCheck.length; index++) {
@@ -2481,9 +2483,12 @@ function processOrder(type = "lr") {
                     + currentOrderIndexVal,
                 ).innerHTML = itemUomsHTML;
                 // getStoresData(currentOrderIndexVal,null,false);
+              setTimeout(() => {
                 getItemTax(currentOrderIndexVal);
                 setAttributesUI(currentOrderIndexVal);
                 currentOrderIndexVal += 1;
+}, 1500);
+               
               });
             }
             // Order Discount
@@ -2535,6 +2540,7 @@ function processOrder(type = "lr") {
                 value: currentOrder?.customer_phone_no,
               }],
             );
+            getTax();
 
             // $("#shipping_address_dropdown").select2();
             // $("#shipping_address_dropdown").prop('disabled', false);
@@ -2684,6 +2690,10 @@ function getOrders(type = "so") {
           data: "destination_name",
           name: "destination_name",
         },
+        {
+          data: "total_charges",
+          name: "total_charges",
+        },
       ];
     } else if (type === "pl") {
       return [
@@ -2821,9 +2831,10 @@ function getOrders(type = "so") {
   }
 
   const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
-    .map((_, i) => document.getElementById("qt_id_" + i))
+    .map((_, i) => document.getElementById("lr_id_" + i))
     .filter(Boolean)
     .map(el => el.value);
+    console.log(selectedIds);
   const filters = {
     doc_type: $(tableSelector + "_value"),
     header_book_id: $("#series_id_input"),
@@ -2878,6 +2889,7 @@ function getOrders(type = "so") {
 }
 
 function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+  console.log(selector);
   $("#" + selector).autocomplete({
     source: function(request, response) {
       $.ajax({

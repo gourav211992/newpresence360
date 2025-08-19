@@ -182,6 +182,9 @@ class TransporterInvoiceController extends Controller
                     ->addColumn('curr_name', function ($row) {
                         return $row->currency ? ($row->currency?->short_name ?? $row->currency?->name) : 'N/A';
                     })
+                    ->addColumn('store_name', function($row) {
+                        return $row->erpStore ? $row->erpStore->store_name : 'N/A';
+                    })
                     ->editColumn('document_date', function ($row) {
                         return $row->getFormattedDate('document_date') ?? 'N/A';
                     })
@@ -229,6 +232,7 @@ class TransporterInvoiceController extends Controller
         $parentURL = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         $create_button = (isset($servicesBooks['services']) && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        
         return view('transport-invoice.index', [
             'typeName' => $typeName,
             'redirect_url' => $redirectUrl,
@@ -347,6 +351,7 @@ class TransporterInvoiceController extends Controller
         $totalValue = ($order->total_item_value - $order->total_discount_value) + $order->total_tax_value + $order->total_expense_value;
         $userType = Helper::userCheck();
         $buttons = Helper::actionButtonDisplay($order->book_id, $order->document_status, $order->id, $totalValue, $order->approval_level, $order->created_by ?? 0, $userType['type'], $revision_number);
+        //$buttons['amend']=true;
         $type = SaleModuleHelper::getAndReturnInvoiceType($request->type);
         $request->merge(['type' => $type]);
         $books = Helper::getBookSeriesNew($type)->get();
@@ -369,10 +374,11 @@ class TransporterInvoiceController extends Controller
             $enableEinvoice = false;
         }
         $subStores = InventoryHelper::getAccesibleSubLocations($order->store_id);
-        $transportationModes = EwayBillMaster::where('status', 'active')
-            ->where('type', '=', 'transportation-mode')
-            ->orderBy('id', 'ASC')
-            ->get();
+        // $transportationModes = EwayBillMaster::where('status', 'active')
+        //     ->where('type', '=', 'transportation-mode')
+        //     ->orderBy('id', 'ASC')
+        //     ->get();
+        $transportationModes = [];
         $editTransporterFields = false;
         if (!isset($einvoice->ewb_no) && $order->total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
             $editTransporterFields = true;
@@ -380,7 +386,7 @@ class TransporterInvoiceController extends Controller
         $dynamicFieldsUI = $order->dynamicfieldsUi();
         $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
         $termsAndConditions = TermsAndCondition::where('status', ConstantHelper::ACTIVE)->get();
-
+        // dd($order);
         $data = [
             'user' => $user,
             'users' => $users,
@@ -408,6 +414,7 @@ class TransporterInvoiceController extends Controller
             'editTransporterFields' => $editTransporterFields,
             'termsAndConditions' => $termsAndConditions
         ];
+       
         return view('transport-invoice.create_edit', $data);
     }
 
@@ -546,26 +553,62 @@ class TransporterInvoiceController extends Controller
 
             $transportationMode = [];
 
-            if ($request->transport_invoice_id) { //Update
-                $saleInvoice = ErpTransportInvoice::find($request->transport_invoice_id);
-                $saleInvoice->document_date = $request->document_date;
-                $saleInvoice->reference_number = $request->reference_no;
-                //Store and department keys
-                $saleInvoice->store_id = $request->store_id ?? null;
-                $saleInvoice->store_code = $store?->store_code ?? null;
-                $saleInvoice->consignee_name = $request->consignee_name;
-                $saleInvoice->consignment_no = $request->consignment_no;
-                $saleInvoice->vehicle_no = $request->vehicle_no;
-                $saleInvoice->lr_number = $request->lr_number ?? null;
-                $saleInvoice->transporter_name = $request->transporter_name;
-                $saleInvoice->transportation_mode = "";
-                $saleInvoice->eway_bill_master_id = "";
-                // $saleInvoice -> eway_bill_no = $request -> eway_bill_no;
-                $saleInvoice->remarks = $request->final_remarks;
-                $saleInvoice->customer_terms = $request->terms;
-                $saleInvoice->customer_terms_id = $request->terms_id;
-                $actionType = $request->action_type ?? '';
-                //Amend backup
+            if ($request->transport_invoice_id) 
+            { //Update
+                $saleInvoice = ErpTransportInvoice::findOrFail($request->transport_invoice_id);
+                $saleInvoice->update([
+                    'organization_id' => $organizationId,
+                    'group_id' => $groupId,
+                    'company_id' => $companyId,
+                    'book_id' => $request->book_id,
+                    'invoice_required' => $invoiceRequired,
+                    'book_code' => $request->book_code,
+                    'document_date' => $request->document_date,
+                    'revision_number' => 0,
+                    'revision_date' => null,
+                    'reference_number' => $request->reference_no,
+                    'store_id' => $request->store_id ?? null,
+                    'store_code' => $store?->store_code ?? null,
+                    'sub_store_id' => $request->sub_store_id ?? null,
+                    'sub_store_code' => $subStore?->name ?? null,
+                    'customer_id' => $request->customer_id,
+                    'customer_code' => $request->customer_code,
+                    'customer_email' => $customerEmail,
+                    'customer_phone_no' => $customerPhoneNo,
+                    'customer_gstin' => $customerGSTIN,
+                    'consignee_name' => $request->consignee_name,
+                    'consignment_no' => $request->consignment_no,
+                    'vehicle_no' => $request->vehicle_no,
+                    'lr_number' => $request->lr_number ?? null,
+                    'transporter_name' => $request->transporter_name,
+                    'transportation_mode' => "",
+                    'eway_bill_master_id' => "",
+                    // 'eway_bill_no' => $request -> eway_bill_no,
+                    'billing_address' => null,
+                    'shipping_address' => null,
+                    'currency_id' => $request->currency_id,
+                    'currency_code' => $request->currency_code,
+                    'payment_term_id' => $request->payment_terms_id,
+                    'payment_term_code' => $request->payment_terms_code,
+                    'approval_level' => 1,
+                    'remarks' => $request->final_remarks,
+                    'org_currency_id' => $currencyExchangeData['data']['org_currency_id'],
+                    'org_currency_code' => $currencyExchangeData['data']['org_currency_code'],
+                    'org_currency_exg_rate' => $currencyExchangeData['data']['org_currency_exg_rate'],
+                    'comp_currency_id' => $currencyExchangeData['data']['comp_currency_id'],
+                    'comp_currency_code' => $currencyExchangeData['data']['comp_currency_code'],
+                    'comp_currency_exg_rate' => $currencyExchangeData['data']['comp_currency_exg_rate'],
+                    'group_currency_id' => $currencyExchangeData['data']['group_currency_id'],
+                    'group_currency_code' => $currencyExchangeData['data']['group_currency_code'],
+                    'group_currency_exg_rate' => $currencyExchangeData['data']['group_currency_exg_rate'],
+                    'total_item_value' => 0,
+                    'total_discount_value' => 0,
+                    'total_tax_value' => 0,
+                    'total_expense_value' => 0,
+                    'customer_terms' => $request->terms,
+                    'customer_terms_id' => $request->terms_id,        
+                ]);
+                 $actionType = $request -> action_type ?? "";
                 if (($saleInvoice->document_status == ConstantHelper::APPROVED || $saleInvoice->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
                     $revisionData = [
                         ['model_type' => 'header', 'model_name' => 'ErpTransportInvoice', 'relation_column' => ''],
@@ -573,7 +616,7 @@ class TransporterInvoiceController extends Controller
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpTransportInvoiceTed', 'relation_column' => 'invoice_item_id'],
                     ];
                     $a = Helper::documentAmendment($revisionData, $saleInvoice->id);
-
+                
                 }
                 $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedSiItemIds', 'deletedDelivery', 'deletedAttachmentIds'];
                 $deletedData = [];
@@ -757,6 +800,7 @@ class TransporterInvoiceController extends Controller
             $saleInvoice->save();
             //Seperate array to store each item calculation
             $itemsData = array();
+            $oldSoItem = ErpTIInvoiceItem::where('ti_invoice_id',$saleInvoice->id)->forceDelete();
             if ($request->item_id && count($request->item_id) > 0) {
                 //Items
                 $totalValueAfterDiscount = 0;
@@ -841,6 +885,7 @@ class TransporterInvoiceController extends Controller
                         ]);
                     }
                 }
+               
                 foreach ($itemsData as $itemDataKey => $itemDataValue) {
                     //Discount
                     $headerDiscount = 0;
@@ -856,7 +901,9 @@ class TransporterInvoiceController extends Controller
                     $itemPrice = ($itemDataValue['item_value'] + $headerDiscount + $itemDataValue['item_discount_amount']) / $itemDataValue['order_qty'];
                     $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
                     $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
-                    $taxDetails = TaxHelper::calculateTax($itemDataValue['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'sale');
+                    $upToCountry = $partyCountryId ?? $request->shipping_country_id ?? 0; // 0 or some valid country ID
+                    $upToState = $partyStateId ?? $request->shipping_state_id ?? 0; // 0 or some valid country ID
+                    $taxDetails = TaxHelper::calculateTax($itemDataValue['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $upToCountry, $upToState, 'transport');
                     if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {
                             $itemTax += ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
@@ -901,7 +948,8 @@ class TransporterInvoiceController extends Controller
                         'group_currency_exchange_rate' => null,
                         'remarks' => $itemDataValue['remarks'],
                     ];
-                    if (isset($request->so_item_id[$itemDataKey])) {
+                    if (isset($request->so_item_id[$itemDataKey])) 
+                    {
                         $oldSoItem = ErpTIInvoiceItem::find($request->so_item_id[$itemDataKey]);
                         $soItem = ErpTIInvoiceItem::updateOrCreate(
                             ['id' => $request->so_item_id[$itemDataKey]], 
@@ -1244,13 +1292,16 @@ class TransporterInvoiceController extends Controller
                 $itemIds = optional($orgBookParameter)->parameter_value ?? [];
                 $item = Item::with('uom')->find(collect($itemIds)->first());
 
+                $oldlrids = ErpTIInvoiceItem::pluck('lr_id')->toArray();
+
                 $query = ErpLorryReceipt::with(['locations', 'source', 'destination', 'consignee', 'consignor'])
                     ->withDefaultGroupCompanyOrg()
                     ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                     ->whereIn('book_id', $applicableBookIds)
                     ->when($request->customer_id, fn($q) => $q->where('consignor_id', $request->customer_id))
                     ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
-                    ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
+                    ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                    ->when(!empty($oldlrids), fn($q) => $q->whereNotIn('id', $oldlrids)); 
 
 
                 return DataTables::of($query)
@@ -1816,15 +1867,16 @@ class TransporterInvoiceController extends Controller
                     $processOrder = collect([]);
 
 
-                    foreach ($headers as $header) {
+                    foreach ($headers as $header) 
+                    {
                         $header->document_type = "lr";
                         $header->book_Id = $header->book_id;
                         $header->book_Code = $header->book_code;
                         $header->document_Number = $header->document_number;
                         $header->document_Date = Carbon::parse($header->document_date)->format('d-m-Y');
-                        $locationAmountTotal = $header->locations->sum('amount');
-                        $freightCharges = $header->freight_charges ?? 0;
-                        $totalFreightWithLocation = $freightCharges + $locationAmountTotal;
+                        $header->locationAmountTotal = $header->locations->sum('amount');
+                        $header->freightCharges = $header->freight_charges ?? 0;
+                        $header->totalFreightWithLocation = $header->freightCharges + $header->locations->sum('amount') + $header->lr_charges;
 
 
                         if ($singleItem) {
@@ -1857,27 +1909,26 @@ class TransporterInvoiceController extends Controller
                         $header->billing_address_details = $billing_address_details ?? null;
                         $header->shipping_address_details = $shipping_address_details ?? null;
                         $header->vehicle_no = $vehicle?->lorry_no ?? null;
-                        $header->freight_charges = $freightCharges ?? 0;
-                        $header->location_total_amount = $locationAmountTotal ?? 0;
-                        $header->total_freight_amount = $totalFreightWithLocation ?? 0;
+                        $header->freight_charges =  $header->freight_charges ?? 0;
+                        $header->location_total_amount = $header->locations->sum('amount') ?? 0;
+                        $header->total_freight_amount = $header->totalFreightWithLocation ?? 0;
 
                         if ($consignor) {
                             $header->currency_code = $consignor->currency->short_name ?? null;
                             $header->payment_term_code = $consignor->paymentTerm->name ?? null;
                         }
                     }
-
                     $finalHeaders = $headers->map(function ($header) use ($freightCharges, $locationAmountTotal, $totalFreightWithLocation) {
                         return [
                             'lr_id' => $header->id,
                             'source'=>$header->source,
                             'destination'=>$header->destination,
                             'points'=>$header->locations->count(),
-                            'articles'=>$header->locations->sum('no_of_articles'),
-                            'weight'=>$header->locations->sum('weight'), 
-                            'freight_charges' => $freightCharges,
-                            'location_total_amount' => $locationAmountTotal,
-                            'total_freight_amount' => $totalFreightWithLocation,
+                            'articles'=>$header->locations->sum('no_of_articles') + $header->no_of_bundles,
+                            'weight'=>$header->locations->sum('weight') + $header->weight, 
+                            'freight_charges' => $header->freightCharges,
+                            'location_total_amount' => $header->locationAmountTotal,
+                            'total_freight_amount' => $header->totalFreightWithLocation,
                             'discount_ted' => [],
                             'expense_ted' => [],
                             'document_type' => $header->document_type,
@@ -1900,14 +1951,14 @@ class TransporterInvoiceController extends Controller
                             'currency_code' => $header->currency_code,
                             'payment_term_code' => $header->payment_term_code,
 
-                            'items' => collect($header->items ?? [])->map(function ($item) use ($totalFreightWithLocation) {
+                            'items' => collect($header->items ?? [])->map(function ($item) use ($header) {
                                 return [
                                     'discount_ted' => [],
                                     'balance_qty' => 1,
                                     'stock_qty' => 1,
                                     'header_discount_amount' => 0,
                                     'header_expense_amount' => 0,
-                                    'rate' => $totalFreightWithLocation,
+                                    'rate' => $header->totalFreightWithLocation,
                                     // 'item' => [
                                     //     'id' => $item->id,
                                     //     'item_name' => $item->item_name,
@@ -1935,7 +1986,7 @@ class TransporterInvoiceController extends Controller
 
                         ];
                     });
-
+                   
                     return response()->json([
                         'data' => $finalHeaders,
                     ]);
@@ -2804,21 +2855,27 @@ class TransporterInvoiceController extends Controller
                     ->whereIn('id', (array) $request->lrId)
                     ->get();
 
-                      $lrDetails = $lorryReceiptDetails->map(function ($lr) {
+                   
+
+                      $lrDetails = $lorryReceiptDetails->map(function ($lr) use ($item) {
                         $totalArticles = $lr->locations->sum('no_of_articles');
                         $totalWeight = $lr->locations->sum('weight');
                         $totalPointCharges = $lr->locations->sum('amount');
                         $totalPoints = $lr->locations->count();
+                        $lr_charges = $lr->lr_charges;
+                        $itemname = $item->item_name;
 
                         return [
                             'lr_no' => $lr->document_number ?? '',
                             'book_code' => $lr->book->book_code,
                             'document_date' =>Carbon::parse($lr->document_date)->format('d-m-Y') ?? '',
+                            'item_name' => $itemname,
                             'source' => $lr->source->name ?? '',
                             'destination' => $lr->destination->name ?? '',
                             'no_of_article' => $totalArticles,
                             'total_weight' => $totalWeight,
                             'points' => $totalPoints,
+                            'lr_charges' => $lr_charges,
                             'freight_charges' => $lr->freight_charges ?? 0,
                             'points_charges' => $totalPointCharges ?? 0,
                             'total_charges' => ($lr->freight_charges ?? 0) + ($totalPointCharges ?? 0),

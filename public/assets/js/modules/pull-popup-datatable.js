@@ -16,8 +16,27 @@ $.fn.dataTable.ext.type.order['formatted-date-pre'] = function(data) {
 };
 
 function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTitle = 'Data', exportColumns = [], defaultOrder = [], pdfPageOrientation = 'portrait', ajaxRequestType = 'GET',showSearch = true,showButtons = true) {
-    
-    var table = $(selector);
+    if ($('#datatable-loader').length === 0) {
+        var loaderHtml = `
+            <div id="datatable-loader" 
+     style="position:fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(255,255,255,0.2); z-index:9999; 
+            display:none; justify-content:center; align-items:center;">
+    <div class="spinner-border text-primary" style="width:2rem; height:2rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+        `;
+        $('body').append(loaderHtml);
+    }
+    var table = $(selector).on('processing.dt', function(e, settings, processing) {
+        if (processing) {
+            $('#datatable-loader').show();
+            $('#datatable-loader').css('display', 'flex');
+        } else {
+            $('#datatable-loader').hide();
+        }
+    });
     if (table.length) {
         let dataTableInstance = table.DataTable({
             processing: true,
@@ -92,11 +111,20 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                     }
                 }
             ] : [],
+            rowCallback: function(row, data) 
+            {   
+                console.log(filters.selected_ids);
+                console.log(data.id);
+                if (filters.selected_ids && filters.selected_ids.includes(String(data.id))) {
+                    $(row).find('input[type="checkbox"]').prop('checked', true);
+                    $(row).addClass('trselected'); // optional styling
+                }
+            },
             drawCallback: function() {
                 feather.replace(); 
-                $(document).on('click', '.myrequesttablecbox tbody tr', (e) => {
-                    $('tr').removeClass('trselected');
-                    $(e.target).closest('tr').addClass('trselected');
+                $(document).on('click', '.myrequesttablecbox > tbody > tr', function () {
+                    $('.myrequesttablecbox > tbody > tr').removeClass('trselected');
+                    $(this).addClass('trselected');
                 });
 
                 $(document).on('keydown', function(e) { 
@@ -115,10 +143,12 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                 // $(".select2").select2();
             },
             language: {
-                paginate: { previous: '&nbsp;', next: '&nbsp;' }
+                paginate: { previous: '&nbsp;', next: '&nbsp;' },
+                processing: " " // a space, not empty string
             },
             search: { caseInsensitive: true }
         });
+    
         return dataTableInstance;
     }
 }

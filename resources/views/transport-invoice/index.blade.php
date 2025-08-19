@@ -27,10 +27,9 @@
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" onclick ='openFiltersModal();' ><i data-feather="filter"></i> Filter</button> 
                         @if ($create_button)
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{$create_route}}"><i data-feather="plus-circle"></i>
-                            {{'Create ' . $typeName}}
+                            {{'Create Invoice'}}
                         </a> 
                         @endif
-                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'si']) }}"><i data-feather="bar-chart-2"></i>Report</a>
 
                     </div>
                 </div>
@@ -63,10 +62,6 @@
                                                 <th class = "numeric-alignment">Discount</th>
                                                 <th class = "numeric-alignment">Tax</th>
                                                 <th class = "numeric-alignment">Total Amt</th>
-                                                <th>Invoice Type</th>
-                                                <th>E Invoice</th>
-                                                <th>E-Way Bill</th>
-                                                <th>POD</th>
                                                 <th style = 'text-align:center'>Status</th>
 											  </tr>
 											</thead>
@@ -141,7 +136,7 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'store_code', name: 'store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'store_name', name: 'store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
@@ -168,26 +163,11 @@
                $(td).addClass('text-end');
             } 
          },
-         { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             } 
-         },
-        { data: 'gst_invoice_type', name: 'gst_invoice_type', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
         },
-        { data: 'e_invoice_status', name: 'e_invoice_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
-        { data: 'is_ewb_generated', name: 'is_ewb_generated', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
-        { data: 'delivery_status', name: 'delivery_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
+        
         { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
@@ -203,8 +183,8 @@
         filters[filter.requestName] = "#" + (filter.id + "_input");
     });
     var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]; // Columns to export
-    reportDataTableInstance = initializeDataTable('.datatables-basic', 
-        "{{ $redirect_url }}", 
+    reportDataTableInstance = initializeDataTable('.datatables-basic',
+    "{{ $redirect_url }}", 
         columns,
         filters,  // Apply filters
         "{{$typeName}}",  // Export title
