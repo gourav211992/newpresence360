@@ -912,7 +912,8 @@ class Helper
                 // $query->where('cost_center_id', $cost)
                 return is_array($cost)
                     ? $query->whereIn('cost_center_id', $cost)
-                    : $query->where('cost_center_id', $cost);;
+                    : $query->where('cost_center_id', $cost);
+                ;
             })
             ->where('ledger_parent_id', $ledger_parent)
             ->whereHas('voucher', function ($query) use ($organization_id, $startDate, $endDate, $location) {
@@ -2131,30 +2132,30 @@ class Helper
                             });
                     }
                 ])->withSum([
-                    'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
-                        $query->where('ledger_parent_id', $group_id)
-                            ->when(!empty($cost), function ($query) use ($cost) {
-                                // dd($cost);
-                                // $query->where('cost_center_id', $cost);
-                                return is_array($cost)
-                                    ? $query->whereIn('cost_center_id', $cost)
-                                    : $query->where('cost_center_id', $cost);
-                            })
-                            ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
+                        'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                            $query->where('ledger_parent_id', $group_id)
+                                ->when(!empty($cost), function ($query) use ($cost) {
+                                    // dd($cost);
+                                    // $query->where('cost_center_id', $cost);
+                                    return is_array($cost)
+                                        ? $query->whereIn('cost_center_id', $cost)
+                                        : $query->where('cost_center_id', $cost);
+                                })
+                                ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                                $query->when(!empty($organizations), function ($query) use ($organizations) {
-                                    $query->whereIn('organization_id', $organizations);
-                                });
-                                $query->when(!empty($location), function ($query) use ($location) {
-                                    $query->where('location', $location);
-                                });
+                                    $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                        $query->whereIn('organization_id', $organizations);
+                                    });
+                                    $query->when(!empty($location), function ($query) use ($location) {
+                                        $query->where('location', $location);
+                                    });
 
-                                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                                $query->orderBy('document_date', 'asc');
-                                $query->whereBetween('document_date', [$startDate, $endDate]);
-                            });
-                    }
-                ], "debit_amt_{$currency}")
+                                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                    $query->orderBy('document_date', 'asc');
+                                    $query->whereBetween('document_date', [$startDate, $endDate]);
+                                });
+                        }
+                    ], "debit_amt_{$currency}")
                 ->withSum([
                     'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
                         $query->where('ledger_parent_id', $group_id)
@@ -2229,7 +2230,7 @@ class Helper
                     $ledger->closing_type = $closing < 0 ? "Cr" : "Dr";
                     $ledger->opening_type = $opening_type;
                     $ledger->group_id = $group_id; // Default type if no details exist
-
+    
                     unset($ledger->details);
 
                     return $ledger;
@@ -3002,10 +3003,10 @@ class Helper
                         <td>' . $n++ . '</td>
                         <td>
                             ' . ucwords(str_replace(
-                        ['loan', 'Doc', 'Fee'],
-                        ['Loan', 'Document', 'Fee'],
-                        preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
-                    )) . '
+                            ['loan', 'Doc', 'Fee'],
+                            ['Loan', 'Document', 'Fee'],
+                            preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
+                        )) . '
                         </td>
                         <td>
                             <a target="_blank" href="' . asset('storage/' . $data->$column->doc) . '">
@@ -3752,7 +3753,7 @@ class Helper
                 $existingGroups[] = $partyGroups->id;
 
 
-                if (!in_array((int)$group_id, $existingGroups))
+                if (!in_array((int) $group_id, $existingGroups))
                     return [
                         'success' => false,
                         'message' => 'Group ID not mapped with ' . $group,
@@ -3794,7 +3795,7 @@ class Helper
                 $validatedData['created_by'] = self::getAuthenticatedUser()->id;
                 $validatedData['code'] = $code;
                 $validatedData['name'] = $name;
-                $validatedData['ledger_group_id'] = json_encode([(string)$group_id]);
+                $validatedData['ledger_group_id'] = json_encode([(string) $group_id]);
                 $validatedData['status'] = 1;
                 $validatedData['document_status'] = ConstantHelper::APPROVAL_NOT_REQUIRED;
 
@@ -4016,7 +4017,7 @@ class Helper
 
         while (
             FixedAssetRegistration::where('asset_code', $finalItemCode)
-            ->exists()
+                ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
@@ -4029,8 +4030,8 @@ class Helper
     {
         DB::beginTransaction();
         try {
-            $mrn_asset = MrnAssetDetail::where('header_id',$mrn_id)->first();
-            if(empty($mrn_asset)){
+            $mrn_asset = MrnAssetDetail::where('header_id', $mrn_id)->first();
+            if (empty($mrn_asset)) {
                 DB::rollBack();
                 return [
                     'status' => false,
@@ -4138,10 +4139,17 @@ class Helper
             }
 
             $glPostingBookId = $glPostingBookParam->parameter_value[0];
-            $filteredItems = $mrn->items->whereIn('id', $detail_id);
-            $asset_codes=[];
+            $filteredItems = $mrn->items()
+                ->whereIn('id', $detail_id)
+                ->whereHas('item', function ($q) {
+                    $q->where('is_asset', 1);
+                })
+                //->doesntHave('asset')
+                ->get();
+            $asset_codes = [];
 
             foreach ($filteredItems as $mrn_detail) {
+
                 $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
                     ->where('mrn_header_id', $mrn->id)->first();
 
@@ -4207,7 +4215,7 @@ class Helper
                     'supplier_invoice_date' => $mrn->supplier_invoice_date,
                     'book_date' => $mrn_detail->created_at ?? null,
                     'supplier_invoice_no' => $mrn->supplier_invoice_no,
-                    'location_id' =>  $mrn->sub_store_id ?? null,
+                    'location_id' => $mrn->sub_store_id ?? null,
                     'cost_center_id' => $mrn->cost_center_id ?? null,
                     'maintenance_schedule' => $setup->maintenance_schedule ?? null,
                     'depreciation_method' => $method,

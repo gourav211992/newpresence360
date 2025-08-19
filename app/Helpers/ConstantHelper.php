@@ -504,6 +504,7 @@ class ConstantHelper
         self::RFQ_SERVICE_ALIAS => "Request For Quotation",
         self::PQ_SERVICE_ALIAS => "Purchase Quotation",
         self::PQC_SERVICE_ALIAS => "Purchase Quotation Comparison",
+        self::PDS_SERVICE_ALIAS => "Pickup Dropoff Schedule",
         PackingListConstants::SERVICE_ALIAS => "Packing List"];
 
     //Service Alias
@@ -514,6 +515,7 @@ class ConstantHelper
     const RFQ_SERVICE_ALIAS = 'rfq';
     const PQ_SERVICE_ALIAS = 'pq';
     const PQC_SERVICE_ALIAS = 'pqc';
+    const PDS_SERVICE_ALIAS = 'pds';
     const SUPPLIER_INVOICE_SERVICE_ALIAS = 'supplier-invoice';
     const PI_SERVICE_ALIAS = 'purchase-indent';
     const MRN_SERVICE_ALIAS = 'mrn';
@@ -692,7 +694,6 @@ class ConstantHelper
         self::PAYMENTS_SERVICE_ALIAS=>self::PAYMENTS_SERVICE_ALIAS,
         self::RECEIPTS_SERVICE_ALIAS=>self::RECEIPTS_SERVICE_ALIAS,
         self::FIXED_ASSET_DEPRECIATION=>self::FIXED_ASSET_DEPRECIATION,
-        self::EQPT=>self::EQPT,
         self::MAINT=>self::MAINT,
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
@@ -818,6 +819,7 @@ class ConstantHelper
         self::RFQ_SERVICE_ALIAS => 'ErpRfqHeader',
         self::PQ_SERVICE_ALIAS => 'ErpPqHeader',
         self::PQC_SERVICE_ALIAS => 'ErpPqcHeader',
+        self::PDS_SERVICE_ALIAS => 'ErpPickupSchedule',
         PackingListConstants::SERVICE_ALIAS => 'PackingList',
         ASNConstant::SERVICE_ALIAS => 'VendorAsn',
     ];
@@ -997,6 +999,8 @@ class ConstantHelper
         self::CUSTOMER_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::VENDOR_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::LEDGERS_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
+        self::EQPT=>ConstantHelper::ERP_MASTER_SERVICE_TYPE
+    
     ];
     const DOC_APPROVAL_STATUS_MAPPING = [
         ConstantHelper::SUBMITTED => 'submit',
