@@ -19,7 +19,10 @@
          <input type="hidden" value="draft" name="document_status" id="document_status" />
          <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
             <div class="form-group breadcrumb-right" id="buttonsDiv">
-               <button type="button" name="action" value="draft" id="save-draft-button"
+              <a href="{{url('/transporter-invoices')}}">
+                <button type = "button" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+              </a> 
+              <button type="button" name="action" value="draft" id="save-draft-button"
                   onclick="submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i
                   data-feather='save'></i> Save as Draft</button>
                <button type="button" name="action" value="submitted" id="submit-button"
@@ -108,13 +111,29 @@
                                  </select>
                               </div>
                            </div>
-                           <div class="row align-items-center mb-1">
+                           <!-- <div class="row align-items-center mb-1">
                               <div class="col-md-3">
                                  <label class="form-label">Reference No </label>
                               </div>
                               <div class="col-md-5">
                                  <input type="text" name="reference_no" class="form-control"
                                     id="reference_no_input">
+                              </div>
+                           </div> -->
+                            <div class="row align-items-center mb-1">
+                              <div class="col-md-3">
+                                 <label class="form-label">Type </label>
+                              </div>
+                              <div class="col-md-5">
+                                 <select class="form-select disable_on_edit" name="type"
+                                    id="type" readonly>
+                                    <option
+                                       value="1"
+                                       data-name
+                                       = "Performa Invoice">
+                                       Performa Invoice
+                                    </option>
+                                 </select>
                               </div>
                            </div>
                            <div class="row align-items-center mb-1" id="selection_section">
@@ -178,7 +197,7 @@
                                        name="customer_email" />
                                  </div>
                               </div>
-                              <div class="col-md-3">
+                              <!-- <div class="col-md-3">
                                  <div class="mb-1">
                                     <label class="form-label">Consignee Name</label>
                                     <input type="text"
@@ -186,7 +205,7 @@
                                        autocomplete="off" id="consignee_name_input"
                                        name="consignee_name" />
                                  </div>
-                              </div>
+                              </div> -->
                               <div class="col-md-3">
                                  <div class="mb-1">
                                     <label class="form-label">GSTIN No.</label>
@@ -224,7 +243,7 @@
                            </div>
                         </div>
                         <div class="row">
-                           <div class="col-md-4">
+                           <div class="col-md-6">
                               <div class="customer-billing-section h-100">
                                  <p>Billing Address&nbsp;<span class="text-danger">*</span>
                                     <a href="javascript:;" id="billAddressEditBtn"
@@ -258,7 +277,7 @@
                                  </div>
                               </div>
                            </div>
-                           <div class="col-md-4">
+                           <!-- <div class="col-md-4">
                               <div class="customer-billing-section">
                                  <p>Shipping Address&nbsp;<span class="text-danger">*</span><span
                                     id="same_checkbox_as_billing"
@@ -294,10 +313,10 @@
                                     </div>
                                  </div>
                               </div>
-                           </div>
-                           <div class="col-md-4">
+                           </div> -->
+                           <div class="col-md-6">
                               <div class="customer-billing-section">
-                                 <p>Pickup Address&nbsp;<span class="text-danger">*</span>
+                                 <p>Org. Address&nbsp;<span class="text-danger">*</span>
                                  </p>
                                  <div class="bilnbody">
                                     <div class="genertedvariables genertedvariablesnone">
@@ -347,12 +366,15 @@
                                                       for="select_all_items_checkbox"></label>
                                                 </div>
                                              </th>
-                                             <th width="150px">LR No.</th>
-                                             <th width="240px">Source</th>
-                                             <th width="240px">Destination</th>
+                                            <th width="150px">LR No.</th>
+                                             <th width="200px">Source</th>
+                                             <th width="200px">Destination</th>
+                                             <th>Freight charges</th>
                                              <th>Points</th>
+                                             <th>Point Charges</th>
                                              <th>No. of Articles</th>
                                              <th>Weight</th>
+                                             <th>LR Charges</th>
                                              <th class="numeric-alignment">Discount</th>
                                              <th class="numeric-alignment" width="150px">Total
                                              </th>
@@ -363,7 +385,7 @@
                                        </tbody>
                                        <tfoot>
                                           <tr class="totalsubheadpodetail">
-                                             <td colspan="7" id="item_row_colspan"></td>
+                                             <td colspan="10" id="item_row_colspan"></td>
                                              <td class="text-end"
                                                 id="all_items_total_discount">
                                                 00.00
@@ -2304,9 +2326,17 @@ function processOrder(type = "lr") {
             <input type="text" id = "desitnation_name_${currentOrderIndexVal}" name = "destination_name[${currentOrderIndexVal}]" 
             class="form-control mw-100"  value = "${currentOrder?.destination?.name}" readonly>
                                                                    </td>
+                                                                   <td class="poprod-decpt">
+            <input type="text" id = "freight_charges_${currentOrderIndexVal}" name = "freight_charge[${currentOrderIndexVal}]" 
+            class="form-control mw-100"  value = "${currentOrder?.freight_charges}" readonly>
+                                                                   </td>
                                                                     <td class="poprod-decpt">
             <input type="text" id = "points_${currentOrderIndexVal}" name = "points[${currentOrderIndexVal}]" 
-            class="form-control mw-100"  value = "${currentOrder?.points}" readonly>
+            class="form-control mw-100"  value = "${currentOrder?.points}" readonly></td>
+            <td class="poprod-decpt">
+            <input type="text" id = "point_charges_${currentOrderIndexVal}" name = "point_charge[${currentOrderIndexVal}]" 
+            class="form-control mw-100"  value = "${currentOrder?.point_charge}" readonly>
+                                                                   </td>
              <td class="poprod-decpt">
             <input type="text" id = "articles_${currentOrderIndexVal}" name = "articles[${currentOrderIndexVal}]" 
             class="form-control mw-100"  value = "${currentOrder?.articles}" readonly>
@@ -2314,6 +2344,10 @@ function processOrder(type = "lr") {
                                                                    <td class="poprod-decpt">
             <input type="text" id = "weight_${currentOrderIndexVal}" name = "weight[${currentOrderIndexVal}]" 
             class="form-control mw-100"  value = "${currentOrder?.weight}" readonly>
+            <td class="poprod-decpt">
+            <input type="text" id = "lr_charges_${currentOrderIndexVal}" name = "lr_charge[${currentOrderIndexVal}]" 
+            class="form-control mw-100"  value = "${currentOrder?.lr_charge}" readonly>
+                                                                   </td>
                                                                    </td>
                                                                        <td hidden class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'>
                                <button id = "attribute_button_${currentOrderIndexVal}" ${

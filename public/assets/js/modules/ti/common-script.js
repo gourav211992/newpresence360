@@ -1632,33 +1632,41 @@ function onItemClick(itemRowId)
                 if (Array.isArray(data?.lrDetails) && data.lrDetails.length > 0) {
                     let html = '';
                     let lrs = '';
-                    html+= `
-                    <span class="badge rounded-pill badge-light-primary"><strong>HSN Code</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
-                    `;
+                    
                     data.lrDetails.forEach(lr => {
-                        
                         html += `
-                            
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>Service</strong>: <span>${lr.item_name}</span>
-                            </span>
-                           
-                        `;
-                        lrs += `
-                        <span class="badge rounded-pill badge-light-primary">
                                 <strong>LR Date</strong>: <span>${lr.document_date}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>Point Charges</strong>: <span>${lr.points_charges}</span>
+                                <strong>Service</strong>: <span>${lr.item_name}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>LR Charges</strong>: <span>${lr.lr_charges}</span>
-                            </span>
-                            <span class="badge rounded-pill badge-light-primary">
-                                <strong>Freight Charges</strong>: <span>${lr.freight_charges}</span>
-                            </span>
+                                <strong>HSN Code</strong>: <span id="current_item_hsn_code">${lr.hsn_code ?? ''}</span>
+                            </span> 
+                        `;
+
+                        // ✅ now iterate locations of this LR
+                        lr.locations.forEach(location => {
+                            lrs += `
+                            <div class="row-line" style="margin-bottom: 8px;">
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Point Name</strong>: <span>${location.route_name}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Freight Charges</strong>: <span>${location.amount}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>No Of articles</strong>: <span>${location.no_of_articles}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Weight</strong>: <span>${location.weight}</span>
+                                </span>
+                            </div>
                             `;
+                        });
                     });
+
                     
                     
                 if (data?.item && data?.item?.category && data?.item?.sub_category) {

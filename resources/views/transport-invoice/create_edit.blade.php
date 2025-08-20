@@ -39,54 +39,54 @@ class="ajax-input-form sales_module_form transport_invoice"
                                     </svg>
                                     Print  <i class="fa-regular fa-circle-down"></i>
                                 </button>
-                                @if(isset($einvoice) && !$einvoice->ewb_no && $order -> total_amount > 50000)
-                                    <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
-                                        <i data-feather="check-circle"></i> Generate Eway Bill
-                                    </a>
-                                @endif
-                                @if(isset($order) && $order -> document_type == App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && $order -> document_status != App\Helpers\ConstantHelper::DRAFT && $order -> document_status != App\Helpers\ConstantHelper::SUBMITTED)
-                                    <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
-                                        <i data-feather="check-circle"></i> Generate Eway Bill
-                                    </a>
-                                @endif
-                                @if($order->document_status != App\Helpers\ConstantHelper::DRAFT)
+                                  @if(isset($einvoice) && !$einvoice->ewb_no && $order -> total_amount > 50000)
+                                      <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
+                                          <i data-feather="check-circle"></i> Generate Eway Bill
+                                      </a>
+                                  @endif
+                                  @if(isset($order) && $order -> document_type == App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && $order -> document_status != App\Helpers\ConstantHelper::DRAFT && $order -> document_status != App\Helpers\ConstantHelper::SUBMITTED)
+                                      <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
+                                          <i data-feather="check-circle"></i> Generate Eway Bill
+                                      </a>
+                                  @endif
+                                  @if($order->document_status != App\Helpers\ConstantHelper::DRAFT)
 
-                                <button type = "button" data-target = "#sendMail" onclick = "sendMailTo();" data-toggle = "modal" class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
+                                  <button type = "button" data-target = "#sendMail" onclick = "sendMailTo();" data-toggle = "modal" class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
+                                  @endif
+                                  <!-- @if(isset($order) && $order->delivery_status == 0)
+                                  <button type = "button" data-bs-toggle="modal" data-bs-target="#podModal" onclick = "setPOD();" class="btn btn-success btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i class="fa-solid fa-truck-fast"></i> POD</button>
+                                  @endif -->
                                 @endif
-                                <!-- @if(isset($order) && $order->delivery_status == 0)
-                                <button type = "button" data-bs-toggle="modal" data-bs-target="#podModal" onclick = "setPOD();" class="btn btn-success btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i class="fa-solid fa-truck-fast"></i> POD</button>
-                                @endif -->
-                                @endif
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    @php
-                                        if($order->document_type == "lr"){
-                                            $options=['Tax Invoice', 'Tax Invoice Attribute Grouped'];
-                                        }
-                                        elseif($order->document_type == "lr-dnote")
-                                        {
-                                            $options = [
-                                                'Tax Invoice',
-                                                'Tax Invoice Attribute Grouped',
-                                                'Delivery Note',
-                                            ];
-                                        }
-                                        else if ($order->document_type == "dnote"){
-                                            $options = ['Delivery Note'];
-                                        } else if ($order -> document_type == 'lrinv') {
-                                            $options = ['Tax Invoice'];
-                                        }
-                                         else if ($order->document_type == "ti"){
-                                         
-                                            $options = ['Lorry Receipt'];
-                                        }
-                                       
-                                    @endphp
-                                    @foreach ($options as $key)
-                                        <li>
-                                            <a class="dropdown-item" href="{{ route('sale.invoice.generate-pdf', [$order->id, $key, 'type' => str_contains($key, 'Attribute Grouped') ? 'grouped' : '']) }}" target="_blank">{{ $key }}</a>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                      @php
+                                          if($order->document_type == "lr"){
+                                              $options=['Tax Invoice', 'Tax Invoice Attribute Grouped'];
+                                          }
+                                          elseif($order->document_type == "lr-dnote")
+                                          {
+                                              $options = [
+                                                  'Tax Invoice',
+                                                  'Tax Invoice Attribute Grouped',
+                                                  'Delivery Note',
+                                              ];
+                                          }
+                                          else if ($order->document_type == "dnote"){
+                                              $options = ['Delivery Note'];
+                                          } else if ($order -> document_type == 'lrinv') {
+                                              $options = ['Tax Invoice'];
+                                          }
+                                          else if ($order->document_type == "ti"){
+                                          
+                                              $options = ['Lorry Receipt'];
+                                          }
+                                        
+                                      @endphp
+                                      @foreach ($options as $key)
+                                          <li>
+                                              <a class="dropdown-item" href="{{ route('sale.invoice.generate-pdf', [$order->id, $key, 'type' => str_contains($key, 'Attribute Grouped') ? 'grouped' : '']) }}" target="_blank">{{ $key }}</a>
+                                          </li>
+                                      @endforeach
+                                  </ul>
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
@@ -114,6 +114,14 @@ class="ajax-input-form sales_module_form transport_invoice"
                                 <a type="button" class="btn btn-primary btn-sm" id="eEInvoiceBtn" onclick = "generateEInvoice('{{$order -> id}}')">
                                     <i data-feather="check-circle"></i> Generate E-Invoice
                                 </a>
+                                @endif
+                                @if( in_array($order -> document_status, ['approved', 'approval_not_required']) && $order->type == 1)
+                                <a type="button" class="btn btn-primary btn-sm" id="eEInvoiceBtn" onclick = "generateEInvoice('{{$order -> id}}')">
+                                    <i data-feather="check-circle"></i> Generate Invoice
+                                </a>
+                                @endif
+                                @if( in_array($order -> document_status, ['approved', 'approval_not_required']) && $order->type == 2)
+                                <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                                 @endif
 
                             @else
@@ -213,7 +221,7 @@ class="ajax-input-form sales_module_form transport_invoice"
 
                                   </div>
                               </div>
-                              <div class="row align-items-center mb-1">
+                              <!-- <div class="row align-items-center mb-1">
                                   <div class="col-md-3">
                                     <label class="form-label">Reference No </label>
                                   </div>
@@ -221,7 +229,23 @@ class="ajax-input-form sales_module_form transport_invoice"
                                     <input type="text" name="reference_no" class="form-control"
                                         id="reference_no_input" data-value="{{$order->reference_number}}" value="{{$order->reference_number}}">
                                   </div>
+                              </div> -->
+                             <div class="row align-items-center mb-1">
+                              <div class="col-md-3">
+                                 <label class="form-label">Type </label>
                               </div>
+                              <div class="col-md-5">
+                                 <select class="form-select disable_on_edit" name="type"
+                                    id="type" readonly>
+                                    <option
+                                       value="1"
+                                       data-name
+                                       = "Performa Invoice">
+                                       Performa Invoice
+                                    </option>
+                                 </select>
+                              </div>
+                           </div>
                             
                               <div class="row align-items-center mb-1 can_hide" id="selection_section">
                                   <div class="col-md-3">
@@ -351,7 +375,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                        name="customer_email" value="{{$order->customer_email}}" />
                                  </div>
                               </div>
-                              <div class="col-md-3">
+                              <!-- <div class="col-md-3">
                                  <div class="mb-1">
                                     <label class="form-label">Consignee Name</label>
                                     <input type="text"
@@ -359,7 +383,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                        autocomplete="off" id="consignee_name_input"
                                        name="consignee_name" value="{{$order->consignee_name}}" />
                                  </div>
-                              </div>
+                              </div> -->
                               <div class="col-md-3">
                                  <div class="mb-1">
                                     <label class="form-label">GSTIN No.</label>
@@ -399,7 +423,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                            </div>
                         </div>
                         <div class="row">
-                           <div class="col-md-4">
+                           <div class="col-md-6">
                               <div class="customer-billing-section h-100">
                                  <p>Billing Address&nbsp;<span class="text-danger">*</span>
                                     <!-- <a href="javascript:;" id="billAddressEditBtn"
@@ -432,14 +456,12 @@ class="ajax-input-form sales_module_form transport_invoice"
                                  </div>
                               </div>
                            </div>
-                           <div class="col-md-4">
+                           <!-- <div class="col-md-4">
                               <div class="customer-billing-section">
                                  <p>Shipping Address&nbsp;<span class="text-danger">*</span><span
                                     id="same_checkbox_as_billing"
                                     style="margin-left:120px; font-weight:100;"></span>
-                                    <!-- <a href="javascript:;" id="shipAddressEditBtn"
-                                       data-bs-toggle="modal" class="float-end"><i
-                                       data-feather='edit-3'></i></a> -->
+                                    
                                  </p>
                                  <div class="bilnbody">
                                     <div class="genertedvariables genertedvariablesnone">
@@ -468,8 +490,8 @@ class="ajax-input-form sales_module_form transport_invoice"
                                     </div>
                                  </div>
                               </div>
-                           </div>
-                           <div class="col-md-4">
+                           </div> -->
+                           <div class="col-md-6">
                               <div class="customer-billing-section">
                                  <p>Pickup Address&nbsp;<span class="text-danger">*</span>
                                  </p>
@@ -522,11 +544,14 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                 </div>
                                              </th>
                                              <th width="150px">LR No.</th>
-                                             <th width="240px">Source</th>
-                                             <th width="240px">Destination</th>
+                                             <th width="200px">Source</th>
+                                             <th width="200px">Destination</th>
+                                             <th>Freight charges</th>
                                              <th>Points</th>
+                                             <th>Point Charges</th>
                                              <th>No. of Articles</th>
                                              <th>Weight</th>
+                                             <th>LR Charges</th>
                                              <th class="numeric-alignment">Discount</th>
                                              <th class="numeric-alignment" width="150px">Total
                                              </th>
@@ -597,10 +622,16 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                 <td>
                                                     <input type="text" readonly name="destination_name[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->destination->name ?? '' }}">
                                                 </td>
+                                                <td>
+                                                    <input type="text" readonly name="freight_charge[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->freight_charges ?? '' }}">
+                                                </td>
 
                                                 {{-- Points --}}
                                                 <td>
                                                     <input type="text" readonly name="points[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->count() ?? 0 }}">
+                                                </td>
+                                                <td>
+                                                    <input type="text" readonly name="point_charge[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->sub_total ?? '' }}">
                                                 </td>
 
                                                 {{-- No. of Articles --}}
@@ -611,6 +642,9 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                 {{-- Weight --}}
                                                 <td>
                                                     <input type="text" readonly name="weight[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->sum('weight') + $item->lorry->weight ?? 0 }}">
+                                                </td>
+                                                 <td>
+                                                    <input type="text" readonly name="lr_charges[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->lr_charges ?? 0 }}">
                                                 </td>
 
                                                 {{-- Discount --}}
@@ -663,7 +697,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                        </tbody>
                                        <tfoot>
                                           <tr class="totalsubheadpodetail">
-                                             <td colspan="7" id="item_row_colspan"></td>
+                                             <td colspan="10" id="item_row_colspan"></td>
                                              <td class="text-end"
                                                 id="all_items_total_discount">
                                                 {{$totaldiscount}}
