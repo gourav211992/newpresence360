@@ -158,7 +158,7 @@ use App\Http\Controllers\LoanProgress\AppraisalController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
 use App\Http\Controllers\FixedAsset\RegistrationController;
 use App\Http\Controllers\LoanProgress\AssessmentController;
-
+use App\Http\Controllers\DefectNotificationController;
 use App\Http\Controllers\Stakeholder\StakeholderController;
 use App\Http\Controllers\VehicleLoan\VehicleLoanController;
 use App\Http\Controllers\BillOfMaterial\BomImportController;
@@ -2952,7 +2952,6 @@ Route::middleware(['user.auth'])->group(function () {
     });
 
     Route::prefix('equipment')->group(function () {
-
         Route::get('/', [ErpEquipmentController::class, 'index'])->name('equipment.index');
         Route::get('/create', [ErpEquipmentController::class, 'create'])->name('equipment.create');
         Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
@@ -3025,3 +3024,5 @@ Route::resource('plant/wo', MaintWoController::class)->names([
     'edit' => 'maint-wo.edit',
 ]);
 
+Route::resource('defect-notification', DefectNotificationController::class);
+Route::get('defect-notification-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');

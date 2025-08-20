@@ -12,9 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('erp_plant_maint_wo', function (Blueprint $table) {
+        Schema::create('erp_defect_notifications', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('created_by')->nullable();
             $table->string('type')->nullable(); // User class type
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->unsignedBigInteger('group_id')->nullable();
@@ -23,7 +22,7 @@ return new class extends Migration
             $table->integer('revision_number')->default(0);
             $table->date('revision_date')->nullable();
             $table->string('book_code', 100)->nullable();
-            $table->unsignedBigInteger('book_id')->index();
+            $table->unsignedBigInteger('book_id')->index();;
             $table->string('document_number', 100);
             $table->date('document_date');
             $table->string('doc_prefix')->nullable();
@@ -31,20 +30,22 @@ return new class extends Migration
             $table->integer('doc_no')->nullable();
             $table->string('doc_number_type')->nullable();
             $table->string('doc_reset_pattern')->nullable();
-            $table->string('document_status',50)->nullable();
-            $table->unsignedBigInteger('location_id')->nullable()->index();
-            $table->json('spare_parts')->nullable(); // Spare parts data
-            $table->json('checklist_data')->nullable(); // Checklist data
-            $table->json('equipment_details')->nullable(); // Equipment details data
-            $table->text('final_remark')->nullable();
-            $table->string('upload_file')->nullable();
+            $table->string('document_status', 50);
+            $table->unsignedBigInteger('location_id')->nullable();
+            $table->unsignedBigInteger('equipment_id')->nullable()->index();
+            $table->unsignedBigInteger('category_id')->nullable()->index();
+            $table->unsignedBigInteger('defect_type_id')->nullable()->index();
+            $table->string('problem')->nullable();
+            $table->string('priority')->nullable();
+            $table->datetime('report_date_time')->nullable();
+            $table->string('attachment',50)->nullable();
+            $table->string('detailed_oberservation')->nullable();
             $table->string('status', 50)->default('active')->index();
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->index('document_number');
-            $table->index('document_status');
         });
     }
 
@@ -53,6 +54,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('erp_plant_maint_wo');
+        Schema::dropIfExists('defect_notifications');
     }
 };

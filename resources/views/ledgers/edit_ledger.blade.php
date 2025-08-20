@@ -316,7 +316,7 @@
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_percentage_label">
                                                         <div class="col-md-2">
-                                                            <label class="form-label">% TDS Calculation <span
+                                                            <label class="form-label">% TDS With PAN <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-3">
@@ -335,6 +335,18 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tds_capping" name="tds_capping" step="any" value="{{ $data->tds_capping }}" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1" id="tds_percentage_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> % TDS Without PAN <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_without_pan" name="tds_without_pan" value="{{ $data->tds_without_pan }}" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tcs_section_label">
@@ -573,6 +585,7 @@
     <script type="text/javascript" src="{{ asset('assets/js/preventkey.js') }}"></script>
     <script>
         const existingLedgers = @json($existingLedgers);
+        const ExistingTdsSections = @json($ExistingTdsSections);
         $(document).ready(function() {
             $('#amendConfirm').hide();
             $('#checkAndOpenModal').on('click', function() {
@@ -595,6 +608,37 @@
                         $('.preloader').hide();
                         showToast('error', 'Ledger name already exists.', 'Duplicate Entry');
                         return;
+                    }
+                }
+
+                let selectedGroups = $('#ledger_group_id').val() || [];
+                let selectedTdsSection = $('#tds_section').val();
+                let originalTdsSection = $('#tds_section').attr('value'); // Original TDS section value
+                
+                if (selectedTdsSection && selectedGroups.length > 0 && selectedTdsSection !== originalTdsSection) {
+                    // Check if any of the selected groups have TDS in their name (indicating TDS group)
+                    let hasTdsGroup = false;
+                    selectedGroups.forEach(groupId => {
+                        let groupOption = $('#ledger_group_id option[value="' + groupId + '"]');
+                        if (groupOption.text().toLowerCase().includes('tds')) {
+                            hasTdsGroup = true;
+                        }
+                    });
+                    
+                    if (hasTdsGroup) {
+                        // Check if TDS section already exists in any of the selected groups (excluding current record)
+                        let duplicateTdsSection = ExistingTdsSections.some(existing => {
+                            return existing.tds_section === selectedTdsSection && 
+                                   existing.ledger_group_ids.some(existingGroupId => 
+                                       selectedGroups.includes(existingGroupId.toString())
+                                   );
+                        });
+                        
+                        if (duplicateTdsSection) {
+                            $('.preloader').hide();
+                            showToast('error', 'This TDS section type already exists in the selected TDS group.', 'Duplicate TDS Section');
+                            return;
+                        }
                     }
                 }
 

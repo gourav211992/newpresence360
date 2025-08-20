@@ -1525,6 +1525,23 @@ class ServiceParametersHelper
         ],
     ];
 
+    const DEFECT_NOTIFICATION_SERVICE_PARAMETERS = [
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+       [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+    ];
+
     const ASSET_POSTING_SERVICE_PARAMETERS = [
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
@@ -2605,6 +2622,7 @@ class ServiceParametersHelper
         ConstantHelper::FIXED_ASSET_MERGER => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_REV_IMP => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::MAINT_BOM =>self::MAINT_BOM_SERVICE_PARAMETERS,
+        ConstantHelper::DEFECT_NOTIFICATION =>self::DEFECT_NOTIFICATION_SERVICE_PARAMETERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_SERVICE_PARAMETERS,
         ConstantHelper::FIXEDASSET=> self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => self::GATE_ENTRY_SERVICE_PARAMETERS,

@@ -634,6 +634,7 @@ class ConstantHelper
     const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
     const MAINT_BOM = 'maint-bom';
     const MAINT_WO = 'maint-wo';
+    const DEFECT_NOTIFICATION = 'defect-notification';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';
@@ -779,6 +780,7 @@ class ConstantHelper
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
         self::MAINT_BOM=>'PlantMaintBom',
         self::MAINT_WO=>'PlantMaintWo',
+        self::DEFECT_NOTIFICATION=>'DefectNotification',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',

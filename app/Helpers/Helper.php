@@ -1149,7 +1149,8 @@ class Helper
         $book = Book::where('id', $bookId)->first();
         $bookTypeServiceAlias = $book?->service?->alias;
         $currUser = Helper::userCheck();
-
+        
+        
         if ($docStatus == ConstantHelper::DRAFT || $docStatus == ConstantHelper::REJECTED) {
             if ($user->auth_user_id === $createdBy) {
                 $draft = true;
@@ -1170,6 +1171,7 @@ class Helper
                 })
                 ->orderByDesc('min_value')
                 ->first();
+                
 
             if ($approvalWorkflow) {
                 $approve = true;
@@ -1182,6 +1184,7 @@ class Helper
                 $revoke = true;
             }
         }
+       
         if ($docStatus == ConstantHelper::APPROVED || $docStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) {
             $amendmentWorkflow = AmendmentWorkflow::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
@@ -1744,7 +1747,7 @@ class Helper
         $docApproval->approval_date = now();
         $docApproval->revision_number = $revisionNumber;
         $docApproval->remarks = $remarks;
-        $docApproval->user_id = $user->auth_user_id;
+        $docApproval->user_id = 2;
         // $user_type = null;
         // if (Auth::guard('web')->check()) {
         //     $user_type = 'user';
@@ -2779,7 +2782,6 @@ class Helper
                     $modelData['attachment'] = json_encode($modelData['attachment']);
                 }
                 $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
-
                 array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
 
                 /*Media backup*/
@@ -3092,6 +3094,9 @@ class Helper
         $organizationMenu = OrganizationMenu::withDefaultGroupCompanyOrg()->where([
             ['alias', $menuAlias]
         ])->first();
+       
+       
+     
         if (!isset($organizationMenu)) {
             return [
                 'services' => [],
@@ -3134,6 +3139,7 @@ class Helper
                         'message' => 'All Data Found'
                     ];
                 } else {
+                    
                     $serviceIds = $services?->erp_service_ids ?? [];
                     $bookIds = $services?->book_ids ?? [];
                     $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds)->when($selectedServiceAlias, function ($aliasQuery) use ($selectedServiceAlias) {

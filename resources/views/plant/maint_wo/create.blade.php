@@ -14,7 +14,7 @@
 								<h2 class="content-header-title float-start mb-0">Maintenance Order</h2>
 								<div class="breadcrumb-wrapper">
 									<ol class="breadcrumb">
-										<li class="breadcrumb-item"><a href="index.html">Home</a>
+										<li class="breadcrumb-item"><a href="{{route('/')}}">Home</a>
 										</li>  
 										<li class="breadcrumb-item active">Add New</li> 
 									</ol>
@@ -26,16 +26,9 @@
 						<div class="form-group breadcrumb-right">   
 							<button  class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-btn"><i data-feather='save'></i> Save as Draft</button> 
-                            <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-                            <!--
-                                                        <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button> 
-                                                        <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button>  
-                            -->
-							<button type="submit" form="maint-wo-form" class="btn btn-primary btn-sm" id="submit-btn">
+                           <button type="submit" form="maint-wo-form" class="btn btn-primary btn-sm" id="submit-btn">
 								<i data-feather="check-circle"></i> Submit
 							</button>
-							
-							<button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Close</button>
 						</div>
 					</div>
 				</div>
@@ -49,7 +42,7 @@
                     <input type="hidden" name="doc_prefix" id="doc_prefix">
                     <input type="hidden" name="doc_suffix" id="doc_suffix">
                     <input type="hidden" name="doc_no" id="doc_no">
-                    <input type="hidden" name="document_status" id="document_status" value="">
+                    <input type="hidden" name="document_status" id="document_status">
                     <input type="hidden" name="spare_parts" id="spare_parts">
                     <input type="hidden" name="checklist_data" id="checklist_data">
                     <input type="hidden" name="equipment_details" id="equipment_details">
@@ -113,20 +106,20 @@
                                                     </div> 
                                                 </div>
 												  
-													 <div class="row align-items-center mb-1">
-                                                            <div class="col-md-3"> 
-                                                                <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                                            </div>  
+												<div class="row align-items-center mb-1">
+													<div class="col-md-3"> 
+														<label class="form-label">Location <span class="text-danger">*</span></label>  
+													</div>  
 
-                                                            <div class="col-md-5">  
-                                                                <select class="form-select" name="location_id" id="location_id" required>
-                                                                    <option value="">Select Location</option>
-                                                                    @foreach($locations ?? [] as $location)
-                                                                        <option value="{{ $location->id }}">{{ $location->store_name }}</option>
-                                                                    @endforeach
-                                                                </select>
-                                                            </div>
-                                                         </div>
+													<div class="col-md-5">  
+														<select class="form-select" name="location_id" id="location_id" required>
+															<option value="">Select Location</option>
+															@foreach($locations ?? [] as $location)
+																<option value="{{ $location->id }}">{{ $location->store_name }}</option>
+															@endforeach
+														</select>
+													</div>
+													</div>
 														
 														 
 												
@@ -143,83 +136,6 @@
                                                         </div>
                                                     </div>
                                             </div> 
-                                            
-                                            <div class="col-md-4"> 
-
-                                                    <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                        <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                            <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No. 
-                                                                <select class="form-select">
-                                                                    <option>00</option>
-                                                                    <option>01</option>
-                                                                    <option>02</option>
-                                                                    <option>03</option>
-                                                                </select>
-                                                            </strong>
-                                                            
-                                                        </h5>
-                                                        <ul class="timeline ms-50 newdashtimline ">
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepak Kumar</h6> 
-                                                                        <span class="badge rounded-pill badge-light-primary">Amendment</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Aniket Singh</h6> 
-                                                                        <span class="badge rounded-pill badge-light-danger">Rejected</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-warning timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deewan Singh</h6>
-                                                                        <span class="badge rounded-pill badge-light-warning">Pending</span>
-                                                                    </div>
-                                                                    <h5>(5 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-info timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Brijesh Kumar</h6>
-                                                                        <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(10 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li> 
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-danger timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepender Singh</h6>
-                                                                       <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(5 day ago)</h5>
-                                                                    <p><a href="#"><i data-feather="download"></i></a> Description will come here </p> 
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-
-                                                </div>
-
                                         </div> 
                                 </div>
                             </div>
@@ -271,11 +187,14 @@
                                                     <div class="col-md-3 equipment-detail-field">
                                                         <div class="mb-1"  id="defect_type_field">
                                                             <label class="form-label">Defect Type</label>
-                                                            <select class="form-select" disabled>
-                                                                <option>Select</option> 
-                                                                <option>General Defect</option> 
-                                                                <option selected>Breakdown</option> 
-                                                                <option>Quality-based</option> 
+                                                            <select class="form-select" name="defect_type" id="defect_type_select">
+                                                                <option value="">Select</option> 
+                                                                <option value="General Defect">General Defect</option> 
+                                                                <option value="Breakdown">Breakdown</option> 
+                                                                <option value="Quality-based">Quality-based</option> 
+                                                                <option value="Preventive">Preventive</option>
+                                                                <option value="Corrective">Corrective</option>
+                                                                <option value="Emergency">Emergency</option>
                                                             </select>  
                                                         </div>
                                                     </div>
@@ -951,90 +870,36 @@
 										  </tr>
 										</thead>
 										<tbody>
-											<tr class="trail-bal-tabl-none">
-											    <td class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_1">
-														<label class="form-check-label" for="defect_row_1"></label>
-													</div> 
-												</td>
-												<td><strong>23-07-2025</strong></td> 
-												<td>DEF</td>
-												<td>001</td>
-												<td>Plant</td>
-												<td>Breakdown</td>
-												<td>High</td>
-												<td>Please resolve ASAP</td>
-												<td>Aniket Singh</td>
-											</tr>
-											<tr class="trail-bal-tabl-none">
-											    <td class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_2">
-														<label class="form-check-label" for="defect_row_2"></label>
-													</div> 
-												</td>
-												<td><strong>23-07-2025</strong></td> 
-												<td>DEF</td>
-												<td>001</td>
-												<td>Plant</td>
-												<td>Breakdown</td>
-												<td>High</td>
-												<td>Please resolve ASAP</td>
-												<td>Aniket Singh</td>
-											</tr>
-											
-											<tr class="trail-bal-tabl-none">
-											    <td class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input" name="defect_selection" id="defect_row">
-														<label class="form-check-label" for="defect_row"></label>
-													</div> 
-												</td>
-												<td><strong>23-07-2025</strong></td> 
-												<td>DEF</td>
-												<td>001</td>
-												<td>Plant</td>
-												<td>Breakdown</td>
-												<td>High</td>
-												<td>Please resolve ASAP</td>
-												<td>Aniket Singh</td>
-											</tr>
-											
-											
-											<tr class="trail-bal-tabl-none">
-											    <td class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input" name="defect_selection" id="defect_row">
-														<label class="form-check-label" for="defect_row"></label>
-													</div> 
-												</td>
-												<td><strong>23-07-2025</strong></td> 
-												<td>DEF</td>
-												<td>001</td>
-												<td>Plant</td>
-												<td>Breakdown</td>
-												<td>High</td>
-												<td>Please resolve ASAP</td>
-												<td>Aniket Singh</td>
-											</tr>
-											
-											<tr class="trail-bal-tabl-none">
-											    <td class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input" name="defect_selection" id="defect_row">
-														<label class="form-check-label" for="defect_row"></label>
-													</div> 
-												</td>
-												<td><strong>23-07-2025</strong></td> 
-												<td>DEF</td>
-												<td>001</td>
-												<td>Plant</td>
-												<td>Breakdown</td>
-												<td>High</td>
-												<td>Please resolve ASAP</td>
-												<td>Aniket Singh</td>
-											</tr>
+											@if(isset($defectNotifications) && $defectNotifications->count() > 0)
+												@foreach($defectNotifications as $index => $defect)
+													<tr class="trail-bal-tabl-none">
+														<td class="customernewsection-form">
+															<div class="form-check form-check-primary custom-radio">
+																<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_{{ $defect->id }}" 
+																	data-defect-id="{{ $defect->id }}"
+																	data-equipment="{{ $defect->equipment?->name ?? 'N/A' }}"
+																	data-defect-type="{{ $defect->defectType?->name ?? 'N/A' }}"
+																	data-priority="{{ $defect->priority ?? '' }}"
+																	data-problem="{{ $defect->problem ?? '' }}"
+																	data-reported-by="{{ $defect->creator?->name ?? 'N/A' }}">
+																<label class="form-check-label" for="defect_row_{{ $defect->id }}"></label>
+															</div> 
+														</td>
+														<td><strong>{{ $defect->document_date ? \Carbon\Carbon::parse($defect->document_date)->format('d-m-Y') : 'N/A' }}</strong></td> 
+														<td>{{ $defect->book?->book_code ?? 'N/A' }}</td>
+														<td>{{ $defect->document_number ?? 'N/A' }}</td>
+														<td>{{ $defect->equipment?->name ?? 'N/A' }}</td>
+														<td>{{ $defect->defectType?->name ?? 'N/A' }}</td>
+														<td>{{ $defect->priority ?? '' }}</td>
+														<td>{{ $defect->problem ?? '' }}</td>
+														<td>{{ $defect->creator?->name ?? 'N/A' }}</td>
+													</tr>
+												@endforeach
+											@else
+												<tr class="trail-bal-tabl-none">
+													<td colspan="9" class="text-center">No defect notifications found</td>
+												</tr>
+											@endif
 											 
 											  
 										</tbody>
@@ -1450,7 +1315,7 @@
 				equipment_name: $('#equipment_name_hidden').val() || $('#equipment_name').val() || '',
 				equipment_id: $('#equipment_id').val() || '',
 				equipment_maintenance_type: $('#maintenance_type').val() || '',
-				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_field select').val() || '',
+				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_select').val() || '',
 				equipment_problem: $('#problem_hidden').val() || $('#problem_field input').val() || '',
 				equipment_priority: $('#priority_field select').val() || '',
 				equipment_report_date: $('#report_date_time_hidden').val() || $('#report_date_field input').val() || '',
@@ -1810,7 +1675,14 @@
 			$('#equipment_name').val(equipmentName);
 			$('#equipment_id').val(selectedEquipment.data('equipment-id'));
 			
+			// Show equipment detail fields including defect type
+			$('.equipment-detail-field').show();
+			
+			// Enable defect type field for user selection
+			$('#defect_type_select').prop('disabled', false);
+			
 			console.log('Equipment selected:', equipmentName);
+			console.log('Equipment detail fields shown');
 			
 			// Close modal manually
 			$('#reference').modal('hide');
@@ -1841,7 +1713,16 @@
 			
 			// Populate equipment detail fields with defect notification data
 			$('#equipment_name').val(equipment);
-			$('#defect_type_field select').val(defectType).prop('disabled', true);
+			
+			// Handle defect type - add option if it doesn't exist
+			var defectTypeSelect = $('#defect_type_select');
+			if (defectType && defectTypeSelect.find('option[value="' + defectType + '"]').length === 0) {
+				// Add the defect type as a new option if it doesn't exist
+				defectTypeSelect.append('<option value="' + defectType + '">' + defectType + '</option>');
+				console.log('Added new defect type option:', defectType);
+			}
+			defectTypeSelect.val(defectType).prop('disabled', true);
+			
 			$('#problem_field input').val(problem).prop('disabled', true);
 			$('#priority_field select').val(priority).prop('disabled', true);
 			$('#report_date_field input').val(date).prop('disabled', true);
@@ -1893,7 +1774,7 @@
 			$('.equipment-detail-field').show();
 			
 			// Set all fields as readonly with default values
-			$('#defect_type_field select').prop('disabled', true).val('General Defect');
+			$('#defect_type_select').prop('disabled', true).val('General Defect');
 			$('#defect_type_hidden').val('General Defect');
 			
 			$('#problem_field input').prop('disabled', true).val('Please resolve ASAP');
