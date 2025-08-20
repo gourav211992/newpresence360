@@ -634,6 +634,8 @@ class ConstantHelper
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
     const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
+    const MAINT_WO = 'maint-wo';
+    const DEFECT_NOTIFICATION = 'defect-notification';
     const MAINT_BOM = 'maint-bom';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
@@ -779,6 +781,8 @@ class ConstantHelper
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
         self::MAINT_BOM=>'PlantMaintBom',
 
+        self::MAINT_WO=>'PlantMaintWo',  
+        self::DEFECT_NOTIFICATION=>'DefectNotification',
 
         self::ITEM_SERVICE_ALIAS => 'Item',
         self::LEDGERS_SERVICE_ALIAS => 'Ledger',

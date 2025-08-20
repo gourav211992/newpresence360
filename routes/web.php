@@ -56,6 +56,7 @@ use App\Http\Controllers\CostCenter\CostGroupController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\Plant\DefectNotificationController;
 use App\Http\Controllers\DefectTrackerController;
 use App\Http\Controllers\DiscountMasterController;
 use App\Http\Controllers\DocumentApprovalController;
@@ -147,6 +148,7 @@ use App\Http\Controllers\PaymentTermController;
 use App\Http\Controllers\PaymentVoucherController;
 use App\Http\Controllers\PhysicalStockAccountController;
 use App\Http\Controllers\Plant\MaintBomController;
+use App\Http\Controllers\Plant\MaintWoController;
 use App\Http\Controllers\PriceVarianceAccountController;
 use App\Http\Controllers\ProductSectionController;
 use App\Http\Controllers\ProductSpecificationController;
@@ -183,6 +185,7 @@ use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseMultiMappingController;
 use App\Http\Controllers\WarehouseStructureController;
+use App\Models\DefectNotification;
 
 /*
 |--------------------------------------------------------------------------
@@ -2748,7 +2751,10 @@ Route::middleware(['user.auth'])->group(function () {
 
 
     Route::resource('asset-category', AssetCategoryController::class);
-
+    Route::get('plant/bom/get-item-attribute', [MaintBomController::class, 'getItemAttribute'])->name('maint-bom.attr');
+    Route::get('plant/search', [MaintBomController::class, 'search'])->name('plant.search');
+    Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
+    
 
     Route::resource('plant/bom', MaintBomController::class)->names([
         'index' => 'maint-bom.index',
@@ -2758,9 +2764,25 @@ Route::middleware(['user.auth'])->group(function () {
         'show' => 'maint-bom.show',
         'edit' => 'maint-bom.edit',
     ]);
-    Route::get('plant/bom/get-item-attribute', [MaintBomController::class, 'getItemAttribute'])->name('maint-bom.attr');
-    Route::get('plant/search', [MaintBomController::class, 'search'])->name('plant.search');
-    Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
+    Route::resource('plant/maint-wo', MaintWoController::class)->names([
+        'create' => 'maint-wo.create',
+        'store' => 'maint-wo.store',
+        'update' => 'maint-wo.update',
+        'show' => 'maint-wo.show',
+        'edit' => 'maint-wo.edit',
+    ]);
+    Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
+   
+    Route::resource('plant/defect-noti', DefectNotificationController::class)
+    ->names([
+        'index' => 'defect-notification.index',
+        'create' => 'defect-notification.create',
+        'store' => 'defect-notification.store',
+        'update' => 'defect-notification.update',
+        'show' => 'defect-notification.show',
+        'edit' => 'defect-notification.edit',
+    ]);
+   
     
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
