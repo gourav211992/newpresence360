@@ -993,6 +993,12 @@
 @endsection
 
 @section('scripts')
+	<script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
+    @include('plant.maint-wo.common-js-route',["wo" => isset($wo) ? $order : null, "route_prefix" => "maint-wo"])
+    <script src="{{ asset("assets\\js\\modules\\maint-wo\\common-script.js") }}"></script>
+  
+
+
 	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 	<script>
 		const itemsData = @json($items);

@@ -13,8 +13,8 @@ return new class extends Migration
             $table->unsignedBigInteger('maintenance_bom_id')->nullable()->after('start_date');
         });
 
-        // Update erp_equip_maintenance_details_history
-        Schema::table('erp_equip_maintenance_details_history', function (Blueprint $table) {
+        // Update erp_equip_maintenance_detail_histories
+        Schema::table('erp_equip_maintenance_detail_histories', function (Blueprint $table) {
             $table->date('start_date')->nullable()->after('maintenance_type_id');
             $table->unsignedBigInteger('maintenance_bom_id')->nullable()->after('start_date');
         });
@@ -32,12 +32,12 @@ return new class extends Migration
             }
         });
 
-        // Rollback for erp_equip_maintenance_details_history
-        Schema::table('erp_equip_maintenance_details_history', function (Blueprint $table) {
-            if (Schema::hasColumn('erp_equip_maintenance_details_history', 'start_date')) {
+        // Rollback for erp_equip_maintenance_detail_histories
+        Schema::table('erp_equip_maintenance_detail_histories', function (Blueprint $table) {
+            if (Schema::hasColumn('erp_equip_maintenance_detail_histories', 'start_date')) {
                 $table->dropColumn('start_date');
             }
-            if (Schema::hasColumn('erp_equip_maintenance_details_history', 'maintenance_bom_id')) {
+            if (Schema::hasColumn('erp_equip_maintenance_detail_histories', 'maintenance_bom_id')) {
                 $table->dropColumn('maintenance_bom_id');
             }
         });
