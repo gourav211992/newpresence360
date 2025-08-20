@@ -28,7 +28,7 @@
             <div class="content-header pocreate-sticky">
 				<div class="row">
                     @include('layouts.partials.breadcrumb-add-edit', [
-                        'title' => 'Request For Quotation', 
+                        'title' => 'PickUp DropOff Schedule', 
                         'menu' => 'Home', 
                         'menu_url' => url('home'),
                         'sub_menu' => 'Add New'
@@ -105,7 +105,7 @@
                                         <div class="col-md-8"> 
                                             <input type = "hidden" name = "type" id = "type_hidden_input"></input>
                                             @if (isset($order))
-                                                <input type = "hidden" value = "{{$order -> id}}" name = "pds_header_id"></input>
+                                                <input type = "hidden" value = "{{$order -> id}}" name = "pickup_header_id"></input>
                                             @endif
 
                                             <div class="row align-items-center mb-1 d-none">
@@ -209,25 +209,25 @@
                                                 <div class="col-md-3">
                                                     <div class="mb-1">
                                                         <label class="form-label">Trip No. <span class="text-danger">*</span></label> 
-                                                        <input type="text" name='trip_no' value="{{ isset($trip) ? $trip->trip_no : '' }}" class="form-control" />
+                                                        <input type="text" name='trip_no' value="{{ isset($order) ? $order->trip_no : '' }}" class="form-control" />
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <div class="mb-1">
                                                         <label class="form-label">Vehicle No. <span class="text-danger">*</span></label> 
-                                                        <input type="text" name='vehicle' value="{{ isset($trip) ? $trip->vehicle_no : '' }}" class="form-control" />
+                                                        <input type="text" name='vehicle' value="{{ isset($order) ? $order->vehicle_no : '' }}" class="form-control" />
                                                     </div>
                                                 </div>  
                                                 <div class="col-md-3">
                                                     <div class="mb-1">
                                                         <label class="form-label">Champ Name <span class="text-danger">*</span></label> 
-                                                        <input type="text" name='champ' value="{{ isset($trip) ? $trip->champ_name : '' }}" class="form-control" />
+                                                        <input type="text" name='champ' value="{{ isset($order) ? $order->champ : '' }}" class="form-control" />
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <div class="mb-1">
                                                         <label class="form-label">Total Items <span class="text-danger">*</span></label>
-                                                        <input type="text" disabled name='item_count' value="{{ isset($trip) ? $trip->total_items : (isset($order) && isset($order->items) ? count($order->items) : '') }}" class="form-control" /> 
+                                                        <input type="text" id='item_count' disabled name='item_count' value="{{ isset($order) ? $order->total_item_count : (isset($order) && isset($order->pickupItems) ? count($order->pickupItems) : '') }}" class="form-control" /> 
                                                     </div>
                                                 </div>
                                             </div>
@@ -251,10 +251,10 @@
                                                 <a href="#" onclick = "deleteItemRows();" class="btn btn-sm btn-outline-danger me-50"><i data-feather="x-circle"></i> Delete</a>
                                                 <a href="#" onclick = "addItemRow();" id = "add_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary"><i data-feather="plus"></i> Add Item</a>
                                             </div>
-                                            @include('pds.items_table')
                                         </div> 
+                                        @include('pds.items_table')
                                     </div>
-                                    <div class="border-bottom mb-2 pb-25">
+                                    <div class="border-bottom mb-2 pb-25 d-none">
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="newheader "> 
@@ -264,7 +264,7 @@
                                             </div>
                                             <div class="col-md-12">
                                                 <textarea name="instructions" id="summernote" class="form-control" placeholder="Enter PDS Instruction" >{{ isset($order->instructions) ? $order->instructions : '' }}</textarea>
-                                                @error('pds_instructions')
+                                                @error('pickup_instructions')
                                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                                 @enderror
                                             </div>
@@ -434,7 +434,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <div>
-                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Request For Quotation
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend PickUp DropOff Schedule
                             </h4>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -546,17 +546,7 @@
                             <label class="form-label">Email To</label>
                             <input type='hidden' id='mailer_ids' value='' name="email_to_id" class="cannot_disable">
                             <select name="email_to[]" id="mailer_select" class="select2 form-control cannot_disable">
-                                @if(isset($order) && $order->vendors() && count($order->vendors()) > 0)
-                                    @foreach ($order->vendors() as $supplier)
-                                        <option value="{{ $supplier->email }}" data-id="{{ $supplier->id }}">{{ $supplier->company_name }}</option>
-                                    @endforeach
-                                @else
-                                @foreach ($suppliers as $index => $sup)
-                                    <option value="{{ $sup->email }}" data-id="{{ $sup->id }}" {{ isset($order) && $sup->id == $order->created_by ? 'selected' : '' }}>
-                                        {{ $sup->company_name }}
-                                    </option>
-                                @endforeach
-                                @endif
+                                
                             </select>
                         </div>
                     </div>
@@ -871,7 +861,6 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             const selectedOption = document.getElementById(selectElementId);
             
             //Get Addresses (Billing + Shipping)
-            changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
         }
 
         function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKeyNames, routeUrl, resetDropdowns = null, resetDropdownIdsArray = [])
@@ -1197,6 +1186,12 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                         <label class="form-check-label" for="item_checkbox_${newIndex}"></label>
                     </div>
                 </td>
+                <td class="d-none">
+                    <select id="item_type_${newIndex}" name="item_type[]" class="form-select mw-100">
+                        <option value="Pickup" selected>Pickup</option>
+                        // <option value="Dropoff">Dropoff</option>
+                    </select>
+                </td>
                 <td>
                     <input type="text" id="items_dropdown_${newIndex}" name="item_code[]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="" data-code="" data-id="" hsn_code="" item-name="" specs="[]" attribute-array="[]" value="">
                     <input type="hidden" name="item_id[]" id="items_dropdown_${newIndex}_value">
@@ -1216,19 +1211,26 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                     <input type="text" id="item_qty_${newIndex}" name="item_qty[]" class="form-control mw-100 text-end"  placeholder="Qty" onblur="setFormattedNumericValue(this);">
                 </td>
                 <td>
-                    <select id="item_type_${newIndex}" name="item_type[]" class="form-select mw-100">
-                        <option value="Pickup" selected>Pickup</option>
-                        <option value="Dropoff">Dropoff</option>
-                    </select>
+                    <input type="text" id="item_uid_${newIndex}" name="item_uid[]" class="form-select mw-100" placeholder="UID">
+                </td>
+                <td> 
+                    <div class="form-check form-check-primary custom-checkbox">
+                        <input type="checkbox" class="form-check-input" name="item_delivery_cancelled[]" id="item_delivery_cancelled_${newIndex}" del-index="${newIndex}">
+                        <label class="form-check-label" for="item_delivery_cancelled_${newIndex}"></label>
+                    </div>
                 </td>
                 <td> 
                     <input type="text" id="item_customer_${newIndex}"  name="item_customer[]" class="form-control mw-100 ui-autocomplete-input" data-customer='' onblur = "onChangeCustomer('item_customer_${newIndex}',${newIndex}, true);" autocomplete="off" placeholder="Customer">
+                    <input type="hidden" id="item_customer_id_${newIndex}"  name="item_customer_id[]" class="form-control mw-100">
+                </td>
+                <td> 
+                    <input type="text" id="item_customer_name_${newIndex}"  name="item_customer_name[]" class="form-control mw-100 " placeholder="Customer Name">
                 </td>
                 <td>
-                    <input type="text" id="item_mobile_${newIndex}" name="item_mobile[]" class="form-control mw-100" placeholder="Mobile">
+                    <input type="text" id="item_mobile_${newIndex}" name="item_mobile[]" class="form-control mw-100 ui-autocomplete-input" placeholder="Mobile">
                 </td>
                 <td>
-                    <input type="text" id="item_email_${newIndex}" name="item_email[]" class="form-control mw-100" placeholder="Email">
+                    <input type="text" id="item_email_${newIndex}" name="item_email[]" class="form-control mw-100 ui-autocomplete-input" placeholder="Email">
                 </td>
                 <td>
                     <div class="d-flex">
@@ -1241,9 +1243,11 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             `;
             tableElementBody.appendChild(newItemRow);
             initializeAutocomplete1("items_dropdown_" + newIndex, newIndex);
+            initializeAutocompleteCustomer("item_customer_" + newIndex, newIndex);
             renderIcons();
             disableHeader();
-
+            const allRowsNew = document.getElementsByClassName('item_row_checks');
+            $("#item_count").val(allRowsNew.length);
             const qtyInput = document.getElementById('item_qty_' + newIndex);
 
             const itemCodeInput = document.getElementById('items_dropdown_' + newIndex);
@@ -1251,6 +1255,215 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             const storeCodeInput = document.getElementById('item_store_from_' + newIndex);
         }
 
+        function initializeAutocompleteCustomer(selector,index) {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:'customer_list'
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.company_name} (${item.customer_code})`,
+                                    name: `${item.company_name}`,
+                                    code: item.customer_code || '',
+                                    item_id: item.id,
+                                    type : item?.customer_type,
+                                    phone_no : item?.mobile,
+                                    email : item?.email,
+                                    gstin : item?.compliances?.gstin_no
+
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    console.log(ui.item);
+                    var currencyCode = ui.item.currency_code;
+                    var customerType = ui.item.type;
+                    var phoneNo = ui.item.phone_no;
+                    var email = ui.item.email;
+                    var gstIn = ui.item.gstin;
+                    console.log(customerType);
+                    $(this).data('customer', ui.item);
+                    if (customerType === 'Cash') {
+                        console.log('init check');
+                        initializeCashCustomerPhoneDropdown();
+                        initializeCashCustomerEmailDropdown();
+                    } else {
+                        console.log(ui.item);
+                        if(phoneNo || email || ui.item){
+                            enableDisableCustomerFields(false);
+                            $("#item_customer_" + index).val(ui.item.code);
+                            $("#item_customer_id_" + index).val(ui.item.id);
+                            $("#item_customer_name_" + index).val(ui.item.name);
+                            $("#item_mobile_" + index).val(phoneNo ? phoneNo : '');
+                            $("#item_email_" + index).val(email ? email : '');
+                        }
+                        else{
+                            deInitializeCashCustomerFlow();
+                        }
+                    }
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#item_customer_" + index).val('');
+                        $("#item_customer_id_" + index).val('');
+                        $("#item_customer_name_" + index).val('');
+                        $("#item_mobile_" + index).val('');
+                        $("#item_email_" + index).val('');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+        function initializeCashCustomerPhoneDropdown(selector, index)
+        {
+            enableDisableCustomerFields(false);
+            $(`#${selector}`).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'cash_customer_phone_no',
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item.phone_no || '',
+                                    email: item.email || '',
+                                    gstin: item.gstin || '',
+                                    name: item.name || ''
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $(`#item_email_${index}`).val(ui.item.email || '');
+                    $(`#item_customer_name_${index}`).val(ui.item.name || '');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val('');
+                        $(`#item_email_${index}`).val('');
+                        $(`#item_customer_name_${index}`).val('');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
+        function initializeCashCustomerEmailDropdown(selector, index)
+        {
+            $(`#${selector}`).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'cash_customer_email',
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item.email || '',
+                                    phone_no: item.phone_no || '',
+                                    gstin: item.gstin || '',
+                                    name: item.name || ''
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $(`#item_mobile_${index}`).val(ui.item.phone_no || '');
+                    $(`#item_customer_name_${index}`).val(ui.item.name || '');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val('');
+                        $(`#item_mobile_${index}`).val('');
+                        $(`#item_customer_name_${index}`).val('');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
+        function deInitializeCashCustomerFlow(index)
+        {
+            let customerdata = document.getElementById(`#item_customer_${index}`).getAttribute('data-customer');
+
+            $(`#item_mobile_${index}`).val(customerdata.phone_no || '');
+            $(`#item_email_${index}`).val(customerdata.email || '');
+            $(`#item_customer_name_${index}`).val(customerdata.name || '');
+            $(`#item_customer_${index}`).val(customerdata.customer_code || '');
+            $(`#item_customer_id_${index}`).val(customerdata.id || '')
+            enableDisableCustomerFields(index,true);
+
+        }
+        
+        function enableDisableCustomerFields(index,disabled = false)
+        {
+            if (disabled) {
+                $(`#item_customer_name_${index}`).attr('readonly', true);
+                $(`#item_mobile_${index}`).attr('readonly', true);
+                $(`#item_email_${index}`).attr('readonly', true);
+            } else {
+                $(`#item_mobile_${index}`).removeAttr('readonly');
+                $(`#item_mobile_${index}`).val('');
+                $(`#item_email_${index}`).removeAttr('readonly');
+                $(`#item_email_${index}`).val('');
+                $(`#item_customer_name_${index}`).removeAttr('readonly');
+                $(`#item_customer_name_${index}`).val('');
+            }
+            
+        }
         function deleteItemRows()
         {
             var deletedItemIds = JSON.parse(localStorage.getItem('deletedSiItemIds'));
@@ -1273,6 +1486,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             }
             localStorage.setItem('deletedSiItemIds', JSON.stringify(deletedItemIds));
             const allRowsNew = document.getElementsByClassName('item_row_checks');
+            $("#item_count").val(allRowsNew.length);
             if (allRowsNew.length > 0) {
                 disableHeader();
             } else {
@@ -1697,7 +1911,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             const variance = $(`#item_variance_qty_${index}`); // Get the next <td> element
             const value = currentQty * currentRate;
             $(`#item_value_${index}`).val(value);
-            selectedName = $("#pds_item_id_" + index).val();
+            selectedName = $("#pickup_item_id_" + index).val();
             selectedValue = {'physical_qty': currentQty, 'rate': currentRate, 'variance': variance.val()};
             if (selectedValue) {
                 changed_item[selectedName] = selectedValue;
@@ -2042,7 +2256,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
             //     $("#store_id_input").trigger('change');
             // }
             //Item Discount
-            items.data.forEach((item, itemIndex) => {
+            items.forEach((item, itemIndex) => {
                 itemUomsHTML = ``;
                 if (item.item.uom && item.item.uom.id) {
                     itemUomsHTML += `<option selected value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
@@ -2434,7 +2648,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                             current-doc-id="0"
                             document-id="${row.id}"
                             pi-item-id="${row.id}"
-                            balance_qty="${row.pds_balance_qty}">
+                            balance_qty="${row.pickup_balance_qty}">
                     </div>`;
                 }
             },
@@ -2591,7 +2805,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                 console.log(allCheckBoxes);
                 documentDetails.push({
                     'pi_item_ids' : allCheckBoxes[index].getAttribute('document-id'),
-                    'quantity' : allCheckBoxes[index].getAttribute('pds_balance_qty'),
+                    'quantity' : allCheckBoxes[index].getAttribute('pickup_balance_qty'),
                     'item_id' : allCheckBoxes[index].getAttribute('pi-item-id')
                 });
             }
@@ -2651,8 +2865,8 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                                     </select>
                                 </td>
                                 <td class="numeric-alignment">
-                                    <input type="text" id="item_qty_${itemRowIndex}" value="${item.pds_balance_qty}" oninput='changeItemQty(this,'${itemRowIndex}')' name="item_qty[]"
-                                        max="${item.pds_balance_qty}" class="form-control mw-100 text-end">
+                                    <input type="text" id="item_qty_${itemRowIndex}" value="${item.pickup_balance_qty}" oninput='changeItemQty(this,'${itemRowIndex}')' name="item_qty[]"
+                                        max="${item.pickup_balance_qty}" class="form-control mw-100 text-end">
                                 </td>
                                 <td>
                                     <input type="text" id="item_remarks_${itemRowIndex}" name="item_remarks[]" class="form-control mw-100" value="${item.remarks || ''}">
@@ -3444,7 +3658,7 @@ function populateDataTable(items) {
     items.forEach((item, index) => {
         tableBody += `
             <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');" data-detail-id="${item.id}" data-id="${item.id}">
-                <input type="hidden" id="pds_item_id_${index}" name="pds_item_id[]" value="${item.id}" ${item.is_editable ? '' : 'readonly'}>
+                <input type="hidden" id="pickup_item_id_${index}" name="pickup_item_id[]" value="${item.id}" ${item.is_editable ? '' : 'readonly'}>
                 <td class="customernewsection-form">
                     <div class="form-check form-check-primary custom-checkbox">
                         <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_${index}" del-index="${index}">

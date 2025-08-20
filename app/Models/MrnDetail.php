@@ -147,6 +147,11 @@ class MrnDetail extends Model
         return $this->hasMany(MrnItemLocation::class, 'mrn_detail_id');
     }
 
+    public function batches()
+    {
+        return $this->hasMany(MrnBatchDetail::class, 'detail_id');
+    }
+
     public function attributeHistories()
     {
         return $this->hasMany(MrnAttributeHistory::class, 'mrn_detail_id');

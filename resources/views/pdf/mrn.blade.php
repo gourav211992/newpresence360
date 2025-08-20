@@ -349,7 +349,7 @@
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
                     HSN Code
                 </td>
-                <td colspan="3"
+                <td colspan="4"
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
@@ -386,6 +386,9 @@
                 <td
                     style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
                     Order Qty.</td>
+                <td
+                    style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
+                    Received Qty.</td>
                 <td
                     style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
                     Receiving Qty.</td>
@@ -466,10 +469,6 @@
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
                         {{ number_format(@$poQty, 2) }}
                     </td>
-                    <td
-                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format(@$val->order_qty, 2) }}
-                    </td>
                     @php
                         $referenceType = optional($val->header)->reference_type;
                         $shortCloseQty = 0.0;
@@ -486,6 +485,14 @@
                             $balanceQty = ($poQty ?? 0.0) - $shortCloseQty - $grnQty;
                         }
                     @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ number_format(@$grnQty, 2) }}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        {{ number_format(@$val->order_qty, 2) }}
+                    </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{ number_format(@$balanceQty, 2) }}

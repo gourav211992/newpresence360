@@ -194,6 +194,7 @@
                         data-asset-name="{{ $item?->item?->item_name }}"
                         data-asset-brand-name="{{ $item?->item?->brand_name }}"
                         data-asset-model-number="{{ $item?->item?->model_no }}"
+                        data-asset-procurement-type="{{ $item?->po?->procurement_type ?? null }}"
                         data-asset-expected-life="{{ $item?->item?->expected_life }}"
                         data-asset-salvage-perc="{{ $item?->item?->getSalvagePercentage() }}"
                         data-asset='@json(["has_asset" => 1])'

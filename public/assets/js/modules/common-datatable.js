@@ -241,7 +241,7 @@ function initializeDataTableCustom(
             drawCallback: function () {
                 feather.replace();
 
-                let $vendorSelect = $("#prModal .po-order-detail .vendor-select");
+               /* let $vendorSelect = $("#prModal .po-order-detail .vendor-select");
                 if ($vendorSelect.data("select2")) {
                     $vendorSelect.select2("destroy");
                 }
@@ -259,7 +259,7 @@ function initializeDataTableCustom(
                     escapeMarkup: function (markup) {
                         return markup;
                     },
-                });
+                }); */
             },
             rowCallback: function (row, data, index) {
                 $(row).attr("id", "row_" + data.DT_RowIndex);

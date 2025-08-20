@@ -256,7 +256,8 @@
                                                                             @if (!empty($parentDetails))
                                                                                 <select
                                                                                     name="details[{{ $groupIndex }}][parent_id][]"
-                                                                                    class="select2" multiple>
+                                                                                    class="form-select mw-100 parent-dropdown select2 parent_id"
+                                                                                    multiple style="min-width: 200px;">
                                                                                     @foreach ($parentDetails as $parent)
                                                                                         <option
                                                                                             value="{{ $parent->id }}"

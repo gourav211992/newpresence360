@@ -634,6 +634,8 @@ class ConstantHelper
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
     const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
+    const MAINT_WO = 'maint-wo';
+    const DEFECT_NOTIFICATION = 'defect-notification';
     const MAINT_BOM = 'maint-bom';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
@@ -694,7 +696,6 @@ class ConstantHelper
         self::PAYMENTS_SERVICE_ALIAS=>self::PAYMENTS_SERVICE_ALIAS,
         self::RECEIPTS_SERVICE_ALIAS=>self::RECEIPTS_SERVICE_ALIAS,
         self::FIXED_ASSET_DEPRECIATION=>self::FIXED_ASSET_DEPRECIATION,
-        self::EQPT=>self::EQPT,
         self::MAINT=>self::MAINT,
         self::FIXED_ASSET_SPLIT=>self::FIXED_ASSET_SPLIT,
         self::FIXED_ASSET_MERGER=>self::FIXED_ASSET_MERGER,
@@ -780,6 +781,8 @@ class ConstantHelper
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
         self::MAINT_BOM=>'PlantMaintBom',
 
+        self::MAINT_WO=>'PlantMaintWo',  
+        self::DEFECT_NOTIFICATION=>'DefectNotification',
 
         self::ITEM_SERVICE_ALIAS => 'Item',
         self::LEDGERS_SERVICE_ALIAS => 'Ledger',
@@ -1000,6 +1003,8 @@ class ConstantHelper
         self::CUSTOMER_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::VENDOR_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::LEDGERS_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
+        self::EQPT=>ConstantHelper::ERP_MASTER_SERVICE_TYPE
+    
     ];
     const DOC_APPROVAL_STATUS_MAPPING = [
         ConstantHelper::SUBMITTED => 'submit',

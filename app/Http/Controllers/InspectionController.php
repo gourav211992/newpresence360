@@ -18,13 +18,17 @@ use App\Models\InspectionTed;
 use App\Models\InspChecklist;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
+use App\Models\InspBatchDetail;
 use App\Models\InspectionItemAttribute;
 
 use App\Models\InspectionTedHistory;
+use App\Models\InspBatchDetailHistory;
 use App\Models\InspectionHeaderHistory;
 use App\Models\InspectionDetailHistory;
 use App\Models\InspectionItemLocation;
 use App\Models\InspectionItemAttributeHistory;
+
+use App\Models\MrnBatchDetail;
 
 use App\Models\Hsn;
 use App\Models\Tax;
@@ -63,6 +67,7 @@ use App\Models\ErpEinvoiceLog;
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\BookHelper;
+use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
@@ -366,12 +371,27 @@ class InspectionController extends Controller
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    // Check Inspection
-                    $inspectionData = is_string($component['inspectionData'])
-                            ? json_decode($component['inspectionData'], true)
-                            : $component['inspectionData'];
+                    // Check Inspection CheckLists
                     if($item && count($item->loadInspectionChecklists())) {
-                        $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
+                        $inspectionData = (isset($component['inspectionData']) && is_string($component['inspectionData']))
+                                ? json_decode($component['inspectionData'], true)
+                                : $component['inspectionData'];
+                        $inspectionValidator = InspectionHelper::validateInspectionCheckList((array) $inspectionData, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
+                    }
+
+                    // Check Item Batches
+                    if($item && $item->is_batch_no) {
+                        $batchDetails = (isset($component['batch_details']) && is_string($component['batch_details']))
+                                ? json_decode($component['batch_details'], true)
+                                : $component['batch_details'];
+                        $inspectionValidator = InspectionHelper::validateBatches((array) $batchDetails, $item);
                         if(!$inspectionValidator['status']) {
                             DB::rollBack();
                             return response() -> json([
@@ -517,24 +537,38 @@ class InspectionController extends Controller
                         $itemChecklists = is_string($component['inspectionData'])
                             ? json_decode($component['inspectionData'], true)
                             : $component['inspectionData'];
-
                         if (is_array($itemChecklists)) {
-                            foreach ($itemChecklists as $i => $val) {
-                                $inspChecklist = new InspChecklist();
-                                $inspChecklist->header_id = $inspection->id;
-                                $inspChecklist->detail_id = $inspectionDetail->id;
-                                $inspChecklist->item_id = $inspectionDetail->item_id;
-                                $inspChecklist->checklist_id = $val['checkList_id'];
-                                $inspChecklist->checklist_name = $val['checkList_name'];
-                                $inspChecklist->checklist_detail_id = $val['detail_id'];
-                                $inspChecklist->name = $val['parameter_name'];
-                                $inspChecklist->value = $val['parameter_value'];
-                                $inspChecklist->result = $val['result'];
-                                $inspChecklist->save();
-
+                            $inspChecklist = InspectionService::insertChecklistData($itemChecklists, $inspection, $inspectionDetail);
+                            if ($inspChecklist['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspChecklist['message'],
+                                    'error' => ''
+                                ], 422);
                             }
                         } else {
                             \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
+                        }
+                    }
+
+                    #Save batch details
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
+
+                        if (is_array(value: $batchDetails)) {
+                            $inspBatchDetail = InspectionService::insertBatchDetails($batchDetails, $inspection, $inspectionDetail);
+                            if ($inspBatchDetail['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspBatchDetail['message'],
+                                    'error' => ''
+                                ], 422);
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
                         }
                     }
                 }
@@ -616,8 +650,45 @@ class InspectionController extends Controller
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->first();
 
-            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader');
+            // if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+            //     $mainStore = $inspection?->erpSubStore?->is_warehouse_required;
+            //     $rejectedStore = $inspection?->rejectedSubStore?->is_warehouse_required;
+            //     if($mainStore){
+            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'main_store');
+            //     }
+            //     if($rejectedStore && $inspection->rejectedSubStore){
+            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'rejected_store');
+            //     }
+            // }
+
+            // Preconditions: approved status AND config = 'yes'
+            $approvedSet = (array) ConstantHelper::DOCUMENT_STATUS_APPROVED;
+            $isApproved  = in_array($inspection->document_status, $approvedSet, true);
+            $cfgYes      = $config && strcasecmp((string) $config->config_value, 'yes') === 0;
+            if ($isApproved && $cfgYes) {
+                // Cache relations (will lazy-load if not eager-loaded)
+                $mainSubStore     = $inspection->erpSubStore;
+                $rejectedSubStore = $inspection->rejectedSubStore;
+
+                // Compute flags (treat null as false)
+                $mainNeedsPutaway     = (int) ($mainSubStore->is_warehouse_required ?? 0) === 1;
+                $rejectedNeedsPutaway = (int) ($rejectedSubStore->is_warehouse_required ?? 0) === 1;
+
+                // Build targets and create jobs in one pass
+                $targets = [];
+                if ($mainNeedsPutaway) {
+                    $targets[] = 'main_store';
+                }
+                if ($rejectedSubStore && $rejectedNeedsPutaway) {
+                    $targets[] = 'rejected_store';
+                }
+
+                if (!empty($targets)) {
+                    $whmJob = new WhmJob();
+                    foreach ($targets as $target) {
+                        $whmJob->createJob($inspection->id, \App\Models\InspectionHeader::class, $jobType = null, $target);
+                    }
+                }
             }
 
             DB::commit();
@@ -886,10 +957,10 @@ class InspectionController extends Controller
                     }
 
                     // Check Inspection
-                    $inspectionData = is_string($component['inspectionData'])
-                            ? json_decode($component['inspectionData'], true)
-                            : $component['inspectionData'];
                     if($item && count($item->loadInspectionChecklists())) {
+                        $inspectionData = is_string($component['inspectionData'])
+                                ? json_decode($component['inspectionData'], true)
+                                : $component['inspectionData'];
                         $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
                         if(!$inspectionValidator['status']) {
                             DB::rollBack();
@@ -1865,9 +1936,9 @@ class InspectionController extends Controller
                         if($storeId) {
                             $mrnHeader->where('store_id', $storeId);
                         }
-                        if($subStoreId) {
-                            $mrnHeader->where('sub_store_id', $subStoreId);
-                        }
+                        // if($subStoreId) {
+                        //     $mrnHeader->where('sub_store_id', $subStoreId);
+                        // }
                         if($mrnDocNumber) {
                             $mrnHeader->where('id', $mrnDocNumber);
                         }
@@ -2532,31 +2603,31 @@ class InspectionController extends Controller
     }
 
     // Validate Inspection Checklist
-    private static function validateInspectionCheckList(array $component)
-    {
-        $inspectionJson = $component['inspectionData'] ?? null;
-        if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+    // private static function validateInspectionCheckList(array $component)
+    // {
+    //     $inspectionJson = $component['inspectionData'] ?? null;
+    //     if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
 
-        $inspectionItems = json_decode($inspectionJson, true);
-        if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
-            return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
-        }
+    //     $inspectionItems = json_decode($inspectionJson, true);
+    //     if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
+    //         return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+    //     }
 
-        $grouped = collect($inspectionItems)->groupBy('detail_id');
-        foreach ($grouped as $detailId => $entries) {
-            $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
-            $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
-            if (empty($param['parameter_name'])) {
-                return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
-            }
+    //     $grouped = collect($inspectionItems)->groupBy('detail_id');
+    //     foreach ($grouped as $detailId => $entries) {
+    //         $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
+    //         $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
+    //         if (empty($param['parameter_name'])) {
+    //             return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
+    //         }
 
-            if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
-                return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
-            }
-        }
+    //         if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
+    //             return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
+    //         }
+    //     }
 
-        return null; // ✅ No issues found
-    }
+    //     return null; // ✅ No issues found
+    // }
 
 
     # Helper Functions for Responses

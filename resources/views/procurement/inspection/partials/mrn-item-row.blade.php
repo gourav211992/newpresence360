@@ -4,6 +4,21 @@
         $qty = ($item->order_qty ?? 0.00) - ($item->inspection_qty ?? 0.00);
         $hasInspection = $item->is_inspection;
         $inspectionChecklistData = $hasInspection == 1 ? $item->item->loadInspectionChecklists() : [];
+        $batchDetails = $item->batches ?? [];
+        $isBatchEditable = ($item?->item?->is_batch_no == 1) ? 1 : 0;
+        $isBatchEnable = ($item?->item?->is_batch_no == 1) ? 'Yes' : 'No';
+        $mrnBatches = collect($batchDetails ?? [])->map(function ($b) {
+            return [
+                'mrn_batch_detail_id' => (int) $b->id,
+                'batch_number'        => (string) $b->batch_number,
+                'manufacturing_year'  => $b->manufacturing_year ? (int) $b->manufacturing_year : null,
+                'expiry_date'         => $b->expiry_date?->toDateString(), // Y-m-d
+                'quantity'            => (float) $b->quantity,
+                'inspection_qty'      => (float) $b->inspection_qty,
+                'accepted_qty'        => (float) $b->accepted_qty,
+                'rejected_qty'        => (float) $b->rejected_qty,
+            ];
+        })->values();
     @endphp
     <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->mrn_header_id}}">
@@ -56,13 +71,17 @@
             </select>
         </td>
         <td>
+            <input type="hidden" name="components[{{$rowCount}}][is_batch_no]" value="{{$isBatchEnable}}">
+            <span class="badge bg-light-{{ $isBatchEnable == 'Yes' ? 'success' : 'danger' }}">{{ $isBatchEnable }}</span>
+        </td>
+        <td>
             <input type="number" class="form-control mw-100 mrn_qty text-end checkNegativeVal" name="components[{{$rowCount}}][mrn_qty]" value="{{$item->order_qty}}" readonly step="any"/>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]" value="{{$qty}}" step="any"/>
+            <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]" value="{{$qty}}" step="any" {{ $isBatchEditable ? 'readonly' : '' }} />
         </td>
         <td>
-            <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$qty}}" step="any"/>
+            <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$qty}}" step="any" {{ $isBatchEditable ? 'readonly' : '' }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 rejected_qty text-end checkNegativeVal" name="components[{{$rowCount}}][rejected_qty]" value="0.00" readonly step="any"/>
@@ -82,6 +101,22 @@
                         </span>
                     </div>
                 @endif
+                <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
+                <div
+                    class="addBatchBtn"
+                    data-row-count="{{ $rowCount }}"
+                    data-batch-count="{{ count($batchDetails ?? []) }}"
+                    data-mrn-batches='@json($mrnBatches)'   {{-- ← single quotes here --}}
+                    data-bs-toggle="modal"
+                    data-bs-target="#item-batch-modal"
+                    style="display: {{ $isBatchEditable ? 'block' : 'none' }};">
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
+                        data-bs-original-title="Item Batch" aria-label="Item Batch">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-map-pin">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+                </div>
                 <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

@@ -231,6 +231,11 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
         $acceptedQtyInput.trigger("change");
         $rejectedQtyInput.val(rejectedQty.toFixed(2));
 
+        // Keep single-batch hidden JSON aligned if user edits row Accepted/Rejected
+        const batchCount =
+            Number($tr.find(".addBatchBtn").data("batch-count")) || 0;
+        if (batchCount <= 1) seedRowFromMrn(dataIndex);
+
         if (result.status !== 200 && result.message) {
             Swal.fire({ title: "Error!", text: result.message, icon: "error" });
             return false;

@@ -29,9 +29,9 @@ class StockLedgerResource extends JsonResource
             'confirmed_stock_value' => $this->confirmed_stock_value,
             'unconfirmed_stock_value' => $this->unconfirmed_stock_value,
             'store' => $this->whenLoaded('location'),
-            'sub_store' => $request->query('is_sub_store') == 1  ? $this->whenLoaded('store') : null,
+            'sub_store' => $this->whenLoaded('store'),
             'item' => $this->whenLoaded('item'),
-            'item_attributes' => $request->query('is_attribute') == 1  ? json_decode($this->item_attributes, true) : null,
+            'item_attributes' => json_decode($this->item_attributes, true),
         ];
     }
 }

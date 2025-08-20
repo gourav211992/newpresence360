@@ -182,6 +182,9 @@ class TransporterInvoiceController extends Controller
                     ->addColumn('curr_name', function ($row) {
                         return $row->currency ? ($row->currency?->short_name ?? $row->currency?->name) : 'N/A';
                     })
+                    ->addColumn('store_name', function($row) {
+                        return $row->erpStore ? $row->erpStore->store_name : 'N/A';
+                    })
                     ->editColumn('document_date', function ($row) {
                         return $row->getFormattedDate('document_date') ?? 'N/A';
                     })
@@ -229,6 +232,7 @@ class TransporterInvoiceController extends Controller
         $parentURL = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         $create_button = (isset($servicesBooks['services']) && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        
         return view('transport-invoice.index', [
             'typeName' => $typeName,
             'redirect_url' => $redirectUrl,

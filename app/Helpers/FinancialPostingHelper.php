@@ -1516,6 +1516,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
+        $customerAccountDebit = 0;
         // $discountPostingParam = OrganizationBookParameter::where('book_id', $document -> book_id)
         // -> where('parameter_name', ServiceParametersHelper::GL_SEPERATE_DISCOUNT_PARAM) -> first();
         // if (isset($discountPostingParam)) {
@@ -1562,24 +1563,26 @@ class FinancialPostingHelper
                     'debit_amount' => 0
                 ]);
             }
-            //Check for same ledger and group in CUSTOMER ACCOUNT
-            $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingcustomerLedger) > 0) {
-                $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $itemValueAfterDiscount;
-            } else { //Assign a new ledger
-                array_push($postingArray[self::CUSTOMER_ACCOUNT], [
-                    'ledger_id' => $customerLedgerId,
-                    'ledger_group_id' => $customerLedgerGroupId,
-                    'ledger_code' => $customerLedger?->code,
-                    'ledger_name' => $customerLedger?->name,
-                    'ledger_group_code' => $customerLedgerGroup?->name,
-                    'debit_amount' => $itemValueAfterDiscount,
-                    'credit_amount' => 0
-                ]);
-            }
+            // //Check for same ledger and group in CUSTOMER ACCOUNT
+            // $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+            //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingcustomerLedger) > 0) {
+            //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $itemValueAfterDiscount;
+            // } else { //Assign a new ledger
+            //     array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+            //         'ledger_id' => $customerLedgerId,
+            //         'ledger_group_id' => $customerLedgerGroupId,
+            //         'ledger_code' => $customerLedger?->code,
+            //         'ledger_name' => $customerLedger?->name,
+            //         'ledger_group_code' => $customerLedgerGroup?->name,
+            //         'debit_amount' => $itemValueAfterDiscount,
+            //         'credit_amount' => 0
+            //     ]);
+            // }
+            $customerAccountDebit += $itemValueAfterDiscount;
+
         }
         //TAXES ACCOUNT
         $taxes = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Tax")->get();
@@ -1610,24 +1613,25 @@ class FinancialPostingHelper
                     'debit_amount' => 0,
                 ]);
             }
-            //Tax for CUSTOMER ACCOUNT
-            $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingCustomerLedger) > 0) {
-                $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
-            } else { //Assign new ledger
-                array_push($postingArray[self::CUSTOMER_ACCOUNT], [
-                    'ledger_id' => $taxLedgerId,
-                    'ledger_group_id' => $taxLedgerGroupId,
-                    'ledger_code' => $taxLedger?->code,
-                    'ledger_name' => $taxLedger?->name,
-                    'ledger_group_code' => $taxLedgerGroup?->name,
-                    'credit_amount' => 0,
-                    'debit_amount' => $tax->ted_amount,
-                ]);
-            }
+            // //Tax for CUSTOMER ACCOUNT
+            // $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+            //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingCustomerLedger) > 0) {
+            //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
+            // } else { //Assign new ledger
+            //     array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+            //         'ledger_id' => $taxLedgerId,
+            //         'ledger_group_id' => $taxLedgerGroupId,
+            //         'ledger_code' => $taxLedger?->code,
+            //         'ledger_name' => $taxLedger?->name,
+            //         'ledger_group_code' => $taxLedgerGroup?->name,
+            //         'credit_amount' => 0,
+            //         'debit_amount' => $tax->ted_amount,
+            //     ]);
+            // }
+            $customerAccountDebit += $tax -> ted_amount;
         }
         //EXPENSES
         $expenses = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Expense")->get();
@@ -1659,23 +1663,25 @@ class FinancialPostingHelper
                 ]);
             }
             //Expense for CUSTOMER ACCOUNT
-            $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingCustomerLedger) > 0) {
-                $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $expense->ted_amount;
-            } else { //Assign new ledger
-                array_push($postingArray[self::EXPENSE_ACCOUNT], [
-                    'ledger_id' => $expenseLedgerId,
-                    'ledger_group_id' => $expenseLedgerGroupId,
-                    'ledger_code' => $expenseLedger?->code,
-                    'ledger_name' => $expenseLedger?->name,
-                    'ledger_group_code' => $expenseLedgerGroup?->name,
-                    'credit_amount' => 0,
-                    'debit_amount' => $expense->ted_amount,
-                ]);
-            }
+            // $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+            //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingCustomerLedger) > 0) {
+            //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $expense->ted_amount;
+            // } else { //Assign new ledger
+            //     array_push($postingArray[self::EXPENSE_ACCOUNT], [
+            //         'ledger_id' => $expenseLedgerId,
+            //         'ledger_group_id' => $expenseLedgerGroupId,
+            //         'ledger_code' => $expenseLedger?->code,
+            //         'ledger_name' => $expenseLedger?->name,
+            //         'ledger_group_code' => $expenseLedgerGroup?->name,
+            //         'credit_amount' => 0,
+            //         'debit_amount' => $expense->ted_amount,
+            //     ]);
+            // }
+            $customerAccountDebit += $expense -> ted_amount;
+
         }
         //Seperate posting of Discount
         if ($discountSeperatePosting) {
@@ -1705,6 +1711,35 @@ class FinancialPostingHelper
                         'ledger_group_code' => $discountLedgerGroup?->name,
                         'debit_amount' => $discount->ted_amount,
                         'credit_amount' => 0,
+                    ]);
+                }
+            }
+        }
+        //Break Customer Account according to payment terms schedule - due date wise
+        $invoicePaymentTerms = $document->payment_term_schedules()
+            ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
+        $totalPaymentTermsAmount = 0;
+        if ($invoicePaymentTerms && count($invoicePaymentTerms))  {
+            foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
+                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm -> total_percentage / 100);
+                $totalPaymentTermsAmount += $currentAmount;
+                //Check for same ledger and group in CUSTOMER ACCOUNT
+                $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId, $invoicePaymentTerm) {
+                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm -> due_date;
+                });
+                //Ledger found
+                if (count($existingcustomerLedger) > 0) {
+                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $currentAmount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                        'ledger_id' => $customerLedgerId,
+                        'ledger_group_id' => $customerLedgerGroupId,
+                        'ledger_code' => $customerLedger?->code,
+                        'ledger_name' => $customerLedger?->name,
+                        'ledger_group_code' => $customerLedgerGroup?->name,
+                        'debit_amount' => $currentAmount,
+                        'credit_amount' => 0,
+                        'due_date' => $invoicePaymentTerm -> due_date,
                     ]);
                 }
             }
@@ -5247,6 +5282,7 @@ class FinancialPostingHelper
                 ]);
             }
         }
+        $customerAccountDebit = 0;
         //Customer Account initialize
         if (!$invoiceToFollow) {
 
@@ -5305,24 +5341,25 @@ class FinancialPostingHelper
                         'debit_amount' => 0
                     ]);
                 }
-                //Check for same ledger and group in CUSTOMER ACCOUNT
-                $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-                });
-                //Ledger found
-                if (count($existingcustomerLedger) > 0) {
-                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $itemValueAfterDiscount;
-                } else { //Assign a new ledger
-                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
-                        'ledger_id' => $customerLedgerId,
-                        'ledger_group_id' => $customerLedgerGroupId,
-                        'ledger_code' => $customerLedger?->code,
-                        'ledger_name' => $customerLedger?->name,
-                        'ledger_group_code' => $customerLedgerGroup?->name,
-                        'debit_amount' => $itemValueAfterDiscount,
-                        'credit_amount' => 0
-                    ]);
-                }
+                // //Check for same ledger and group in CUSTOMER ACCOUNT
+                // $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+                //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+                // });
+                // //Ledger found
+                // if (count($existingcustomerLedger) > 0) {
+                //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $itemValueAfterDiscount;
+                // } else { //Assign a new ledger
+                //     array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                //         'ledger_id' => $customerLedgerId,
+                //         'ledger_group_id' => $customerLedgerGroupId,
+                //         'ledger_code' => $customerLedger?->code,
+                //         'ledger_name' => $customerLedger?->name,
+                //         'ledger_group_code' => $customerLedgerGroup?->name,
+                //         'debit_amount' => $itemValueAfterDiscount,
+                //         'credit_amount' => 0
+                //     ]);
+                // }
+                $customerAccountDebit += $itemValueAfterDiscount;
             }
             //TAXES ACCOUNT
             $taxes = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Tax")->get();
@@ -5353,24 +5390,25 @@ class FinancialPostingHelper
                         'debit_amount' => 0,
                     ]);
                 }
-                //Tax for CUSTOMER ACCOUNT
-                $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-                });
-                //Ledger found
-                if (count($existingCustomerLedger) > 0) {
-                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
-                } else { //Assign new ledger
-                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
-                        'ledger_id' => $taxLedgerId,
-                        'ledger_group_id' => $taxLedgerGroupId,
-                        'ledger_code' => $taxLedger?->code,
-                        'ledger_name' => $taxLedger?->name,
-                        'ledger_group_code' => $taxLedgerGroup?->name,
-                        'credit_amount' => 0,
-                        'debit_amount' => $tax->ted_amount,
-                    ]);
-                }
+                // Tax for CUSTOMER ACCOUNT
+                // $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+                //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+                // });
+                // //Ledger found
+                // if (count($existingCustomerLedger) > 0) {
+                //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $tax->ted_amount;
+                // } else { //Assign new ledger
+                //     array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                //         'ledger_id' => $taxLedgerId,
+                //         'ledger_group_id' => $taxLedgerGroupId,
+                //         'ledger_code' => $taxLedger?->code,
+                //         'ledger_name' => $taxLedger?->name,
+                //         'ledger_group_code' => $taxLedgerGroup?->name,
+                //         'credit_amount' => 0,
+                //         'debit_amount' => $tax->ted_amount,
+                //     ]);
+                // }
+                $customerAccountDebit += $tax -> ted_amount;
             }
             //EXPENSES
             $expenses = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Expense")->get();
@@ -5401,24 +5439,25 @@ class FinancialPostingHelper
                         'debit_amount' => 0,
                     ]);
                 }
-                //Expense for CUSTOMER ACCOUNT
-                $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-                });
-                //Ledger found
-                if (count($existingCustomerLedger) > 0) {
-                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $expense->ted_amount;
-                } else { //Assign new ledger
-                    array_push($postingArray[self::EXPENSE_ACCOUNT], [
-                        'ledger_id' => $expenseLedgerId,
-                        'ledger_group_id' => $expenseLedgerGroupId,
-                        'ledger_code' => $expenseLedger?->code,
-                        'ledger_name' => $expenseLedger?->name,
-                        'ledger_group_code' => $expenseLedgerGroup?->name,
-                        'credit_amount' => 0,
-                        'debit_amount' => $expense->ted_amount,
-                    ]);
-                }
+                // //Expense for CUSTOMER ACCOUNT
+                // $existingCustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+                //     return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+                // });
+                // //Ledger found
+                // if (count($existingCustomerLedger) > 0) {
+                //     $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $expense->ted_amount;
+                // } else { //Assign new ledger
+                //     array_push($postingArray[self::EXPENSE_ACCOUNT], [
+                //         'ledger_id' => $expenseLedgerId,
+                //         'ledger_group_id' => $expenseLedgerGroupId,
+                //         'ledger_code' => $expenseLedger?->code,
+                //         'ledger_name' => $expenseLedger?->name,
+                //         'ledger_group_code' => $expenseLedgerGroup?->name,
+                //         'credit_amount' => 0,
+                //         'debit_amount' => $expense->ted_amount,
+                //     ]);
+                // }
+                $customerAccountDebit += $expense -> ted_amount;
             }
             //Seperate posting of Discount
             if ($discountSeperatePosting) {
@@ -5450,6 +5489,35 @@ class FinancialPostingHelper
                             'credit_amount' => 0,
                         ]);
                     }
+                }
+            }
+        }
+        //Break Customer Account according to payment terms schedule - due date wise
+        $invoicePaymentTerms = $document->payment_term_schedules()
+            ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
+        $totalPaymentTermsAmount = 0;
+        if ($invoicePaymentTerms && count($invoicePaymentTerms))  {
+            foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
+                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm -> total_percentage / 100);
+                $totalPaymentTermsAmount += $currentAmount;
+                //Check for same ledger and group in CUSTOMER ACCOUNT
+                $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId, $invoicePaymentTerm) {
+                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm -> due_date;
+                });
+                //Ledger found
+                if (count($existingcustomerLedger) > 0) {
+                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $currentAmount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                        'ledger_id' => $customerLedgerId,
+                        'ledger_group_id' => $customerLedgerGroupId,
+                        'ledger_code' => $customerLedger?->code,
+                        'ledger_name' => $customerLedger?->name,
+                        'ledger_group_code' => $customerLedgerGroup?->name,
+                        'debit_amount' => $currentAmount,
+                        'credit_amount' => 0,
+                        'due_date' => $invoicePaymentTerm -> due_date,
+                    ]);
                 }
             }
         }
@@ -8329,6 +8397,7 @@ class FinancialPostingHelper
                     'debit_amt_group' => $debitAmtGroup,
                     'credit_amt_group' => $creditAmtGroup,
                     'entry_type' => $entryType,
+                    'due_date' => isset($post['due_date']) ? $post['due_date'] : $document->{$documentDateKey}
                 ]);
             }
         }
@@ -8376,6 +8445,7 @@ class FinancialPostingHelper
                     'debit_amt_group' => $debitAmtGroup,
                     'credit_amt_group' => $creditAmtGroup,
                     'entry_type' => $entryType,
+                    'due_date' => isset($post['due_date']) ? $post['due_date'] : $document->{$documentDateKey}
                 ]);
             }
         }

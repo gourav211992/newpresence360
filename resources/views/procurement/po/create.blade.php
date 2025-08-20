@@ -163,7 +163,6 @@
                                                                 name="hidden_state_id" />
                                                             <input type="hidden" id="hidden_country_id"
                                                                 name="hidden_country_id" />
-
                                                             <input type="hidden" id="delivery_country_id"
                                                                 name="delivery_country_id" />
                                                             <input type="hidden" id="delivery_state_id"
@@ -218,6 +217,10 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
+                                                                    <input type="hidden" value=""
+                                                                        id="party_country_id" name="party_country_id" />
+                                                                    <input type="hidden" value=""
+                                                                        id="party_state_id" name="party_state_id" />
                                                                     <label class="form-label w-100">Vendor Address <span
                                                                             class="text-danger">*</span>
                                                                         <a href="javascript:;"
@@ -233,6 +236,10 @@
                                                     <div class="col-md-4">
                                                         <div class="customer-billing-section h-100">
                                                             <p>Billing Address</p>
+                                                            <input type="hidden" value="{{ $fromCountry }}"
+                                                                id="country_id" name="country_id" />
+                                                            <input type="hidden" value="{{ $fromState }}"
+                                                                id="state_id" name="state_id" />
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <label class="form-label w-100">Billing Address <span
@@ -707,6 +714,7 @@
 @section('scripts')
     <script type="text/javascript">
         var type = '{{ request()->route('type') }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
         var actionUrlTax = '{{ route('po.tax.calculation', ['type' => ':type']) }}'.replace(':type', type);
         var getLocationUrl = '{{ route('store.get') }}';
         var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type);
@@ -2152,6 +2160,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
+                                    hsn_id: item.hsn_id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
                                 };
@@ -2166,11 +2175,16 @@
                 appendTo: modalId,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
                     var itemId = ui.item.id;
+                    var hsnId = ui?.item?.hsn_id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
+
+                    console.log('Selected item:', ui.item);
+
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -2178,7 +2192,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }

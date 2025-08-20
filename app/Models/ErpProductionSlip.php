@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
+use App\Traits\FileUploadTrait;
+
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
 use App\Traits\UserStampTrait;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ErpProductionSlip extends Model
 {
-    use HasFactory, DefaultGroupCompanyOrg, DateFormatTrait, UserStampTrait,DynamicFieldsTrait;
+    use HasFactory, DefaultGroupCompanyOrg, DateFormatTrait, UserStampTrait,DynamicFieldsTrait,FileUploadTrait;
 
     protected $fillable = [
         'organization_id',
@@ -164,5 +166,10 @@ class ErpProductionSlip extends Model
     public function createdBy()
     {
         return $this->belongsTo(AuthUser::class,'created_by','id');
+    }
+
+    public function media()
+    {
+        return $this->morphMany(DocumentApprovalMedia::class, 'model');
     }
 }

@@ -21,6 +21,16 @@ class StockLookoutController extends Controller
 {
 
     public function index(Request $request){
+        $validator = Validator::make($request->all(),[
+            'store_id' => 'required|integer',
+        ],[
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
         $itemId = $request->query('item_id');
         $storeId = $request->query('store_id');
         $isAttribute = $request->query('is_attribute');
@@ -28,6 +38,7 @@ class StockLookoutController extends Controller
         $subStoreId = $request->query('sub_store_id');
         $attrGroup = $request->query('attribute_name');
         $attrValue = $request->query('attribute_value');
+        $search = $request->search;
 
         $query = StockLedger::with(['item' => function($q){
                 $q->select('id','item_name','item_code');
@@ -39,31 +50,37 @@ class StockLookoutController extends Controller
             ->when($storeId, function($q) use($storeId){
                 $q->where('store_id', $storeId)->groupBy('store_id');
             })
-            ->when($subStoreId, function($q) use($subStoreId){
-                $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
-            })
-            ->when($itemId, function($query) use($itemId){
-                $query->whereHas('item', function($q) use ($itemId) {
-                     $q->where('id', $itemId);
-                });
+            // ->when($subStoreId, function($q) use($subStoreId){
+            //     $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
+            // })
+            // ->when($itemId, function($query) use($itemId){
+            //     $query->whereHas('item', function($q) use ($itemId) {
+            //          $q->where('id', $itemId);
+            //     });
+            // })
+            ->when($search, function($q) use($search){
+                $q->whereHas('item', function($q) use ($search) {
+                        $q->where('item_name', $search)
+                        ->orWhere('item_code',$search);
+                    });
             })
             ->withDefaultGroupCompanyOrg()
             ->whereNull('utilized_id')
             ->where('transaction_type', 'receipt');
         
         // Attribute filtering
-        if (!empty($attrGroup) && !empty($attrValue)) {
-            foreach ($attrGroup as $key => $group) {
-                if (!empty($attrValue[$key])) {
-                    $query->where(function ($subQuery) use ($group, $attrValue, $key) {
-                        $subQuery->whereJsonContains('item_attributes', [
-                            'attr_name' => $group,
-                            'attr_value' => $attrValue[$key]
-                        ]);
-                    });
-                }
-            }
-        }
+        // if (!empty($attrGroup) && !empty($attrValue)) {
+        //     foreach ($attrGroup as $key => $group) {
+        //         if (!empty($attrValue[$key])) {
+        //             $query->where(function ($subQuery) use ($group, $attrValue, $key) {
+        //                 $subQuery->whereJsonContains('item_attributes', [
+        //                     'attr_name' => $group,
+        //                     'attr_value' => $attrValue[$key]
+        //                 ]);
+        //             });
+        //         }
+        //     }
+        // }
 
         $query->select('id',
                 'group_id',
@@ -92,9 +109,20 @@ class StockLookoutController extends Controller
         // Attributes Check
         $query->groupBy('item_id');
 
-        $inventory_reports = $query->get();
+        $inventory_reports = $query->paginate(50);
         return [
-            'data' => StockLedgerResource::collection($inventory_reports)
+            // 'data' => StockLedgerResource::collection($inventory_reports)
+            "data" => [
+                'records' =>  StockLedgerResource::collection($inventory_reports),
+                'pagination' => [
+                    'current_page' => $inventory_reports->currentPage(),
+                    'last_page' => $inventory_reports->lastPage(),
+                    'per_page' => $inventory_reports->perPage(),
+                    'total' => $inventory_reports->total(),
+                    'from' => $inventory_reports->firstItem(),
+                    'to' => $inventory_reports->lastItem(),
+                ],
+            ],
         ];
 
     }
@@ -235,7 +263,9 @@ class StockLookoutController extends Controller
                 }]);
             })
             ->select($selectFields)
-            ->whereIn('storage_point_id', $storagePointIds)
+            ->when(!empty($storagePointIds), function($q) use ($storagePointIds) {
+                $q->whereIn('storage_point_id', $storagePointIds);
+            })
             ->when('store_id',function($q) use($request){
                 $q->where('store_id',$request->store_id);
             })

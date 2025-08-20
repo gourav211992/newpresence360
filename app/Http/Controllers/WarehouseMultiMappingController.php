@@ -202,7 +202,7 @@ class WarehouseMultiMappingController extends Controller
         $this->fillWhDetail($whDetail, $whLevel, $detail, $parentId, $parentHeirarchy);
         $whDetail->save();
 
-        if ($whDetail->is_storage_point) {
+        if (!$whDetail->storage_number && ($whDetail->is_storage_point == 1)) {
             $prefix = strtoupper(str_replace(' ', '-', $whDetail->name));
             $suffix = strtoupper(Str::random(rand(6, 8)));
             $whDetail->storage_number = "{$prefix}-{$suffix}";
@@ -227,12 +227,11 @@ class WarehouseMultiMappingController extends Controller
         $whDetail->max_volume = $detail['max_volume'] ?? null;
         $whDetail->status = ConstantHelper::ACTIVE;
 
-        if ($whDetail->is_storage_point) {
+        if (!$whDetail->storage_number && ($whDetail->is_storage_point == 1)) {
             $prefix = strtoupper(str_replace(' ', '-', $whDetail->name));
             $suffix = strtoupper(Str::random(rand(6, 8)));
             $whDetail->storage_number = "{$prefix}-{$suffix}";
         }
-
     }
 
     private function getParentDetails($parent)

@@ -64,14 +64,16 @@
                                                     </td>
                                                     <td>
                                                         @php
-                                                            $teams = $kaizen->kaizenTeam;
+                                                            $teams = @$kaizen->kaizenTeam;
                                                         @endphp
-                                                        @foreach ($teams->take(2) as $team)
-                                                            <span
-                                                                class="badge rounded-pill badge-light-secondary badgeborder-radius">
-                                                                {{ $team->name }}({{ $team->email }})
-                                                            </span>
-                                                        @endforeach
+                                                        @if ($teams)
+                                                            @foreach ($teams->take(2) as $team)
+                                                                <span
+                                                                    class="badge rounded-pill badge-light-secondary badgeborder-radius">
+                                                                    {{ $team->name }}({{ $team->email }})
+                                                                </span>
+                                                            @endforeach
+                                                        @endif
 
                                                         @if ($teams->count() > 2)
                                                             <a href="#" class="teamnum text-primary"
@@ -85,7 +87,8 @@
                                                         <span
                                                             class="badge rounded-pill badge-light-primary badgeborder-radius">{{ ucfirst($kaizen->status) }}</span>
                                                     </td>
-                                                    <td>{{ $kaizen->approver->name }}</td>
+                                                    <td>{{ isset($kaizen->approver->name) ? $kaizen->approver->name : '-' }}
+                                                    </td>
                                                     <td class="tableactionnew">
                                                         <div class="dropdown">
                                                             <button type="button"
@@ -108,9 +111,9 @@
                                                                 </a>
 
                                                                 <a class="dropdown-item"
-                                                                    href="{{ route('kaizen.pdf-view', ['id' => $kaizen->id]) }}">
-                                                                    <i data-feather="eye" class="me-50"></i>
-                                                                    <span>View Detail</span>
+                                                                    href="{{ url('kaizen/download-pdf/') . '/' . $kaizen->id }}">
+                                                                    <i data-feather="download" class="me-50"></i>
+                                                                    <span>Download</span>
                                                                 </a>
                                                             </div>
                                                         </div>

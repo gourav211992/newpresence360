@@ -136,7 +136,7 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'store_code', name: 'store_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'store_name', name: 'store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },

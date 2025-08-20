@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    {{-- @include('components.pdf-watermark',['status' => isset($po->document_status) ? $po->document_status : '']) --}}
+    @include('components.pdf-watermark',['status' => isset($po->document_status) ? $po->document_status : ''])
     <div style="width:700px; font-size: 11px; font-family:Arial;">
         @include('pdf.partials.header', [
             'orgLogo' => $orgLogo,
@@ -663,7 +663,7 @@
                 </td>
             </tr>
         </table>
-        
+
     </div>
 </body>
 

@@ -427,6 +427,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
+                                                                <th>Batch</th>
                                                                 <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
@@ -439,7 +440,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="10">
+                                                                <td rowspan="10" colspan="11">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -572,6 +573,10 @@
 
     <!-- Approve/Reject Modal -->
     @include('procurement.inspection.partials.approve-modal', ['id' => $mrn->id])
+    <!-- Inspection CHecklist Modal  -->
+    @include('procurement.inspection.partials.inspection-checklist-modal')
+    <!-- Batch Detail Modal  -->
+    @include('procurement.inspection.partials.item-batch-modal')
 
     {{-- Amendment Modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
@@ -600,6 +605,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>

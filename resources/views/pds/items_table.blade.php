@@ -12,9 +12,11 @@
                 <th>Item Name</th>
                 <th>Attributes</th>
                 <th>UOM</th>
-                <th>Qty</th>
-                <th>Type</th>
+                <th class="text-end">Qty</th>
+                <th>UID</th>
+                <th>Delivery<br>Cancelled?</th>
                 <th>Customer</th>
+                <th>Customer Name</th>
                 <th>Mobile</th>
                 <th>Email</th>
                 <th>Action</th>
@@ -33,15 +35,16 @@
                                 <label class="form-check-label" for="item_checkbox_{{$orderItemIndex}}"></label>
                             </div>
                         </td>
-                        <td class="poprod-decpt"></td>
-                            <input type="text" id="items_dropdown_{{$orderItemIndex}}" name="item_code[]" placeholder="Select" class="form-control mw-100 except_draft ledgerselecct comp_item_code ui-autocomplete-input {{$orderItem->is_editable ? '' : 'restrict'}}" autocomplete="off" data-name="{{$orderItem->item_name}}" data-code="{{$orderItem->item_code}}" data-id="{{$orderItem->item_id}}" hsn_code="{{$orderItem->hsn_code ?? ''}}" item-name="{{$orderItem->item_name}}" specs="{{$orderItem->specifications ?? ''}}" attribute-array="{{$orderItem->item_attributes_array()}}" value="{{$orderItem->item_code}}" {{$orderItem->is_editable ? '' : 'readonly'}} item-location="[]">
+                        <td class="d-none">
+                            <select id="item_type_{{$orderItemIndex}}" name="item_type[]" class="form-select mw-100">
+                                <option value="Pickup" {{ ($orderItem->type ?? '') == 'Pickup' ? 'selected' : '' }}>Pickup</option>
+                                <!-- <option value="Dropoff" {{ ($orderItem->type ?? '') == 'Dropoff' ? 'selected' : '' }}>Dropoff</option> -->
+                            </select>
+                        </td>
+                        <td class="poprod-decpt">
+                            <input type="text" id="items_dropdown_{{$orderItemIndex}}" name="item_code[]" placeholder="Select" class="form-control mw-100 except_draft ledgerselecct comp_item_code ui-autocomplete-input {{$orderItem->is_editable ? '' : 'restrict'}}" autocomplete="off" data-name="{{$orderItem->item_name}}" data-code="{{$orderItem->item_code}}" data-id="{{$orderItem->item_id}}" hsn_code="{{$orderItem->hsn_code ?? ''}}" item-name="{{$orderItem->item_name}}" specs="{{$orderItem->specifications ?? '[]'}}" attribute-array="{{$orderItem->item_attributes_array()}}" value="{{$orderItem->item_code}}" {{$orderItem->is_editable ? '' : 'readonly'}} item-location="[]">
                             <input type="hidden" name="item_id[]" id="items_dropdown_{{$orderItemIndex}}_value" value="{{$orderItem->item_id}}">
-                            @if ($orderItem->rfq_item_id ?? false)
-                                <input type="hidden" name="rfq_item_ids" id="rfq_id_{{$orderItemIndex}}" value="{{$orderItem->rfq_item_ids}}">
-                            @endif
-                            @if ($orderItem->pwo_item_id ?? false)
-                                <input type="hidden" name="pwo_item_id" id="pwo_id_{{$orderItemIndex}}" value="{{$orderItem->pwo_item_id}}">
-                            @endif
+                            <input type="hidden" name="pickup_item_id[]" id="items_dropdown_{{$orderItemIndex}}_value" value="{{$orderItem->id}}">
                         </td>
                         <td class="poprod-decpt">
                             <input type="text" id="items_name_{{$orderItemIndex}}" class="form-control mw-100" value="{{$orderItem->item_name}}" name="item_name[]" readonly>
@@ -58,15 +61,20 @@
                             </select>
                         </td>
                         <td>
-                            <input type="text" id="item_req_qty_{{$orderItemIndex}}" data-index="{{$orderItemIndex}}" value="{{ $orderItem->qty ?? 0 }}" name="item_req_qty[{{$orderItemIndex}}]" oninput="changeItemQty(this, {{$orderItemIndex}});" onchange="itemQtyChange(this, {{$orderItemIndex}})" class="form-control mw-100 text-end item_qty_input" onblur="setFormattedNumericValue(this);" />
+                            <input type="text" id="item_qty_{{$orderItemIndex}}" data-index="{{$orderItemIndex}}" value="{{ $orderItem->qty ?? 0 }}" name="item_req_qty[{{$orderItemIndex}}]" oninput="changeItemQty(this, {{$orderItemIndex}});" onchange="itemQtyChange(this, {{$orderItemIndex}})" class="form-control mw-100 text-end item_qty_input" onblur="setFormattedNumericValue(this);" />
                         <td>
-                            <select id="item_type_{{$orderItemIndex}}" name="item_type[]" class="form-select mw-100">
-                                <option value="Pickup" {{ ($orderItem->type ?? '') == 'Pickup' ? 'selected' : '' }}>Pickup</option>
-                                <option value="Dropoff" {{ ($orderItem->type ?? '') == 'Dropoff' ? 'selected' : '' }}>Dropoff</option>
-                            </select>
+                            <input type="text" id="item_uid_{{$orderItemIndex}}" name="item_uid[]" class="form-select mw-100" value="{{ $orderItem->uid ?? '' }}" readonly>
                         </td>
                         <td>
-                            <input type="text" id="item_customer_{{$orderItemIndex}}" class="form-control mw-100" value="{{ $orderItem->customer_name ?? '' }}" name="item_customer[]" readonly>
+                            <input type="checkbox" class="form-check-input" name="item_delivery_cancelled[]" {{$orderItem->delivery_cancelled == 'Yes' ? "checked" : ""}} id="item_delivery_cancelled_{{$orderItemIndex}}" del-index="{{$orderItemIndex}}">
+                            <label class="form-check-label" for="item_delivery_cancelled_{{$orderItemIndex}}"></label>
+                        </td>
+                        <td>
+                            <input type="text" id="item_customer_{{$orderItemIndex}}" class="form-control mw-100" value="{{ $orderItem-> customer -> customer_code ?? '' }}" name="item_customer[]" readonly>
+                            <input type="hidden" id="item_customer_id_{{$orderItemIndex}}" class="form-control mw-100" value="{{ $orderItem-> customer -> id ?? '' }}" name="item_customer_id[]" readonly>
+                        </td>
+                        <td>
+                            <input type="text" id="item_customer_name_{{$orderItemIndex}}" class="form-control mw-100" value="{{ $orderItem -> customer_name ?? '' }}" name="item_customer_name[]" readonly>
                         </td>
                         <td>
                             <input type="text" id="item_mobile_{{$orderItemIndex}}" class="form-control mw-100" value="{{ $orderItem->customer_phone ?? '' }}" name="item_mobile[]" readonly>
@@ -91,12 +99,12 @@
         
         <tfoot>
             <tr class="totalsubheadpodetail"> 
-                <td colspan="11"></td>
+                <td colspan="13"></td>
                 <td class="{{isset($order->rfq->pqs) ? '' : 'd-none'}}" colspan="{{ isset($order->rfq->pqs) ? count($order->rfq->pqs) : 0 }}" id="vendor_bottom"> </td>
             </tr>
             
             <tr valign="top">
-                <td colspan="11" rowspan="10">
+                <td colspan="13" rowspan="10">
                     <table class="table border">
                         <tr>
                             <td class="p-0">

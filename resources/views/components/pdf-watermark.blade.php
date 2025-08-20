@@ -8,10 +8,10 @@
 
         .pdf-watermark {
             position: fixed;
-            top: 50%;
+            top: 40%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 80px;
+            transform: translate(-50%, -50%) rotate(-55deg);
+            font-size: 200px;
             color: rgba(0, 0, 0, 0.08);
             /* Light gray watermark */
             font-weight: bold;

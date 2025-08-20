@@ -48,4 +48,48 @@ class ErpPickupSchedule extends Model
         'updated_by',
         'deleted_by',
     ];
+
+    public function pickupItems()
+    {
+        return $this->hasMany(ErpPickupItem::class, 'pickup_schedule_id', 'id');
+    }
+    public function store()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
+    }
+    public function media()
+    {
+        return $this->morphMany(ErpPickupMedia::class, 'model');
+    }
+    public function media_files()
+    {
+        return $this->morphMany(ErpPickupMedia::class, 'model') -> select('id', 'model_type', 'model_id', 'file_name');
+    }
+    
+    
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+    public function createdBy()
+    {
+        return $this->belongsTo(AuthUser::class,'created_by','id');
+    }
+    public function book()
+    {
+        return $this -> belongsTo(Book::class, 'book_id');
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPickupDynamicField::class, 'header_id');
+    }
+
 }

@@ -22,44 +22,50 @@
             </div>
         </td>
         <td>
-            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" readonly />
-            <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
-            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
-            <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
+            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item?->serviceItem?->item_code}}" readonly />
+            <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->service_item_id}}" />
+            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item?->serviceItem?->item_code}}" />
+            <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item?->serviceItem?->name}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
-            <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
+            <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->serviceItem?->hsn?->code}}" />
             <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$item?->so_id}}">
+            <td>
+                <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->serviceItem?->item_name}}" class="form-control mw-100 mb-25" readonly/>
+            </td>
 
-            @php
-                $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : [];
-            @endphp
-            @foreach(@$item->attributes as $attributeHidden)
-                <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
-            @endforeach
-            @foreach(@$item->item->itemAttributes as $itemAttribute)
-                @if(count($selectedAttr))
-                    @foreach ($itemAttribute->attributes() as $value)
-                    @if(in_array($value->id, $selectedAttr))
-                    <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="{{$value->id}}">
+            @if ($item?->serviceItem?->attributes)
+                @php
+                    $selectedAttr = @$item?->serviceItem?->attributes ? @$item?->serviceItem?->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : [];
+                @endphp
+                @foreach(@$item?->serviceItem?->attributes as $attributeHidden)
+                    <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
+                @endforeach
+                @foreach(@$item?->serviceItem?->itemAttributes as $itemAttribute)
+                    @if(count($selectedAttr))
+                        @foreach ($itemAttribute->attributes() as $value)
+                        @if(in_array($value->id, $selectedAttr))
+                        <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="{{$value->id}}">
+                        @endif
+                        @endforeach
+                    @else
+                        <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="">
                     @endif
-                    @endforeach
-                @else
-                    <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$itemAttribute->attribute_group_id}}][attr_name]" value="">
-                @endif
-            @endforeach
+                @endforeach
+                <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
+                </td>
+            @else
+            <td>
+                <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBt" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+            </td>
+            @endif
         </td>
         <td>
-            <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
-        </td>
-        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
-        </td>
-        <td>
-            <input type="hidden" name="components[{{$rowCount}}][inventory_uom_id]" value="{{$item->inventory_uom_id}}">
+            <input type="hidden" name="components[{{$rowCount}}][inventory_uom_id]" value="{{$item?->serviceItem?->inventory_uom_id}}">
             <select class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
-                <option value="{{$item->uom->id}}">{{ucfirst($item->uom->name)}}</option>
-                @if($item?->item?->alternateUOMs)
-                    @foreach($item?->item?->alternateUOMs as $alternateUOM)
-                        <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == $item->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
+                <option value="{{$item?->serviceItem?->uom->id}}">{{ucfirst($item?->serviceItem?->uom->name)}}</option>
+                @if($item?->serviceItem?->alternateUOMs)
+                    @foreach($item?->serviceItem?->alternateUOMs as $alternateUOM)
+                        <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == $item?->serviceItem?->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
                     @endforeach
                 @endif
             </select>

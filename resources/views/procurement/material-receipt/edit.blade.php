@@ -670,6 +670,10 @@
         @include('procurement.material-receipt.partials.summary-disc-modal')
         {{-- Add expenses modal--}}
         @include('procurement.material-receipt.partials.summary-exp-modal')
+        {{-- Asset Detail Modal --}}
+        @include('procurement.material-receipt.partials.asset-detail-modal')
+        {{-- Item Batch --}}
+        @include('procurement.material-receipt.partials.item-batch-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">

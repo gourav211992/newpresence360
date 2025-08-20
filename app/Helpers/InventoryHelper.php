@@ -223,6 +223,8 @@ class InventoryHelper
             }
         }
 
+        // dd('stockLedger', $stockLedger->get());
+
         // Filters for Store, Rack, Shelf, and Bin (if needed)
         if ($storeId) {
             $stockLedger->where('store_id', $storeId);
@@ -623,36 +625,69 @@ class InventoryHelper
                     $documentHeader = MrnHeader::find($documentItemLocation->header_id);
                     $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->detail_id);
                     $stockLedger->book_id = @$documentHeader->book_id;
-                    if($documentDetail->is_inspection == 1){
-                        $qty = 0.00;
-                        $putawayQty = 0.00;
-                        // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
-                        $holdQty = $documentItemLocation->inventory_uom_qty;
-                        $stockLedger->receipt_qty = $qty;
-                        $stockLedger->hold_qty = $holdQty;
-                        $stockLedger->putaway_pending_qty = $putawayQty;
-                        $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                        $costPerUnit = $totalItemCost/$holdQty;
-                    }else {
-                        if($documentHeader->is_warehouse_required == 1){
-                            $qty = 0.00;
-                            $putawayQty = $documentItemLocation->inventory_uom_qty;
-                            $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                            $costPerUnit = $totalItemCost/$putawayQty;
-                        } else{
-                            $putawayQty = 0.00;
-                            $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
-                            $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                            $costPerUnit = $totalItemCost/$qty;
-                        }
-                        $holdQty = 0.00;
-                        $stockLedger->receipt_qty = $qty;
-                        $stockLedger->hold_qty = $holdQty;
-                        $stockLedger->putaway_pending_qty = $putawayQty;
-                        $stockLedger->book_id = @$documentHeader->book_id;
+                    // if($documentDetail->is_inspection == 1){
+                    //     $qty = 0.00;
+                    //     $putawayQty = 0.00;
+                    //     // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+                    //     $holdQty = $documentItemLocation->inventory_uom_qty;
+                    //     $stockLedger->receipt_qty = $qty;
+                    //     $stockLedger->hold_qty = $holdQty;
+                    //     $stockLedger->putaway_pending_qty = $putawayQty;
+                    //     $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                    //     $costPerUnit = $totalItemCost/$holdQty;
+                    // }else {
+                    //     if($documentHeader->is_warehouse_required == 1){
+                    //         $qty = 0.00;
+                    //         $putawayQty = $documentItemLocation->inventory_uom_qty;
+                    //         $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                    //         $costPerUnit = $totalItemCost/$putawayQty;
+                    //     } else{
+                    //         $putawayQty = 0.00;
+                    //         $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
+                    //         $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                    //         $costPerUnit = $totalItemCost/$qty;
+                    //     }
+                    //     $holdQty = 0.00;
+                    //     $stockLedger->receipt_qty = $qty;
+                    //     $stockLedger->hold_qty = $holdQty;
+                    //     $stockLedger->putaway_pending_qty = $putawayQty;
+                    //     $stockLedger->book_id = @$documentHeader->book_id;
+                    // }
+                    // Precompute flags & numbers
+                    $requiresPutaway = (int)($documentHeader->is_warehouse_required ?? 0) === 1;
+                    $isInspection    = (int)($documentDetail->is_inspection ?? 0) === 1;
+
+                    $invQty   = (float)($documentItemLocation->inventory_uom_qty ?? 0);
+                    $usedQty  = max(0.0, (float)($utilizedQty ?? 0));
+                    $availQty = max(0.0, $invQty - $usedQty);
+
+                    $totalItemCost = (float)($documentDetail->basic_value ?? 0)
+                                - (float)(($documentDetail->discount_amount ?? 0) + ($documentDetail->header_discount_amount ?? 0));
+                    $totalItemCost = max(0.0, $totalItemCost); // never negative
+
+                    // Decide target quantities
+                    if ($requiresPutaway && !$isInspection) {
+                        $putawayQty = $invQty;
+                        $qty        = 0.0;
+                    } else {
+                        $putawayQty = 0.0;
+                        $qty        = $availQty;
                     }
-                    $stockLedger->vendor_id = @$documentHeader->vendor_id;
-                    $stockLedger->vendor_code = @$documentHeader->vendor_code;
+
+                    // Cost per unit (prefer the non-zero bucket)
+                    $denom       = $qty > 0 ? $qty : ($putawayQty > 0 ? $putawayQty : 0.0);
+                    $costPerUnit = $denom > 0 ? round($totalItemCost / $denom, 6) : 0.0;
+
+                    // Assign to ledger
+                    $stockLedger->receipt_qty         = $qty;
+                    $stockLedger->putaway_pending_qty = $putawayQty;
+                    $stockLedger->hold_qty            = 0.00;
+                    $stockLedger->cost_per_unit       = $costPerUnit;           // optional if you set elsewhere
+                    $stockLedger->total_cost          = round($totalItemCost, 2); // optional
+
+                    $stockLedger->book_id     = $documentHeader->book_id ?? null;
+                    $stockLedger->vendor_id   = $documentHeader->vendor_id ?? null;
+                    $stockLedger->vendor_code = $documentHeader->vendor_code ?? null;
 
                     // Item Location Data
                     $stockLedger->store_id = $documentHeader->store_id ?? null;
@@ -1255,7 +1290,6 @@ class InventoryHelper
                         $balanceQty -= $issueQty;
                     }
                 }
-
                 $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                     ->whereIn('document_status', ['approved','posted','approval_not_required'])
                     ->where('item_id', $invoiceLedger->item_id)
@@ -1279,7 +1313,6 @@ class InventoryHelper
                     $approvedStockLedger = $approvedStockLedger->where('document_detail_id', $documentItemLocation->mrn_detail_id)
                     ->where('book_type', ConstantHelper::MRN_SERVICE_ALIAS);
                 }
-
                 $attributeGroups = $invoiceLedger->item_attributes;
                 // Apply attribute filtering if needed
                 if (!empty($attributeGroups)) {
@@ -1295,15 +1328,19 @@ class InventoryHelper
                 if ($approvedStockLedger->isNotEmpty()) {
                     $availableQty = $approvedStockLedger->sum('receipt_qty');
                     $requestedQty = $invoiceLedger -> issue_qty;
+
                     if ($availableQty < (float)$requestedQty) {
+
                         $altUomAvlQty = ItemHelper::convertToAltUom($invoiceLedger -> item_id, $documentItemLocation ?-> uom_id ?? 0, (float) $availableQty);
                         $requestedAltUomQty = ItemHelper::convertToAltUom($invoiceLedger -> item_id, $documentItemLocation ?-> uom_id ?? 0, (float) $invoiceLedger -> issue_qty);
                         $message = "Available stock is less than the issue quantity for item - $itemCode. Available: $altUomAvlQty, Requested: $requestedAltUomQty";
                         $status = 'error';
                         $stockLedger = null;
                     } else{
+
                         foreach ($approvedStockLedger as $val) {
                             $stockLedger = StockLedger::find($val -> id);
+
                             if(isset($stockReservation) && ($stockReservation == 'yes')){
                                 if ($stockLedger->reserved_qty < $balanceQty) {
                                     $receiptQty = $stockLedger->reserved_qty;
@@ -2432,15 +2469,15 @@ class InventoryHelper
                 ->where('document_status','draft')
                 ->whereNotNull('utilized_id')
                 ->sum('receipt_qty');
-            if($documentItemLocation?->mrnDetail?->is_inspection == 1){
-                // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
-                $holdQty = $documentItemLocation->inventory_uom_qty;
-                if($holdQty > $utilizedQty){
-                    $stockLedger = new StockLedger();
-                    $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $holdQty);
-                }
-            }
-            else if($documentItemLocation->inventory_uom_qty > $utilizedQty){
+            // if($documentItemLocation?->mrnDetail?->is_inspection == 1){
+            //     // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+            //     $holdQty = $documentItemLocation->inventory_uom_qty;
+            //     if($holdQty > $utilizedQty){
+            //         $stockLedger = new StockLedger();
+            //         $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $holdQty);
+            //     }
+            // }
+            if($documentItemLocation->inventory_uom_qty > $utilizedQty){
                 $stockLedger = new StockLedger();
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
             } else{
@@ -2598,6 +2635,7 @@ class InventoryHelper
             ->with('pslip',
                 'item'
             )
+            ->orderBy('id', 'DESC')
             ->get();
         if(isset($documentItems) && $documentItems){
             foreach ($documentItems as $documentItem) {
@@ -2612,6 +2650,10 @@ class InventoryHelper
                 $utilizedQty = 0;
                 $issueQty = $stockLedger?->issue_qty ?? 0;
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
+
+                if($invoiceLedger['status'] == 'error'){
+                    return $invoiceLedger;
+                }
                 $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
             }
         }

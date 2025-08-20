@@ -582,62 +582,39 @@ function setTableCalculation() {
         }
 
         /*Bind header Expenses*/
-        if (
-            $(".display_summary_exp_row").find("[name*='[e_perc]']").length &&
-            totalAfterTax
-        ) {
+        if ($(".display_summary_exp_row").find("[name*='[total]']").length) {
             $(".display_summary_exp_row")
-                .find("[name*='[e_perc]']")
+                .find("[name*='[total]']")
                 .each(function (index, eachItem) {
-                    let eachExpTypePrice = 0;
-                    let hiddenPerc =
-                        Number(
-                            $(
-                                `[name="exp_summary[${
-                                    index + 1
-                                }][hidden_e_perc]"]`
-                            ).val()
-                        ) || 0;
-                    let expDiscPerc = hiddenPerc || Number($(eachItem).val());
-                    if (expDiscPerc) {
-                        eachExpTypePrice = (totalAfterTax * expDiscPerc) / 100;
-                        // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                        $(`[name="exp_summary[${index + 1}][e_amnt]"]`).closest(
-                            "td"
-                        ).html(`
+                    let eachExpTypePrice = Number($(eachItem).val()) || 0;
+
+                    // Show value in table cell
+                    $(`[name="exp_summary[${index + 1}][total]"]`).closest(
+                        "td"
+                    ).html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(
-                        2
-                    )}" name="exp_summary[${index + 1}][e_amnt]">
-                    `);
-                    } else {
-                        eachExpTypePrice =
-                            Number(
-                                $(
-                                    `[name="exp_summary[${index + 1}][e_amnt]"]`
-                                ).val()
-                            ) || 0;
-                    }
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}"
+                        name="exp_summary[${index + 1}][total]">
+                `);
+
                     totalHeaderExp += eachExpTypePrice;
                 });
         } else {
             $(".display_summary_exp_row")
-                .find("[name*='[e_perc]']")
+                .find("[name*='[total]']")
                 .each(function (index, eachItem) {
                     let eachExpTypePrice = 0;
-                    // let expDiscPerc = Number($(eachItem).val());
-                    // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                    $(`[name="exp_summary[${index + 1}][e_amnt]"]`).closest(
+                    $(`[name="exp_summary[${index + 1}][total]"]`).closest(
                         "td"
                     ).html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(
-                        2
-                    )}" name="exp_summary[${index + 1}][e_amnt]">
-                    `);
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}"
+                        name="exp_summary[${index + 1}][total]">
+                `);
                     totalHeaderExp += eachExpTypePrice;
                 });
         }
+
         $("#expSummaryFooter #total")
             .attr("amount", totalHeaderExp.toFixed(2))
             .text(totalHeaderExp.toFixed(2));
@@ -664,7 +641,6 @@ function setTableCalculation() {
         /*Bind header exp item level*/
         let total_net_total = 0;
         $("#itemTable [id*='row_']").each(function (index, item5) {
-            let rowCount5 = Number($(item5).attr("data-index"));
             let qty5 = $(item5).find("[name*='[qty]']").val() || 0;
             let rate5 = $(item5).find("[name*='[rate]']").val() || 0;
             let itemValue5 = Number(qty5) * Number(rate5) || 0;
@@ -675,13 +651,12 @@ function setTableCalculation() {
                     $(item5).find("[name*='[discount_amount_header]']").val()
                 ) || 0;
             let itemTax5 = 0;
-            if ($(item5).find("[name*='[t_value]']").length) {
-                $(item5)
-                    .find("[name*='[t_value]']")
-                    .each(function (indexing, iteming) {
-                        itemTax5 += Number($(iteming).val()) || 0;
-                    });
-            }
+            $(item5)
+                .find("[name*='[t_value]']")
+                .each(function (_, iteming) {
+                    itemTax5 += Number($(iteming).val()) || 0;
+                });
+
             total_net_total +=
                 itemValue5 - itemDisc5 - itemHeaderDisc5 + itemTax5;
         });
@@ -689,7 +664,6 @@ function setTableCalculation() {
         $("#itemTable [id*='row_']").each(function (index, item6) {
             let each_net_value = 0;
             let exp_header_amnt_item = 0;
-            let rowCount6 = Number($(item6).attr("data-index"));
             let qty6 = $(item6).find("[name*='[qty]']").val() || 0;
             let rate6 = $(item6).find("[name*='[rate]']").val() || 0;
             let itemValue6 = Number(qty6) * Number(rate6) || 0;
@@ -700,13 +674,12 @@ function setTableCalculation() {
                     $(item6).find("[name*='[discount_amount_header]']").val()
                 ) || 0;
             let itemTax6 = 0;
-            if ($(item6).find("[name*='[t_value]']").length) {
-                $(item6)
-                    .find("[name*='[t_value]']")
-                    .each(function (indexing, iteming) {
-                        itemTax6 += Number($(iteming).val()) || 0;
-                    });
-            }
+            $(item6)
+                .find("[name*='[t_value]']")
+                .each(function (_, iteming) {
+                    itemTax6 += Number($(iteming).val()) || 0;
+                });
+
             if (totalHeaderExp) {
                 each_net_value =
                     itemValue6 - itemDisc6 - itemHeaderDisc6 + itemTax6;
@@ -716,9 +689,7 @@ function setTableCalculation() {
                     .find("[name*='[exp_amount_header]']")
                     .val(exp_header_amnt_item.toFixed(2));
             } else {
-                $(item6)
-                    .find("[name*='[exp_amount_header]']")
-                    .val(exp_header_amnt_item.toFixed(2));
+                $(item6).find("[name*='[exp_amount_header]']").val("0.00");
             }
         });
     });
@@ -1160,6 +1131,12 @@ $(document).on("click", ".summaryExpBtn", (e) => {
 });
 /*delete summary exp row*/
 $(document).on("click", ".deleteExpRow", (e) => {
+    $("#new_exp_name_select").val("");
+    $("#new_exp_id").val("");
+    $("#new_exp_value").val("");
+    $("#new_exp_tax_amount").val("");
+    $("#total_amount_after_tax").val("");
+    $("#new_exp_tax_breakup").val("");
     let trId = $(e.target).closest("tr").find('[name*="[e_id]"]').val();
     if (!trId) {
         $(e.target).closest("tr").remove();
@@ -1169,17 +1146,9 @@ $(document).on("click", ".deleteExpRow", (e) => {
 // summaryExpSubmit
 $(document).on("click", ".summaryExpSubmit", (e) => {
     $("#summaryExpenModal").modal("hide");
-    // setTableCalculation();
-    return false;
+    setTableCalculation();
 });
-function summaryExpTotal() {
-    let total = 0.0;
-    $(".display_summary_exp_row [name*='e_amnt']").each(function (index, item) {
-        total = total + Number($(item).val());
-    });
-    $("#expSummaryFooter #total").attr("amount", total);
-    $("#expSummaryFooter #total").text(total.toFixed(2));
-}
+
 $(document).on("input change", "#itemTable input", (e) => {
     setTableCalculation();
 });
@@ -1392,7 +1361,7 @@ $(document).on("click", "#add_new_item_dis", (e) => {
         <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${
             index + 1
         }][dis_name]">
-        <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${
+        <input type="hidden" valuef_total_after_exp_rate="${perc}" name="components[${rowCount}][discounts][${
             index + 1
         }][dis_perc]">
         <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${
@@ -1564,111 +1533,7 @@ $(document).on("keyup", "#new_dis_value", (e) => {
     $("#new_dis_perc").prop("readonly", Boolean(value)).val("");
     return false;
 });
-/*Add New Summary Discount*/
-$(document).on("click", "#add_new_head_exp", (e) => {
-    e.preventDefault();
-    const new_exp_id = $("#new_exp_id").val() || "";
-    const new_exp_name = $("#new_exp_name").val() || "";
-    const new_exp_perc = (Number($("#new_exp_perc").val()) || 0).toFixed(2);
-    const new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
-    let _total_head_exp = 0;
-    $("[name*='[e_amnt]']").each(function (index, item) {
-        _total_head_exp += Number($(item).val());
-    });
-    let totalCost = parseFloat($("#f_total_after_tax").attr("amount")) || 0;
-    let _total_head_exp_all = _total_head_exp + Number(new_exp_value);
-    if (_total_head_exp_all > totalCost) {
-        Swal.fire({
-            title: "Error!",
-            text: "You can not give total exp more then after tax value.",
-            icon: "error",
-        });
-        return false;
-    }
-    if (!new_exp_name || (!new_exp_perc && !new_exp_value)) return;
-    const tbl_row_count =
-        $("#summaryExpTable .display_summary_exp_row").length + 1;
-    const tr = `
-    <tr class="display_summary_exp_row">
-        <td>${tbl_row_count}</td>
-        <td>${new_exp_name}
-            <input type="hidden" value="${new_exp_id}" name="exp_summary[${tbl_row_count}][ted_e_id]">
-            <input type="hidden" value="" name="exp_summary[${tbl_row_count}][e_id]">
-            <input type="hidden" value="${new_exp_name}" name="exp_summary[${tbl_row_count}][e_name]" />
-        </td>
-        <td class="text-end">${new_exp_perc}
-            <input type="hidden" value="${new_exp_perc}" name="exp_summary[${tbl_row_count}][e_perc]" />
-        </td>
-        <td class="text-end">${new_exp_value}
-        <input type="hidden" value="${new_exp_value}" name="exp_summary[${tbl_row_count}][e_amnt]" />
-        </td>
-        <td>
-            <a href="javascript:;" class="text-danger deleteExpRow">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            </a>
-        </td>
-    </tr>`;
-    if (!$(".display_summary_exp_row").length) {
-        $("#summaryExpTable #expSummaryFooter").before(tr);
-    } else {
-        $(".display_summary_exp_row:last").after(tr);
-    }
-    $("#new_exp_name_select").val("");
-    $("#new_exp_id").val("");
-    $("#new_exp_name").val("");
-    $("#new_exp_perc").val("").prop("readonly", false);
-    $("#new_exp_value").val("").prop("readonly", false);
-    let total_head_exp = 0;
-    $("[name*='[e_amnt]']").each(function (index, item) {
-        total_head_exp += Number($(item).val());
-    });
-    $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
-    setTableCalculation();
-});
-/*Header discount perc change*/
-$(document).on("keyup", "#new_exp_perc", (e) => {
-    e.preventDefault();
-    let input = $(e.target);
-    input.prop("readonly", false);
-    let value = parseFloat(input.val());
-    let percAmount = 0;
-    let totalCost = 0;
-    if (isNaN(value)) {
-        input.val("");
-        value = 0;
-    }
-    if (value < 0) {
-        value = 0;
-        input.val(value);
-    } else if (value > 100) {
-        let _total_perc = 0;
-        $("[name*='[e_perc]']").each(function (index, item) {
-            _total_perc += Number($(item).val());
-        });
-        value = 100 - _total_perc;
-        input.val(value);
-        Swal.fire({
-            title: "Error!",
-            text: "You cannot add more than 100%.",
-            icon: "error",
-        });
-    }
-    totalCost = parseFloat($("#f_total_after_tax").attr("amount")) || 0;
-    percAmount = parseFloat((totalCost * value) / 100);
-    $("#new_exp_value")
-        .prop("readonly", Boolean(percAmount))
-        .val(percAmount ? percAmount.toFixed(2) : "");
-    return false;
-});
-/*Header discount value change*/
-$(document).on("keyup", "#new_exp_value", (e) => {
-    e.preventDefault();
-    let input = $(e.target);
-    input.prop("readonly", false);
-    let value = parseFloat(input.val());
-    $("#new_exp_perc").prop("readonly", Boolean(value)).val("");
-    return false;
-});
+
 /*Qty enabled and disabled*/
 function qtyEnabledDisabled() {
     $("tr[id*='row_']").each(function (index, item) {
@@ -1921,6 +1786,9 @@ function vendorOnChange(vendorId) {
                 return false;
             }
             if (data.status == 200) {
+                let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
+                let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
+
                 $("#vendor_name").val(data?.data?.vendor?.company_name);
                 $("#credit_days").val(data?.data?.vendor?.credit_days ?? 0);
                 // Credit days editable check
@@ -1931,8 +1799,6 @@ function vendorOnChange(vendorId) {
                 }
                 $("#vendor_id").val(data?.data?.vendor?.id);
                 $("#vendor_code").val(data?.data?.vendor?.vendor_code);
-                let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
-                let termOption = `<option value="${data?.data?.paymentTerm?.id}">${data?.data?.paymentTerm?.name}</option>`;
                 $('[name="currency_id"]').empty().append(curOption);
                 $('[name="payment_term_id"]').empty().append(termOption);
                 $("#delivery_address_id").val(data?.data?.location_address?.id);
@@ -1941,6 +1807,15 @@ function vendorOnChange(vendorId) {
                 );
                 $("#vendor_address_id").val(data?.data?.vendor_address?.id);
                 $("#billing_address_id").val(data?.data?.location_address?.id);
+
+                $("#country_id").val(data?.data?.location_address?.country?.id);
+                $("#state_id").val(data?.data?.location_address.state?.id);
+
+                $("#party_country_id").val(
+                    data?.data?.vendor_address?.country?.id
+                );
+                $("#party_state_id").val(data?.data?.vendor_address.state?.id);
+
                 $("#hidden_state_id").val(data?.data?.vendor_address?.state.id);
                 $("#hidden_country_id").val(
                     data?.data?.vendor_address.country?.id
@@ -1951,6 +1826,7 @@ function vendorOnChange(vendorId) {
                 $(".billing_address").text(
                     data?.data?.location_address?.display_address
                 );
+
                 const expRate = data?.data?.currency_exchange?.data;
                 if (expRate) {
                     const isDifferentCurrency =
@@ -2229,4 +2105,216 @@ function cloneRow($row, newIndex) {
         .attr("data-id", "")
         .val(newIndex);
     return $clone;
+}
+
+$(document).on("click", "#add_new_head_exp", (e) => {
+    e.preventDefault();
+
+    let new_exp_id = $("#new_exp_id").val() || "";
+    let new_exp_name = $("#new_exp_name").val() || "";
+    let new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
+    let new_exp_tax_amount = (
+        Number($("#new_exp_tax_amount").val()) || 0
+    ).toFixed(2);
+    let total_amount_after_tax = (
+        Number($("#total_amount_after_tax").val()) || 0
+    ).toFixed(2);
+
+    let tax_breakup = $("#new_exp_tax_breakup").val();
+    if (!new_exp_name || !new_exp_tax_amount) return;
+
+    let tbl_row_count =
+        $("#summaryExpTable .display_summary_exp_row").length + 1;
+    let tr = `
+        <tr class="display_summary_exp_row">
+            <td>${tbl_row_count}</td>
+            <td>${new_exp_name}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][ted_e_id]" value="${new_exp_id}">
+                <input type="hidden" name="exp_summary[${tbl_row_count}][e_id]" value="">
+                <input type="hidden" name="exp_summary[${tbl_row_count}][e_name]" value="${new_exp_name}">
+            </td>
+            <td class="text-end">${new_exp_value}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][e_amnt]" value="${new_exp_value}">
+            </td>
+            <td class="text-end">${new_exp_tax_amount}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][tax_amount]" value="${new_exp_tax_amount}">
+            </td>
+            <td class="text-end">${total_amount_after_tax}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][total]" value="${total_amount_after_tax}">
+            </td>
+            <td class="text-start">
+                ${renderBreakupHtml(JSON.parse(tax_breakup))}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][tax_breakup]" value='${tax_breakup}'>
+            </td>
+            <td>
+                <a href="javascript:;" class="text-danger deleteExpRow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </a>
+            </td>
+        </tr>
+    `;
+
+    if (!$(".display_summary_exp_row").length) {
+        $("#summaryExpTable #expSummaryFooter").before(tr);
+    } else {
+        $(".display_summary_exp_row:last").after(tr);
+    }
+    $("#new_exp_name_select").val("");
+    $("#new_exp_id").val("");
+    $("#new_exp_name").val("");
+    $("#new_exp_perc").val("").prop("readonly", false);
+    $("#new_exp_value").val("").prop("readonly", false);
+    let total_head_exp = 0;
+    $("[name*='[e_amnt]']").each(function (index, item) {
+        total_head_exp += Number($(item).val());
+    });
+
+    $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
+
+    summaryExpTotal();
+    setTableCalculation();
+});
+
+function renderBreakupHtml(breakup) {
+    if (!breakup || !breakup.length) return "";
+    let html = "";
+    breakup.forEach((group) => {
+        group.taxes.forEach((tax) => {
+            html += `${tax.tax_code} (${tax.tax_percent}%) : ${parseFloat(
+                tax.tax_amount
+            ).toFixed(2)}<br>`;
+        });
+    });
+    return html;
+}
+
+/*-------------------------
+  Get Tax Params Helper
+-------------------------*/
+function getTaxParams(el = null) {
+    let $row = el ? $(el).closest("tr") : $("tr.active");
+    let price = $row.find("[id='new_exp_value']").val();
+    let hsn_id = $row.find("[id='new_exp_id']").attr("data-hsn-id") || 0;
+    let transactionDate = $("input[name='document_date']").val();
+
+    console.log({
+        hsn_id: hsn_id || 0,
+        price: parseFloat(price) || 0,
+        from_country: Number($("#country_id").val()) || 0,
+        from_state: Number($("#state_id").val()) || 0,
+        party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
+        party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
+        transaction_type: $("#transaction_type").val() || "purchase",
+        date: "",
+    });
+
+    return {
+        hsn_id: hsn_id || 0,
+        price: parseFloat(price) || 0,
+        from_country: Number($("#country_id").val()) || 0,
+        from_state: Number($("#state_id").val()) || 0,
+        party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
+        party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
+        transaction_type: $("#transaction_type").val() || "purchase",
+        date: "",
+    };
+}
+
+/*-------------------------
+  Ajax Tax Calculation
+-------------------------*/
+function calculateTaxAndApply(el = null) {
+    const params = getTaxParams(el);
+
+    $.ajax({
+        url: taxCalUrl,
+        method: "GET",
+        data: params,
+        success: function (response) {
+            console.log("Tax Data:", response);
+            applyTaxDetails(response, params);
+        },
+        error: function (xhr) {
+            $("#new_exp_name_select").val("");
+            $("#new_exp_id").val("");
+            $("#new_exp_value").val("");
+            $("#new_exp_tax_amount").val("");
+            $("#total_amount_after_tax").val("");
+            $("#new_exp_tax_breakup").val("");
+            console.error("Tax calculation failed:", xhr.responseText);
+            Swal.fire(
+                "Error!",
+                xhr?.responseText?.error ||
+                    xhr?.responseText?.message ||
+                    xhr?.responseText ||
+                    "Tax calculation failed.",
+                "error"
+            );
+        },
+    });
+}
+
+/*-------------------------
+  Apply Tax Details to UI
+-------------------------*/
+function applyTaxDetails(taxResponse, params) {
+    const breakup = taxResponse.group_taxes || [];
+    const expenseAmount = taxResponse.price || params.price;
+    const totalTax = taxResponse.total_tax || 0;
+    const totalAmount = taxResponse.total_amount_after_tax || 0;
+
+    const container = $("#tax_details_container").empty();
+    breakup.forEach((group) => {
+        group.taxes.forEach((tax) => {
+            container.append(`
+                <div class="tax-line d-flex justify-content-between">
+                    <span>${tax.tax_code} (${tax.tax_percent}%)</span>
+                    <span>${parseFloat(tax.tax_amount).toFixed(2)}</span>
+                </div>
+            `);
+        });
+    });
+
+    $("#new_exp_value").val(expenseAmount.toFixed(2));
+    $("#new_exp_tax_amount").val(totalTax.toFixed(2));
+    $("#total_amount_after_tax").val(totalAmount.toFixed(2));
+    $("#new_exp_tax_breakup").val(JSON.stringify(breakup));
+}
+
+/*-------------------------
+  Header Discount Change Event
+-------------------------*/
+$(document).on("change", "#new_exp_value", function (e) {
+    e.preventDefault();
+    let $input = $(this);
+    let value = parseFloat($input.val()) || 0;
+
+    $input.prop("readonly", false);
+    $("#new_exp_perc").prop("readonly", Boolean(value)).val("");
+
+    calculateTaxAndApply(this);
+
+    return false;
+});
+
+function summaryExpTotal() {
+    let expenseTotal = 0.0;
+    let taxTotal = 0.0;
+    let grandTotal = 0.0;
+
+    $(".display_summary_exp_row").each(function () {
+        let eAmount = parseFloat($(this).find("[name*='e_amnt']").val()) || 0;
+        let tAmount =
+            parseFloat($(this).find("[name*='tax_amount']").val()) || 0;
+        let total = parseFloat($(this).find("[name*='total']").val()) || 0;
+
+        expenseTotal += eAmount;
+        taxTotal += tAmount;
+        grandTotal += total;
+    });
+
+    // Update footer
+    $("#expSummaryFooter #expTotal").text(expenseTotal.toFixed(2));
+    $("#expSummaryFooter #taxTotal").text(taxTotal.toFixed(2));
+    $("#expSummaryFooter #grandTotal").text(grandTotal.toFixed(2));
 }

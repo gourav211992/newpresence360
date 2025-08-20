@@ -23,10 +23,15 @@ class PslipRequest extends FormRequest
     {
         $rules = [
             'book_id' => 'required',
+            // 'fg_sub_store_id' => 'required',
             'cons.*.item_qty' => 'required|numeric|min:0.01',
             'item_qty.*' => 'required|numeric|min:1',
             'item_accepted_qty.*' => 'required|numeric|min:1',
         ];
+
+        if(!$this->input('id')) {
+            $rules['fg_sub_store_id'] = 'required|numeric';
+        }
 
         $today = now()->toDateString();
         $isPast = false;
@@ -81,8 +86,12 @@ class PslipRequest extends FormRequest
             ->get();
         }
         if($machines->isNotEmpty()) {
-            $rules['machine_id.*'] = 'required|array|min:1';
+            $rules['machine_id'] = 'array';
+            $rules['machine_id.*'] = 'nullable|array'; 
             $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
+
+            // $rules['machine_id.*'] = 'required|array|min:1';
+            // $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
         }
         return $rules;
     }
@@ -130,9 +139,9 @@ class PslipRequest extends FormRequest
                 );
 
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
-                if ($consumptionQty > $stockBalanceQty) {
-                    $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
-                }
+                // if ($consumptionQty > $stockBalanceQty) {
+                //     $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
+                // }
             }
         });
     }
@@ -142,6 +151,7 @@ class PslipRequest extends FormRequest
     {
         return [
             'book_id.required' => 'The series is required.',
+            'fg_sub_store_id.required' => 'The sub store is required.',
             'cons.*.item_qty.required' => 'Stock not available.',
             'document_date.in' => 'The document date must be today.',
             'document_date.required' => 'The document date is required.',

@@ -225,8 +225,8 @@ class ErpLorryReceiptController extends Controller
             }
         } else {
             $lr = ErpLorryReceipt::with([
-                'consignor:id,company_name',
-                'consignee:id,company_name',
+                'consignor:id,company_name,email',
+                'consignee:id,company_name,email',
                 'driver:id,name',
                 'vehicle:id,lorry_no,vehicle_type_id',
                 'locations.route:id,name',
@@ -841,7 +841,6 @@ public function lorryMail(Request $request)
 
     $encryptedEmail = Crypt::encryptString($consignee->email);
     $approveLink = route('lorry-receipt.approve', ['id' => $lr->id, 'email' => $encryptedEmail]); 
-
     
     $description = <<<HTML
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
@@ -949,7 +948,8 @@ public function approveReceipt($id, $encryptedEmail)
 {
     $email = Crypt::decryptString($encryptedEmail);
 
-    $customer = Customer::where('email', $email)->first();
+    $customer = \DB::table('erp_customers')->where('email', $email)->first();
+
     $data = [
         'name' => $customer ? $customer->company_name : 'User',
         'remarks' => '',
@@ -962,10 +962,10 @@ public function approveReceipt($id, $encryptedEmail)
         return view('logistics.lorry-receipt.success', $data);
     }
 
-    $lr = ErpLorryReceipt::findOrFail($id);
+    $lr = \DB::table('erp_logistics_lorry_receipt')->where('id', $id)->first();
 
-    if ($lr->consignee->email !== $email) {
-        $data['remarks'] = 'Unauthorized: Email does not match consignee. You are not allowed to approve this receipt.';
+    if (!$lr) {
+        $data['remarks'] = 'Lorry Receipt not found.';
         $data['status'] = 'error';
         return view('logistics.lorry-receipt.success', $data);
     }
@@ -976,8 +976,21 @@ public function approveReceipt($id, $encryptedEmail)
         return view('logistics.lorry-receipt.success', $data);
     }
 
-    $lr->consignee_status = 'approved';
-    $lr->save();
+
+   $consignee = null;
+    if ($lr->consignee_id) {
+        $consignee = \DB::table('customers')->where('id', $lr->consignee_id)->first();
+    }
+
+    if (!$consignee || $consignee->email !== $email) {
+        $data['remarks'] = 'Unauthorized: Email does not match consignee. You are not allowed to approve this receipt.';
+        $data['status'] = 'error';
+        return view('logistics.lorry-receipt.success', $data);
+    }
+
+   \DB::table('erp_logistics_lorry_receipt')
+    ->where('id', $id)
+    ->update(['consignee_status' => 'approved']);
 
     $data['remarks'] = 'Your Lorry Receipt has been successfully approved!';
     $data['status'] = 'success';

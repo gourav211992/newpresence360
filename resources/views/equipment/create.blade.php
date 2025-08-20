@@ -89,37 +89,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-8">
-                                                <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3">
-                                                            <label class="form-label" for="book_id">Series <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <select class="form-select" name="book_id" id="book_id" required>
-                                                                @if ($series)
-                                                                    @foreach ($series as $index => $ser)
-                                                                        <option value="{{ $ser->id }}"
-                                                                            {{ old('book_id') == $ser->id ? 'selected' : '' }}>
-                                                                            {{ $ser->book_code }}
-                                                                        </option>
-                                                                    @endforeach
-                                                                @endif
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3">
-                                                            <label class="form-label" for="document_number">Doc No <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <input type="text" class="form-control" name="document_number"
-                                                                id="document_number" value="{{ old('document_number') }}"
-                                                                readonly required>
-                                                        </div>
-                                                    </div>
-
+                                               
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Organization <span
@@ -298,7 +268,7 @@
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="newheader ">
-                                                        <h4 class="card-title text-theme">Maintenance and Spare Part Detail
+                                                        <h4 class="card-title text-theme">Maintenance Detail
                                                         </h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
@@ -315,17 +285,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="step-custhomapp bg-light">
-                                            <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-                                                <li class="nav-item">
-                                                    <a class="nav-link active" data-bs-toggle="tab"
-                                                        href="#Maintenance">Maintenance</a>
-                                                </li>
-                                                <li class="nav-item">
-                                                    <a class="nav-link" data-bs-toggle="tab" href="#Spare">Spare Part</a>
-                                                </li>
-                                            </ul>
-                                        </div>
+                                        
 
                                         <div class="tab-content pb-1">
                                             <div class="tab-pane active" id="Maintenance">
@@ -345,9 +305,11 @@
                                                                                     for="Email"></label>
                                                                             </div>
                                                                         </th>
-                                                                        <th width="285">Type</th>
+                                                                        <th width="285">Maint Type</th>
                                                                         <th width="208">Frequency</th>
+                                                                        <th width="208">Start Date</th>
                                                                         <th width="269">Time</th>
+                                                                        <th width="208">Maintenance BOM</th>
                                                                         <th width="329">Checklist</th>
                                                                     </tr>
                                                                 </thead>
@@ -359,117 +321,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <!-- Spare Part Tab -->
-                                            <div class="tab-pane" id="Spare">
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="table-responsive pomrnheadtffotsticky">
-                                                            <table
-                                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th width="62" class="customernewsection-form">
-                                                                            <div
-                                                                                class="form-check form-check-primary custom-checkbox">
-                                                                                <input type="checkbox"
-                                                                                    class="form-check-input" id="Email">
-                                                                                <label class="form-check-label"
-                                                                                    for="Email"></label>
-                                                                            </div>
-                                                                        </th>
-                                                                        <th width="285">Item Code</th>
-                                                                        <th width="208">Item Name</th>
-                                                                        <th width="269">Attributes</th>
-                                                                        <th width="329">UOM</th>
-                                                                        <th>Qty</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody class="mrntableselectexcel" id="spareRows">
-                                                                </tbody>
-
-                                                                <tfoot>
-                                                                    <tr class="totalsubheadpodetail">
-                                                                        <td colspan="6"></td>
-                                                                    </tr>
-                                                                    <tr valign="top">
-                                                                        <td colspan="6">
-                                                                            <table class="table border">
-                                                                                <tr>
-                                                                                    <td class="p-0">
-                                                                                        <h6
-                                                                                            class="text-dark mb-0 bg-light-primary py-1 px-50">
-                                                                                            <strong>Part Details</strong>
-                                                                                        </h6>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div class=" mw-100">
-                                                                                            <strong>Name</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-name"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>HSN</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-hsn"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>Color</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-color"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>Size</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-size"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>Inv.
-                                                                                                UOM</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-uom"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>Qty.</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-qty"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-secondary">
-                                                                                            <strong>Remarks</strong>:
-                                                                                            <span
-                                                                                                id="part-detail-remarks"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                            </table>
-                                                                        </td>
-                                                                    </tr>
-                                                                </tfoot>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- End Spare Part Tab -->
+                                           
                                         </div>
                                         <div class="row">
                                             <div class="col-md-12">
@@ -759,58 +611,12 @@
             var allLocations = @json($locations);
             // var allCategories = @json($categories);
             var maintenanceTypes = @json($maintenanceTypes);
+            var maintenanceBOM = @json($maintenanceBOM);
             let items = @json($items);
 
 
             $('#maintenanceRows').append(getMaintenanceRow());
             $('#spareRows').append(getSparePartRow());
-
-            $('#book_id').on('change', function() {
-                    let currentDate = new Date().toISOString().split('T')[0];
-                    let bookId = $('#book_id').val();
-                    let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
-                        "&document_date=" + currentDate;
-                    fetch(actionUrl).then(response => {
-                        return response.json().then(data => {
-                            if (data.status == 200) {
-                                $("#book_code_input").val(data.data.book_code);
-                                if (!data.data.doc.document_number) {
-                                    $("#document_number").val('');
-                                    $('#doc_number_type').val('');
-                                    $('#doc_reset_pattern').val('');
-                                    $('#doc_prefix').val('');
-                                    $('#doc_suffix').val('');
-                                    $('#doc_no').val('');
-                                } else {
-                                    $("#document_number").val(data.data.doc.document_number);
-                                    $('#doc_number_type').val(data.data.doc.type);
-                                    $('#doc_reset_pattern').val(data.data.doc.reset_pattern);
-                                    $('#doc_prefix').val(data.data.doc.prefix);
-                                    $('#doc_suffix').val(data.data.doc.suffix);
-                                    $('#doc_no').val(data.data.doc.doc_no);
-                                }
-                                if (data.data.doc.type == 'Manually') {
-                                    $("#document_number").attr('readonly', false);
-                                } else {
-                                    $("#document_number").attr('readonly', true);
-                                }
-
-                            }
-                            if (data.status == 404) {
-                                $("#document_number").val('');
-                                $('#doc_number_type').val('');
-                                $('#doc_reset_pattern').val('');
-                                $('#doc_prefix').val('');
-                                $('#doc_suffix').val('');
-                                $('#doc_no').val('');
-                                showToast('error', data.message);
-                            }
-                        });
-                    });
-                });
-                $('#book_id').trigger('change');
-
-        
 
             // On organization change, filter locations
             $('#organization_id').on('change', function () {
@@ -846,6 +652,12 @@
                 typeOptions += `<option value="${type.id}">${type.name}</option>`;
             });
 
+            // Build options from maintenanceTypes
+            let bomOptions = `<option value="">Select</option>`;
+            maintenanceBOM.forEach(function (type) {
+                bomOptions += `<option value="${type.id}">${type.name}</option>`;
+            });
+
             let row = `<tr data-row-id="${rowId}">
                                 <td class="customernewsection-form">
                                     <div class="form-check form-check-primary custom-checkbox">
@@ -854,12 +666,12 @@
                                     </div>
                                 </td>
                                 <td class="poprod-decpt">
-                                    <select name="maintenance[${rowId}][type]" class="form-select mw-100 maintenance-type">
+                                    <select name="maintenance[${rowId}][type]" required class="form-select mw-100 maintenance-type">
                                         ${typeOptions}
                                     </select>
                                 </td>
                                 <td class="poprod-decpt">
-                                    <select name="maintenance[${rowId}][frequency]" class="form-select mw-100">
+                                    <select name="maintenance[${rowId}][frequency]" required class="form-select mw-100">
                                         <option value="">Select</option>
                                         <option value="Daily">Daily</option>
                                         <option value="Weekly">Weekly</option>
@@ -869,8 +681,16 @@
                                         <option value="Annually">Annually</option>
                                     </select>
                                 </td>
+                                 <td class="poprod-decpt">
+                                    <input type="date" name="maintenance[${rowId}][date]" required class="form-control mw-100 mb-25" />
+                                </td>
                                 <td class="poprod-decpt">
-                                    <input type="time" name="maintenance[${rowId}][time]" placeholder="Enter Time" class="form-control mw-100 mb-25" />
+                                    <input type="time" name="maintenance[${rowId}][time]" required placeholder="Enter Time" class="form-control mw-100 mb-25" />
+                                </td>
+                                 <td class="poprod-decpt">
+                                    <select name="maintenance[${rowId}][bom]" required  class="form-select mw-100 maintenance-bom">
+                                        ${bomOptions}
+                                    </select>
                                 </td>
                                 <td class="poprod-decpt checklist-cell">
                                     <span class="checklist-badges"></span>
@@ -879,16 +699,26 @@
                                 </td>
                             </tr>`;
 
-            $(function () {
-                $(".ledgerselecct").autocomplete({
-                    source: maintenanceTypes.map(item => item.name),
-                    minLength: 0
-                }).focus(function () {
-                    if (this.value == "") {
-                        $(this).autocomplete("search");
-                    }
-                });
-            });
+            // $(function () {
+            //     $(".ledgerselecct").autocomplete({
+            //         source: maintenanceTypes.map(item => item.name),
+            //         minLength: 0
+            //     }).focus(function () {
+            //         if (this.value == "") {
+            //             $(this).autocomplete("search");
+            //         }
+            //     });
+            // });
+            //  $(function () {
+            //     $(".ledgerselecct2").autocomplete({
+            //         source: maintenanceBOM.map(item => item.name),
+            //         minLength: 0
+            //     }).focus(function () {
+            //         if (this.value == "") {
+            //             $(this).autocomplete("search");
+            //         }
+            //     });
+            // });
 
             return row;
         }

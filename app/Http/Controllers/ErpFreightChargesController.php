@@ -181,6 +181,7 @@ class ErpFreightChargesController extends Controller
         }
 
         return response()->json([
+            'message' => 'Get freight charge data',
             'vehicle_type_id' => $freightCharge->vehicle_type_id,
             'vehicle_type_name' => optional($freightCharge->vehicleType)->name,
             'distance' => $freightCharge->distance,

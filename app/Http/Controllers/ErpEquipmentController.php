@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\ConstantHelper;
+use App\Models\PlantMaintBom;
 
 class ErpEquipmentController extends Controller
 {
@@ -46,12 +47,13 @@ class ErpEquipmentController extends Controller
 
         $locations = InventoryHelper::getAccessibleLocations();
         $maintenanceTypes = ErpMaintenanceType::all(['id', 'name']);
+        $maintenanceBOM = PlantMaintBom::all(['id', 'bom_name as name']);
 
         $checklists = InspectionChecklist::get();
 
         $items = Item::get();
         $categories = Category::where('type', 'Equipment')->get();
-        return view('equipment.create', compact('series', 'organizationId', 'userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'items', 'checklists'));
+        return view('equipment.create', compact('maintenanceBOM','series', 'organizationId', 'userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'items', 'checklists'));
     }
 
     public function store(ErpEquipmentRequest $request)
@@ -60,6 +62,16 @@ class ErpEquipmentController extends Controller
         try {
             $user = Helper::getAuthenticatedUser();
             $org = $user->organization;
+            $parentUrl = ConstantHelper::EQPT;
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+          
+            $book_id = null;
+            if ($services && $services['current_book']) {
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    $book_id = $services['current_book']->id;
+                }
+            }
 
             // Store Equipment
             $equipment = ErpEquipment::create([
@@ -73,12 +85,7 @@ class ErpEquipmentController extends Controller
                 'description' => $request->description,
                 'upload_document' => null, // Will handle file upload below
                 'final_remarks' => $request->final_remarks,
-                'book_id' => $request->book_id, // Or get from elsewhere
-                'document_number' => $request->document_number, // Generate as needed
-                'doc_number_type' => $request->doc_number_type,
-                'doc_prefix' => $request->doc_prefix,
-                'doc_suffix' => $request->doc_suffix,
-                'doc_no' => $request->doc_no,
+                'book_id' => $book_id, // Or get from elsewhere
                 'document_status' => $request->status, // From request
                 'created_by' => $user->auth_user_id,
             ]);
@@ -109,6 +116,8 @@ class ErpEquipmentController extends Controller
                         'maintenance_type_id' => $mRow['type'],
                         'frequency' => $mRow['frequency'],
                         'time' => $mRow['time'] ?? null,
+                        'start_date' => $mRow['date'] ?? null,
+                        'maintenance_bom_id' => $mRow['bom'] ?? null,
                         'created_by' => $user->auth_user_id,
                     ]);
 
@@ -223,9 +232,11 @@ class ErpEquipmentController extends Controller
             $userType['type'],
             $revNo
         );
+        
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$equipment->document_status] ?? '';
         $locations = InventoryHelper::getAccessibleLocations();
         $maintenanceTypes = ErpMaintenanceType::all(['id', 'name']);
+        $maintenanceBOM = PlantMaintBom::all(['id', 'bom_name as name']);
         $items = Item::get();
        $categories = Category::where('type', 'Equipment')->get();
         $approvalHistory = [];
@@ -242,6 +253,7 @@ class ErpEquipmentController extends Controller
             'locations',
             'categories',
             'maintenanceTypes',
+            'maintenanceBOM',
             'approvalHistory',
             'buttons',
             'docStatusClass',
@@ -300,6 +312,8 @@ class ErpEquipmentController extends Controller
                         'erp_equipment_id' => $equipment->id,
                         'maintenance_type_id' => $mRow['type'],
                         'frequency' => $mRow['frequency'],
+                        'start_date' => $mRow['date'] ?? null,
+                        'maintenance_bom_id' => $mRow['bom'] ?? null,
                         'time' => $mRow['time'] ?? null,
                     ]);
 
@@ -345,7 +359,7 @@ class ErpEquipmentController extends Controller
             DB::commit();
 
             $message = $request->status == 'draft' ? 'Equipment updated as draft successfully' : 'Equipment updated successfully';
-            return redirect()->back()->with('success', $message);
+            return redirect()->route("equipment.index")->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
             return back()->withErrors(['error' => $e->getMessage()])->withInput();

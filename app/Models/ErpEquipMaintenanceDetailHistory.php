@@ -8,19 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ErpEquipMaintenanceDetailHistory extends Model
 {
     use HasFactory;
-
-     protected $fillable = [
-        'erp_equipment_id',
-        'maintenance_type_id',
-        'type',
-        'frequency',
-        'time',
-        'status',
-        'created_by',
-        'updated_by',
-        'deleted_by'
-    ];
-
+    protected $guarded = ['id'];
     public function equipment()
     {
         return $this->belongsTo(ErpEquipmentHistory::class, 'erp_equipment_id','source_id');

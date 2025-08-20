@@ -449,6 +449,15 @@
                                                         </div>
                                                         <input type = "hidden" name = "payment_terms_code" value = "{{isset($order) ? $order -> payment_terms_code : ''}}" id = "payment_terms_code_input"></input>
                                                     </div>
+                                                    @if ($showCreditDays)
+                                                        <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days <span class="text-danger"></span></label>
+                                                            <input type="number" value = "{{isset($order) ? $order -> credit_days : 0}}" name = "credit_days" class="form-control disable_on_edit" id = "credit_days_input" readonly>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+
 											    </div>
 
                                                  </div>
@@ -2495,6 +2504,7 @@
 											<th>Leadger Name</th>
                                             <th class="text-end">Debit</th>
                                             <th class="text-end">Credit</th>
+                                            <th>Due Date</th>
 										  </tr>
 										</thead>
 										<tbody id = "posting-table">
@@ -3503,7 +3513,9 @@
                                 type : item?.customer_type,
                                 phone_no : item?.mobile,
                                 email : item?.email,
-                                gstin : item?.compliances?.gstin_no
+                                gstin : item?.compliances?.gstin_no,
+                                credit_days : item?.credit_days,
+                                credit_days_editable : item?.credit_days_editable
                             };
                         }));
                     },
@@ -3525,6 +3537,8 @@
                 var phoneNo = ui.item.phone_no;
                 var email = ui.item.email;
                 var gstIn = ui.item.gstin;
+                var creditDays = ui.item.credit_days ? ui.item.credit_days : 0;
+                var creditDaysEdit = ui.item.credit_days_editable;
                 $input.attr('customer_type', customerType);
                 $input.attr('phone_no', phoneNo);
                 $input.attr('email', email);
@@ -3535,6 +3549,13 @@
                 $input.attr('currency_id', currencyId);
                 $input.attr('currency', currency);
                 $input.attr('currency_code', currencyCode);
+                //Set Credit Days
+                $("#credit_days_input").val(creditDays);
+                if (creditDaysEdit) {
+                    $("#credit_days_input").removeAttr("readonly");
+                } else {
+                    $("#credit_days_input").attr("readonly", true);
+                }
                 $input.val(ui.item.label);
                 $("#customer_code_input_hidden").val(ui.item.code);
                 document.getElementById('customer_id_input').value = ui.item.id;
@@ -3778,6 +3799,12 @@
                         }
                         if (currentOrder?.customer_terms_name) {
                             $("#terms").val(currentOrder?.customer_terms_name);
+                        }
+                        //Credit Days
+                        if (currentOrder?.credit_days) {
+                            $("#credit_days_input").val(currentOrder.credit_days);
+                        } else {
+                            $("#credit_days_input").val(0);
                         }
                         //General Detail
                         // $("#transporter_name_input").val(currentOrder?.transporter_name);
@@ -4772,6 +4799,7 @@ function onPostVoucherOpen(type = "not_posted")
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                     <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                    <td class="text-end">${voucherDetail.due_date ? moment(voucherDetail.due_date).format('D/M/Y') : moment(voucherEntries.document_date).format('D/M/Y')}</td>
 					</tr>
                     `
                 });

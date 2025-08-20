@@ -22,6 +22,7 @@ class ErpSoItemBom extends Model
         'qty',
         'station_id',
         'station_name',
+        'remark'
     ];
 
     protected $casts = [

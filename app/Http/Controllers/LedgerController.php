@@ -229,6 +229,21 @@ class LedgerController extends Controller
         $tcsSections = ConstantHelper::getTcsSections();
         //        $label = ConstantHelper::getTaxTypeLabel(ConstantHelper::TAX_TYPE_IGST);
         $Existingledgers = Ledger::select('name', 'code')->get();
+
+        // Get existing TDS sections grouped by ledger groups for frontend validation
+        $ExistingTdsSections = Ledger::select('ledger_group_id', 'tds_section')
+            ->whereNotNull('tds_section')
+            ->where('tds_section', '!=', '')
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function ($ledger) {
+                $groupIds = json_decode($ledger->ledger_group_id, true) ?? [];
+                return [
+                    'ledger_group_ids' => $groupIds,
+                    'tds_section' => $ledger->tds_section
+                ];
+        });
+
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
@@ -252,7 +267,7 @@ class LedgerController extends Controller
         }
 
 
-        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
+        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers', 'ExistingTdsSections'));
     }
 
     public function showImportForm()
@@ -453,6 +468,11 @@ class LedgerController extends Controller
                 'numeric',
                 'max:255',
             ],
+            'tds_without_pan' => [
+                'nullable',
+                'numeric',
+                'max:255',
+            ],
             'tcs_section' => [
                 'nullable',
                 'string',
@@ -641,6 +661,20 @@ class LedgerController extends Controller
         $existingLedgers = Ledger::where('id', '!=', $data->id)
             ->select('name', 'code')
             ->get();
+        
+        $ExistingTdsSections = Ledger::select('ledger_group_id', 'tds_section')
+            ->whereNotNull('tds_section')
+            ->where('tds_section', '!=', '')
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function ($ledger) {
+                $groupIds = json_decode($ledger->ledger_group_id, true) ?? [];
+                return [
+                    'ledger_group_ids' => $groupIds,
+                    'tds_section' => $ledger->tds_section
+                ];
+            });
+
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
@@ -684,8 +718,8 @@ class LedgerController extends Controller
             'existingLedgers',
             'approvalHistory',
             'buttons',
-            'docStatusClass'
-
+            'docStatusClass',
+            'ExistingTdsSections'
         ));
     }
 
@@ -750,6 +784,11 @@ class LedgerController extends Controller
                 'max:255',
             ],
             'tds_percentage' => [
+                'nullable',
+                'numeric',
+                'max:255',
+            ],
+            'tds_without_pan' => [
                 'nullable',
                 'numeric',
                 'max:255',
@@ -1200,6 +1239,20 @@ class LedgerController extends Controller
         ];
 
         return response()->json($response);
+    }
+    public function createPartyLedger(Request $req)
+    {
+        if ($req->has(['code', 'name', 'type','group_id'])) {
+            $result = Helper::createPartyLedger($req->type, $req->name, $req->code,$req->group_id);
+
+            return response()->json($result);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Missing required fields: code, name, type or group_id.',
+            'data' => []
+        ], 400);
     }
 
 }

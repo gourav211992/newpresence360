@@ -2,19 +2,12 @@
 
 namespace App\Http\Controllers\Kaizen;
 
-use App\Exceptions\ApiGenericException;
-use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
-use App\Models\Department;
 use App\Models\Employee;
-use App\Models\Kaizen\ErpKaizen;
-use App\Models\Kaizen\ErpKaizenImprovement;
+
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use App\Lib\Validation\Kaizen\KaizenStoreRequest as Validator;
-use App\Models\Kaizen\ErpKaizenDocument;
-use App\Models\Kaizen\ErpKaizenTeam;
+
 
 class IndexController extends Controller
 {

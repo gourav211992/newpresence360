@@ -35,6 +35,7 @@ class KaizenController extends Controller
             ->where(function($query) use($request){
                 self::filter($request, $query);
             })
+            ->orderBy('id','desc')
             ->paginate($length);
         return view('kaizen.index',[
             'kaizens' => $kaizens

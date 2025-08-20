@@ -8,6 +8,7 @@ use App\Jobs\SendEmailJob;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\Book;
+use App\Models\ErpFinancialYear;
 use App\Models\Item;
 use App\Models\Category;
 use App\Models\Customer;
@@ -306,10 +307,12 @@ class ErpSaleInvoiceController extends Controller
         $locationVisiblity = true;
         $showGeneralInfo = true;
         $subLocationVisibility = true;
+        $showCreditDays = false;
         if ($parentURL === 'sale-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
             $redirectUrl = route('sale.invoice.index');
             $locationVisiblity = true;
+            $showCreditDays = true;
         } else if ($parentURL === 'delivery-note') {
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
             $redirectUrl = route('sale.deliveryNote.index');
@@ -318,22 +321,26 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
             $redirectUrl = route('sale.deliveryNoteCumInvoice.index');
             $locationVisiblity = true;
+            $showCreditDays = true;
         } else if ($parentURL === 'service-invoices') {
             $showGeneralInfo = false;
             $subLocationVisibility = false;
             $orderType = ConstantHelper::SERVICE_INV_SERVICE_ALIAS;
             $redirectUrl = route('sale.serviceInvoice.index');
             $locationVisiblity = true;
+            $showCreditDays = true;
         } else if ($parentURL === 'lease-invoices') {
             $showGeneralInfo = false;
             $subLocationVisibility = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $locationVisiblity = false;
+            $showCreditDays = true;
         }else if ($parentURL === 'transporter-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
             $redirectUrl = route('sale.transporterInvoice.index');
             $locationVisiblity = false;
+            $showCreditDays = true;
         }
         
         request() -> merge(['type' => $orderType]);
@@ -369,7 +376,8 @@ class ErpSaleInvoiceController extends Controller
             'termsAndConditions' => $termsAndConditions,
             'einvoice' => null,
             'showGeneralInfo' => $showGeneralInfo,
-            'showSubLocation' => $subLocationVisibility
+            'showSubLocation' => $subLocationVisibility,
+            'showCreditDays' => $showCreditDays
         ];
         return view('salesInvoice.create_edit', $data);
     }
@@ -380,9 +388,11 @@ class ErpSaleInvoiceController extends Controller
         $locationVisiblity = true;
         $showGeneralInfo = true;
         $subLocationVisibility = true;
+        $showCreditDays = false;
         if ($parentUrl === 'sale-invoices') {
             $locationVisiblity = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
+            $showCreditDays = true;
         } else if ($parentUrl === 'delivery-note') {
             $locationVisiblity = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
@@ -391,21 +401,25 @@ class ErpSaleInvoiceController extends Controller
             $locationVisiblity = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
             $redirect_url = route('sale.deliveryNoteCumInvoice.index');
+            $showCreditDays = true;
         } else if ($parentUrl === 'lease-invoices') {
             $showGeneralInfo = false;
             $locationVisiblity = false;
             $subLocationVisibility = false;
+            $showCreditDays = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirect_url = route('sale.leaseInvoice.index');
         } else if ($parentUrl === 'service-invoices') {
             $locationVisiblity = false;
             $showGeneralInfo = false;
             $subLocationVisibility = false;
+            $showCreditDays = true;
             $orderType = ConstantHelper::SERVICE_INV_SERVICE_ALIAS;
             $redirect_url = route('sale.serviceInvoice.index');
         } else if ($parentUrl === 'transporter-invoices') {
             $locationVisiblity = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+            $showCreditDays = true;
         }
         request() -> merge(['type' => $orderType]);
         $user = Helper::getAuthenticatedUser();
@@ -554,7 +568,8 @@ class ErpSaleInvoiceController extends Controller
                 'editTransporterFields' => $editTransporterFields,
                 'termsAndConditions' => $termsAndConditions,
                 'showGeneralInfo' => $showGeneralInfo,
-                'showSubLocation' => $subLocationVisibility
+                'showSubLocation' => $subLocationVisibility,
+                'showCreditDays' => $showCreditDays
             ];
             return view('salesInvoice.create_edit', $data);
     }
@@ -872,6 +887,7 @@ class ErpSaleInvoiceController extends Controller
                     'currency_code' => $request -> currency_code,
                     'payment_term_id' => $request -> payment_terms_id,
                     'payment_term_code' => $request -> payment_terms_code,
+                    'credit_days' => $request -> credit_days ?? 0,
                     'document_status' => ConstantHelper::DRAFT,
                     'approval_level' => 1,
                     'remarks' => $request -> final_remarks,
@@ -1655,7 +1671,18 @@ class ErpSaleInvoiceController extends Controller
                 $saleInvoice -> e_invoice_status = EInvoiceHelper::getEInvoicePendingDocumentStatus($saleInvoice, $saleInvoice -> gst_invoice_type);
                 $saleInvoice -> save();
                 SaleModuleHelper::cashCustomerMasterData($saleInvoice);
-
+                SaleModuleHelper::updateOrCreateInvoicePaymentTerms($saleInvoice -> id, $saleInvoice -> document_date, $saleInvoice -> payment_term_id, $saleInvoice -> credit_days);
+                $fy = Helper::getFinancialYear($saleInvoice -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ($request -> sale_invoice_id && $request -> action_type == 'amendment') {
+                    $oldSaleInvoice = ErpSaleInvoiceHistory::where('source_id', $saleInvoice -> id) 
+                        -> where('revision_number', $saleInvoice -> revision_number - 1) -> first();
+                    if ($oldSaleInvoice) {
+                        SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear, $oldSaleInvoice);
+                    }
+                } else {
+                    SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear);
+                }
                 // Get configuration detail
                 $config = Configuration::where('type','organization')
                     ->where('type_id', $user->organization_id)

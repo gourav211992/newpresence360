@@ -43,11 +43,11 @@
                                     <button type="submit"
                                         class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
                                         value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                @endif
+                                @endif 
                                 @if (
                                     !intval(request('amendment') ?? 0) &&
-                                        $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
-                                        $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
+                                        // $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
+                                        // $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
                                         $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
                                     <a href="{{ url(request()->route('type')) }}/{{ $po->id }}/pdf" target="_blank"
                                         class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
@@ -263,6 +263,17 @@
                                                                 name="delivery_address_id"
                                                                 value="{{ $po->latestDeliveryAddress()?->id }}" />
 
+                                                            <input type="hidden" value="{{ $fromCountry }}"
+                                                                id="country_id" name="country_id" />
+                                                            <input type="hidden" value="{{ $fromState }}"
+                                                                id="state_id" name="state_id" />
+
+                                                            <input type="hidden" value="" id="party_country_id"
+                                                                name="party_country_id" />
+                                                            <input type="hidden" value="" id="party_state_id"
+                                                                name="party_state_id" />
+
+
                                                             <input type="hidden"
                                                                 value="{{ $po->latestShippingAddress()?->state?->id }}"
                                                                 id="hidden_state_id" name="hidden_state_id" />
@@ -405,10 +416,13 @@
                                                     <a href="javascript:;" id="addNewItemBtn"
                                                         class="btn btn-sm btn-outline-primary d-none">
                                                         <i data-feather="plus"></i> Add Item</a>
-                                                    <a href="#" onclick = "copyItemRow();" id = "copy_item_section"
-                                                        style = "{{ isset($po->po_items) && count($po->po_items) ? '' : 'display:none;' }}"
-                                                        class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="copy"></i> Copy Item</a>
+                                                    @if ($buttons['submit'] || $buttons['draft'])
+                                                        <a href="#" onclick = "copyItemRow();"
+                                                            id = "copy_item_section"
+                                                            style = "{{ isset($po->po_items) && count($po->po_items) ? '' : 'display:none;' }}"
+                                                            class="btn btn-sm btn-outline-primary">
+                                                            <i data-feather="copy"></i> Copy Item</a>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -583,7 +597,7 @@
                                                         <label class="form-label">Terms & Conditions</label>
                                                         <select class="form-select select2" name="term_id[]" multiple>
                                                             @foreach($termsAndConditions as $termsAndCondition)
-                                                            <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option> 
+                                                            <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -1041,6 +1055,7 @@
 @section('scripts')
     <script type="text/javascript">
         let type = '{{ request()->route('type') }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
         let actionUrlTax = '{{ route('po.tax.calculation', ['type' => ':type']) }}'.replace(':type', type);
         var getLocationUrl = '{{ route('store.get') }}';
         var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type);
@@ -3151,6 +3166,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
+                                    hsn_id: item.hsn_id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
                                 };
@@ -3165,12 +3181,16 @@
                 appendTo: modalId,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
+                    var hsnId = ui?.item?.hsn_id;
                     var itemId = ui.item.id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
 
+                    console.log('Selected item:', ui.item);
+
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -3178,7 +3198,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }

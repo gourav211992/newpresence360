@@ -181,9 +181,20 @@ class PoController extends Controller
         if($userCheck) {
             $selectedDepartmentId = $user?->department_id;
         }
+
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $currencyName = $organization?->currency?->short_name ?? '';
+        $companyCountryId = null;
+        $companyStateId = null;
+        $firstAddress = $organization->addresses->first();
+        if ($firstAddress) {
+            $companyCountryId = $firstAddress->country_id;
+            $companyStateId = $firstAddress->state_id;
+        }
+
         return view('procurement.po.create', [
+            'fromState'=> $companyStateId,
+            'fromCountry'=> $companyCountryId,
             'books'=> $books,
             'termsAndConditions' => $termsAndConditions,
             'title' => $title,
@@ -861,22 +872,23 @@ class PoController extends Controller
                     }
                 }
 
-                /*Header level save discount*/
                 if(isset($request->all()['exp_summary'])) {
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
                             $ted = new PurchaseOrderTed;
-                            $ted->purchase_order_id = $po->id;
-                            $ted->po_item_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->assessment_amount = $totalAfterTax;
-                            $ted->ted_perc = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicable_type = 'Collection';
+                            $ted->purchase_order_id  =      $po->id;
+                            $ted->po_item_id         =      null;
+                            $ted->ted_type           =      'Expense';
+                            $ted->ted_level          =      'H';
+                            $ted->ted_id             =      $dis['ted_e_id'] ?? null;
+                            $ted->ted_name           =      $dis['e_name'] ?? null;
+                            $ted->assessment_amount  =      $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                            $ted->ted_amount         =      $dis['e_amnt'] ?? 0.00;
+                            $ted->ted_perc           =      0.00;
+                            $ted->tax_amount         =      $dis['tax_amount'] ?? 0.00;
+                            // $ted->total_amount       =      $dis['total'] ?? ($ted->ted_amount + $ted->tax_amount);
+                            $ted->tax_breakup        =      $dis['tax_breakup'] ?? null;
+                            $ted->applicable_type    =      'Collection';
                             $ted->save();
                         }
                     }
@@ -1550,22 +1562,25 @@ class PoController extends Controller
                 if(isset($request->all()['exp_summary'])) {
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
                             $ted = PurchaseOrderTed::find($dis['e_id'] ?? null) ?? new PurchaseOrderTed;
-                            $ted->purchase_order_id = $po->id;
-                            $ted->po_item_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->assessment_amount = $totalAfterTax;
-                            $ted->ted_perc = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicable_type = 'Collection';
+                            $ted->purchase_order_id  =      $po->id;
+                            $ted->po_item_id         =      null;
+                            $ted->ted_type           =      'Expense';
+                            $ted->ted_level          =      'H';
+                            $ted->ted_id             =      $dis['ted_e_id'] ?? null;
+                            $ted->ted_name           =      $dis['e_name'] ?? null;
+                            $ted->assessment_amount  =      $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                            $ted->ted_amount         =      $dis['e_amnt'] ?? 0.00;
+                            $ted->ted_perc           =      0.00;
+                            $ted->tax_amount         =      $dis['tax_amount'] ?? 0.00;
+                            // $ted->total_amount       =      $dis['total'] ?? ($ted->ted_amount + $ted->tax_amount);
+                            $ted->tax_breakup        =      $dis['tax_breakup'] ?? null;
+                            $ted->applicable_type    =      'Collection';
                             $ted->save();
                         }
                     }
                 }
+
                 /*Update total in main header PO*/
                 if($itemTotalValue < ($itemTotalHeaderDiscount + $itemTotalDiscount)) {
                     DB::rollBack();
@@ -1872,10 +1887,21 @@ class PoController extends Controller
         ->get();
         $currencyName = $organization?->currency?->short_name ?? '';
         $isDifferentCurrency = intval($po?->vendor?->currency_id) !== intval($organization?->currency_id);
+
+        $companyCountryId = null;
+        $companyStateId = null;
+        $firstAddress = $organization->addresses->first();
+        if ($firstAddress) {
+            $companyCountryId = $firstAddress->country_id;
+            $companyStateId = $firstAddress->state_id;
+        }
+
         return view($view, [
             'users' => $users,
             'isEdit'=> $isEdit,
             'books'=> $books,
+            'fromCountry'=> $companyCountryId,
+            'fromState'=> $companyStateId,
             'po' => $po,
             'buttons' => $buttons,
             'approvalHistory' => $approvalHistory,

@@ -342,7 +342,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="consignment_no"
-                                                                class="form-control  consignment_no"
+                                                                class="form-control consignment_no"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
@@ -431,6 +431,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
+                                                                <th>Batch</th>
                                                                 <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
@@ -442,7 +443,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="10">
+                                                                <td rowspan="10" colspan="11">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -491,6 +492,8 @@
         @include('procurement.inspection.partials.outstanding-mrn-modal')
         <!-- Inspection CHecklist Modal  -->
         @include('procurement.inspection.partials.inspection-checklist-modal')
+        <!-- Batch Detail Modal  -->
+        @include('procurement.inspection.partials.item-batch-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -564,6 +567,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>

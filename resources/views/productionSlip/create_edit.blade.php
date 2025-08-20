@@ -75,8 +75,8 @@
                                     <button type="button" onclick = "submitForm('submitted');" name="action" value="submitted" class="btn btn-primary btn-sm" id="submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                                 @endif
                                 @if($buttons['approve'])
-                                    <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setReject();" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setApproval();" ><i data-feather="check-circle"></i> Approve</button>
+                                    <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setReject('reject');" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setApproval('approve');" ><i data-feather="check-circle"></i> Approve</button>
                                 @endif
                                 @if($buttons['amend'])
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
@@ -339,8 +339,8 @@
                                             </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label" id="fg_label">Finished Goods Store </label>
-                                                    <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="fg_sub_store_id" name="fg_sub_store_id">
+                                                    <label class="form-label"><span id="fg_label">Finished Goods Store</span> <span class="text-danger">*</span></label>
+                                                    <select class="form-select {{@$slip?->items?->count() ? '' : ''}}" id="fg_sub_store_id" name="fg_sub_store_id">
                                                         @if(isset($slip) && $slip?->fg_sub_store_id)
                                                             <option value="{{$slip?->fg_sub_store_id}}">{{$slip?->fg_sub_store?->store_name}}</option>
                                                         @endif
@@ -350,7 +350,7 @@
                                             <div class="col">
                                                 <div class="mb-1">
                                                     <label class="form-label">Rejected Goods Store </label>
-                                                    <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="rg_sub_store_id" name="rg_sub_store_id">
+                                                    <select class="form-select {{@$slip?->items?->count() ? '' : ''}}" id="rg_sub_store_id" name="rg_sub_store_id">
                                                         @if(isset($slip) && $slip?->rg_sub_store_id)
                                                             <option value="{{$slip?->rg_sub_store_id}}">{{$slip?->rg_sub_store?->store_name}}</option>
                                                         @endif
@@ -392,7 +392,18 @@
                                                             <a href="#" onclick = "deleteItemRows();" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" data-tab="production-items">
                                                                 <i data-feather="x-circle"></i> Delete</a>
                                                             <a href="#" id = "add_item_section" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="production-items">
-                                                                <i data-feather="plus"></i> Add Product</a>
+                                                                <i data-feather="plus"></i> Add Product
+                                                            </a>
+                                                            @if(!isset($slip->document_status) || $slip->document_status == ConstantHelper::DRAFT)
+                                                                <a href="#" onclick="deleteAlterItemRows();" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" data-tab="raw-materials">
+                                                                    <i data-feather="x-circle"></i> Delete
+                                                                </a>
+
+                                                                <a href="#" id="co_add_material" onclick="addConsumtionAlternateItems();" class="btn btn-sm btn-outline-primary tab-action d-none" disabled="true" data-tab="raw-materials">
+                                                                    <i data-feather="plus"></i> Add Alternate
+                                                                </a>
+                                                            @endif
+
                                                          </div>
                                                     </div>
                                                 </div>
@@ -533,6 +544,9 @@
                                                         <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                             <thead>
                                                                 <tr>
+                                                                @if(!isset($slip->document_status) || $slip->document_status == ConstantHelper::DRAFT)
+                                                                    <th></th>
+                                                                @endif
                                                                     <th>SO No.</th>
                                                                     <th>Item Code</th>
                                                                     <th>Item Name</th>
@@ -668,6 +682,8 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div id="approval-reject-data-div" style="display: none;"></div>
+
                                     </div>
                                 </div>
                             </div>
@@ -1027,13 +1043,13 @@
 </div>
 </form>
 
+{{-- Approve & Reject Modal --}}
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.materialIssue') }}" data-redirect="{{ $redirect_url }}" enctype='multipart/form-data'>
-          @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($slip) ? $slip -> id : ''}}">
+        {{-- <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.materialIssue') }}" data-redirect="{{ $redirect_url }}" enctype='multipart/form-data'> --}}
+          {{-- @csrf --}}
+
          <div class="modal-header">
             <div>
                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
@@ -1044,23 +1060,27 @@
          <div class="modal-body pb-2">
             <div class="row mt-1">
                <div class="col-md-12">
-                  <div class="mb-1">
-                     <label class="form-label">Remarks</label>
-                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
-                  </div>
-                  <div class="row">
-                    <div class = "col-md-8">
-                        <div class="mb-1">
-                            <label class="form-label">Upload Document</label>
-                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
-                        </div>
+                <div id="approve-and-reject-div">
+                    <input type="hidden" name="approve_reject_action_type" id="approve_reject_action_type">
+                    <input type="hidden" name="pslip_id" value="{{isset($slip) ? $slip -> id : ''}}">
+                    <div class="mb-1">
+                       <label class="form-label">Remarks</label>
+                       <textarea name="approver_reject_remarks" class="form-control cannot_disable"></textarea>
                     </div>
-                    <div class = "col-md-4" style = "margin-top:19px;">
-                        <div class = "row" id = "approval_files_preview">
+                    <div class="row">
+                      <div class = "col-md-8">
+                          <div class="mb-1">
+                              <label class="form-label">Upload Document</label>
+                              <input type="file" name = "approver_reject_attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                          </div>
+                      </div>
+                      <div class = "col-md-4" style = "margin-top:19px;">
+                          <div class = "row" id = "approval_files_preview">
 
-                        </div>
+                          </div>
+                      </div>
                     </div>
-                  </div>
+                </div>
                   <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
 
                </div>
@@ -1068,9 +1088,9 @@
          </div>
          <div class="modal-footer justify-content-center">
             <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('approveModal');">Cancel</button>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="button" id="approve-and-reject-btn" class="btn btn-primary">Submit</button>
          </div>
-       </form>
+       {{-- </form> --}}
       </div>
    </div>
 </div>
@@ -1208,9 +1228,45 @@
         </div>
     </div>
 </div>
+
+
+{{-- Attribute popup --}}
+<div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+   <div class="modal-dialog  modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header p-0 bg-transparent">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-sm-2 mx-50 pb-2">
+                <h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
+                <p class="text-center">Enter the details below.</p>
+                <div class="table-responsive-md customernewsection-form">
+                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                        <thead>
+                            <tr>
+                                <th>Attribute Name</th>
+                                <th>Attribute Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
+                <button type="button" class="btn btn-primary submitAttributeBtn">Select</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
+<script src="{{ asset('app-assets/js/scripts/sweetalert.js') }}"></script>
 
 <script>
         $(window).on('load', function() {
@@ -1244,6 +1300,26 @@
                 });
             }
         });
+
+        $(document).on('click','#approve-and-reject-btn',(e) => {
+
+            // Reset approval and reject data
+            $('#approval-reject-data-div').empty();
+
+            // Clone into approval-data
+            $('#approve-and-reject-div').first().clone(true, true).appendTo('#approval-reject-data-div');
+
+            // Hide the div
+            $('#approval-reject-data-div').hide();
+
+            // Hide the modal
+            $('#approveModal').modal('hide');
+
+            // Now submit the form
+            $('#document_status').val('approved');
+            $('#sale_invoice_form').submit();
+        });
+
 
         $('#series').on('change', function() {
             var book_id = $(this).val();
@@ -1514,6 +1590,7 @@
         {
             const docType = $("#service_id_input").val();
             const invoiceToFollow = $("#invoice_to_follow_input").val() == "yes";
+
             var inputNumValue = parseFloat(element.value ? element.value  : 0);
             if (element.hasAttribute('max'))
             {
@@ -1541,6 +1618,7 @@
             //         // return;
             //     }
             // }
+
             assignDefaultBundleInfoArray(index);
             updateQty(element,index);
         }
@@ -1548,8 +1626,8 @@
         function updateQty(element, index) {
             const totalProduced = parseFloat($("#item_qty_" + index).val()) || 0;
             // console.log(element, totalProduced);
+            $("#consumption_qty_" + index).val(parseFloat($("#consumption_item_qty_" + index).val()) || 0);
 
-            $("#consumption_qty_" + index).val(totalProduced);
 
             let acceptedQty = parseFloat($("#item_accepted_qty_" + index).val()) || 0;
             let subPrimedQty = parseFloat($("#item_sub_prime_qty_" + index).val()) || 0;
@@ -2357,17 +2435,19 @@
         return addRow;
     }
 
-    function setApproval()
+    function setApproval(action)
     {
-        document.getElementById('action_type').value = "approve";
+        document.getElementById('approve_reject_action_type').value = action;
         document.getElementById('approve_reject_heading_label').textContent = "Approve " + "Invoice";
 
     }
-    function setReject()
+
+    function setReject(action)
     {
-        document.getElementById('action_type').value = "reject";
+        document.getElementById('approve_reject_action_type').value = 'rejected';
         document.getElementById('approve_reject_heading_label').textContent = "Reject " + "Invoice";
     }
+
     function setFormattedNumericValue(element)
     {
         element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(2)
@@ -2560,20 +2640,46 @@ function viewModeScript(disable = true)
 {
     const currentOrder = @json(isset($slip) ? $slip : null);
     const editOrder = "{{( isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? false : true}}";
+    const isApprover = "{{ isset($buttons['approve']) ? true : 0 }}";
     const revNoQuery = "{{ isset(request() -> revisionNumber) ? true : false }}";
+    // console.log('viewModeScript', revNoQuery, isApprover, editOrder, currentOrder);
 
     if ((editOrder || revNoQuery) && currentOrder) {
         document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
-                // element.disabled = disable;
-                element.style.pointerEvents = disable ? "none" : "auto";
-                if (disable) {
-                    element.setAttribute('readonly', true);
-                } else {
+            if (
+                element.id !== 'revisionNumber' &&
+                element.type !== 'hidden' &&
+                !element.classList.contains('cannot_disable')
+            ) {
+                // check if it's approver-can-edit field
+                if (element.classList.contains('approver-can-edit') && isApprover) {
+                    // ✅ keep editable for approver
+                    element.style.pointerEvents = "auto";
                     element.removeAttribute('readonly');
+                } else {
+                    // normal logic
+                    element.style.pointerEvents = disable ? "none" : "auto";
+                    if (disable) {
+                        element.setAttribute('readonly', true);
+                    } else {
+                        element.removeAttribute('readonly');
+                    }
                 }
             }
         });
+
+        // document.querySelectorAll('input, textarea, select').forEach(element => {
+        //     if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
+        //         // element.disabled = disable;
+        //         element.style.pointerEvents = disable ? "none" : "auto";
+        //         if (disable) {
+        //             element.setAttribute('readonly', true);
+        //         } else {
+        //             element.removeAttribute('readonly');
+        //         }
+        //     }
+        // });
+
         //Disable all submit and cancel buttons
         document.querySelectorAll('.can_hide').forEach(element => {
             element.style.display = disable ? "none" : "";
@@ -3686,14 +3792,15 @@ function getStationWiseConsBySubStoreId()
 
 //  Display attribute default
 setTimeout(()=>{
-    $("#production-items tbody:first .item_header_rows").each(function(itemIndex,item){
-        setAttributesUI(itemIndex,"#production-items tbody");
-    });
-    $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
-        setAttributesUI(itemIndex,"#raw-materials tbody");
-    });
+    // $("#production-items tbody:first .item_header_rows").each(function(itemIndex,item){
+    //     setAttributesUI(itemIndex,"#production-items tbody");
+    // });
+    // $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
+    //     setAttributesUI(itemIndex,"#raw-materials tbody");
+    // });
 }, 500);
 var currentSelectedItemIndex = null ;
+item_header
 function setAttributesUI(paramIndex = null, selectorPrifix = ''){
     let currentItemIndex = null;
     if (paramIndex != null || paramIndex != undefined) {
@@ -3878,10 +3985,401 @@ function fetchItemDetailsFromRow(rowSelector) {
             $("#raw-materials #item_details_td tbody").empty().append(data.data.html);
         });
 }
+
 $(document).on("click", "#raw-materials .item_header_rows", (e) => {
     let $row = $(e.target).closest('tr');
+      $('.consumption_row_checks').on('change', function () {
+        if ($(this).is(':checked')) {
+            $('.consumption_row_checks').not(this).prop('checked', false);
+
+            if (!$(this).data('checked-once')) {
+                $(this).data('checked-once', true);
+
+            }
+        }
+    });
     fetchItemDetailsFromRow($row);
 });
+
+
+function deleteAlterItemRows(){
+    let checkedBox = $('.consumption_row_checks:checked').first();
+    let closestRow = checkedBox.closest('tr');
+    let alternate= closestRow.find('input[name*="[alternate_id]"]').val();
+    if(alternate){
+        closestRow.remove();
+        let pslip_bom_cons_id= closestRow.find('input[name*="[pslip_bom_cons_id]"]').val();
+         $.ajax({
+                url: "{{ route('production.slip.remove_alternate_item') }}",
+                type: "GET",
+                data: {
+                    pslip_bom_cons_id: pslip_bom_cons_id,
+                },
+                dataType: "json",
+                success: function(data) {
+                     Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                    });
+                },
+                error:function(error){
+                Swal.fire({
+                        title: 'Error!',
+                        text: error.responseJSON.message,
+                        icon: 'error',
+                    });
+                }
+            });
+    }
+}
+ function addConsumtionAlternateItems(){
+
+        let checkedBox = $('.consumption_row_checks:checked').first();
+        // let item_id = checkedBox.data('conId');
+        // let item_id = checkedBox.data('conId');
+        let closestRow = checkedBox.closest('tr');
+        let item_id = closestRow.find('input[name*="[item_id]"]').val();
+        let soDoc = closestRow.find('input[name*="[so_doc]"]').val();
+        let item_type = closestRow.find('input[name*="[item_type]"]').val();
+        let item_code = closestRow.find('input[data-code]').attr('data-code');
+
+        let item_qty = closestRow.find('input[name*="[item_qty]"]').val();
+        let consumption_qty = closestRow.find('input[name*="[consumption_qty]"]').val();
+        let rowlastIndex = closestRow.data('lastindex');
+        let mo_bom_cons_id = closestRow.find('input[name*="[mo_bom_cons_id]"]').val();
+        // Select all hidden inputs with name ending in [alternate_id]
+        let alternateInputs = document.querySelectorAll("input[name$='[alternate_id]']");
+
+        let alternateIds = Array.from(alternateInputs).map(input => input.value);
+
+        alternateIds = alternateIds.filter(id => id !== "" && id !== null);
+        if(alternateIds.includes(mo_bom_cons_id)){
+            Swal.fire({
+                title: 'Error!',
+                text: 'Alternate item already exists for item code: '+item_code,
+                icon: 'error',
+            });
+            return true;
+
+        }
+
+        if(item_qty-consumption_qty<=0){
+            Swal.fire({
+                title: 'Error!',
+                text: 'Consumed quantity cannot exceed required quantity.',
+                icon: 'error',
+            });
+            return true;
+        }
+
+        var newRow = ``;
+        if (item_id) {
+                $.ajax({
+                    url: "{{ route('production.slip.clone_alterItems') }}",
+                    type: "GET",
+                    data: {
+                        item_id: item_id,
+                        soDoc: soDoc,
+                        itemType: item_type,
+                        item_qty: item_qty,
+                        mo_bom_cons_id: mo_bom_cons_id,
+                        rowlastIndex:rowlastIndex
+                    },
+                    dataType: "json",
+                    success: function(data) {
+                        closestRow.after(data.data);
+                        var item=data.item;
+                        initializeAutocomplete2(".comp_item_code",item);
+                    },
+                    error:function(error){
+                    Swal.fire({
+                            title: 'Error!',
+                            text: error.responseJSON.message,
+                            icon: 'error',
+                        });
+                    }
+                });
+            }
+    }
+  function initializeAutocomplete2(selector, data) {
+    $(selector).autocomplete({
+        source: $.map(data, function(item) {
+
+            return {
+                id: item.id,
+                label: `${item.item_name} (${item.item_code})`,
+                value: item.item_code || '',
+                code: item.item_code,
+                item_id: item.alt_item_id,
+                item_name: item.item_name,
+                uom_id: item.item.uom_id,
+                uomName: item.item.uom.name,
+                is_attr: 1,
+
+            };
+        }),
+        minLength: 0,
+        select: function(event, ui) {
+
+            let $input = $(this);
+            const itemId = ui.item.item_id;
+            const itemCode = ui.item.code;
+            const itemName = ui.item.item_name;
+            const itemN = ui.item.item_name;
+            const uomId = ui.item.uom_id;
+            const uomName = ui.item.uomName;
+
+            $input.attr('data-name', itemName);
+            $input.attr('data-code', itemCode);
+            $input.attr('data-id', itemId);
+            $input.val(itemCode);
+
+            const $row = $input.closest('tr');
+
+            $row.find('[name*=item_id]').val(itemId);
+            $row.find('[name*=item_code]').val(itemCode);
+            $row.find('[name*="[item_name]"]').val(itemN);
+
+            const uomOption = `<option value="${uomId}">${uomName}</option>`;
+            $row.find('[name*=uom_id]').empty().append(uomOption);
+
+            setTimeout(() => {
+                if (ui.item.is_attr) {
+                    $row.find('.attributeBtn').trigger('click');
+                } else {
+                    $row.find('.attributeBtn').trigger('click');
+                    if (!$("#consumption_method").val().includes('manual')) {
+                        $row.find('.consumption_btn button').trigger('click');
+                    } else {
+                        $row.find('[name*="[qty]"]').val('').focus();
+                    }
+                }
+            }, 50);
+
+
+            return false;
+        },
+        change: function(event, ui) {
+            if (!ui.item) {
+                $(this).val("");
+                $(this).attr('data-name', '');
+                $(this).attr('data-code', '');
+                $(this).attr('data-id', '');
+            }
+        }
+    }).focus(function () {
+        if (this.value === "") {
+            $(this).autocomplete("search", "");
+        }
+    });
+}
+
+/*Check attrubute*/
+$(document).on('click', '.attributeBtn', (e) => {
+
+    let tr = e.target.closest('tr');
+
+    let item_name = tr.querySelector('[name*=item_code]').value;
+    let item_id = tr.querySelector('[name*="[item_id]"]').value;
+
+   let attributeInput = tr.querySelector("input[name*='item_code[']");
+    let attributeArrayRaw = attributeInput?.getAttribute('attribute-array') || '[]';
+    let attributeArray = [];
+
+    try {
+        attributeArray = JSON.parse(attributeArrayRaw);
+    } catch (e) {
+        console.error("Invalid JSON in attribute-array:", attributeArrayRaw);
+    }
+
+    // ✅ Extract selected IDs
+    let selectedIds = attributeArray.flatMap(group =>
+        (group?.values_data || [])
+            .filter(value => value.selected)
+            .map(value => value.id)
+    );
+
+    console.log("Selected Attribute IDs:", selectedIds);  // Example output: [29]
+
+
+    if (item_name && item_id) {
+
+        let rowCount = tr.getAttribute('data-index');
+        getItemAttribute(item_id, rowCount, selectedIds, tr);
+    } else {
+        alert("Please select first item name.");
+    }
+});
+
+/*For comp attr*/
+function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+    let isSo = $(tr).find('[name*="so_item_id"]').length ? 1 : 0;
+    if(!isSo) {
+        isSo = $(tr).find('[name*="so_pi_mapping_item_id"]').length ? 1 : 0;
+    }
+    if(!isSo) {
+        if($(tr).find('td[id*="attribute_section_"]').data('disabled')) {
+            isSo = 1;
+        }
+    }
+    let actionUrl = '{{route("production.slip.getattributes")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&isSo=${isSo}`;
+    fetch(actionUrl).then(response => {
+        return response.json().then(data => {
+            if (data.status == 200) {
+                $("#attribute tbody").empty();
+                $("#attribute table tbody").append(data.data.html)
+                $(tr).find('td:nth-child(2)').find("[name*='[attr_name]']").remove();
+                $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+
+                $(tr)
+                    .find("input[id^='items_dropdown_']")
+                    .attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
+                if (data.data.attr) {
+                    $("#attribute").modal('show');
+                    $(".select2").select2();
+                }
+                qtyEnabledDisabled();
+            }
+        });
+    });
+}
+function avlStock(indexId){
+    let tr = $(`#raw-materials #item_row_${indexId}`);
+
+    if (!tr.length) {
+        console.error(`Row with index ${indexId} not found.`);
+        return;
+    }
+
+    // Get and parse attribute-array safely
+    let attributeArrayRaw = tr.find("input[name*='item_code[']").attr('attribute-array') || '[]';
+    let attributeArray = [];
+
+    try {
+        attributeArray = JSON.parse(attributeArrayRaw);
+    } catch (e) {
+        console.error("Invalid JSON in attribute-array:", attributeArrayRaw);
+    }
+
+    // Extract selected attribute IDs
+    const selectedAttributeIds = attributeArray.flatMap(group =>
+        (group?.values_data || [])
+            .filter(value => value.selected)
+            .map(value => value.id)
+    );
+
+    let value = $('#so_doc_'+indexId).val();
+    let match = value.match(/(\d+)(?!.*\d)/);
+
+
+    let lastNumber = match[0];
+
+    const attributes=selectedAttributeIds;
+    const store_id=$("#store_id_input").val();
+    const sub_store_id=$("#sub_store_id").val();
+    const station_id=$("#mo_station_id").val();
+    const rm_type=$("items_type_"+indexId).val();
+    const so_item_id=lastNumber;
+    const item_id=tr.find('[name*="[item_id]"]').val();
+    const uom_id=$("uom_dropdown_"+indexId).val();;
+
+        $.ajax({
+            url: "{{ route('production.slip.avlStock') }}",
+            type: "GET",
+            data: {
+                item_id: item_id,
+                so_item_id: so_item_id,
+                station_id: station_id,
+                uom_id: uom_id,
+                store_id: store_id,
+                attributes:attributes,
+                sub_store_id:sub_store_id,
+                rm_type:rm_type,
+            },
+            dataType: "json",
+            success: function(data) {
+             document.getElementById('item_avl_qty_'+indexId).value = data;
+
+
+            },
+            error:function(error){
+            Swal.fire({
+                    title: 'Error!',
+                    text: error.responseJSON.message,
+                    icon: 'error',
+                });
+            }
+        });
+}
+
+$(document).on('change', 'select.select2', function () {
+    const selectedValue = $(this).val();
+    const attrName = $(this).data('attr-name');
+    const attrGroupId = $(this).data('attr-group-id');
+    const selectedText = $(this).find('option:selected').text();
+
+    $('input[name^="row_count["]').each(function () {
+        const rowIndex = $(this).val();
+        const $hiddenInput = $(`input[name="item_code[${rowIndex}]"]`);
+         const $hiddenInputattr = $(`input[name="cons[${rowIndex}][attribute_value]"]`);
+        const attrArrayRaw = $hiddenInput.attr('attribute-array');
+
+        if (!attrArrayRaw) return;
+
+        try {
+            const attrArray = JSON.parse(attrArrayRaw);
+            let selectedItems = [];
+
+            attrArray.forEach(group => {
+                if (group.attribute_group_id == attrGroupId) {
+                    group.values_data.forEach(item => {
+                        item.selected = (String(item.id) === String(selectedValue));
+                        if (item.selected) {
+                            let newItem = {
+                                attribute_id: item.value ,
+                                attribute_name: attrGroupId,
+                                attribute_value: item.id
+                            };
+                            selectedItems.push(newItem);
+                        }
+                    });
+                }
+            });
+
+            $hiddenInputattr.val(JSON.stringify(selectedItems));
+            $hiddenInput.attr('attribute-array', JSON.stringify(attrArray));
+
+            console.log(`Updated attribute-array for row ${rowIndex}:`, attrArray);
+
+            const $row = $(`#raw-materials #item_row_${rowIndex}`);
+            fetchItemDetailsFromRow($row);
+            avlStock(rowIndex);
+            $(`#attribute_section_${rowIndex}`).html(
+                ` <div style="white-space:nowrap; cursor:pointer;">
+                <span class="badge rounded-pill badge-light-primary"><strong>${attrName}</strong>: ${selectedText}</span>
+            </div>`
+            );
+
+        } catch (e) {
+            console.error(`Error parsing attribute-array for row ${rowIndex}:`, e);
+        }
+    });
+});
+
+
+$(document).on('click', '.submitAttributeBtn', function (e) {
+    e.preventDefault();
+
+    let closestRow = $(this).closest('tr');
+
+    let rowCount = closestRow.data('index');
+    $(`[name="cons[${rowCount}][item_qty]"]`).focus();
+
+    $("#attribute").modal('hide');
+});
+
+
 
 $(document).on("keyup",
  "#production-items input[name*='item_accepted_qty'] , #production-items input[name*='item_sub_prime_qty']",
@@ -3937,5 +4435,6 @@ function validateWipAgainstQty($wipInput) {
     // }
 }
 </script>
+
 @endsection
 @endsection

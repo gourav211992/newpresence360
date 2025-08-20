@@ -112,6 +112,14 @@ class ErpMaterialIssueHeader extends Model
     {
         return $this -> hasMany(ErpMiItem::class, 'material_issue_id');
     }
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'from_store_id');
+    }
+    public function erpStore()
+    {
+        return $this -> belongsTo(ErpStore::class, 'from_store_id');
+    }
     public function from_store()
     {
         return $this -> belongsTo(ErpStore::class, 'from_store_id');

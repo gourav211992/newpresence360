@@ -2515,6 +2515,8 @@ $(document).on("click", ".assetDetailBtn", function () {
     const expectedLife = $(this).data("asset-expected-life");
     const capitalizationDate = $(".document_date").val();
     const salvagePercentage = $(this).data("asset-salvage-perc");
+    const procurementType = $(this).data("data-asset-procurement-type");
+
 
     $(".asset-detail-modal-body").data("row-count", rowCount);
 
@@ -2585,6 +2587,12 @@ $(document).on("click", ".assetDetailBtn", function () {
                 <label class="form-label">Salvage Value <span class="text-danger">*</span></label>
                 <input type="number" step="0.01" name="salvage_value" class="form-control" required value="${escapeHTML(
                     salvageValue
+                )}" readonly />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Procurement Type</label>
+                <input type="text" name="procurement_type" class="form-control" value="${escapeHTML(
+                    savedAsset.procurement_type || procurementType
                 )}" readonly />
             </div>
         </div>

@@ -111,38 +111,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-8">
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label" for="book_id">Series <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select" name="book_id" id="book_id" disabled
-                                                            required>
-                                                            @if ($series)
-                                                                @foreach ($series as $index => $ser)
-                                                                    <option value="{{ $ser->id }}"
-                                                                        {{ $equipment->book_id == $ser->id ? 'selected' : '' }}>
-                                                                        {{ $ser->book_code }}
-                                                                    </option>
-                                                                @endforeach
-                                                            @endif
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label" for="document_number">Doc No <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="document_number"
-                                                            id="document_number" value="{{ $equipment->document_number }}"
-                                                            disabled required>
-                                                    </div>
-                                                </div>
-
+                                                
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Organization <span
@@ -239,7 +208,7 @@
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="newheader ">
-                                                        <h4 class="card-title text-theme">Maintenance and Spare Part Detail
+                                                        <h4 class="card-title text-theme">Maintenance Detail
                                                         </h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
@@ -256,17 +225,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="step-custhomapp bg-light">
-                                            <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-                                                <li class="nav-item">
-                                                    <a class="nav-link active" data-bs-toggle="tab"
-                                                        href="#Maintenance">Maintenance</a>
-                                                </li>
-                                                <li class="nav-item">
-                                                    <a class="nav-link" data-bs-toggle="tab" href="#Spare">Spare Part</a>
-                                                </li>
-                                            </ul>
-                                        </div>
+                                        
 
                                         <div class="tab-content pb-1">
                                             <div class="tab-pane active" id="Maintenance">
@@ -275,7 +234,7 @@
                                                         <div class="table-responsive pomrnheadtffotsticky">
                                                             <table
                                                                 class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                                                <thead>
+                                                               <thead>
                                                                     <tr>
                                                                         <th width="62" class="customernewsection-form">
                                                                             <div
@@ -286,9 +245,11 @@
                                                                                     for="Email"></label>
                                                                             </div>
                                                                         </th>
-                                                                        <th width="285">Type</th>
+                                                                        <th width="285">Maint Type</th>
                                                                         <th width="208">Frequency</th>
+                                                                        <th width="208">Start Date</th>
                                                                         <th width="269">Time</th>
+                                                                        <th width="208">Maintenance BOM</th>
                                                                         <th width="329">Checklist</th>
                                                                     </tr>
                                                                 </thead>
@@ -746,6 +707,7 @@
             var allLocations = @json($locations);
             // var allCategories = @json($categories);
             var maintenanceTypes = @json($maintenanceTypes);
+            var maintenanceBOM = @json($maintenanceBOM);
             let items = @json($items);
 
             var existingMaintenanceDetails = @json($equipment->maintenanceDetails)??{};
@@ -835,16 +797,24 @@
 
 
             function getMaintenanceRow(data = {}) {
+                console.log(data);
                 const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
 
                 // Build options from maintenanceTypes
                 let typeOptions = `<option value="">Select</option>`;
                 maintenanceTypes.forEach(function (type) {
-                    typeOptions += `<option value="${type.id}" ${data.type == type.id ? 'selected' : ''}>${type.name}</option>`;
+                    typeOptions += `<option value="${type.id}" ${data.maintenance_type_id == type.id ? 'selected' : ''}>${type.name}</option>`;
                 });
+            let bomOptions = `<option value="">Select</option>`;
+            maintenanceBOM.forEach(function (type) {
+                bomOptions += `<option value="${type.id}" ${data.maintenance_bom_id == type.id ? 'selected' : ''}>${type.name}</option>`;
+            });
                 console.log(data, data.checklists)
 
                 let selectedNames = data.checklists.map(checklist => checklist.name || '');
+                let selectedID = data.checklists.map(checklist => checklist.name || '');
+                let selectedType = data.checklists.map(checklist => checklist.name || '');
+                let selectedDesp = data.checklists.map(checklist => checklist.name || '');
 
                 let selectedIds = data.checklists.map(checklist => checklist.id || '').join(',');
 
@@ -882,12 +852,24 @@
                                 </select>
                             </td>
                             <td class="poprod-decpt">
+                                    <input type="date" name="maintenance[${rowId}][date]" value="${data.start_date || ''}" required class="form-control mw-100 mb-25" />
+                                </td>
+                            <td class="poprod-decpt">
                                 <input type="time" name="maintenance[${rowId}][time]" value="${data.time || ''}" placeholder="Enter Time" class="form-control mw-100 mb-25" />
                             </td>
+                             <td class="poprod-decpt">
+                                    <select name="maintenance[${rowId}][bom]" required  class="form-select mw-100 maintenance-bom">
+                                        ${bomOptions}
+                                    </select>
+                                </td>
                             <td class="poprod-decpt checklist-cell">
                                 <span class="checklist-badges">${badgesHtml}</span>
                                 <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
                                 <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="${selectedIds}" />
+                                <input type="hidden" name="maintenance[${rowId}][checklists][${rowId}][id]" value="${selectedID}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${rowId}][name]" value="${selectedNames}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${rowId}][description]" value="${selectedDesp || ''}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${rowId}][type]" value="${selectedType || ''}">
                             </td>
                         </tr>`;
 

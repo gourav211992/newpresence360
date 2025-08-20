@@ -2483,9 +2483,12 @@ function processOrder(type = "lr") {
                     + currentOrderIndexVal,
                 ).innerHTML = itemUomsHTML;
                 // getStoresData(currentOrderIndexVal,null,false);
+              setTimeout(() => {
                 getItemTax(currentOrderIndexVal);
                 setAttributesUI(currentOrderIndexVal);
                 currentOrderIndexVal += 1;
+}, 1500);
+               
               });
             }
             // Order Discount
@@ -2537,6 +2540,7 @@ function processOrder(type = "lr") {
                 value: currentOrder?.customer_phone_no,
               }],
             );
+            getTax();
 
             // $("#shipping_address_dropdown").select2();
             // $("#shipping_address_dropdown").prop('disabled', false);

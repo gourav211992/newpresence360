@@ -1529,15 +1529,15 @@ $(document).on('change', '.AmendmentCompanySelect', function() {
                     document.getElementById('post_on_approval_header').style.pointerEvents = "auto";
                     document.getElementById('gl_posting_series_header').style.visibility = "visible";
                     document.getElementById('gl_posting_series_header').style.pointerEvents = "auto";
-                    document.getElementById('gl_seperate_discount_posting_header').style.visibility = "visible";
-                    document.getElementById('gl_seperate_discount_posting_header').style.pointerEvents = "auto";
+                    // document.getElementById('gl_seperate_discount_posting_header').style.visibility = "visible";
+                    // document.getElementById('gl_seperate_discount_posting_header').style.pointerEvents = "auto";
                 } else {
                     document.getElementById('post_on_approval_header').style.visibility = "hidden";
                     document.getElementById('post_on_approval_header').style.pointerEvents = "none";
                     document.getElementById('gl_posting_series_header').style.visibility = "hidden";
                     document.getElementById('gl_posting_series_header').style.pointerEvents = "none";
-                    document.getElementById('gl_seperate_discount_posting_header').style.visibility = "hidden";
-                    document.getElementById('gl_seperate_discount_posting_header').style.pointerEvents = "none";
+                    // document.getElementById('gl_seperate_discount_posting_header').style.visibility = "hidden";
+                    // document.getElementById('gl_seperate_discount_posting_header').style.pointerEvents = "none";
                 }
             }
         }

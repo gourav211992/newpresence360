@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 class WhmJob
 {
-    public function createJob($id, $namespace, $jobType = null)
+    public function createJob($id, $namespace, $jobType = null, $subStoreType = null)
     {
         // Step 1: Get Header
         $header = app($namespace)::findOrFail($id);
@@ -22,6 +22,16 @@ class WhmJob
             $hasInspectionItems = $header->items()->where('is_inspection', 0)->exists();
             if (!$hasInspectionItems) {
                 return; // ⛔ No job creation
+            }
+        }
+
+        $subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
+
+        if ($namespace === \App\Models\InspectionHeader::class) {
+            if($subStoreType === 'rejected_store'){
+                $subStoreId = isset($header->rejected_sub_store_id) ? $header->rejected_sub_store_id : null;
+            } else{
+                $subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
             }
         }
 
@@ -42,7 +52,7 @@ class WhmJob
                 'status' => 'pending',
                 'trns_type' => $trnstype,
                 'store_id' => $header->store_id ?? null,
-                'sub_store_id' => isset($header->sub_store_id) ? $header->sub_store_id : null,
+                'sub_store_id' => $subStoreId ?? null,
             ]
         );
 
@@ -195,7 +205,7 @@ class WhmJob
                 'item_uid' => $this->generateUniqueUid(),
                 'batch_id' => $batch ? $batch->id : NULL,
                 'batch_number' => $batch ? $batch->batch_number : NULL,
-                'manufacturing_year' => $batch ? $batch->manufacturing_year : NULL,
+                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
                 'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
                 'type' => 'qr',
                 'qty' => 1,
@@ -308,6 +318,12 @@ class WhmJob
             ->get();
 
         $namespace = get_class($detail);
+        $storeId = $header -> store_id;
+        $subStoreId = $header -> sub_store_id;
+        if ($trnstype == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $storeId = $header -> to_store_id;
+            $subStoreId = $header -> to_sub_store_id;
+        } 
 
         foreach ($packets as $packet) {
             $newRecord = ErpItemUniqueCode::create([
@@ -319,13 +335,13 @@ class WhmJob
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
                 'job_type' => $jobType,
-                'trns_type' => ConstantHelper::PL_SERVICE_ALIAS,
+                'trns_type' => $trnstype,
                 'doc_type' => CommonHelper::RECEIPT,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
                 'book_id' => $header->book_id ?? null,
-                'store_id' => $header->store_id ?? null,
-                'sub_store_id' => $header->staging_sub_store_id ?? null,
+                'store_id' =>$storeId ?? null,
+                'sub_store_id' => $subStoreId ?? null,
                 'book_code' => $header->book_code ?? null,
                 'item_attributes' => json_encode($attributes),
                 'item_id' => $detail->item_id,

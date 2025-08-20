@@ -12,6 +12,9 @@ class PurchaseOrderTedHistory extends Model
     protected $table = 'erp_purchase_order_ted_history';
 
     protected $fillable = [
+        'hsn_id',
+        'tax_amount',
+        'tax_breakup',
         'purchase_order_id',
         'source_id',
         'po_item_id',
@@ -25,18 +28,28 @@ class PurchaseOrderTedHistory extends Model
         'applicable_type',
     ];
 
-    public $referencingRelationships = [
-        'taxDetail' => 'ted_id'
+    protected $casts = [
+        'tax_breakup' => 'array',
     ];
-    
+
+    public $referencingRelationships = [
+        'hsn' => 'hsn_id',
+        'taxDetail' => 'ted_id',
+    ];
+
+    public function hsn()
+    {
+        return $this->belongsTo(Hsn::class);
+    }
+
     public function purchaseOrder()
     {
-        return $this->belongsTo(PurchaseOrderHistory::class,'purchase_order_id');
+        return $this->belongsTo(PurchaseOrderHistory::class, 'purchase_order_id');
     }
 
     public function poItem()
     {
-        return $this->belongsTo(PoItemHistory::class,'po_item_id');
+        return $this->belongsTo(PoItemHistory::class, 'po_item_id');
     }
 
     public function taxDetail()

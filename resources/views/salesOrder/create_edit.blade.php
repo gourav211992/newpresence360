@@ -351,6 +351,13 @@
                                                         <input type = "hidden" name = "payment_terms_code" value = "{{isset($order) ? $order -> payment_terms_code : ''}}" id = "payment_terms_code_input"></input>
                                                     </div>
 
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days <span class="text-danger"></span></label>
+                                                            <input type="number" value = "{{isset($order) ? $order -> credit_days : 0}}" name = "credit_days" class="form-control disable_on_edit" id = "credit_days_input" readonly>
+                                                        </div>
+                                                    </div>
+
                                                  </div>
 
                                                 <div class="row">
@@ -1778,6 +1785,7 @@
                                     <th>UOM</th>
                                     <th>Attributes</th>
                                     <th>Qty</th>
+                                    <th>Remark</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -3725,7 +3733,9 @@
                                     type : item?.customer_type,
                                     phone_no : item?.mobile,
                                     email : item?.email,
-                                    gstin : item?.compliances?.gstin_no
+                                    gstin : item?.compliances?.gstin_no,
+                                    credit_days : item?.credit_days,
+                                    credit_days_editable : item?.credit_days_editable
 
                                 };
                             }));
@@ -3748,6 +3758,8 @@
                     var phoneNo = ui.item.phone_no;
                     var email = ui.item.email;
                     var gstIn = ui.item.gstin;
+                    var creditDays = ui.item.credit_days ? ui.item.credit_days : 0;
+                    var creditDaysEdit = ui.item.credit_days_editable;
                     $input.attr('customer_type', customerType);
                     $input.attr('phone_no', phoneNo);
                     $input.attr('email', email);
@@ -3758,6 +3770,13 @@
                     $input.attr('currency_id', currencyId);
                     $input.attr('currency', currency);
                     $input.attr('currency_code', currencyCode);
+                    //Set Credit Days
+                    $("#credit_days_input").val(creditDays);
+                    if (creditDaysEdit) {
+                        $("#credit_days_input").removeAttr("readonly");
+                    } else {
+                        $("#credit_days_input").attr("readonly", true);
+                    }
                     $input.val(ui.item.label);
                     $("#customer_code_input_hidden").val(ui.item.code);
                     document.getElementById('customer_id_input').value = ui.item.id;
@@ -3919,7 +3938,8 @@
                             qty : bomDetail.qty,
                             station_id : bomDetail.station_id,
                             station_name : bomDetail.station_name,
-                            bom_attributes : (bomDetail.item_attributes)
+                            bom_attributes : (bomDetail.item_attributes),
+                            remark : bomDetail.remark ? bomDetail.remark : ""
                         });
                     });
                     currentDocId.setAttribute('bom_details', JSON.stringify(bomDetailAttribute));
@@ -5955,6 +5975,7 @@ document.addEventListener('input', function (e) {
 
     function getCustomizableBOM(itemIndex, isEditable = true, openPopUp = true)
     {
+        let finalAmendSubmitButton = document.getElementById("amend-submit-button");
         const bomIcon = document.getElementById('dynamic_bom_div_' + itemIndex);
         var bomAttributeIds = [];
         var soItemBomIds = [];
@@ -6036,7 +6057,7 @@ document.addEventListener('input', function (e) {
                                 ${bomAttribute.group_name}
                                 </div>
                                 <div class = "col">
-                                <select ${letActualEditable ? '' : 'disabled' } class="form-select select2" style="max-width:100% !important;" oninput = "bomAttributeChange(this, ${itemIndex}, ${bomItem.id}, ${bomAttribute.id});">
+                                <select ${letActualEditable || finalAmendSubmitButton ? '' : 'disabled' } class="form-select select2" style="max-width:100% !important;" oninput = "bomAttributeChange(this, ${itemIndex}, ${bomItem.id}, ${bomAttribute.id});">
                                     ${bomAttributeSelectionHTML}
                                 </select>
                                 </div>
@@ -6054,7 +6075,8 @@ document.addEventListener('input', function (e) {
                                 qty : bomItem.qty,
                                 station_id : bomItem.station_id,
                                 station_name : bomItem.station_name,
-                                bom_attributes : bomDocAttributes
+                                bom_attributes : bomDocAttributes,
+                                remark : bomItem.remark ?bomItem.remark : ""
                             });
                             currentBomItems += `
                             <tr>
@@ -6065,6 +6087,7 @@ document.addEventListener('input', function (e) {
                             ${currentBomAttributes}
                             </td>
                             <td>${bomItem.qty}</td>
+                            <td>${bomItem.remark}</td>
                             <td><span class = "remove_bom_item text-danger"><i data-feather="trash-2"></i> </span></td>
                             </div>
                             </td>
@@ -6073,7 +6096,7 @@ document.addEventListener('input', function (e) {
                         });
                         dataTableHTML += `
                         <tr class="approvlevelflow level-row">
-                            <td colspan="5">
+                            <td colspan="6">
                                 <h6 class="mb-0 fw-bolder text-dark levelText">${dataLevel.name}</h6>
                             </td>
                             <td colspan="1">

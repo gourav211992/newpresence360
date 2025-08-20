@@ -4,6 +4,7 @@ namespace App\Models\WHM;
 
 use App\Models\Attribute;
 use App\Models\Employee;
+use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\Item;
@@ -86,6 +87,11 @@ class ErpItemUniqueCode extends Model
     public function subStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
 
     public function getItemAttributesAttribute($value)

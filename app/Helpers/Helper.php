@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\ErpSaleInvoiceHistory;
 use Illuminate\Support\Facades\Cookie;
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
@@ -1170,12 +1171,14 @@ class Helper
                 ->orderByDesc('min_value')
                 ->first();
 
+
             if ($approvalWorkflow) {
                 $approve = true;
             }
             //Creator of document cannot approve
             // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
 
+            // dd($user->auth_user_id, $createdBy);
             if ($user->auth_user_id === $createdBy) {
                 $approve = false;
                 $revoke = true;
@@ -1734,7 +1737,7 @@ class Helper
     {
         $user = self::getAuthenticatedUser();
         $book = Book::where('id', $bookId)->first();
-        $bookTypeServiceAlias = $book?->service->alias;
+        $bookTypeServiceAlias = $book?->master_service->alias;
         $docApproval = new DocumentApproval;
         $docApproval->document_type = $bookTypeServiceAlias;
         $docApproval->document_id = $docId;
@@ -4029,8 +4032,8 @@ class Helper
     {
         DB::beginTransaction();
         try {
-            $mrn_asset = MrnAssetDetail::where('header_id',$mrn_id)->first();
-            if(empty($mrn_asset)){
+            $mrn_asset = MrnAssetDetail::where('header_id', $mrn_id)->first();
+            if (empty($mrn_asset)) {
                 DB::rollBack();
                 return [
                     'status' => false,
@@ -4138,10 +4141,17 @@ class Helper
             }
 
             $glPostingBookId = $glPostingBookParam->parameter_value[0];
-            $filteredItems = $mrn->items->whereIn('id', $detail_id);
-            $asset_codes=[];
+            $filteredItems = $mrn->items()
+                ->whereIn('id', $detail_id)
+                ->whereHas('item', function ($q) {
+                    $q->where('is_asset', 1);
+                })
+                //->doesntHave('asset')
+                ->get();
+            $asset_codes = [];
 
             foreach ($filteredItems as $mrn_detail) {
+
                 $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
                     ->where('mrn_header_id', $mrn->id)->first();
 
@@ -4207,7 +4217,7 @@ class Helper
                     'supplier_invoice_date' => $mrn->supplier_invoice_date,
                     'book_date' => $mrn_detail->created_at ?? null,
                     'supplier_invoice_no' => $mrn->supplier_invoice_no,
-                    'location_id' =>  $mrn->sub_store_id ?? null,
+                    'location_id' => $mrn->sub_store_id ?? null,
                     'cost_center_id' => $mrn->cost_center_id ?? null,
                     'maintenance_schedule' => $setup->maintenance_schedule ?? null,
                     'depreciation_method' => $method,

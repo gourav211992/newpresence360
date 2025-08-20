@@ -334,6 +334,12 @@ class MaterialReceiptController extends Controller
             if ($response['status'] === 200) {
                 $parameters = json_decode(json_encode($response['data']['parameters']), true);
             }
+            if(!isset($parameters['inspection_required']))
+            {
+                return response()->json([
+                    'message' => "Please update inspection in admin services"
+                ], 422);
+            }
             $inspectionReqired = ($parameters['inspection_required'][0] === 'no') ? 0 : 1;
             $organization = Organization::where('id', $user->organization_id)->first();
             $organizationId = $organization ?-> id ?? null;
@@ -846,6 +852,7 @@ class MaterialReceiptController extends Controller
                             $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
                             $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
                             $assetDetail->model_no = $assetDetails['model_no'] ?? null;
+                            $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
                             $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
                             $assetDetail->save();
@@ -1497,22 +1504,21 @@ class MaterialReceiptController extends Controller
                             $rejected_qty = $mrnDetail->rejected_qty;
                         }
                     }
-
                     // Validate Batch
-                    // $batchValidation = self::validateItemBatch($component);
-                    // if ($batchValidation) {
-                    //     \DB::rollBack();
-                    //     return $batchValidation; // ❗ Stop further processing
-                    // }
+                    $batchValidation = self::validateItemBatch($component);
+                    if ($batchValidation) {
+                        \DB::rollBack();
+                        return $batchValidation; // ❗ Stop further processing
+                    }
 
-                    // if(isset($item->is_asset) && ($item->is_asset == 1)){
-                    //     // Asset Validation
-                    //     $assetValidation = self::validateItemAsset($component);
-                    //     if ($assetValidation) {
-                    //         \DB::rollBack();
-                    //         return $assetValidation; // ❗ Stop further processing
-                    //     }
-                    // }
+                    if(isset($item->is_asset) && ($item->is_asset == 1)){
+                        // Asset Validation
+                        $assetValidation = self::validateItemAsset($component);
+                        if ($assetValidation) {
+                            \DB::rollBack();
+                            return $assetValidation; // ❗ Stop further processing
+                        }
+                    }
 
                     $validateQty = self::validateQuantityBackend($component, $mrn->reference_type);
                     if ($validateQty['status'] === 'error') {
@@ -1853,60 +1859,60 @@ class MaterialReceiptController extends Controller
                     }
 
                     #Save asset details
-                    // if (!empty($component['assetDetailData'])) {
-                    //     $assetDetails = is_string($component['assetDetailData'])
-                    //         ? json_decode($component['assetDetailData'], true)
-                    //         : $component['assetDetailData'];
+                    if (!empty($component['assetDetailData'])) {
+                        $assetDetails = is_string($component['assetDetailData'])
+                            ? json_decode($component['assetDetailData'], true)
+                            : $component['assetDetailData'];
 
-                    //     if (is_array($assetDetails)) {
-                    //         $assetDetail = new MrnAssetDetail();
-                    //         $assetDetail->header_id = $mrn->id;
-                    //         $assetDetail->detail_id = $mrnDetail->id;
-                    //         $assetDetail->item_id = $mrnDetail->item_id;
-                    //         $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
-                    //         // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
-                    //         $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
-                    //         $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
-                    //         $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
-                    //         $assetDetail->model_no = $assetDetails['model_no'] ?? null;
-                    //         $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
-                    //         $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
-                    //         $assetDetail->save();
-                    //     } else {
-                    //         \DB::rollBack();
-                    //         return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
-                    //     }
-                    // }
+                        if (is_array($assetDetails)) {
+                            $assetDetail = new MrnAssetDetail();
+                            $assetDetail->header_id = $mrn->id;
+                            $assetDetail->detail_id = $mrnDetail->id;
+                            $assetDetail->item_id = $mrnDetail->item_id;
+                            $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
+                            // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
+                            $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
+                            $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
+                            $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
+                            $assetDetail->model_no = $assetDetails['model_no'] ?? null;
+                            $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
+                            $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                            $assetDetail->save();
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
+                        }
+                    }
 
                     // #Save batch details
-                    // if (!empty($component['batch_details'])) {
-                    //     $batchDetails = is_string($component['batch_details'])
-                    //         ? json_decode($component['batch_details'], true)
-                    //         : $component['batch_details'];
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
 
-                    //     if (is_array($batchDetails)) {
-                    //         foreach ($batchDetails as $i => $val) {
-                    //             $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
-                    //             $batchDetail = new MrnBatchDetail();
-                    //             $batchDetail->header_id = $mrn->id;
-                    //             $batchDetail->detail_id = $mrnDetail->id;
-                    //             $batchDetail->item_id = $mrnDetail->item_id;
-                    //             $batchDetail->batch_number = $batchNo;
-                    //             $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
-                    //             $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
-                    //             $batchDetail->quantity = $val['quantity'] ?? null;
-                    //             $batchDetail->save();
+                        if (is_array($batchDetails)) {
+                            foreach ($batchDetails as $i => $val) {
+                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                                $batchDetail = new MrnBatchDetail();
+                                $batchDetail->header_id = $mrn->id;
+                                $batchDetail->detail_id = $mrnDetail->id;
+                                $batchDetail->item_id = $mrnDetail->item_id;
+                                $batchDetail->batch_number = $batchNo;
+                                $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
+                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
+                                $batchDetail->quantity = $val['quantity'] ?? null;
+                                $batchDetail->save();
 
-                    //             // Convert to base uom
-                    //             $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
-                    //             $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
-                    //             $batchDetail->save();
-                    //         }
-                    //     } else {
-                    //         \DB::rollBack();
-                    //         return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
-                    //     }
-                    // }
+                                // Convert to base uom
+                                $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
+                                $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
+                                $batchDetail->save();
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
+                        }
+                    }
 
                     // #Save item packets
                     // $inventoryUomQuantity = 0.00;
@@ -2799,7 +2805,7 @@ class MaterialReceiptController extends Controller
             ]
         );
 
-        $fileName = 'Meterial-Receipt-' . date('Y-m-d') . '.pdf';
+        $fileName = 'Material-Receipt-' . date('Y-m-d') . '.pdf';
         return $pdf->stream($fileName);
     }
 
@@ -3282,18 +3288,21 @@ class MaterialReceiptController extends Controller
 
         foreach ($poItems as $poItem) {
             if ($poItem->gate_entry_required === 'yes') {
-                $geItems = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
+                $geItemsQuery = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
                     ->whereRaw('(accepted_qty > mrn_qty)')
                     ->with(['gateEntryHeader', 'po_item']) // ensure po_item is loaded
                     ->whereHas('gateEntryHeader', function($query){
                         $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                        if (!empty($geNumber)) {
+                            $query->whereIn('id', $geNumber);
+                        }
                         // Case 1: gate entry has a job with status = 'closed'
                         // $query->whereHas('closedJob');
 
                         // // Case 2: gate entry has NO job at all
                         // $query->orWhereDoesntHave('job');
-                    })
-                    ->get();
+                    });
+                    $geItems = $geItemsQuery->get();
 
                 foreach ($geItems as $geItem) {
                     $poItemKey = $geItem->purchase_order_item_id . '+' . $geItem->header_id;
@@ -3314,13 +3323,16 @@ class MaterialReceiptController extends Controller
                     $poItemMap[$poItemKey]->balance_qty += ($geItem->accepted_qty - $geItem->mrn_qty);
                 }
             } elseif ($poItem->supp_invoice_required === 'yes') {
-                $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
+                $siItemsQuery = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
                     ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
                     ->whereHas('vendorAsn', function($query){
                         $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
-                    })
-                    ->get();
+                        if (!empty($asnNumber)) {
+                            $query->whereIn('id', $asnNumber);
+                        }
+                    });
+                    $siItems = $siItemsQuery->get();
 
                 foreach ($siItems as $siItem) {
                     $poItemKey = $siItem->po_item_id . '+' . $siItem->vendor_asn_id;
@@ -3785,6 +3797,9 @@ class MaterialReceiptController extends Controller
                     ->with(['gateEntryHeader', 'jo_item']) // ensure po_item is loaded
                     ->whereHas('gateEntryHeader', function($query){
                         $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                        if (!empty($geNumber)) {
+                            $query->whereIn('id', $geNumber);
+                        }
                         // Case 1: gate entry has a job with status = 'closed'
                         // $query->whereHas('closedJob');
 
@@ -3817,6 +3832,9 @@ class MaterialReceiptController extends Controller
                     ->with(['vendorAsn', 'vendorAsn.po', 'jo_item'])
                     ->whereHas('vendorAsn', function($query){
                         $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
+                        if (!empty($asnNumber)) {
+                            $query->whereIn('id', $asnNumber);
+                        }
                     })
                     ->get();
 

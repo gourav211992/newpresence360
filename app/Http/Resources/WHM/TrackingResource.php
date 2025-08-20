@@ -22,7 +22,10 @@ class TrackingResource extends JsonResource
             "action_by"=> optional($this->actionBy)->name,
             "job_type"=> $this->job_type ? ucfirst($this->job_type) : NULL,
             "status"=> $this->status,
-            "storagePoint"=> $this->storagePoint
+            "book_code"=> $this->book_code,
+            "doc_no"=> $this->doc_no,
+            "store_name"=> isset($this->store->store_name) ? $this->store->store_name : NULL,
+            "storagePoint"=> $this->storagePoint,
         ];
     }
 }

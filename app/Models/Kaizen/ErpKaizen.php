@@ -60,7 +60,7 @@ class ErpKaizen extends Model
     public function createdBy()
     {
         return $this->belongsTo(
-            User::class,           
+            Employee::class,           
             'created_by',                             
             'id'                                    
         );

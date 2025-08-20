@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Traits\Deletable;
@@ -47,19 +48,21 @@ class WarehouseItemMappingController extends Controller
         if ($request->ajax()) {
             $records = WhDetail::with('whLevel')
                 ->groupBy('sub_store_id', 'wh_level_id');
-            
+
             // Log the query for debugging
             DB::enableQueryLog();
             $records = $records->get();
             Log::info('Query Log:', DB::getQueryLog());
             DB::disableQueryLog();
-           
+
             return DataTables::of($records)
                 ->addIndexColumn()
                 ->addColumn('category', function ($row) {
                     $catIds = json_decode($row->category_id, true) ?? [];
                     $categories = Category::whereIn('id', $catIds)
-                        ->whereNull('parent_id')
+                        ->whereHas('itemSub', function ($query) {
+                            $query->where('status', ConstantHelper::ACTIVE);
+                        })
                         ->pluck('name')
                         ->toArray();
                     return implode(', ', $categories);
@@ -81,21 +84,21 @@ class WarehouseItemMappingController extends Controller
                 })
                 ->addColumn('structure_details', function ($row) {
                     $structure = json_decode(json_encode($row->structure_details), true) ?? [];
-                
+
                     $structureNames = [];
-                
+
                     foreach ($structure as $key => $ids) {
                         if (!empty($ids)) {
                             $names = WhDetail::whereIn('id', $ids)
                                 ->pluck('name')
                                 ->toArray();
-                
+
                             $structureNames[] = ucfirst($key) . ': ' . implode(', ', $names);
                         }
                     }
-                
+
                     return implode(' | ', $structureNames);
-                })              
+                })
                 ->rawColumns(['category', 'subcategory', 'item', 'structure_details'])
                 ->make(true);
         }
@@ -130,11 +133,11 @@ class WarehouseItemMappingController extends Controller
                         return [$slug => ['id' => $level->id, 'name' => $level->name]];
                     })
                     ->toArray();
-    
+
                 foreach ($request->details as $detail) {
                     // Build structure details per level
                     $structureDetails = [];
-    
+
                     foreach ($levelNames as $slug => $meta) {
                         if (!empty($detail[$slug])) {
                             $structureDetails[] = [
@@ -144,11 +147,11 @@ class WarehouseItemMappingController extends Controller
                             ];
                         }
                     }
-    
+
                     // Check if detail_id is provided → update, else create
                     if (!empty($detail['detail_id'])) {
                         $mapping = WhItemMapping::find($detail['detail_id']);
-    
+
                         if ($mapping) {
                             $mapping->update([
                                 'store_id'         => $request->store_id,
@@ -157,9 +160,9 @@ class WarehouseItemMappingController extends Controller
                                 'category_id'      => $detail['category_id'] ?? [],
                                 'sub_category_id'  => $detail['sub_category_id'] ?? [],
                                 'item_id'          => $detail['item_id'] ?? [],
-                                'structure_details'=> $structureDetails,
+                                'structure_details' => $structureDetails,
                             ]);
-    
+
                             $existingIds[] = $mapping->id;
                         }
                     } else {
@@ -170,13 +173,13 @@ class WarehouseItemMappingController extends Controller
                             'category_id'      => $detail['category_id'] ?? [],
                             'sub_category_id'  => $detail['sub_category_id'] ?? [],
                             'item_id'          => $detail['item_id'] ?? [],
-                            'structure_details'=> $structureDetails,
+                            'structure_details' => $structureDetails,
                         ]);
-    
+
                         $existingIds[] = $new->id;
                     }
                 }
-    
+
                 // Optionally remove deleted records
                 WhItemMapping::where('store_id', $request->store_id)
                     ->where('sub_store_id', $request->sub_store_id)
@@ -209,7 +212,7 @@ class WarehouseItemMappingController extends Controller
             //                 ];
             //             }
             //         }
-    
+
             //         // Create record
             //         WhItemMapping::create([
             //             'wh_structure_id'  => $whStructure?->id,
@@ -262,29 +265,29 @@ class WarehouseItemMappingController extends Controller
     // Get Sub Stores
     public function getStores(Request $request)
     {
-        try{
+        try {
             $user = Helper::getAuthenticatedUser();
 
-            $term = $request->get('term'); 
+            $term = $request->get('term');
             $stores = ErpSubStore::select('id AS value', 'name AS label')
-            ->when($term, function($query, $term) {
-                return $query->where('name', 'LIKE', "%$term%");  
-            })
-            ->whereHas('parents', function ($query) {
-                $query->withDefaultGroupCompanyOrg();
-            })
-            ->where('status', 'active')
-            ->get();
+                ->when($term, function ($query, $term) {
+                    return $query->where('name', 'LIKE', "%$term%");
+                })
+                ->whereHas('parents', function ($query) {
+                    $query->withDefaultGroupCompanyOrg();
+                })
+                ->where('status', 'active')
+                ->get();
 
 
-            return response() -> json([
+            return response()->json([
                 'data' => array(
                     'stores' => $stores
                 )
             ]);
-        } catch(\Exception $ex) {
-            return response() -> json([
-                'message' => $ex -> getMessage()
+        } catch (\Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
             ]);
         }
     }
@@ -293,15 +296,17 @@ class WarehouseItemMappingController extends Controller
     public function getDetails(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        
+
         $categories = array();
         $structures = array();
-        
+
         $categories = Category::where('status', ConstantHelper::ACTIVE)
             ->withDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
+            ->whereHas('itemSub', function ($query) {
+                $query->where('status', ConstantHelper::ACTIVE);
+            })
             ->get();
-        
+
         $structures = WhLevel::with('storagePointDetails')
             ->where('store_id', $request->store_id)
             ->where('sub_store_id', $request->sub_store_id)
@@ -309,7 +314,7 @@ class WarehouseItemMappingController extends Controller
 
         return response()->json(
             [
-                'status' => 200, 
+                'status' => 200,
                 'message' => 'fetched.',
                 'categories' => $categories,
                 'structures' => $structures,
@@ -353,7 +358,7 @@ class WarehouseItemMappingController extends Controller
     {
         $categoryIds = $request->input('category_ids', []);
         $subCategoryIds = $request->input('sub_category_ids', []);
-        
+
         if (empty($categoryIds) && empty($subCategoryIds)) {
             return response()->json([
                 'status' => 400,
@@ -367,7 +372,7 @@ class WarehouseItemMappingController extends Controller
             ->select('id', 'item_code')
             ->orderBy('item_code')
             ->get();
-        
+
         return response()->json([
             'status' => 200,
             'message' => 'fetched.',
@@ -393,11 +398,11 @@ class WarehouseItemMappingController extends Controller
             'data' => $childData->unique('id')->values()
         ]);
     }
-    
+
     public function deleteDetails(Request $request)
     {
         $ids = $request->input('ids', []);
-        
+
         if (empty($ids)) {
             return response()->json(['status' => 'error', 'message' => 'No IDs provided'], 400);
         }
@@ -423,7 +428,9 @@ class WarehouseItemMappingController extends Controller
             $isExist = 1;
         }
 
-        $allCategories = Category::whereNull('parent_id')->get(); // Main categories
+        $allCategories = Category::whereHas('itemSub', function ($query) {
+            $query->where('status', ConstantHelper::ACTIVE);
+        })->get(); // Main categories
         $allSubCategories = Category::whereNotNull('parent_id')->get(); // All subcategories
         $allItems = Item::select('id', 'item_code as name', 'category_id', 'subcategory_id')->get();
 
@@ -507,6 +514,4 @@ class WarehouseItemMappingController extends Controller
             'mappings' => $mappingsData
         ]);
     }
-
-
 }

@@ -1,4 +1,4 @@
-const order = null;
+const order = window.pageData.order;
 const editOrder = window.pageData.editOrder;  // Convert string to boolean
 const revNoQuery = window.pageData.revNoQuery;
 const orderId = window.pageData.orderId;
@@ -39,6 +39,7 @@ var taxInputs = [];
 
 function getItemTax(itemIndex)
 {
+    console.log(itemIndex);
     const itemId = document.getElementById(`items_dropdown_${itemIndex}_value`).value;
     const itemQty = document.getElementById('item_qty_' + itemIndex).value;
     const itemValue = document.getElementById('item_value_' + itemIndex).value;
@@ -55,6 +56,8 @@ function getItemTax(itemIndex)
     const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
     const billToCountryId = $("#current_billing_country_id").val();
     const billToStateId = $("#current_billing_state_id").val();
+    console.log(billToCountryId);
+    console.log(billToStateId);
     let itemPrice = 0;
     if (itemQty > 0) {
         itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
@@ -73,7 +76,7 @@ function getItemTax(itemIndex)
             customer_id : $("#customer_id_input").val(),
             header_book_id : headerBookId ? headerBookId : $("#series_id_input").val(),
             store_id : $("#store_id_input").val(),
-            document_id : order ? order.id : ''
+            document_id : ''
         },
         success: function(data) {
             const taxInput = document.getElementById('item_tax_' + itemIndex);
@@ -1240,7 +1243,8 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
 });
 
 function viewModeScript(disable = true) {
-    if (orderId) {
+    if (orderId && !editOrder) {
+        
     document.querySelectorAll('input, textarea, select').forEach(element => {
         if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
             
@@ -2782,4 +2786,9 @@ function updateHeaderExpenses()
     }
     getTotalOrderExpenses();
 
+}
+function getTax(){
+  document.querySelectorAll("#item_header tr").forEach((row, index) => {
+     getItemTax(index);
+});
 }

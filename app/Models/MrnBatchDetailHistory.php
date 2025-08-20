@@ -19,14 +19,20 @@ class MrnBatchDetailHistory extends Model
         'manufacturing_year', 
         'expiry_date', 
         'quantity', 
-        'inventory_uom_quantity'
+        'inventory_uom_quantity',
+        'inspection_qty', 
+        'inspection_inv_uom_qty',
+        'accepted_qty', 
+        'accepted_inv_uom_qty',
+        'rejected_qty', 
+        'rejected_inv_uom_qty'
     ];
 
     protected $hidden = ['deleted_at'];
 
     public function mrnHeader()
     {
-        return $this->belongsTo(MrnHeader::class, 'header_id');
+        return $this->belongsTo(MrnHeaderHistory::class, 'header_id');
     }
 
     public function source()
@@ -36,7 +42,7 @@ class MrnBatchDetailHistory extends Model
 
     public function mrnDetail()
     {
-        return $this->belongsTo(MrnDetail::class, 'detail_id');
+        return $this->belongsTo(MrnDetailHistory::class, 'detail_id');
     }
 
     public function item()

@@ -146,7 +146,7 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'items_count', name: 'items_count', render: renderData },
+        { data: 'items', name: 'items', render: renderData },
         { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }

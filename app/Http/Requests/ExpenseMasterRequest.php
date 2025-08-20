@@ -24,7 +24,7 @@ class ExpenseMasterRequest extends FormRequest
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
-        $this->group_id = $organization ? $organization->group_id : null; 
+        $this->group_id = $organization ? $organization->group_id : null;
         $this->company_id = $organization ? $organization->company_id : null;
     }
 
@@ -56,7 +56,7 @@ class ExpenseMasterRequest extends FormRequest
                 'required',
                 'string',
                 'max:100',
-                'regex:/^[a-zA-Z0-9\s]+$/', 
+                'regex:/^[a-zA-Z0-9\s]+$/',
                 Rule::unique('erp_expense_master', 'name')
                     ->ignore($expenseId)
                     ->whereNull('deleted_at')
@@ -65,17 +65,21 @@ class ExpenseMasterRequest extends FormRequest
             'alias' => [
                 'nullable',
                 'string',
-                'regex:/^[a-zA-Z0-9\s]+$/', 
+                'regex:/^[a-zA-Z0-9\s]+$/',
                 Rule::unique('erp_expense_master', 'alias')
                     ->ignore($expenseId)
                     ->whereNull('deleted_at')
                     ->where($uniqueScope),
             ],
             'percentage' => [
-                'required',
+                'nullable',
                 'numeric',
                 'min:0',
                 'max:100',
+            ],
+            'hsn_id' => [
+                'required',
+                'exists:erp_hsns,id',
             ],
             'expense_ledger_id' => [
                 'nullable',
@@ -85,7 +89,7 @@ class ExpenseMasterRequest extends FormRequest
                 'nullable',
                 'exists:erp_groups,id',
             ],
-          
+
             'service_provider_ledger_id' => [
                 'nullable',
                 'exists:erp_ledgers,id',
@@ -98,7 +102,7 @@ class ExpenseMasterRequest extends FormRequest
                     }
                 },
             ],
-        
+
             'service_provider_ledger_group_id' => [
                 'nullable',
                 'exists:erp_groups,id',
@@ -124,10 +128,10 @@ class ExpenseMasterRequest extends FormRequest
             'alias.max' => 'The alias should not exceed 100 characters.',
             'alias.regex' => 'The alias should contain only alphanumeric characters and spaces.',
             'alias.unique' => 'This alias already exists within your organization.',
-            'percentage.numeric' => 'The percentage must be a valid number.',
-            'percentage.min' => 'The percentage cannot be negative.',
-            'percentage.max' => 'The percentage cannot exceed 100.',
-            'percentage.required' => 'The percentage is required.',
+            // 'percentage.numeric' => 'The percentage must be a valid number.',
+            // 'percentage.min' => 'The percentage cannot be negative.',
+            // 'percentage.max' => 'The percentage cannot exceed 100.',
+            // 'percentage.required' => 'The percentage is required.',
             'expense_ledger_id.exists' => 'The selected expense ledger is invalid.',
             'service_provider_ledger_id.exists' => 'The selected service provider ledger is invalid.',
             'is_purchase.boolean' => 'The purchase flag must be true or false.',

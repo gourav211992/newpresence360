@@ -271,13 +271,15 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::PRODUCTIVITY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::PRODUCTIVITY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::PRODUCTIVITY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::PRODUCTIVITY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -314,13 +316,15 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::QUALITY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::QUALITY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::QUALITY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::QUALITY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -359,13 +363,15 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::COST }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::COST] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::COST]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::COST] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                                 <td><input type="text"
@@ -406,13 +412,15 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::DELIVERY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::DELIVERY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::DELIVERY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::DELIVERY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -449,13 +457,15 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::MORAL }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::MORAL] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::MORAL]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::MORAL] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -488,17 +498,20 @@
                                                                         <tbody>
                                                                             <tr>
                                                                                 <td>
-                                                                                    <select class="form-select select2"
-                                                                                        name="improvement[{{ App\Helpers\CommonHelper::INNOVATION }}]">
-                                                                                        <option value="">Select One
-                                                                                        </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::INNOVATION] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}">
-                                                                                                {{ $improvement }}
+                                                                                    @if (isset($improvements[App\Helpers\CommonHelper::INNOVATION]))
+                                                                                        <select class="form-select select2"
+                                                                                            name="improvement[{{ App\Helpers\CommonHelper::INNOVATION }}]">
+                                                                                            <option value="">Select
+                                                                                                One
                                                                                             </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::INNOVATION] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                    @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>

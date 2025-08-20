@@ -4,14 +4,10 @@ namespace App\Http\Controllers\WHM;
 
 use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
-use App\Helpers\Inventory\StockReservation;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\DispatchResource;
 use App\Http\Resources\WHM\UnloadingResource;
-use App\Lib\Services\WHM\WhmJob;
-use App\Models\ErpMaterialIssueHeader;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -238,31 +234,6 @@ class DispatchController extends Controller
             if($request->deviation > 0){
                 $job->status = CommonHelper::DEVIATION;
                 $message = 'Job closed with deviation '.$request->deviation.'.';
-            }
-
-            //Issue/ Recieve in Stock Ledger
-            if ($job -> morphable_type === \App\Models\ErpMaterialIssueHeader::class)
-            {
-                $materialIssue = ErpMaterialIssueHeader::find($job -> morphable_id);
-                if ($materialIssue) {
-                    //Check if stock should be received or not
-                    if ($materialIssue -> to_sub_store -> is_warehouse_required) {
-                        foreach ($materialIssue -> items as $miItem) {
-                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $miItem -> id, $miItem -> inventory_uom_qty, false);
-                            if ($status['status'] == 'error') {
-                                throw new ApiGenericException($status['message']);
-                            }
-                        }
-                        (new WhmJob)->createJob($materialIssue->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
-                    } else {
-                        foreach ($materialIssue -> items as $miItem) {
-                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $miItem -> id, $miItem -> inventory_uom_qty, true);
-                            if ($status['status'] == 'error') {
-                                throw new ApiGenericException($status['message']);
-                            }
-                        }
-                    }
-                }
             }
 
             $job->save();

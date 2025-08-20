@@ -293,6 +293,7 @@
                                              value="{{ old('customer_name', @$lr->consignor->company_name ?? '') }}"  />
                                           <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
                                              value="{{ old('customer_id', @$lr->consignor_id) }}" id="customer_id"/>
+                                            
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -303,6 +304,8 @@
                                              value="{{ old('consignee_name', @$lr->consignee->company_name ?? '') }}" />
                                           <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
                                              value="{{ old('consignee_id', @$lr->consignee_id) }}" id="consignee_id"/>
+                                             <input type="hidden" name="consignee_email" data-type="consignee"
+                                             value="{{ old('consignee_email', @$lr->consignee->email) }}" id="consigneeemail"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -2167,8 +2170,9 @@ function sendMailTo() {
         $('.mail_modal').prop('disabled', false);
         $('[name="cc_to[]"]').prop('disabled', false);
         $('[name="cc_to[]"]').prop('readonly', false);
+        $('[name="email_to"]').val($('#consigneeemail').val());
 
-        const vendorEmail = "{{ isset($po) ? $po->vendor->email : '' }}";
+        const vendorEmail = $('#consigneeemail').val();
         const vendorName = "{{ isset($po) ? $po->vendor->company_name : '' }}";
         const emailInput = document.getElementById('cust_mail');
         const header = document.getElementById('send_mail_heading_label');

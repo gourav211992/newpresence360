@@ -12,7 +12,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
 use App\Lib\Services\WHM\WhmJob;
-use App\Models\ErpMaterialIssueHeader;
 use App\Models\ErpPlItem;
 use App\Models\StockLedgerReservation;
 use App\Models\WHM\ErpItemUniqueCode;
@@ -30,11 +29,11 @@ class PicklistTaskController extends Controller
         $jobs = ErpWhmJob::with(['morphable.store' => function($q){
                         $q->select('id','store_name');
                     }, 'morphable.items' => function($q){
-                        // $q->select('id','pl_header_id','picked_qty');
+                        $q->select('id','pl_header_id','picked_qty');
                     }])
-                    ->where('type', CommonHelper::PICKING)
+                    ->where('morphable_type', 'App\Models\ErpPlHeader')
                     ->when($search, function ($query) use ($search) {
-                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader', 'App\Models\ErpMaterialIssueHeader'], function ($q) use ($search) {
+                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($search) {
                              $q->where(function($q2) use ($search) {
                                 $q2->where('document_number', 'like', "%{$search}%")
                                     ->orWhere('book_code', 'like', "%{$search}%");
@@ -42,25 +41,9 @@ class PicklistTaskController extends Controller
                         });
                     })
                     ->when($location, function ($query) use ($location) {
-                        // $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader', 'App\Models\ErpMaterialIssueHeader'], function ($q) use ($location) {
-                        //     $q->where('store_id', $location);
-                        // });
-                        $query->whereHasMorph(
-                        'morphable',
-                        [
-                            \App\Models\ErpPlHeader::class,
-                            \App\Models\ErpMaterialIssueHeader::class
-                        ],
-                        function ($q, $type) use ($location) {
-                            if ($type === \App\Models\ErpPlHeader::class) {
-                                $q->where('store_id', $location);
-                            }
-
-                            if ($type === \App\Models\ErpMaterialIssueHeader::class) {
-                                $q->where('from_store_id', $location);
-                            }
-                        }
-                    );
+                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($location) {
+                            $q->where('store_id', $location);
+                        });
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
                     ->orderBy('id','desc')
@@ -454,31 +437,6 @@ class PicklistTaskController extends Controller
             if($request->deviation > 0){
                 $job->status = CommonHelper::DEVIATION;
                 $message = 'Job closed with deviation '.$request->deviation.'.';
-            }
-
-            //Issue/ Recieve in Stock Ledger
-            if ($job -> morphable_type === \App\Models\ErpMaterialIssueHeader::class)
-            {
-                $materialIssue = ErpMaterialIssueHeader::find($job -> morphable_id);
-                if ($materialIssue) {
-                    //Check if stock should be received or not
-                    if ($materialIssue -> to_sub_store -> is_warehouse_required) {
-                        foreach ($materialIssue -> items as $miItem) {
-                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $miItem -> id, $miItem -> inventory_uom_qty, false);
-                            if ($status['status'] == 'error') {
-                                throw new ApiGenericException($status['message']);
-                            }
-                        }
-                        (new WhmJob)->createJob($materialIssue->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
-                    } else {
-                        foreach ($materialIssue -> items as $miItem) {
-                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $miItem -> id, $miItem -> inventory_uom_qty, true);
-                            if ($status['status'] == 'error') {
-                                throw new ApiGenericException($status['message']);
-                            }
-                        }
-                    }
-                }
             }
 
             $job->save();

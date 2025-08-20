@@ -248,14 +248,14 @@ class InspectionHelper
     public static function validateInspectionCheckList(array $inspectionData, object $item)
     {
         if (!$inspectionData) return [
-            'message' => 'Checklist must be filled for item: '. $item->item_name,
+            'message' => 'Inspection Checklist must be filled for item: '. $item->item_name,
             'status' => false
         ];
 
         if (!is_array($inspectionData) || count($inspectionData) === 0) {
-            dd('dhasdjkhas asdhaskj');
+            // dd('dhasdjkhas asdhaskj');
             return [
-                'message' => 'Checklist must be filled for item: '. $item->item_name,
+                'message' => 'Inspection Checklist must be filled for item: '. $item->item_name,
                 'status' => false
             ];
         }
@@ -286,5 +286,149 @@ class InspectionHelper
         ];
 
     }
+
+    /**
+     * Validate batch details for an item.
+     *
+     * @param array $batchDetails Array of batch details to validate.
+     * @param object $item The item object containing properties like is_batch_no, is_expiry_date, etc.
+     * @return array An associative array with 'status', 'message', and optionally 'data' for normalized rows.
+     */
+    public static function validateBatches(array $batchDetails, object $item): array
+    {
+        // 1) Required: non-empty array
+        if (empty($batchDetails) || !is_array($batchDetails)) {
+            return [
+                'status'  => false,
+                'message' => 'Batch details are required for item: ' . ($item->item_name ?? ''),
+            ];
+        }
+
+        // Helpers
+        $isBatchNoEnabled   = (int)($item->is_batch_no ?? 0) === 1;
+        $isExpiryDateNeeded = $isBatchNoEnabled && (int)($item->is_expiry_date ?? 0) === 1;
+
+        $isValidYear = static function ($y): bool {
+            if ($y === null || $y === '') return false;
+            if (!preg_match('/^\d{4}$/', (string)$y)) return false;
+            $yy = (int)$y;
+            $now = (int)date('Y');
+            return $yy >= 1900 && $yy <= $now; // adjust if you allow future mfg years
+        };
+
+        $isValidDateYmd = static function ($d): bool {
+            if (!$d) return false;
+            $dt = \DateTime::createFromFormat('Y-m-d', (string)$d);
+            return $dt && $dt->format('Y-m-d') === (string)$d;
+        };
+
+        $norm = []; // normalized rows to return (optional but handy)
+        $eps  = 1e-6;
+
+        foreach ($batchDetails as $i => $row) {
+            // index label for friendly messages (1-based)
+            $n = $i + 1;
+
+            // Defensive casts
+            $batch_number   = trim((string)($row['batch_number']   ?? ''));
+            $mrn_qty        = (float)($row['mrn_qty']              ?? null);
+            $inspection_qty = (float)($row['inspection_qty']       ?? null);
+            $accepted_qty   = (float)($row['accepted_qty']         ?? null);
+            $rejected_qty   = isset($row['rejected_qty']) ? (float)$row['rejected_qty'] : null;
+
+            // 2) Mandatory fields: batch_number, mrn_qty, inspection_qty, accepted_qty
+            if ($batch_number === '') {
+                return [
+                    'status'  => false,
+                    'message' => "Batch number is required (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+            if (!is_finite($mrn_qty)) {
+                return [
+                    'status'  => false,
+                    'message' => "MRN/Receipt quantity is required (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+            if (!is_finite($inspection_qty)) {
+                return [
+                    'status'  => false,
+                    'message' => "Inspection quantity is required (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+            if (!is_finite($accepted_qty)) {
+                return [
+                    'status'  => false,
+                    'message' => "Accepted quantity is required (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+
+            // 3) If is_batch_no == 1 → manufacturing_year required, and
+            //    if item->is_expiry_date == 1 → expiry_date required (Y-m-d)
+            if ($isBatchNoEnabled) {
+                $manufacturing_year = $row['manufacturing_year'] ?? null;
+                if (!$isValidYear($manufacturing_year)) {
+                    return [
+                        'status'  => false,
+                        'message' => "Manufacturing year is required/invalid (row {$n}) for item: " . ($item->item_name ?? ''),
+                    ];
+                }
+
+                if ($isExpiryDateNeeded) {
+                    $expiry_date = $row['expiry_date'] ?? null;
+                    if (!$isValidDateYmd($expiry_date)) {
+                        return [
+                            'status'  => false,
+                            'message' => "Expiry date is required/invalid (YYYY-MM-DD) (row {$n}) for item: " . ($item->item_name ?? ''),
+                        ];
+                    }
+                }
+            }
+
+            // --- Relationship checks (sensible guards) ---
+            // inspection must be <= mrn
+            if ($inspection_qty - $mrn_qty > $eps) {
+                return [
+                    'status'  => false,
+                    'message' => "Inspection qty cannot exceed Receipt qty (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+            // accepted must be <= inspection
+            if ($accepted_qty - $inspection_qty > $eps) {
+                return [
+                    'status'  => false,
+                    'message' => "Accepted qty cannot exceed Inspection qty (row {$n}) for item: " . ($item->item_name ?? ''),
+                ];
+            }
+            // if rejected is provided, it should be inspection - accepted (within epsilon)
+            if ($rejected_qty !== null) {
+                $expected_rej = max(0.0, $inspection_qty - $accepted_qty);
+                if (abs($rejected_qty - $expected_rej) > $eps) {
+                    return [
+                        'status'  => false,
+                        'message' => "Rejected qty must equal (Inspection − Accepted) (row {$n}) for item: " . ($item->item_name ?? ''),
+                    ];
+                }
+            }
+
+            // Build normalized row for caller to persist
+            $norm[] = [
+                'mrn_batch_detail_id' => $row['mrn_batch_detail_id'] ?? null,
+                'batch_number'        => $batch_number,
+                'manufacturing_year'  => $row['manufacturing_year'] ?? null,
+                'expiry_date'         => $row['expiry_date']        ?? null,
+                'mrn_qty'             => $mrn_qty,
+                'inspection_qty'      => $inspection_qty,
+                'accepted_qty'        => $accepted_qty,
+                'rejected_qty'        => $rejected_qty ?? max(0.0, $inspection_qty - $accepted_qty),
+            ];
+        }
+
+        return [
+            'status'  => true,
+            'message' => 'Batch details validated for item: ' . ($item->item_name ?? ''),
+            'data'    => $norm, // normalized rows (optional but useful to save)
+        ];
+    }
+
 
 }

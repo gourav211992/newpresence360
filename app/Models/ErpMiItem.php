@@ -209,8 +209,12 @@ class ErpMiItem extends Model
     {
         return $this -> belongsTo(JoProduct::class, 'jo_product_id');
     }
-        public function uniqueCodes()
+    public function uniqueCodes()
     {
         return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
+    }
+    public function stockReservation()
+    {
+        return $this->hasMany(StockLedgerReservation::class, 'issue_detail_id','id');
     }
 }

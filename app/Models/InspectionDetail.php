@@ -247,6 +247,11 @@ class InspectionDetail extends Model
         return $this->hasMany(InspChecklist::class, 'detail_id');
     }
 
+    public function batches()
+    {
+        return $this->hasMany(InspBatchDetail::class, 'detail_id');
+    }
+
     public function item_attributes_array()
     {
         $itemId = $this->getAttribute('item_id');

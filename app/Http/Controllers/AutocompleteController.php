@@ -51,6 +51,7 @@ use App\Models\ProductSectionDetail;
 use App\Models\ProductSpecification;
 use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\Service;
 use App\Models\Station;
 use App\Models\SubType;
@@ -169,7 +170,7 @@ class AutocompleteController extends Controller
                     $query->where('code', 'LIKE', "%$term%")
                           ->orWhere('description', 'LIKE', "%$term%");
                 })
-                ->get(['id', 'code', 'description']);
+                ->get(['id', 'code', 'description',]);
 
                 if ($results->isEmpty()) {
                     $results = Hsn::where('status', ConstantHelper::ACTIVE)
@@ -691,7 +692,7 @@ class AutocompleteController extends Controller
                     -> where('is_sale', 1)
                     -> where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
-                    ->get(['id', 'name', 'alias', 'percentage']);
+                    ->get(['id', 'hsn_id', 'name', 'alias', 'percentage']);
             }  elseif ($type === 'po_module_discount') {
                 $ids = json_decode($request->ids, TRUE) ?? [];
                 $ids = array_map('intval', $ids);
@@ -723,7 +724,7 @@ class AutocompleteController extends Controller
                     -> where('is_purchase', 1)
                     -> where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
-                    ->get(['id', 'name', 'alias', 'percentage']);
+                    ->get(['id', 'name', 'alias', 'percentage', 'hsn_id']);
             } elseif ($type === 'po_item_list') {
                 /*This for the PO*/
                 // $selectedAllItemIds = json_decode($request->input('selectedAllItemIds'), true) ?? [];
@@ -1247,7 +1248,8 @@ class AutocompleteController extends Controller
                     });
                 })
                 ->limit(10)
-                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
+                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 
+                        'payment_terms_id','display_name', 'credit_days', 'credit_days_editable']);
             } else if ($type === 'location') {
                 $results = InventoryHelper::getAccessibleLocations();
             } else if ($type === 'all_stations') {

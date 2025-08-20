@@ -25,7 +25,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/', 'index')->name('kaizen.index');
         Route::get('/create', 'create')->name('kaizen.create');
         Route::get('/edit/{id}', 'edit')->name('kaizen.edit');
-        Route::get('/{id}', 'pdfView')->name('kaizen.pdf-view');
+        Route::get('/download-pdf/{id}', 'pdfView')->name('kaizen.pdf-view');
     });
 
     // For Api Routes

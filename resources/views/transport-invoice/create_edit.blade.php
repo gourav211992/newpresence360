@@ -600,17 +600,17 @@ class="ajax-input-form sales_module_form transport_invoice"
 
                                                 {{-- Points --}}
                                                 <td>
-                                                    <input type="text" readonly name="points[{{ $index }}]" class="form-control mw-100 numeric-alignment" value="{{ $item->lorry->locations->count() ?? 0 }}">
+                                                    <input type="text" readonly name="points[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->count() ?? 0 }}">
                                                 </td>
 
                                                 {{-- No. of Articles --}}
                                                 <td>
-                                                    <input type="text" readonly name="articles[{{ $index }}]" class="form-control mw-100 numeric-alignment" value="{{ $item->lorry->locations->sum('no_of_articles') ?? 0 }}">
+                                                    <input type="text" readonly name="articles[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->sum('no_of_articles') + $item->lorry->no_of_bundles ?? 0 }}">
                                                 </td>
 
                                                 {{-- Weight --}}
                                                 <td>
-                                                    <input type="text" readonly name="weight[{{ $index }}]" class="form-control mw-100 numeric-alignment" value="{{ $item->lorry->locations->sum('weight') ?? 0 }}">
+                                                    <input type="text" readonly name="weight[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->sum('weight') + $item->lorry->weight ?? 0 }}">
                                                 </td>
 
                                                 {{-- Discount --}}
@@ -625,7 +625,7 @@ class="ajax-input-form sales_module_form transport_invoice"
 
                                                 {{-- Total after discount --}}
                                                 <td>
-                                                    <input type="text" readonly class="form-control mw-100 numeric-alignment" name="total_after_discount[{{ $index }}]" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0) - $discountAmtPrev }}">
+                                                    <input type="text" readonly class="form-control mw-100 numeric-alignment" name="total_after_discount[{{ $index }}]" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total +$item->lorry->lr_charges ?? 0) - $discountAmtPrev }}">
                                                 </td>
 
                                                 {{-- Action --}}
@@ -640,20 +640,21 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                     </div>
                                                     <input type="hidden" id="item_remarks_{{ $index }}" name="item_remarks[]" value="{{ $currentOrder->lorry->remarks ?? '' }}">
                                                 </td>
-                                                <td hidden=""><input type="text" id="item_value_{{ $index }}" disabled="" class="form-control mw-100 text-end item_values_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0)}}"></td>
-                                                <input type="hidden" id="value_after_header_discount_{{ $index }}" class="item_val_after_header_discounts_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0) - $discountAmtPrev }}">
-                                                <input type="hidden" id="item_total_{{ $index }}" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0) - $discountAmtPrev }}" disabled="" class="form-control mw-100 text-end item_totals_input">
-                                                <input type="hidden" id="value_after_discount_{{ $index }}"  disabled class="form-control mw-100 text-end item_val_after_discounts_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0) - $discountAmtPrev }}" />
+                                                <td hidden=""><input type="text" id="item_value_{{ $index }}" disabled="" class="form-control mw-100 text-end item_values_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0)}}"></td>
+                                                <input type="hidden" id="value_after_header_discount_{{ $index }}" class="item_val_after_header_discounts_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev }}">
+                                                <input type="hidden" id="item_total_{{ $index }}" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev }}" disabled="" class="form-control mw-100 text-end item_totals_input">
+                                                <input type="hidden" id="value_after_discount_{{ $index }}"  disabled class="form-control mw-100 text-end item_val_after_discounts_input" value="{{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev }}" />
+                                                <input type="hidden" id = "item_tax_{{ $index }}" class="form-control mw-100 text-end item_taxes_input" style="width: 70px" />
                                                 <td hidden>
                                                     <select class="form-select" name="uom_id[]" id = "uom_dropdown_{{ $index }}">
                                                     <option value="{{$currentOrder->uom_id}}" selected>{{$currentOrder->uom_code}}</option>
                                                     </select>
                                                 </td>
                                                 <td hidden><input type="text" id="item_qty_{{ $index }}" name = "item_qty[{{ $index }}]" value = "{{$currentOrder->balance_qty}}" class="form-control mw-100 text-end"  max = "{{$currentOrder->balance_qty}}"/></td>
-                                                 <td hidden ><input readonly type="text" id = "item_rate_{{ $index }}" name="item_rate[]"  value = "{{($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0)}}" class="form-control mw-100 text-end" /></td>
+                                                 <td hidden ><input readonly type="text" id = "item_rate_{{ $index }}" name="item_rate[]"  value = "{{($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0)}}" class="form-control mw-100 text-end" /></td>
                                             </tr>
                                         @php
-                                        $total += ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total ?? 0) - $discountAmtPrev;
+                                        $total += ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev;
                                         $totaldiscount += $discountAmtPrev;
                                         @endphp
                                         @endforeach
@@ -919,15 +920,30 @@ class="ajax-input-form sales_module_form transport_invoice"
 <script type="text/javascript" src="{{ asset('assets/js/modules/pull-popup-datatable.js') }}"></script>
 <script>
     const currentOrder = @json(isset($order) ? $order : null);
-    
- 
-
     var currentfy = JSON.stringify({!! isset($order) ? $order : " " !!});
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";
 </script>
 @include('transport-invoice.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "sale.transporterInvoice"])
 <script src="{{ asset("assets\\js\\modules\\ti\\common-script.js") }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Check if currentOrder exists
+    if (currentOrder) {
+        // Loop through all items in the order
+        currentOrder.items.forEach((item, index) => {
+            // Check if the item dropdown exists in the DOM
+            if (document.getElementById(`items_dropdown_${index}_value`)) {
+                // Delay slightly to ensure DOM is fully rendered
+                setTimeout(() => {
+                    getItemTax(index);
+                    setAttributesUI(index); // if you have this function
+                }, 500); // 0.5 sec delay
+            }
+        });
+    }
+});
+</script>
 
 <script>
 
