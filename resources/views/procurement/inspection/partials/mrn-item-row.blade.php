@@ -9,6 +9,7 @@
         $isBatchEnable = ($item?->item?->is_batch_no == 1) ? 'Yes' : 'No';
         $mrnBatches = collect($batchDetails ?? [])->map(function ($b) {
             return [
+                'id' => null,
                 'mrn_batch_detail_id' => (int) $b->id,
                 'batch_number'        => (string) $b->batch_number,
                 'manufacturing_year'  => $b->manufacturing_year ? (int) $b->manufacturing_year : null,

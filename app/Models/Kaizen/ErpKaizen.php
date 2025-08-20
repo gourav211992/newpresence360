@@ -29,11 +29,16 @@ class ErpKaizen extends Model
         'cost_imp_id',
         'cost_saving_amt',
         'innovation_imp_id',
+        'safety_imp_id',
         'status',
         'approver_id',
         'approved_at',
         'created_by',
         'updated_by',
+        'occurence',
+        'remarks',
+        'score',
+        'total_score',
     ];
 
     public function kaizenTeam()
@@ -92,6 +97,54 @@ class ErpKaizen extends Model
             'id'                                  
         );
     }
+
+    public function productivity()
+    {
+        return $this->improvementRelation('productivity_imp_id');
+               
+    }
+
+    public function safety()
+    {    
+        return $this->improvementRelation('safety_imp_id');
+    }
+    
+
+    public function innovation()
+    {
+               
+        return $this->improvementRelation('innovation_imp_id');
+    }
+
+    public function cost()
+    {
+        return $this->improvementRelation('cost_imp_id');
+    }
+
+    public function delivery()
+    {    
+        return $this->improvementRelation('delivery_imp_id');
+    }
+
+    public function moral()
+    {          
+        return $this->improvementRelation('moral_imp_id');
+    }
+
+    public function quality()
+    {   
+        return $this->improvementRelation('quality_imp_id');
+    }
+
+    private function improvementRelation($foreignKey)
+    {
+        return $this->hasOne(
+            ErpKaizenImprovement::class,
+            'id',
+            $foreignKey
+        );
+    }
+
 
 
 }

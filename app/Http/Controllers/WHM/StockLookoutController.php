@@ -60,8 +60,8 @@ class StockLookoutController extends Controller
             // })
             ->when($search, function($q) use($search){
                 $q->whereHas('item', function($q) use ($search) {
-                        $q->where('item_name', $search)
-                        ->orWhere('item_code',$search);
+                        $q->where('item_name', 'like', '%'.$search.'%')
+                        ->orWhere('item_code','like', '%'.$search.'%');
                     });
             })
             ->withDefaultGroupCompanyOrg()
@@ -222,9 +222,7 @@ class StockLookoutController extends Controller
     public function applyFilter(Request $request){
         $validator = Validator::make($request->all(),[
             'store_id' => 'required|integer',
-            'sub_store_id' => 'required|integer',
         ],[
-            'sub_store_id.required' => 'Sub store id is required',
             'store_id.required' => 'Store id is required',
         ]);
 
@@ -232,6 +230,7 @@ class StockLookoutController extends Controller
             throw new ValidationException($validator);
         }
 
+        $subStoreId = $request->sub_store_id ? ($request->sub_store_id == 0 ? NULL : $request->sub_store_id) : NULL;
         $filters = $request->input('warehouse', []);
         $levelKeys = array_keys($filters);
         $deepestLevelKey = end($levelKeys);  // gets the deepest level (e.g., "8")
@@ -266,11 +265,11 @@ class StockLookoutController extends Controller
             ->when(!empty($storagePointIds), function($q) use ($storagePointIds) {
                 $q->whereIn('storage_point_id', $storagePointIds);
             })
-            ->when('store_id',function($q) use($request){
+            ->when($request->store_id,function($q) use($request){
                 $q->where('store_id',$request->store_id);
             })
-            ->when('sub_store_id',function($q) use($request){
-                $q->where('sub_store_id',$request->sub_store_id);
+            ->when($subStoreId,function($q) use($subStoreId){
+                $q->where('sub_store_id',$subStoreId);
             })
             ->when(!empty($request->input('attributes')), function($q) use ($request) {
                 foreach ($request->input('attributes') as $attrName => $attrValue) {

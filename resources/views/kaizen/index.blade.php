@@ -84,8 +84,17 @@
                                                         @endif
                                                     </td>
                                                     <td>
+                                                        @php
+                                                            if ($kaizen->status == 'approved') {
+                                                                $className = 'badge-light-success';
+                                                            } elseif ($kaizen->status == 'rejected') {
+                                                                $className = 'badge-light-danger';
+                                                            } else {
+                                                                $className = 'badge-light-primary';
+                                                            }
+                                                        @endphp
                                                         <span
-                                                            class="badge rounded-pill badge-light-primary badgeborder-radius">{{ ucfirst($kaizen->status) }}</span>
+                                                            class="badge rounded-pill {{ $className }} badgeborder-radius">{{ ucfirst($kaizen->status) }}</span>
                                                     </td>
                                                     <td>{{ isset($kaizen->approver->name) ? $kaizen->approver->name : '-' }}
                                                     </td>
@@ -97,23 +106,55 @@
                                                                 <i data-feather="more-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu dropdown-menu-end">
-                                                                <a class="dropdown-item"
-                                                                    href="{{ route('kaizen.edit', ['id' => $kaizen->id]) }}">
-                                                                    <i data-feather="edit-3" class="me-50"></i>
-                                                                    <span>Edit</span>
-                                                                </a>
+                                                                @if ($kaizen->status == App\Helpers\CommonHelper::PENDING && $kaizen->created_by == $user->id)
+                                                                    <a class="dropdown-item"
+                                                                        href="{{ route('kaizen.edit', ['id' => $kaizen->id]) }}">
+                                                                        <i data-feather="edit-3" class="me-50"></i>
+                                                                        <span>Edit</span>
+                                                                    </a>
 
-                                                                <a class="dropdown-item" href="javascript:;"
-                                                                    data-url="{{ route('kaizen.destroy', ['id' => $kaizen->id]) }}"
-                                                                    data-request="remove">
-                                                                    <i data-feather="trash-2" class="me-50"></i>
-                                                                    <span>Delete</span>
-                                                                </a>
+                                                                    <a class="dropdown-item" href="javascript:;"
+                                                                        data-url="{{ route('kaizen.destroy', ['id' => $kaizen->id]) }}"
+                                                                        data-request="remove">
+                                                                        <i data-feather="trash-2" class="me-50"></i>
+                                                                        <span>Delete</span>
+                                                                    </a>
+                                                                @endif
+
+                                                                @if ($kaizen->status == App\Helpers\CommonHelper::PENDING && $kaizen->approver_id == $user->id)
+                                                                    <a class="dropdown-item" href="javascript:;"
+                                                                        data-bs-target="#status-modal"
+                                                                        data-bs-toggle="modal"
+                                                                        data-status="{{ App\Helpers\CommonHelper::REJECTED }}"
+                                                                        data-title="Reject Kaizen Request"
+                                                                        data-id="{{ $kaizen->id }}">
+                                                                        <i data-feather="x" class="me-50"></i>
+                                                                        <span>Reject</span>
+                                                                    </a>
+
+                                                                    <a class="dropdown-item" href="javascript:;"
+                                                                        data-bs-target="#status-modal"
+                                                                        data-bs-toggle="modal"
+                                                                        data-status="{{ App\Helpers\CommonHelper::APPROVED }}"
+                                                                        data-title="Approved Kaizen Request"
+                                                                        data-id="{{ $kaizen->id }}">
+                                                                        <i data-feather="check" class="me-50"></i>
+                                                                        <span>Approved</span>
+                                                                    </a>
+                                                                @endif
+
+                                                                @if ($kaizen->status == App\Helpers\CommonHelper::APPROVED)
+                                                                    <a class="dropdown-item"
+                                                                        href="{{ url('kaizen/download-pdf/') . '/' . $kaizen->id }}">
+                                                                        <i data-feather="download" class="me-50"></i>
+                                                                        <span>Download</span>
+                                                                    </a>
+                                                                @endif
 
                                                                 <a class="dropdown-item"
-                                                                    href="{{ url('kaizen/download-pdf/') . '/' . $kaizen->id }}">
-                                                                    <i data-feather="download" class="me-50"></i>
-                                                                    <span>Download</span>
+                                                                    href="{{ route('kaizen.view', ['id' => $kaizen->id]) }}">
+                                                                    <i data-feather="eye" class="me-50"></i>
+                                                                    <span>View</span>
                                                                 </a>
                                                             </div>
                                                         </div>
@@ -164,7 +205,8 @@
                     <div class="mb-1">
                         <label class="form-label" for="fp-range">Select Date Range</label>
                         <input type="text" id="fp-range" class="form-control flatpickr-range"
-                            placeholder="YYYY-MM-DD to YYYY-MM-DD" name="date_range" value="{{ request('date_range') }}" />
+                            placeholder="YYYY-MM-DD to YYYY-MM-DD" name="date_range"
+                            value="{{ request('date_range') }}" />
                     </div>
                 </div>
                 <div class="modal-footer justify-content-start">
@@ -172,6 +214,46 @@
                     <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="status-modal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="status-modal-title"></h4>
+                        <p class="mb-0 fw-bold voucehrinvocetxt mt-0"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form role="post-data" method="POST" id="status-form" action=""
+                    redirect="{{ route('kaizen.index') }}">
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
+                            <div class="col-md-12">
+                                <div class="mb-1">
+                                    <input type="hidden" name="status" class="form-control" value=""
+                                        id="status-input">
+                                </div>
+
+                                <div class="mb-1">
+                                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" name="remarks"></textarea>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-center">
+                        <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
+                        <button type="button" class="btn btn-primary" data-request="confirm-and-save"
+                            data-target="[role=post-data]">Submit</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     <!-- END: MODAL-->
@@ -194,6 +276,30 @@
                     const badge =
                         `<span class="badge rounded-pill badge-light-secondary badgeborder-radius me-1 mb-1">${name} (${email})</span>`;
                     body.innerHTML += badge;
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('[data-bs-toggle="modal"]');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const status = this.getAttribute('data-status');
+                    const title = this.getAttribute('data-title');
+                    const requestId = this.getAttribute('data-id');
+
+                    const statusInput = document.getElementById('status-input');
+                    statusInput.value = status;
+
+                    const modalTitle = document.querySelector('#status-modal-title');
+                    modalTitle.textContent = title;
+
+                    const form = document.getElementById('status-form');
+                    form.setAttribute('data-message', `Do you want to ${title}?`);
+                    form.action = `{{ url('/kaizen/update-status/${requestId}') }}`;
                 });
             });
         });

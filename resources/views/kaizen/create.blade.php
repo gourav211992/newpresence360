@@ -162,6 +162,17 @@
                                                             <option>Select</option>
                                                         </select>
                                                     </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Select Occurence <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <select class="form-select" name="occurence">
+                                                            <option value="">Select</option>
+                                                            <option value="one time">One Time</option>
+                                                            <option value="monthly">Monthly</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -240,6 +251,16 @@
                                                                 id="innovation" name="improvement_type[]"
                                                                 value="{{ App\Helpers\CommonHelper::INNOVATION }}">
                                                             <label class="form-label" for="innovation">Innovation</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-12">
+                                                        <div class="form-check form-check-primary custom-checkbox">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="safety" name="improvement_type[]"
+                                                                value="{{ App\Helpers\CommonHelper::SAFETY }}">
+                                                            <label class="form-label" for="safety">Safety</label>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -505,6 +526,52 @@
                                                                                                 One
                                                                                             </option>
                                                                                             @forelse ($improvements[App\Helpers\CommonHelper::INNOVATION] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}">
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                    @endif
+                                                                                    </select>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="accordion-item border" id="safety-accordion"
+                                                        style="display: none">
+                                                        <h2 class="accordion-header" id="safety-heading">
+                                                            <button type="button"
+                                                                class="accordion-button collapsed no-bg text-dark font-small-4"
+                                                                data-bs-toggle="collapse" data-bs-target="#safety">
+                                                                <strong>safety</strong>
+                                                            </button>
+                                                        </h2>
+                                                        <div class="accordion-collapse collapse show" id="safety">
+                                                            <div class="accordion-body pt-0">
+                                                                <div class="table-responsive-md">
+                                                                    <table
+                                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Select safety <span
+                                                                                        class="text-danger">*</span></th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <tr>
+                                                                                <td>
+                                                                                    @if (isset($improvements[App\Helpers\CommonHelper::SAFETY]))
+                                                                                        <select class="form-select select2"
+                                                                                            name="improvement[{{ App\Helpers\CommonHelper::SAFETY }}]">
+                                                                                            <option value="">Select
+                                                                                                One
+                                                                                            </option>
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::SAFETY] as $id => $improvement)
                                                                                                 <option
                                                                                                     value="{{ $id }}">
                                                                                                     {{ $improvement }}

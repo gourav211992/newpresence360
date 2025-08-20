@@ -306,25 +306,27 @@ class WhmJob
         return $uid;
     }
 
-    public function generateQRCodesForPickList($detail, $header, $jobId, $packetIds, $storagePointId, $user, $jobType, $trnstype)
+    public function generateQRCodesForPickList($detail, $header, $jobId, $packetIds, $storagePointId, $userId, $jobType, $trnstype)
     {
         $attributes = $detail->attributes;
 
         $packets = ErpItemUniqueCode::whereIn('item_uid', $packetIds)
             ->where('storage_point_id',$storagePointId)
             ->whereNull('utilized_id')
-            ->where('trns_type', $trnstype)
+            ->whereIn('trns_type', $trnstype)
             ->where('status', CommonHelper::SCANNED)
             ->get();
+        // dd($packets);
 
         $namespace = get_class($detail);
-        $storeId = $header -> store_id;
-        $subStoreId = $header -> sub_store_id;
-        if ($trnstype == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
-            $storeId = $header -> to_store_id;
-            $subStoreId = $header -> to_sub_store_id;
-        } 
+        $storeId = $header->store_id;
+        $subStoreId = $header->sub_store_id;
+        // if ($trnstype == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+        //     $storeId = $header -> to_store_id;
+        //     $subStoreId = $header -> to_sub_store_id;
+        // } 
 
+        
         foreach ($packets as $packet) {
             $newRecord = ErpItemUniqueCode::create([
                 'uid' => $this->generateUniqueUid(),
@@ -335,7 +337,7 @@ class WhmJob
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
                 'job_type' => $jobType,
-                'trns_type' => $trnstype,
+                'trns_type' => ConstantHelper::PL_SERVICE_ALIAS,
                 'doc_type' => CommonHelper::RECEIPT,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
@@ -355,7 +357,7 @@ class WhmJob
                 'status' => CommonHelper::SCANNED,
                 'created_at' => now(),
                 'updated_at' => now(),
-                'action_by' => $user->id,
+                'action_by' => $userId,
                 'action_at' => now()
             ]);
 

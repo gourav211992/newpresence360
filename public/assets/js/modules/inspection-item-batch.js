@@ -119,6 +119,7 @@
         }
         obj = normalize(obj);
         return (Array.isArray(obj) ? obj : []).map((b) => ({
+            id: b.id ?? null,
             mrn_batch_detail_id: b.mrn_batch_detail_id ?? b.id ?? null,
             batch_number: String(b.batch_number ?? ""),
             manufacturing_year: b.manufacturing_year ?? "",
@@ -164,6 +165,7 @@
         <tr data-index="${i}">
           <td>${i + 1}</td>
           <td>
+            <input type="hidden" class="insp-batch-id" value="${r.id ?? ""}">
             <input type="hidden" class="mrn-batch-id" value="${
                 r.mrn_batch_detail_id ?? ""
             }">
@@ -206,6 +208,7 @@
             const rej = Math.max(insp - acc, 0);
 
             return {
+                id: b.id,
                 mrn_batch_detail_id: b.mrn_batch_detail_id,
                 batch_number: b.batch_number,
                 manufacturing_year: b.manufacturing_year,
@@ -339,6 +342,7 @@
             }
 
             out.push({
+                id: $tr.find(".insp-batch-id").val() || null,
                 mrn_batch_detail_id: $tr.find(".mrn-batch-id").val() || null,
                 batch_number: $tr.find(".batch-number").val(),
                 manufacturing_year: $tr.find(".manufacturing-year").val(),
@@ -420,6 +424,7 @@
             const r = i - a;
 
             out.push({
+                id: b.id ?? null,
                 mrn_batch_detail_id: b.mrn_batch_detail_id ?? null,
                 batch_number: b.batch_number ?? "",
                 manufacturing_year: b.manufacturing_year ?? "",
@@ -437,6 +442,7 @@
                 a = Math.min(A, i),
                 r = i - a;
             out.push({
+                id: null,
                 mrn_batch_detail_id: null,
                 batch_number: "",
                 manufacturing_year: "",

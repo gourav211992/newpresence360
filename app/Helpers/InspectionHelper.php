@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 
 use App\Models\MrnHeader;
 use App\Models\MrnDetail;
+use App\Models\MrnBatchDetail;
 use App\Models\MrnAttribute;
 use App\Models\MrnItemLocation;
 use App\Models\MrnExtraAmount;
@@ -58,11 +59,28 @@ class InspectionHelper
                 $mrnItem->rejected_inv_uom_code = $item->rejected_inv_uom_code;
                 $mrnItem->rejected_inv_uom_qty += $item->rejected_inv_uom_qty;
                 $mrnItem->save();
+
+                // Update item batches
+                foreach ($item->batches as $batch) {
+                    $batchDetail = MrnBatchDetail::find($batch->batch_detail_id);
+
+                    if ($batchDetail) {
+                        $batchDetail->accepted_qty += $batch->accepted_qty;
+                        $batchDetail->accepted_inv_uom_qty += $batch->accepted_inv_uom_qty;
+                        $batchDetail->rejected_qty += $batch->rejected_qty;
+                        $batchDetail->rejected_inv_uom_qty += $batch->rejected_inv_uom_qty;
+                        $batchDetail->save();
+                    }
+
+                }
             }
 
             $mrn = MrnHeader::find($mrnHeaderId);
             // Update MRN stock
-            InventoryHelperV2::updateReceiptStock($mrn, $inspection);
+            $updateReceiptStock = InventoryHelperV2::updateReceiptStock($mrn, $inspection);
+            if($updateReceiptStock['status'] == 'error'){
+                return self::errorResponse("Error in InspectionHelper@updateMrnDetail: " .$updateReceiptStock['message']);
+            }
             // Update inspection flags on each MRN item
             foreach ($mrn->items as $item) {
                 $totalInspected = $item->accepted_qty + $item->rejected_qty;

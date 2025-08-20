@@ -2761,7 +2761,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
     
 
-    Route::resource('plant/bom', MaintBomController::class)->names([
+    Route::resource('plant/maint-bom', MaintBomController::class)->names([
         'index' => 'maint-bom.index',
         'create' => 'maint-bom.create',
         'store' => 'maint-bom.store',
@@ -2769,6 +2769,19 @@ Route::middleware(['user.auth'])->group(function () {
         'show' => 'maint-bom.show',
         'edit' => 'maint-bom.edit',
     ]);
+    
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+    Route::get('/', 'index')->name('maintenance-types.index');
+    Route::post('/', 'store')->name('maintenance-types.store');
+    Route::delete('/', 'delete')->name('maintenance-types.delete');
+});
+
+Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });
+
     Route::resource('plant/maint-wo', MaintWoController::class)->names([
         'create' => 'maint-wo.create',
         'store' => 'maint-wo.store',
@@ -2777,6 +2790,7 @@ Route::middleware(['user.auth'])->group(function () {
         'edit' => 'maint-wo.edit',
     ]);
     Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
+    Route::get('plant/populate-modal', [MaintWoController::class, 'populateModal'])->name('maint-wo.populateModal');
    
     Route::resource('plant/defect-noti', DefectNotificationController::class)
     ->names([
@@ -2982,7 +2996,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/revoke', 'revoke')->name('revoke');
         Route::post('/mail', 'mail')->name('mail');
         Route::get('/process-item', 'processItems')->name('process.items');
-        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
 
     });
@@ -2995,6 +3009,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/mail', 'mail')->name('mail');
         Route::get('/process-item', 'processItems')->name('process.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
+        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::get('/search-items', 'searchItems')->name('search.items');
+        Route::post('/generate-pdf', 'generatePdf')->name('generate-pdf');
 
     });
 
@@ -3057,18 +3074,6 @@ Route::middleware(['user.auth'])->group(function () {
 });
 
 
-
-Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
-    Route::get('/', 'index')->name('maintenance-types.index');
-    Route::post('/', 'store')->name('maintenance-types.store');
-    Route::delete('/', 'delete')->name('maintenance-types.delete');
-});
-
-Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
-        Route::get('/', 'index')->name('defect-types.index');
-        Route::post('/', 'store')->name('defect-types.store');
-        Route::delete('/', 'delete')->name('defect-types.delete');
-    });
     
     
 

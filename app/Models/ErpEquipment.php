@@ -41,6 +41,13 @@ class ErpEquipment extends Model
             foreignKey: 'category_id',
         );
     }
+    public function book(): BelongsTo
+    {
+        return $this->belongsTo(
+            related: Book::class,
+            foreignKey: 'book_id',
+        );
+    }
 
     public function spareParts(): HasMany
     {

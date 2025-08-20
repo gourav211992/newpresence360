@@ -979,7 +979,7 @@ public function approveReceipt($id, $encryptedEmail)
 
    $consignee = null;
     if ($lr->consignee_id) {
-        $consignee = \DB::table('customers')->where('id', $lr->consignee_id)->first();
+        $consignee = \DB::table('erp_customers')->where('id', $lr->consignee_id)->first();
     }
 
     if (!$consignee || $consignee->email !== $email) {

@@ -31,6 +31,7 @@ class KaizenStoreRequest
 			'counter_measure'   => ['required'],
 			'problem'   => ['required'],
 			'benefits'          => ['required'],
+			'occurence'          => ['required'],
             'improvement_type'  => ['required', 'array', 'min:1'],
 		];
 
@@ -43,6 +44,7 @@ class KaizenStoreRequest
             'counter_measure.required' => 'Countermeasure is required.',
             'problem.required' => 'Problem are required.',
             'benefits.required' => 'Benefits are required.',
+            'occurence.required' => 'Occurence is required.',
             'improvement_type.required' => 'Select at least one improvement category.',
         ];
 
@@ -153,6 +155,22 @@ class KaizenStoreRequest
                 }
             }
 		});
+
+		return $validator;
+	}
+
+    public function updatestatus() : ValidationValidator
+	{
+		$validator = Validator::make($this->request->all(),[
+			'status' => [
+				'required',
+			],
+			'remarks' => [
+				'required',
+			],
+		],[
+            'remarks.required' => 'Remark field is required!'
+		]);
 
 		return $validator;
 	}

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use DB;
+use PDF;
 use DateTime;
 use stdClass;
 use Carbon\Carbon;
@@ -1661,83 +1662,60 @@ class InspectionController extends Controller
         $user = Helper::getAuthenticatedUser();
 
         $organization = Organization::where('id', $user->organization_id)->first();
+
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $purchaseReturn = InspectionHeader::with(['vendor', 'currency', 'items', 'book', 'expenses'])
+        $inspection = InspectionHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
-        $shippingAddress = $purchaseReturn->shippingAddress;
-        $billingAddress = $purchaseReturn->billingAddress;
-        $buyerAddress = $purchaseReturn?->erpStore?->address;
 
-        $totalItemValue = $purchaseReturn->total_item_amount ?? 0.00;
-        $totalDiscount = $purchaseReturn->total_discount ?? 0.00;
-        $totalTaxes = $purchaseReturn->total_taxes ?? 0.00;
+
+        $shippingAddress = $inspection->shippingAddress;
+        $billingAddress = $inspection->billingAddress;
+
+        $totalItemValue = $inspection->total_item_amount ?? 0.00;
+        $totalDiscount = $inspection->total_discount ?? 0.00;
+        $totalTaxes = $inspection->total_taxes ?? 0.00;
         $totalTaxableValue = ($totalItemValue - $totalDiscount);
         $totalAfterTax = ($totalTaxableValue + $totalTaxes);
-        $totalExpense = $purchaseReturn->expense_amount ?? 0.00;
+        $totalExpense = $inspection->expense_amount ?? 0.00;
         $totalAmount = ($totalAfterTax + $totalExpense);
-        $amountInWords = NumberHelper::convertAmountToWords($purchaseReturn->total_amount);
-        $approvedBy = Helper::getDocStatusUser(get_class($purchaseReturn), $purchaseReturn -> id, $purchaseReturn -> document_status);
+        $amountInWords = NumberHelper::convertAmountToWords($inspection->total_amount);
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$purchaseReturn->document_status] ?? '';
-        $taxes = InspectionTed::where('header_id', $purchaseReturn->id)
-            ->where('ted_type', 'Tax')
-            ->select('ted_type','ted_id','ted_name', 'ted_percentage', DB::raw('SUM(ted_amount) as total_amount'),DB::raw('SUM(assesment_amount) as total_assesment_amount'))
-            ->groupBy('ted_name', 'ted_percentage')
-            ->get();
-        $sellerShippingAddress = $purchaseReturn->latestShippingAddress();
-        $sellerBillingAddress = $purchaseReturn->latestBillingAddress();
-        $eInvoice = $purchaseReturn->irnDetail()->first();
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$inspection->document_status] ?? '';
+        $sellerShippingAddress = $inspection->latestShippingAddress();
+        $sellerBillingAddress = $inspection->latestBillingAddress();
+        $buyerAddress = $inspection?->erpStore?->address;
 
-        // QrCode::format('png')->size(300)->generate($eInvoice->signed_qr_code, $qrCodePath);
-        $qrCodeBase64 = EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code);
+        $pdf = PDF::loadView(
+            'pdf.inspection',
+            [
+                'user' => $user,
+                'inspection' => $inspection,
+                'shippingAddress' => $shippingAddress,
+                'billingAddress' => $billingAddress,
+                'organization' => $organization,
+                'amountInWords' => $amountInWords,
+                'organizationAddress' => $organizationAddress,
+                'totalItemValue' => $totalItemValue,
+                'totalDiscount' => $totalDiscount,
+                'totalTaxes' => $totalTaxes,
+                'totalTaxableValue' => $totalTaxableValue,
+                'totalAfterTax' => $totalAfterTax,
+                'totalExpense' => $totalExpense,
+                'totalAmount' => $totalAmount,
+                'imagePath' => $imagePath,
+                'docStatusClass' => $docStatusClass,
+                'sellerShippingAddress' => $sellerShippingAddress,
+                'sellerBillingAddress' => $sellerBillingAddress,
+                'buyerAddress' => $buyerAddress
+            ]
+        );
 
-
-        $options = new Options();
-        $options->set('defaultFont', 'Helvetica');
-        $dompdf = new Dompdf($options);
-
-        $html = view('pdf.purchase-return',
-        [
-            'pb' => $purchaseReturn,
-            'user' => $user,
-            'shippingAddress' => $shippingAddress,
-            'buyerAddress' => $buyerAddress,
-            'billingAddress' => $billingAddress,
-            'organization' => $organization,
-            'amountInWords' => $amountInWords,
-            'organizationAddress' => $organizationAddress,
-            'totalItemValue' => $totalItemValue,
-            'totalDiscount' => $totalDiscount,
-            'totalTaxes' => $totalTaxes,
-            'totalTaxableValue' => $totalTaxableValue,
-            'totalAfterTax' => $totalAfterTax,
-            'totalExpense' => $totalExpense,
-            'totalAmount' => $totalAmount,
-            'imagePath' => $imagePath,
-            'eInvoice' => $eInvoice,
-            'approvedBy' => $approvedBy,
-            'qrCodeBase64' => $qrCodeBase64
-        ]
-        )->render();
-
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        $pdfPath = 'invoices/pdfs/invoice_' . $eInvoice->ack_no . '.pdf';
-        Storage::disk('local')->put($pdfPath, $dompdf->output());
-
-        $fileName = 'IRN-' . date('Y-m-d') . '.pdf';
-        // return $dompdf->stream($fileName);
-
-        return response($dompdf->output())
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="Einvoice_' . $eInvoice->ack_no . '.pdf"');
+        $fileName = 'Inspection-' . date('Y-m-d') . '.pdf';
+        return $pdf->stream($fileName);
     }
 
     # Submit Amendment

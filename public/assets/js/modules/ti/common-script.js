@@ -21,6 +21,7 @@ let bookDetails = window.routes.bookDetails;
 let amendUrl = window.routes.amend;
 let getSeries = window.routes.getSeries;
 let redirectUrl = window.routes.redirectUrl;
+let invConfirmUrl = window.routes.invConfirmUrl;
 // Optional: use them in fetch, axios, etc.
 $('#order_date_input').on('blur', function() {
     if(checkDateRange(this)){
@@ -1346,6 +1347,55 @@ function submitAmend()
     $("#transport_invoice_form").submit();
 }
 
+function invoiceConfirm() {
+    var orderId = order ? order.id : null;
+    
+    if (!orderId) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Order ID missing!',
+            icon: 'error',
+        });
+        return;
+    }
+
+    $.ajax({
+        url: invConfirmUrl, // Laravel route
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            id: orderId,
+            _token: "{{ csrf_token() }}"
+        },
+        success: function(res) {
+            if (res.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: res.message,
+                    icon: 'success',
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: res.message || "Something went wrong!",
+                    icon: 'error',
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Request failed!',
+                icon: 'error',
+            });
+        }
+    });
+}
+
+
 let isProgrammaticChange = false; // Flag to prevent recursion
 
 document.addEventListener('input', function (e) {
@@ -2599,7 +2649,7 @@ $(document).on('click','#billAddressEditBtn',(e) => {
     $("#edit-address-billing").modal('show');
 });
 function sendMailTo() {
-        const customerEmail = order ? order.customer.email : "";
+        const customerEmail = order ? order.customer_email : "";
         const customerName = order ? order.customer.company_name : "";
         const emailInput = document.getElementById('cust_mail');
         const header = document.getElementById('send_mail_heading_label');

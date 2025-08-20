@@ -94,7 +94,7 @@
                                 <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
                                     <i data-feather='save'></i> Save as Draft
                                 </button>
-                                <button type="submit" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted">
                                     <i data-feather="check-circle"></i> Submit
                                 </button>
                             </div>
@@ -560,15 +560,15 @@
     </div>
 @endsection
 @section('scripts')
-<script type="text/javascript">
-    let actionUrlTax = '{{route("inspection.tax.calculation")}}';
-    var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
+    <script type="text/javascript">
+        let actionUrlTax = '{{route("inspection.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         window.onload = function () {

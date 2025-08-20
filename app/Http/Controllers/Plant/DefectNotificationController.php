@@ -141,7 +141,7 @@ class DefectNotificationController extends Controller
      */
     public function create()
     {
-        $parentURL = "defect-notification";
+        $parentURL = "plant_defect-noti";
         $series = [];
         $defectTypes = ErpDefectType::select('id', 'name')->get();
         $equipments = ErpEquipment::select('id', 'name')->get();
@@ -324,7 +324,7 @@ class DefectNotificationController extends Controller
         }
       
 
-        $parentURL = "defect-notification";
+        $parentURL = "plant_defect-noti";
         $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
@@ -462,7 +462,7 @@ class DefectNotificationController extends Controller
              ->where('type', strtolower(ConstantHelper::EQUIPMENT))
              ->get();
         
-        $parentURL = "defect-notification";
+        $parentURL = "plant_defect-noti";
         $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         

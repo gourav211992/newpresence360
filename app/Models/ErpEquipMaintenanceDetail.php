@@ -24,4 +24,8 @@ class ErpEquipMaintenanceDetail extends Model
     {
         return $this->belongsTo(ErpMaintenanceType::class, 'maintenance_type_id');
     }
+     public function bom()
+    {
+        return $this->belongsTo(PlantMaintBom::class, 'maintenance_bom_id');
+    }
 }

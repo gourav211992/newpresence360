@@ -215,6 +215,14 @@
                 </td>
             </tr>
             <tr>
+                <td colspan="4" style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none;">
+                    Rating/Evaluation
+                </td>
+                <td colspan="4" style="padding:10px; color: #000000;  border: 1px solid #000000;">
+                    {{ $kaizen->score }}/{{ $kaizen->total_score }}
+                </td>
+            </tr>
+            <tr>
                 <td colspan="2" style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none;">
                     Occurence
                 </td>
@@ -232,7 +240,7 @@
             <tr>
                 <td colspan="2"
                     style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none; border-bottom: none;">
-                    -
+                    {{ @$kaizen->occurence }}
                 </td>
                 <td colspan="2"
                     style="padding:10px; color: #000000;  border: 1px solid #000000; border-bottom: none;">

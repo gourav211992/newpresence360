@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Plant;
 use App\Helpers\ConstantHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Item;   
+use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\ErpAttribute;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Models\PlantMaintWo;
 use App\Models\DefectNotification;
+use App\Models\ErpEquipMaintenanceDetail;
+use App\Models\ErpEquipment;
+
+
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -22,30 +26,30 @@ class MaintWoController extends Controller
         $data = PlantMaintWo::all();
         return view('plant.maint_wo.index', compact('data'));
     }
-    
+
     public function show(Request $request, string $id)
     {
         $data = PlantMaintWo::find($id);
         $currNumber = $request->has('revisionNumber');
-        
-        // If revision number is provided and different from current
-        if ($currNumber && $data->revision_number != $request->revisionNumber) {
-            $currNumber = $request->revisionNumber;
-            $data = PlantMaintWoHistory::where('source_id', $id)
-                ->where('revision_number', $currNumber)
-                ->first();
-        } else {
-            $data = PlantMaintWo::findOrFail($id);
-        }
+
+        // // If revision number is provided and different from current
+        // if ($currNumber && $data->revision_number != $request->revisionNumber) {
+        //     $currNumber = $request->revisionNumber;
+        //     $data = PlantMaintWoHistory::where('source_id', $id)
+        //         ->where('revision_number', $currNumber)
+        //         ->first();
+        // } else {
+        //     $data = PlantMaintWo::findOrFail($id);
+        // }
 
         $parentURL = "plant_maint-wo";
         $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        
+
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        
+
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
@@ -65,15 +69,15 @@ class MaintWoController extends Controller
         );
 
         // Determine which revision to show
-        $revNo = $request->has('revisionNumber') 
-            ? intval($request->revisionNumber) 
+        $revNo = $request->has('revisionNumber')
+            ? intval($request->revisionNumber)
             : $data->revision_number;
 
         // Get approval history
         $approvalHistory = Helper::getApprovalHistory(
-            $data->book_id, 
-            $id, 
-            $revNo, 
+            $data->book_id,
+            $id,
+            $revNo,
             0,  // Module ID, 0 if not applicable
             $data->created_by
         );
@@ -115,13 +119,13 @@ class MaintWoController extends Controller
         $locations = \App\Helpers\InventoryHelper::getAccessibleLocations();
 
         return view('plant.maint_wo.show', compact(
-            'series', 
-            'items', 
-            'data', 
-            'buttons', 
-            'docStatusClass', 
-            'revision_number', 
-            'currNumber', 
+            'series',
+            'items',
+            'data',
+            'buttons',
+            'docStatusClass',
+            'revision_number',
+            'currNumber',
             'approvalHistory',
             'locations'
         ));
@@ -139,57 +143,57 @@ class MaintWoController extends Controller
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
         $items = Item::where("type", "goods")
-        ->with(["uom", "category", "itemAttributes"])
-        ->get();
-            foreach ($items as $item) {
-                $itemId = $item->id;
+            ->with(["uom", "category", "itemAttributes"])
+            ->get();
+        foreach ($items as $item) {
+            $itemId = $item->id;
 
-                if (isset($itemId)) {
-                    $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
-                } else {
-                    $itemAttributes = [];
-                }
-                $processedData = [];
-                foreach ($itemAttributes as $key => $attribute) {
-                    $attributesArray = array();
-                    $attribute_group_id = $attribute->attribute_group_id;
-                    $attribute->group_name = $attribute->group?->name;
-
-                    $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)->select('id', 'value')->where('status', 'active')->get();
-
-                    $attribute->values_data = $attributeValueData;
-                    $attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
-
-                    array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributeValueData, 'attribute_group_id' => $attribute['attribute_group_id']]);
-                }
-                $processedData = collect($processedData);
-
-                $item->attributes = $processedData;
+            if (isset($itemId)) {
+                $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+            } else {
+                $itemAttributes = [];
             }
-            $items = $items->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'item_code' => $item->item_code,
-                    'item_name' => $item->item_name,
-                    'uom_name' => optional($item->uom)->name,
-                    'uom_id' => optional($item->uom)->id,
-                    'item_attributes' => $item->attributes,
-                ];
-            });
+            $processedData = [];
+            foreach ($itemAttributes as $key => $attribute) {
+                $attributesArray = array();
+                $attribute_group_id = $attribute->attribute_group_id;
+                $attribute->group_name = $attribute->group?->name;
 
-            $locations = InventoryHelper::getAccessibleLocations();
-          
+                $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)->select('id', 'value')->where('status', 'active')->get();
+
+                $attribute->values_data = $attributeValueData;
+                $attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
+
+                array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributeValueData, 'attribute_group_id' => $attribute['attribute_group_id']]);
+            }
+            $processedData = collect($processedData);
+
+            $item->attributes = $processedData;
+        }
+        $items = $items->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'item_code' => $item->item_code,
+                'item_name' => $item->item_name,
+                'uom_name' => optional($item->uom)->name,
+                'uom_id' => optional($item->uom)->id,
+                'item_attributes' => $item->attributes,
+            ];
+        });
+
+        $locations = InventoryHelper::getAccessibleLocations();
+
         // Get defect notifications for the modal
         $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
             ->where('document_status', '!=', 'draft')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         if (count($servicesBooks['services']) > 0) {
             $firstService = $servicesBooks['services'][0];
             $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        }  
-        return view('plant.maint_wo.create', compact('series', 'locations','items', 'defectNotifications'));
+        }
+        return view('plant.maint_wo.create', compact('series', 'locations', 'items', 'defectNotifications'));
     }
 
     public function store(Request $request)
@@ -286,11 +290,11 @@ class MaintWoController extends Controller
         $parentURL = "plant_maint-wo";
         $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        
+
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        
+
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
@@ -298,11 +302,11 @@ class MaintWoController extends Controller
         $items = Item::where("type", "goods")
             ->with(["uom", "category", "itemAttributes"])
             ->get();
-            
+
         foreach ($items as $item) {
             $itemId = $item->id;
             $itemAttributes = $itemId ? ItemAttribute::where('item_id', $itemId)->get() : [];
-            
+
             $processedData = [];
             foreach ($itemAttributes as $attribute) {
                 $attribute_group_id = $attribute->attribute_group_id;
@@ -314,16 +318,16 @@ class MaintWoController extends Controller
                     ->get();
 
                 array_push($processedData, [
-                    'id' => $attribute->id, 
-                    'group_name' => $attribute->group_name, 
-                    'values_data' => $attributeValueData, 
+                    'id' => $attribute->id,
+                    'group_name' => $attribute->group_name,
+                    'values_data' => $attributeValueData,
                     'attribute_group_id' => $attribute_group_id
                 ]);
             }
-            
+
             $item->attributes = collect($processedData);
         }
-        
+
         // Transform items for the view
         $items = $items->map(function ($item) {
             return [
@@ -338,16 +342,16 @@ class MaintWoController extends Controller
 
         // Get locations
         $locations = InventoryHelper::getAccessibleLocations();
-        
+
         // Get defect notifications for the modal
         $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         // Get user type and set up action buttons
         $userType = Helper::userCheck();
         $revision_number = $workOrder->revision_number;
-        
+
         $buttons = Helper::actionButtonDisplay(
             $workOrder->book_id,
             $workOrder->document_status,
@@ -361,9 +365,9 @@ class MaintWoController extends Controller
 
         // Get approval history
         $approvalHistory = Helper::getApprovalHistory(
-            $workOrder->book_id, 
-            $id, 
-            $revision_number, 
+            $workOrder->book_id,
+            $id,
+            $revision_number,
             0, // Module ID, 0 if not applicable
             $workOrder->created_by
         );
@@ -431,10 +435,10 @@ class MaintWoController extends Controller
                         "relation_column" => "",
                     ],
                 ];
-                
+
                 // Create revision history
                 Helper::documentAmendment($revisionData, $id);
-                
+
                 // Process the amendment
                 Helper::approveDocument(
                     $workOrder->book_id,
@@ -447,7 +451,7 @@ class MaintWoController extends Controller
                     0,
                     get_class($workOrder)
                 );
-                
+
                 // Update revision number
                 $request->merge([
                     'revision_number' => $workOrder->revision_number + 1,
@@ -512,7 +516,7 @@ class MaintWoController extends Controller
         ]);
 
         DB::beginTransaction();
-        
+
         try {
             $doc = PlantMaintWo::findOrFail($request->id);
             $bookId = $doc->book_id;
@@ -544,7 +548,7 @@ class MaintWoController extends Controller
             $doc->save();
 
             DB::commit();
-            
+
             return response()->json([
                 'message' => "Work Order {$actionType}d successfully!",
                 'data' => $doc,
@@ -557,6 +561,39 @@ class MaintWoController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+    public function populateModal(Request $r)
+    {
+        $type = $r->type;
+        $data = [];
+        if ($type == 'defect') {
+            $query = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
+                ->where('document_status', '!=', 'draft')
+                ->orderBy('created_at', 'desc');
+
+            $query->whereHas('book', function ($q) use ($r) {
+                $q->whereIn('book_code', $r->book_code);
+            });
+            $data = $query->get();
+
+        } else if ($type == 'eqpt') {
+            $query = ErpEquipMaintenanceDetail::with(['bom.book','maintenanceType',
+                'equipment' => function ($q) use ($r) {
+                    $q->with(['book', 'location', 'category', 'spareParts'])
+                        ->where('document_status', '!=', 'draft')
+                        ->orderBy('created_at', 'desc')
+                        ->whereHas('book', function ($qu) use ($r) {
+                            $qu->whereIn('book_code', $r->book_code);
+                        });
+                }
+            ])->whereHas('bom');
+
+            $data = $query->get();
+        }
+
+
+        return response()->json($data);
+
     }
 
     public function destroy(string $id)

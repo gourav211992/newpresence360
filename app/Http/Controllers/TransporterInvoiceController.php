@@ -2913,4 +2913,146 @@ class TransporterInvoiceController extends Controller
         }
     }
 
+    public function confirm(Request $request)
+    {
+        $id = $request->id;
+
+        // Invoice ko fetch karo
+        $invoice = ErpTransportInvoice::find($id);
+        
+        if (!$invoice) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice not found!'
+            ]);
+        }
+
+        // Example: performa → final update
+        $invoice->type = 2; // aapke column ka naam jo bhi hai
+        $invoice->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invoice successfully converted to Final Invoice.'
+        ]);
+    }
+
+    public function print($id)
+    {
+        // Fetch invoice details
+        $order = ErpTransportInvoice::findOrFail($id);
+
+        $params = [
+            'item_id'           => 1,
+            'price'             => $order->total_amount ?? 0, // take from order if available
+            'transaction_type'  => 'sale',
+            'party_country_id'  => $order->billing_address_details->country_id ?? 101,
+            'party_state_id'    => $order->billing_address_details->state_id ?? 1,
+            'customer_id'       => $order->customer_id ?? '',
+            'header_book_id'    => $order->book_id ?? '',
+            'store_id'          => $order->store_id ?? 1,
+            'document_id'       => '',
+        ];
+
+        $url = url('/taxes/calculate-tax/sales/ti');
+
+        $organization = Organization::where('id', $order->organization_id)->first();
+
+        // Call the API
+        $response = Http::get($url, $params);
+
+        if ($response->successful()) {
+            $order->tax = $response->json();  // attach tax result dynamically
+        } else {
+            $order->tax = null; // or handle error
+        }
+        // Pass data to print view
+        return view('transport-invoice.print', compact('order','organization'));
+    }
+
+    public function InvoiceMail(Request $request)
+    {
+        $invoice = ErpTransportInvoice::with(['customer'])->findOrFail($request->id);
+    $customer = $invoice->customer;
+
+    $sendTo = $request->email_to ?? $customer->email;
+    $customer->email = $sendTo;
+
+    $title = "Invoice Generated";
+    $remarks = $request->remarks ?? null;
+    $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
+
+    $name = $customer->company_name;
+
+    // Email HTML content
+    $description = <<<HTML
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
+        <tr>
+            <td>
+                <h2 style="color: #2c3e50;">Your Invoice</h2>
+                <p style="font-size: 16px; color: #555;">Dear {$name},</p>
+                <p style="font-size: 15px; color: #333;">{$remarks}</p>
+                <p style="font-size: 15px; color: #333;">
+                    Please find the attached invoice PDF for your reference. You may download and review it at your convenience.
+                </p>
+                <p style="font-size: 15px; color: #333;">
+                    If you have any questions or need further assistance, feel free to reach out.
+                </p>
+            </td>
+        </tr>
+    </table>
+    HTML;
+
+    $attachments = [];
+
+    // Generate PDF from Blade view
+   try {
+        // Load blade view as HTML
+        $html = view('transport-invoice.print', [
+            'invoice' => $invoice,
+            'customer' => $customer,
+        ])->render();
+
+        // Dompdf options
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        // Initialize Dompdf
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Get PDF content
+        $pdfContent = $dompdf->output();
+        $pdfFileName = "Invoice_{$invoice->document_number}.pdf";
+
+        $attachments[] = [
+            'file' => $pdfContent,
+            'options' => [
+                'as' => $pdfFileName,
+                'mime' => 'application/pdf',
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        \Log::error("Failed to generate invoice PDF for email: " . $e->getMessage());
+    }
+
+
+
+
+        // Send email with attachments
+        return self::sendMail(
+            $customer,
+            $title,
+            $description,
+            $cc,
+            $attachments,
+            '',
+            ''
+        );
+    }
+
 }

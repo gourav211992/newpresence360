@@ -296,6 +296,7 @@
                 </td>
             </tr>
             @php
+                $hsnGroups = [];
                 $taxBracket = [];
                 $totalCGSTValue = 0.00;
                 $totalSGSTValue = 0.00;
@@ -340,8 +341,8 @@
                     // Now, calculate total tax_amount for each HSN group
                     foreach ($hsnGroups as &$group) {
                         $taxAmount = 0.00;
-                        foreach ($group as $ke => $value) {
-                            if (str_ends_with($ke, '_amount') && $ke !== 'tax_amount') {
+                        foreach ($group as $key => $value) {
+                            if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
                                 $taxAmount += (float)$value;
                             }
                         }

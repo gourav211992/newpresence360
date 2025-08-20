@@ -139,9 +139,9 @@ class PslipRequest extends FormRequest
                 );
 
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
-                // if ($consumptionQty > $stockBalanceQty) {
-                //     $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
-                // }
+                if ($consumptionQty > $stockBalanceQty) {
+                    $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
+                }
             }
         });
     }

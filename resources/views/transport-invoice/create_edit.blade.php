@@ -30,7 +30,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             @if (isset($order))
                                 @if($buttons['print'])
-                                <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                <!-- <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                         <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -38,7 +38,20 @@ class="ajax-input-form sales_module_form transport_invoice"
                                         <rect x="6" y="14" width="12" height="8"></rect>
                                     </svg>
                                     Print  <i class="fa-regular fa-circle-down"></i>
-                                </button>
+                                </button> -->
+                                  <a href="{{ route('sale.transporterInvoice.print', $order->id) }}" target="_blank">
+                                      <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" 
+                                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                                              class="feather feather-printer">
+                                              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                              <rect x="6" y="14" width="12" height="8"></rect>
+                                          </svg>
+                                          Print
+                                      </button>
+                                  </a>
+
                                   @if(isset($einvoice) && !$einvoice->ewb_no && $order -> total_amount > 50000)
                                       <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
                                           <i data-feather="check-circle"></i> Generate Eway Bill
@@ -116,7 +129,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                 </a>
                                 @endif
                                 @if( in_array($order -> document_status, ['approved', 'approval_not_required']) && $order->type == 1)
-                                <a type="button" class="btn btn-primary btn-sm" id="eEInvoiceBtn" onclick = "generateEInvoice('{{$order -> id}}')">
+                                <a type="button" class="btn btn-primary btn-sm" id="eEInvoiceBtn" onclick = "openModal('generateinvoice')">
                                     <i data-feather="check-circle"></i> Generate Invoice
                                 </a>
                                 @endif
@@ -239,9 +252,17 @@ class="ajax-input-form sales_module_form transport_invoice"
                                     id="type" readonly>
                                     <option
                                        value="1"
+                                       @if($order->type == 1) selected @endif
                                        data-name
                                        = "Performa Invoice">
                                        Performa Invoice
+                                    </option>
+                                    <option
+                                       value="1"
+                                       @if($order->type == 2) selected @endif
+                                       data-name
+                                       = "Invoice">
+                                       Invoice
                                     </option>
                                  </select>
                               </div>

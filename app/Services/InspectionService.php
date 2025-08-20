@@ -131,9 +131,7 @@ class InspectionService
                 // If 0 rows affected here, there was a race; we can only report it (no rollback by request)
                 if ($affected === 0) {
                     // You can decide to return a warning instead of error if you prefer
-                    return self::errorResponse(
-                        "Another update consumed the remaining balance for a batch. Please refresh and try again."
-                    );
+                    continue;
                 }
             }
 

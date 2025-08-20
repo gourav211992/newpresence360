@@ -35,10 +35,15 @@ class KaizenController extends Controller
             ->where(function($query) use($request){
                 self::filter($request, $query);
             })
+            ->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)
+                ->orWhere('approver_id', $user->id);
+            })
             ->orderBy('id','desc')
             ->paginate($length);
         return view('kaizen.index',[
-            'kaizens' => $kaizens
+            'kaizens' => $kaizens,
+            'user' => $user,
         ]);
     }
 
@@ -114,12 +119,14 @@ class KaizenController extends Controller
             $kaizen->organization_id = $user->organization_id;
             $kaizen->kaizen_no = $kaizenNo;
             $kaizen->kaizen_date = $request->date ?? null;
+            $kaizen->occurence = $request->occurence ?? null;
             $kaizen->productivity_imp_id = $improvements['productivity'] ?? null;
             $kaizen->quality_imp_id = $improvements['quality'] ?? null;
             $kaizen->moral_imp_id = $improvements['moral'] ?? null;
             $kaizen->delivery_imp_id = $improvements['delivery'] ?? null;
             $kaizen->cost_imp_id = $improvements['cost'] ?? null;
             $kaizen->innovation_imp_id = $improvements['innovation'] ?? null;
+            $kaizen->safety_imp_id = $improvements['safety'] ?? null;
             $kaizen->cost_saving_amt = $improvements['cost_saving_amt'] ?? null;
             $kaizen->status = CommonHelper::PENDING;
             $kaizen->created_by = $user->id;
@@ -162,6 +169,11 @@ class KaizenController extends Controller
                 $kaizenTeam->team_id = $teamId ? $teamId : null;
                 $kaizenTeam->save();
             }
+
+            $res = $this->calculateScore($kaizen);
+            $kaizen->score = $res['score'];
+            $kaizen->total_score = $res['total_score'];
+            $kaizen->save();
 
             \DB::commit();
             return [
@@ -213,6 +225,37 @@ class KaizenController extends Controller
         ]);
     }
 
+    public function view($id){
+        $user = Helper::getAuthenticatedUser();
+        $kaizen = ErpKaizen::with([
+                'kaizenTeam' => function($q){
+                    $q->select('employees.id','name', 'email');
+                }, 'productivity',  'safety', 'innovation', 'cost', 'delivery', 'moral',    'quality'
+            ])->find($id);
+        $attachments = ErpKaizenDocument::where('kaizen_id',$id)
+            ->get()
+            ->groupBy('type')
+            ->map(function ($items) {
+                return $items->pluck('attachment_path','id');
+            })
+            ->toArray();
+
+        $improvements = ErpKaizenImprovement::where('organization_id',$user->organization_id)
+            ->where('status',CommonHelper::ACTIVE)
+            ->get()
+            ->groupBy('type')
+            ->map(function ($items) {
+                return $items->pluck('description', 'id');
+            })
+            ->toArray();
+        
+        return view('kaizen.view',[
+            'improvements' => $improvements,
+            'kaizen' => $kaizen,
+            'attachments' => $attachments,
+        ]);
+    }
+
     public function update(Request $request,$id){
         $request->merge(['id' => $id]);
         $validator = (new Validator($request))->update();
@@ -231,6 +274,7 @@ class KaizenController extends Controller
             $kaizen->group_id = $user->group_id;
             $kaizen->company_id = $user->company_id;
             $kaizen->organization_id = $user->organization_id;
+            $kaizen->occurence = $request->occurence ?? null;
             $kaizen->kaizen_date = $request->date ?? null;
             $kaizen->productivity_imp_id = $improvements['productivity'] ?? null;
             $kaizen->quality_imp_id = $improvements['quality'] ?? null;
@@ -238,6 +282,7 @@ class KaizenController extends Controller
             $kaizen->delivery_imp_id = $improvements['delivery'] ?? null;
             $kaizen->cost_imp_id = $improvements['cost'] ?? null;
             $kaizen->innovation_imp_id = $improvements['innovation'] ?? null;
+            $kaizen->safety_imp_id = $improvements['safety'] ?? null;
             $kaizen->cost_saving_amt = $improvements['cost_saving_amt'] ?? null;
             $kaizen->status = CommonHelper::PENDING;
             $kaizen->save();
@@ -412,5 +457,75 @@ class KaizenController extends Controller
         ]);
         return $pdf->download('kaizen.pdf');
 
+    }
+
+    public function updateStatus(Request $request,$id){
+        $validator = (new Validator($request))->updatestatus();
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $kaizen = ErpKaizen::find($id);
+            $oldStatus = $kaizen->status;
+            $status = $request->status;
+
+            if($status != $oldStatus){
+                $kaizen->status = $status;
+                $kaizen->remarks = $request->remarks; 
+                
+                if($status == CommonHelper::APPROVED){
+                    $kaizen->approved_at = NOW();
+                }
+
+                $kaizen->save();
+            }
+
+            $status = ucwords(str_replace('-', ' ', $status));
+
+            \DB::commit();
+            return [
+                'message' => "Kaizen $request->status",
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    private function calculateScore($kaizen){
+        $improvementIds = [
+            $kaizen->productivity_imp_id,
+            $kaizen->quality_imp_id,
+            $kaizen->moral_imp_id,
+            $kaizen->delivery_imp_id,
+            $kaizen->cost_imp_id,
+            $kaizen->innovation_imp_id,
+            $kaizen->safety_imp_id
+        ];
+
+        // Remove null values just in case
+        $improvementIds = array_filter($improvementIds);
+        
+        // Calculate total score
+        $score = ErpKaizenImprovement::whereIn('id', $improvementIds)
+        ->sum('marks');
+
+        $organizationId = $kaizen->organization_id;
+
+        $improvementTypes = CommonHelper::IMPROVEMENT_TYPE;
+
+        $totalScore = ErpKaizenImprovement::where('organization_id', $organizationId)
+            ->whereIn('type', $improvementTypes)
+            ->select('type', \DB::raw('MAX(marks) as max_marks'))
+            ->groupBy('type')
+            ->pluck('max_marks')
+            ->sum();
+
+        return [
+            'score' => $score,
+            'total_score' => $totalScore
+        ];
     }
 }

@@ -10,5 +10,11 @@ class Designation extends Model
     use HasFactory;
 
     protected $table = 'designations';
+       protected $fillable = [
+        'name',
+        'status',
+        'marks',
+        'organization_id',
+    ];
     
 }
