@@ -2,27 +2,26 @@
 
 namespace App\Http\Controllers\Kaizen;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Designation;
-use App\Models\Organization;
 use App\Helpers\Helper;
-use Yajra\DataTables\Facades\DataTables;
+use App\Models\Designation;
+use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Yajra\DataTables\Facades\DataTables;
+use App\Http\Requests\Kaizen\DesignationRequest;
 
 class DesignationController extends Controller
 {
     public function index(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization?->id ?? null;
+        $organizationId = $user->organization_id;
 
         if ($request->ajax()) {
-            $designationMasters = Designation::
-                // where('organization_id', $organizationId)->
-                orderBy('id', 'desc');
+            $designationMasters = Designation::where('organization_id', $organizationId)
+                // ->where('status','active')
+                ->orderBy('id', 'desc');
 
             return DataTables::of($designationMasters)
                 ->addIndexColumn()
@@ -71,29 +70,28 @@ class DesignationController extends Controller
         return view('kaizen.designation.index', compact('organizationId', 'status'));
     }
 
-    public function update(Request $request, $id)
+    public function update(DesignationRequest $request, $id)
     {
         DB::beginTransaction();
         try {
-            $user = Helper::getAuthenticatedUser();
             // $validated = $request->validated();
-            $discountMaster = Designation::findOrFail($id);
-            $discountMaster->update([
+            $designation = Designation::findOrFail($id);
+            $designation->update([
                 'marks' => $request->input('marks'),
-                'status' => $request->input('status'),
             ]);
 
             DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Record updated successfully',
-                'data' => $discountMaster,
+                'data' => $designation,
             ], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'An error occurred while updating the Discount Master: ' . $e->getMessage()
+                'message' => 'An error occurred while updating the designation: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -1456,6 +1456,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
             Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
+            Route::post('/validate-asn', 'processAsn')->name('validate-asn');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -3000,7 +3001,7 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
 
     });
-    
+
     Route::prefix('pickup-dropoff-schedule')->controller(ErpPdsController::class)->name('pds.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');

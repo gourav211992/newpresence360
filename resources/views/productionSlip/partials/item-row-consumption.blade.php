@@ -42,7 +42,7 @@
                 </select>
             </td>
             <td>
-                <input type="text" id = "item_qty_{{$psBomConsIndex}}" data-bom-qty="{{$psBomCons->qty}}" data-mo-product-id="{{$psBomCons?->pslip_item?->mo_product_id}}" value = "{{$psBomCons->required_qty}}" name = "cons[{{$psBomConsIndex}}][item_qty]"  class="form-control mw-100 text-end disabled-input"/>
+                <input type="text" id = "consumption_item_qty_{{$psBomConsIndex}}" data-bom-qty="{{$psBomCons->qty}}" data-mo-product-id="{{$psBomCons?->pslip_item?->mo_product_id}}" value = "{{$psBomCons->required_qty}}" name = "cons[{{$psBomConsIndex}}][item_qty]"  class="form-control mw-100 text-end disabled-input"/>
                 <input type="hidden" id = "item_bom_qty_{{$psBomConsIndex}}" value = "{{$psBomCons->qty}}" name = "cons[{{$psBomConsIndex}}][item_bom_qty]"/>
             </td>
             <td>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\SaleModuleHelper;
+use App\Helpers\MrnModuleHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\ErpFinancialYear;
 use App\Models\ErpMaterialIssueHeader;
@@ -39,8 +40,10 @@ use App\Models\ErpSoItem;
 use App\Models\ErpTransportInvoice;
 use App\Models\GateEntryHeader;
 use App\Models\MrnHeader;
+use App\Models\MrnHeaderHistory;
 use App\Models\PbHeader;
 use App\Models\PRHeader;
+use App\Models\PRHeaderHistory;
 use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
 use App\Models\InspectionHeader;
@@ -304,8 +307,8 @@ class DocumentApprovalController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => "Error occurred while $actionType Sale Order document.",
-                'error' => $e->getMessage(),
+                'message' => "Error occurred while $actionType document.",
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -699,7 +702,22 @@ class DocumentApprovalController extends Controller
                         $jobData->save();
                     }
                 }
-            } 
+            }
+
+            // Mrn Purchase Summary
+            if ($actionType == 'approve' && in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)) {
+                $fy = Helper::getFinancialYear($mrn -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = MrnHeaderHistory::where('mrn_header_id', $mrn -> id) 
+                        -> where('revision_number', $mrn -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear);
+                }
+            }
 
             DB::commit();
             return response()->json([
@@ -1197,6 +1215,21 @@ class DocumentApprovalController extends Controller
             $mrn->approval_level = $approveDocument['nextLevel'];
             $mrn->document_status = $approveDocument['approvalStatus'];
             $mrn->save();
+
+            //Purchase Return Summary
+            if ($actionType == 'approve' && in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)) {
+                $fy = Helper::getFinancialYear($mrn -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = PRHeaderHistory::where('header_id', $mrn -> id) 
+                        -> where('revision_number', $mrn -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseReturnSummary($mrn, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseReturnSummary($mrn, $fyYear);
+                }
+            }
 
             DB::commit();
             // return response()->json([

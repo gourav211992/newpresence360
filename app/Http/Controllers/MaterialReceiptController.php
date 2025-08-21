@@ -42,6 +42,7 @@ use App\Models\Employee;
 use App\Models\ErpVendor;
 use App\Models\WhStructure;
 use App\Models\WhItemMapping;
+use App\Models\ErpFinancialYear;
 
 use App\Models\Hsn;
 use App\Models\Tax;
@@ -83,6 +84,7 @@ use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
+use App\Helpers\MrnModuleHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\StoragePointHelper;
 use App\Helpers\FinancialPostingHelper;
@@ -105,6 +107,7 @@ use App\Exports\TransactionItemsExport;
 use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
 use App\Helpers\CommonHelper;
+use App\Helpers\Configuration\Constants;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Configuration;
 use App\Models\ErpMiItem;
@@ -308,15 +311,10 @@ class MaterialReceiptController extends Controller
     # MRN store
     public function store(MaterialReceiptRequest $request)
     {
-        $user = $request->user();
-        $configResolve = new ClientConfigService(
-            $user->group_alias,
-            $user->company_alias,
-            $user->organization_alias
-        );
+        $user = Helper::getAuthenticatedUser();
+        $groupAlias = $user?->auth_user?->group_alias ?? '';
+        $isAttachementRequired = in_array($groupAlias, Constants::GROUP_ATTACHMENT_MANDATORY);
 
-        $configService = $configResolve->resolve();
-        $isAttachementRequired = $configService->isMrnAttachmentRequired();
         if($isAttachementRequired && !($request->file('attachment')))
         {
             return response()->json([
@@ -325,8 +323,6 @@ class MaterialReceiptController extends Controller
                 ], 422);
         }
 
-        $user = Helper::getAuthenticatedUser();
-
         DB::beginTransaction();
         try {
             $parameters = [];
@@ -334,7 +330,7 @@ class MaterialReceiptController extends Controller
             if ($response['status'] === 200) {
                 $parameters = json_decode(json_encode($response['data']['parameters']), true);
             }
-            if(!isset($parameters['inspection_required']))
+            if(!isset($parameters['inspection_required'][0]))
             {
                 return response()->json([
                     'message' => "Please update inspection in admin services"
@@ -396,8 +392,8 @@ class MaterialReceiptController extends Controller
             $mrn->ship_to = $request->shipping_id;
             $mrn->billing_address = $request->billing_address;
             $mrn->shipping_address = $request->shipping_address;
-            // $mrn->payment_term_id = $request->payment_term_id ?? null;
-            // $mrn->credit_days = $request->credit_days ?? null;
+            $mrn->payment_term_id = $request->payment_term_id ?? null;
+            $mrn->credit_days = $request->credit_days ?? null;
             $mrn->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
@@ -582,9 +578,9 @@ class MaterialReceiptController extends Controller
                     $inventory_uom_code = $inventoryUom->name;
                     if(@$component['uom_id'] == $itemUomId) {
                         $inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
+                        $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
                     } else {
                         $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
-                        $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
                         if($alUom) {
                             $inventory_uom_qty = floatval($orderQty) * $alUom->conversion_to_inventory;
                             $accepted_inventory_uom_qty = floatval($acceptedQty) * $alUom->conversion_to_inventory;
@@ -1041,15 +1037,15 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
-            // if($mrn->reference_type)
-            // {
-            //     $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
-            //     foreach ($mrnData as $detail) {
-            //         $refId = $detail->po_id ?? $detail->jo_id ?? null;
-            //         // Save MRN Payment Terms
-            //         self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $request->credit_days, $refId, $mrn->reference_type);
-            //     }
-            // }
+            if($mrn->reference_type)
+            {
+                $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+                foreach ($mrnData as $detail) {
+                    $refId = $detail->po_id ?? $detail->jo_id ?? null;
+                    // Save MRN Payment Terms
+                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $mrn->reference_type, $mrn->document_date);
+                }
+            }
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
@@ -1070,6 +1066,22 @@ class MaterialReceiptController extends Controller
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+            }
+
+            // Purchase Summary
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                // Mrn Purchase Summary
+                $fy = Helper::getFinancialYear($mrn -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = MrnHeaderHistory::where('mrn_header_id', $mrn -> id)
+                        -> where('revision_number', $mrn -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear);
+                }
             }
 
             DB::commit();
@@ -1266,6 +1278,8 @@ class MaterialReceiptController extends Controller
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
+        $existPaymentTermId = $mrn->payment_term_id;
+        $existCreditDays = $mrn->credit_days;
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -1289,22 +1303,21 @@ class MaterialReceiptController extends Controller
             'asnHeaderIds' => $asnHeaderIds,
             'asnDetailsIds' => $asnDetailsIds,
             'geHeaderIds' => $geHeaderIds,
-            'geDetailsIds' => $geDetailsIds
+            'geDetailsIds' => $geDetailsIds,
+            'existPaymentTermId' => $existPaymentTermId,
+            'existCreditDays' => $existCreditDays
         ]);
     }
 
     # Bom Update
     public function update(EditMaterialReceiptRequest $request, $id)
     {
-        $user = $request->user();
-        $configResolve = new ClientConfigService(
-            $user->group_alias,
-            $user->company_alias,
-            $user->organization_alias
-        );
+        $mrn = MrnHeader::find($id);
+        $user = Helper::getAuthenticatedUser();
 
-        $configService = $configResolve->resolve();
-        $isAttachementRequired = $configService->isMrnAttachmentRequired();
+        $groupAlias = $user?->auth_user?->group_alias ?? '';
+        $isAttachementRequired = in_array($groupAlias, Constants::GROUP_ATTACHMENT_MANDATORY);
+
         if($isAttachementRequired && !($request->file('attachment')))
         {
             return response()->json([
@@ -1313,8 +1326,6 @@ class MaterialReceiptController extends Controller
                 ], 422);
         }
 
-        $mrn = MrnHeader::find($id);
-        $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationId = $organization ?-> id ?? null;
         $groupId = $organization ?-> group_id ?? null;
@@ -1389,8 +1400,8 @@ class MaterialReceiptController extends Controller
             $mrn->final_remarks = $request->remarks ?? '';
             $mrn->cost_center_id = $request->cost_center_id ?? '';
             $mrn->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-            // $mrn->payment_term_id = $request->payment_term_id ?? null;
-            // $mrn->credit_days = $request->credit_days ?? null;
+            $mrn->payment_term_id = $request->payment_term_id ?? null;
+            $mrn->credit_days = $request->credit_days ?? null;
             $mrn->manual_entry_no = $request->manual_entry_no ?? '';
             if(@$request->reference_type)
             {
@@ -1876,6 +1887,7 @@ class MaterialReceiptController extends Controller
                             $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
                             $assetDetail->model_no = $assetDetails['model_no'] ?? null;
                             $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
+                            $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
                             $assetDetail->save();
                         } else {
@@ -2129,15 +2141,15 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
-            // if($mrn->reference_type)
-            // {
-            //     $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
-            //     foreach ($mrnData as $detail) {
-            //         $refId = $detail->po_id ?? $detail->jo_id ?? null;
-            //         // Save MRN Payment Terms
-            //         self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $request->credit_days, $refId, $mrn->reference_type);
-            //     }
-            // }
+            if($mrn->reference_type)
+            {
+                $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+                foreach ($mrnData as $detail) {
+                    $refId = $detail->po_id ?? $detail->jo_id ?? null;
+                    // Save MRN Payment Terms
+                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $mrn->reference_type, $mrn->document_date);
+                }
+            }
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
@@ -2160,6 +2172,22 @@ class MaterialReceiptController extends Controller
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
+
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                // Mrn Purchase Summary
+                $fy = Helper::getFinancialYear($mrn -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = MrnHeaderHistory::where('mrn_header_id', $mrn -> id)
+                        -> where('revision_number', $mrn -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -3076,6 +3104,9 @@ class MaterialReceiptController extends Controller
                     'suppl-inv'  => 'null',
                     default      => 'null',
                 };
+                $dataPaymentTerm = $row->po?->paymentTerm->name ?? 'null';
+                $dataPaymentId = $row->po?->payment_term_id ?? 'null';
+                $dataCreditDays = $row->po?->credit_days ?? 'null';
                 $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
@@ -3084,7 +3115,9 @@ class MaterialReceiptController extends Controller
                             <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}'
                             data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}'
                             data-current-asn='{$dataCurrentAsn}' data-current-asn-item='{$dataCurrentAsnItem}'
-                            data-current-ge='{$dataCurrentGe}' data-current-ge-item='{$dataCurrentGeItem}'>
+                            data-current-ge='{$dataCurrentGe}' data-current-ge-item='{$dataCurrentGeItem}'
+                            data-payment-id='{$dataPaymentId}' data-payment-term='{$dataPaymentTerm}'
+                            data-credit-days='{$dataCreditDays}'>
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -3137,8 +3170,12 @@ class MaterialReceiptController extends Controller
             ->addColumn('total_amount', function ($row) {
                 return number_format(($row->balance_qty ?? 0) * ($row->rate ?? 0), 2);
             })
+            ->addColumn('payment_term', fn($row) => ($row?->po?->paymentTerm->name ?? ''))
+            ->addColumn('credit_days', fn($row) => ($row?->po?->credit_days ?? ''))
             ->rawColumns([
-                'select_checkbox', 'attributes', 'vendor', 'po_doc', 'po_date', 'si_doc', 'si_date', 'ge_doc', 'ge_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'grn_qty', 'balance_qty', 'rate', 'total_amount'
+                'select_checkbox', 'attributes', 'vendor', 'po_doc', 'po_date', 'si_doc', 'si_date',
+                'ge_doc', 'ge_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'grn_qty',
+                'balance_qty', 'rate', 'total_amount', 'payment_term', 'credit_days'
             ])
             ->make(true);
     }
@@ -3379,6 +3416,15 @@ class MaterialReceiptController extends Controller
         $geIds = json_decode($request->geIds, true) ?? [];
         $geItemIds = json_decode($request->geItemIds, true) ?? [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
+        $paymentTerms = json_decode($request->paymentTerms, true) ?? [];
+        $creditDays = json_decode($request->creditDays, true) ?? [];
+        if ($request->existCreditDays) {
+            $creditDays[] = $request->existCreditDays;
+        }
+
+        if ($request->existPaymentTermId) {
+            $paymentTerms[] = $request->existPaymentTermId;
+        }
         $vendor = null;
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
@@ -3386,6 +3432,22 @@ class MaterialReceiptController extends Controller
                 'data' => ['pos' => ''],
                 'status' => 422,
                 'message' => "Multiple different module types are not allowed."
+            ]);
+        }
+
+        if (count(array_unique($paymentTerms)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "PO with different payment term can not be selected together."
+            ]);
+        }
+
+        if (count(array_unique($creditDays)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "PO with different credit days can not be selected together."
             ]);
         }
 
@@ -3592,6 +3654,9 @@ class MaterialReceiptController extends Controller
                     'suppl-inv'  => 'null',
                     default      => 'null',
                 };
+                $dataPaymentTerm = $row->po?->paymentTerm->name ?? 'null';
+                $dataPaymentId = $row->po?->payment_term_id ?? 'null';
+                $dataCreditDays = $row->po?->credit_days ?? 'null';
                 $dataExistingJo = $request->type == 'create' && $row?->jo_id
                     ? ($request->selected_jo_ids[0] ?? 'null')
                     : 'null';
@@ -3600,7 +3665,9 @@ class MaterialReceiptController extends Controller
                             <input class='form-check-input jo_item_checkbox' type='checkbox' name='jo_item_check' value='{$row->id}' data-module='{$this->moduleType}'
                             data-current-jo='{$dataCurrentJo}' data-existing-jo='{$dataExistingJo}'
                             data-current-asn='{$dataCurrentAsn}' data-current-asn-item='{$dataCurrentAsnItem}'
-                            data-current-ge='{$dataCurrentGe}' data-current-ge-item='{$dataCurrentGeItem}'>
+                            data-current-ge='{$dataCurrentGe}' data-current-ge-item='{$dataCurrentGeItem}'
+                            data-payment-id='{$dataPaymentId}' data-payment-term='{$dataPaymentTerm}'
+                            data-credit-days='{$dataCreditDays}'>
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -3653,8 +3720,12 @@ class MaterialReceiptController extends Controller
             ->addColumn('total_amount', function ($row) {
                 return number_format(($row->balance_qty ?? 0) * ($row->rate ?? 0), 2);
             })
+            ->addColumn('payment_term', fn($row) => ($row?->jo?->paymentTerm->name ?? ''))
+            ->addColumn('credit_days', fn($row) => ($row?->jo?->credit_days ?? ''))
             ->rawColumns([
-                'select_checkbox', 'attributes', 'vendor', 'jo_doc', 'jo_date', 'si_doc', 'si_date', 'ge_doc', 'ge_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'grn_qty', 'balance_qty', 'rate', 'total_amount'
+                'select_checkbox', 'attributes', 'vendor', 'jo_doc', 'jo_date', 'si_doc', 'si_date',
+                'ge_doc', 'ge_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'grn_qty',
+                'balance_qty', 'rate', 'total_amount', 'payment_term', 'credit_days'
             ])
             ->make(true);
     }
@@ -3884,13 +3955,38 @@ class MaterialReceiptController extends Controller
         $geIds = json_decode($request->geIds, true) ?? [];
         $geItemIds = json_decode($request->geItemIds, true) ?? [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
+        $paymentTerms = json_decode($request->paymentTerms, true) ?? [];
+        $creditDays = json_decode($request->creditDays, true) ?? [];
         $vendor = null;
+        if ($request->existCreditDays) {
+            $creditDays[] = $request->existCreditDays;
+        }
+
+        if ($request->existPaymentTermId) {
+            $paymentTerms[] = $request->existPaymentTermId;
+        }
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
             return response()->json([
                 'data' => ['pos' => ''],
                 'status' => 422,
                 'message' => "Multiple different module types are not allowed."
+            ]);
+        }
+
+        if (count(array_unique($paymentTerms)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "JO with different payment term can not be selected together."
+            ]);
+        }
+
+        if (count(array_unique($creditDays)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "JO with different credit days can not be selected together."
             ]);
         }
 
@@ -5476,7 +5572,7 @@ class MaterialReceiptController extends Controller
                         'item_id'       => $detail->item_id,
                         'item_code'     => $detail->item_code,
                         'uom_id'        => $detail->uom_id,
-                        'qty'           => $detail->accepted_qty,
+                        'qty'           => $detail->order_qty,
                         'attributes'    => $detail->attributes
                     ];
 
@@ -5911,34 +6007,134 @@ class MaterialReceiptController extends Controller
         ], 422);
     }
 
+    // Process ASN
+    public function processAsn(Request $request)
+    {
+        $ids = [];
+        $type = '';
+        $asnIds = [];
+        $asnItemIds = [];
+        $geIds = [];
+        $geItemIds = [];
+        $processNumber = (int)$request->asn_number;
+        $moduleType = $request->module_type;
+        if ($moduleType == 'suppl-inv') {
+            $asnData = VendorAsn::where('doc_no', $processNumber)->first();
+            if (!$asnData) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'ASN not found.'
+                ]);
+            }
+            $type = $asnData->asn_for;
+
+            $asnItems = VendorAsnItem::with([
+                'po_item',
+                'jo_item'
+            ])
+                ->where('vendor_asn_id', $asnData->id)
+                ->whereRaw('(supplied_qty > grn_qty)')
+                ->get();
+
+
+            if ($asnData->asn_for == 'po') {
+                $ids = $asnItems->pluck('po_item_id')->filter()->unique()->values()->toArray();
+            }
+            if ($asnData->asn_for == 'jo') {
+                $ids = $asnItems->pluck('jo_prod_id')->filter()->unique()->values()->toArray();
+            }
+
+            if ($asnItems->isEmpty()) {
+                return response()->json(['status' => 422, 'message' => 'No pending items for this ASN.']);
+            }
+
+            $asnItemIds = $asnItems->pluck('id')->unique()->values()->toArray();
+            $asnIds = [$asnData->id];
+        }
+        elseif ($moduleType == 'gate-entry') {
+            $geData = GateEntryHeader::where('doc_no', $processNumber)->first();
+            if (!$geData) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Gate Entry Data not found.'
+                ]);
+            }
+            $type = $geData->reference_type;
+
+            $geItems = GateEntryDetail::with([
+                'po',
+                'jo'
+            ])
+                ->where('header_id', $geData->id)
+                ->whereRaw('(accepted_qty > mrn_qty)')
+                ->get();
+
+
+            if ($geData->reference_type == 'po') {
+                $ids = $geItems->pluck('purchase_order_item_id')->filter()->unique()->values()->toArray();
+            }
+            if ($geData->reference_type == 'jo') {
+                $ids = $geItems->pluck('job_order_item_id')->filter()->unique()->values()->toArray();
+            }
+
+            if ($geItems->isEmpty()) {
+                return response()->json(['status' => 422, 'message' => 'No pending items for this GE.']);
+            }
+
+            $geItemIds = $geItems->pluck('id')->unique()->values()->toArray();
+            $geIds = [$geData->id];
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Success',
+            'data' => [
+                'ids' => $ids,
+                'asnIds' => $asnIds,
+                'asnItemIds' => $asnItemIds,
+                'geIds' => $geIds,
+                'geItemIds' => $geItemIds,
+                'type' => $type,
+                'module_type' => [$moduleType],
+            ]
+        ]);
+    }
+
     // payment function
-    // private function saveMrnPaymentTerm($paymentTermId, $mrnId, $creditDays, $refId, $refType){
-    //     $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+    private function saveMrnPaymentTerm($paymentTermId, $mrnId, $creditDays, $refId, $refType, $headerDocumentDate){
+        $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
 
-    //     if ($paymentTermDetails->isEmpty()) {
-    //         return;
-    //     }
+        if ($paymentTermDetails->isEmpty()) {
+            return;
+        }
 
-    //     foreach($paymentTermDetails as $paymentTermDetail){
-    //         $mrnPaymentTerm = ErpMrnPaymentTerm::firstOrNew([
-    //             'mrn_header_id' => $mrnId,
-    //             'reference_id' => $refId,
-    //             'reference_type' => $refType,
-    //             'payment_term_id' => $paymentTermDetail->payment_term_id,
-    //             'payment_term_detail_id' => $paymentTermDetail->id,
-    //             'trigger_type' => $paymentTermDetail->trigger_type,
-    //         ]);
+        foreach($paymentTermDetails as $paymentTermDetail){
+            $mrnPaymentTerm = ErpMrnPaymentTerm::firstOrNew([
+                'mrn_header_id' => $mrnId,
+                // 'reference_id' => $refId,
+                // 'reference_type' => $refType,
+                'payment_term_id' => $paymentTermDetail->payment_term_id,
+                'payment_term_detail_id' => $paymentTermDetail->id,
+                'trigger_type' => $paymentTermDetail->trigger_type,
+            ]);
+            $dueDate = $headerDocumentDate;
+            $creditDueDate = $headerDocumentDate;
+            if ($creditDays && $creditDays > 0) {
+                $parsedDocumentDate = Carbon::parse($headerDocumentDate);
+                $creditDueDate = $parsedDocumentDate -> addDays($creditDays) -> format('Y-m-d');
+            }
 
-    //         $mrnPaymentTerm->mrn_header_id = $mrnId;
-    //         $mrnPaymentTerm->reference_id = $refId;
-    //         $mrnPaymentTerm->reference_type = $refType;
-    //         $mrnPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
-    //         $mrnPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
-    //         $mrnPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0;
-    //         $mrnPaymentTerm->percent = $paymentTermDetail->percent;
-    //         $mrnPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
-    //         $mrnPaymentTerm->save();
-    //     }
-    // }
+            $mrnPaymentTerm->mrn_header_id = $mrnId;
+            $mrnPaymentTerm->reference_id = $refId;
+            $mrnPaymentTerm->reference_type = $refType;
+            $mrnPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
+            $mrnPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
+            $mrnPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0;
+            $mrnPaymentTerm->percent = $paymentTermDetail->percent;
+            $mrnPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
+            $mrnPaymentTerm->due_date = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? $creditDueDate : $dueDate;
+            $mrnPaymentTerm->save();
+        }
+    }
 
 }

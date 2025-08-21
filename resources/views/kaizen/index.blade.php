@@ -28,7 +28,7 @@
                         <button class="btn btn-warning btn-sm mb-sm-0 mb-50" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         <a href="{{ route('kaizen.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
-                                data-feather="plus-square"></i> Add New </a>
+                                data-feather="plus-square"></i> Add New Kaizen</a>
                     </div>
                 </div>
             </div>
@@ -143,13 +143,13 @@
                                                                     </a>
                                                                 @endif
 
-                                                                @if ($kaizen->status == App\Helpers\CommonHelper::APPROVED)
+                                                                {{-- @if ($kaizen->status == App\Helpers\CommonHelper::APPROVED) --}}
                                                                     <a class="dropdown-item"
                                                                         href="{{ url('kaizen/download-pdf/') . '/' . $kaizen->id }}">
                                                                         <i data-feather="download" class="me-50"></i>
                                                                         <span>Download</span>
                                                                     </a>
-                                                                @endif
+                                                                {{-- @endif --}}
 
                                                                 <a class="dropdown-item"
                                                                     href="{{ route('kaizen.view', ['id' => $kaizen->id]) }}">

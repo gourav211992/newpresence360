@@ -2200,7 +2200,8 @@ class ErpSaleInvoiceController extends Controller
                         if ($request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                             $soItem = ErpSoItem::find($orderItem -> so_item_id);
                             if (isset($soItem)) {
-                                $orderItem -> rate = $soItem -> rate; 
+                                $orderItem -> rate = $soItem -> rate;
+                                $header -> credit_days = $soItem -> header ?-> credit_days; 
                             }
                         }
                         // if (isset($saleOrderItems[$orderItemKey])) {

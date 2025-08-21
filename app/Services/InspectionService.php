@@ -31,7 +31,8 @@ use App\Helpers\InventoryHelperV2;
 
 class InspectionService
 {
-    public static function insertBatchDetails(array $batchDetails, $inspection, $inspectionDetail)
+    // Insert Batch Details
+    public static function manageBatchDetails(array $batchDetails, $inspection, $inspectionDetail)
     {
         try {
             if (empty($batchDetails)) {
@@ -40,7 +41,7 @@ class InspectionService
 
             $now = now();
 
-            // convert to base UOM safely
+            // ---------- helpers ----------
             $toBase = static function (float $qty) use ($inspectionDetail): float {
                 $v = ItemHelper::convertToBaseUom(
                     $inspectionDetail->item_id,
@@ -50,128 +51,265 @@ class InspectionService
                 return (float) ($v ?? 0.0);
             };
 
-            // --------- Build rows + aggregate by MRN batch id ----------
-            $rows = [];               // for InspBatchDetail::insert()
-            $byMrn = [];              // [mrn_id => ['insp' => x, 'insp_inv' => y, 'batch_number' => '...']]
+            // ---------- normalize input, gather ids ----------
+            $createRows = [];
+            $updateRows = [];
+            $updateIds  = [];
+            $mrnIds     = [];
 
+            // First pass: normalize values, keep raw rows for later
+            $norm = [];
             foreach ($batchDetails as $val) {
-                $mrnId   = (int) Arr::get($val, 'mrn_batch_detail_id');
-                $bn      = (string) Arr::get($val, 'batch_number', '');
-                $mfgYear = Arr::get($val, 'manufacturing_year');
-                $expRaw  = Arr::get($val, 'expiry_date');
-                $expDate = $expRaw ? Carbon::parse($expRaw)->format('Y-m-d') : null;
+                $inspId = Arr::get($val, 'id');
+                $mrnId  = (int) Arr::get($val, 'mrn_batch_detail_id');
+                $bn     = trim((string) Arr::get($val, 'batch_number', ''));
 
-                $mrnQty  = (float) Arr::get($val, 'mrn_qty', 0);
-                $inspQty = (float) Arr::get($val, 'inspection_qty', 0);
-                $accQty  = (float) Arr::get($val, 'accepted_qty', 0);
-                $rejQty  = (float) Arr::get($val, 'rejected_qty', 0);
+                $mfg    = Arr::get($val, 'manufacturing_year');
+                $expRaw = Arr::get($val, 'expiry_date');
+                $exp    = $expRaw ? Carbon::parse($expRaw)->format('Y-m-d') : null;
 
-                // aggregate for later MRN updates (and balance check)
-                if (!isset($byMrn[$mrnId])) {
-                    $byMrn[$mrnId] = ['insp' => 0.0, 'insp_inv' => 0.0, 'batch_number' => $bn];
+                $rec    = (float) Arr::get($val, 'mrn_qty', 0);
+                $insp   = Arr::get($val, 'inspection_qty', null);
+                $acc    = Arr::get($val, 'accepted_qty',   null);
+                $rej    = Arr::get($val, 'rejected_qty',   null);
+
+                // Basic required checks
+                if ($mrnId <= 0 || $bn === '' || $rec <= 0) {
+                    return self::errorResponse('Batch number and receipt qty are required for every batch.');
                 }
-                $byMrn[$mrnId]['insp']     += $inspQty;
-                $byMrn[$mrnId]['insp_inv'] += $toBase($inspQty);
+                if ($insp === null || $insp < 0 || $insp > $rec) {
+                    return self::errorResponse("Inspection qty must be between 0 and receipt qty for batch [{$bn}].");
+                }
+                if ($acc === null || $acc < 0 || $acc > $insp) {
+                    return self::errorResponse("Accepted qty must be between 0 and inspection qty for batch [{$bn}].");
+                }
 
-                $rows[] = [
-                    'header_id'               => $inspection->id,
-                    'detail_id'               => $inspectionDetail->id,
-                    'batch_detail_id'         => $mrnId,
-                    'item_id'                 => $inspectionDetail->item_id,
-                    'batch_number'            => $bn ?: null,
-                    'manufacturing_year'      => $mfgYear ?: null,
-                    'expiry_date'             => $expDate,                         // null if empty
-                    'quantity'                => $mrnQty,
-                    'inspection_qty'          => $inspQty,
-                    'accepted_qty'            => $accQty,
-                    'rejected_qty'            => $rejQty,
-                    'inventory_uom_qty'       => $toBase($mrnQty),
-                    'inspection_inv_uom_qty'  => $toBase($inspQty),
-                    'accepted_inv_uom_qty'    => $toBase($accQty),
-                    'rejected_inv_uom_qty'    => $toBase($rejQty),
-                    'created_at'              => $now,
-                    'updated_at'              => $now,
+                // Derive / validate rejected
+                $rej = ($rej === null) ? ($insp - $acc) : (float) $rej;
+                if (abs(($insp - $acc) - $rej) > 1e-9) {
+                    return self::errorResponse("Rejected qty must equal (Inspection − Accepted) for batch [{$bn}].");
+                }
+
+                $norm[] = [
+                    'insp_id'     => $inspId ? (int)$inspId : null,
+                    'mrn_id'      => $mrnId,
+                    'batch_no'    => $bn,
+                    'mfg'         => $mfg ?: null,
+                    'exp'         => $exp,
+                    'rec'         => (float)$rec,
+                    'insp'        => (float)$insp,
+                    'acc'         => (float)$acc,
+                    'rej'         => (float)$rej,
                 ];
+
+                if ($inspId) $updateIds[] = (int)$inspId;
+                $mrnIds[] = $mrnId;
             }
 
-            // --------- Validate balances BEFORE writing ----------
-            $mrnIds = array_keys($byMrn);
-            if (!empty($mrnIds)) {
-                $mrnRows = MrnBatchDetail::whereIn('id', $mrnIds)
-                    ->get()
-                    ->keyBy('id');
+            // ---------- fetch existing insp rows for updates ----------
+            $existingById = collect();
+            if (!empty($updateIds)) {
+                $existingById = InspBatchDetail::whereIn('id', $updateIds)->get()->keyBy('id');
+            }
 
-                foreach ($byMrn as $id => $agg) {
-                    $mrn = $mrnRows->get($id);
-                    if (!$mrn) {
-                        return self::errorResponse("Invalid MRN batch reference (id: {$id}).");
+            // ---------- fetch MRN rows and init remaining balance ----------
+            $mrnRows = MrnBatchDetail::whereIn('id', $mrnIds)->get()->keyBy('id');
+            $remainingByMrn = [];
+            foreach ($mrnRows as $mrn) {
+                $remainingByMrn[$mrn->id] = max(0.0, (float)$mrn->quantity - (float)($mrn->inspection_qty ?? 0.0));
+            }
+
+            // Will accumulate deltas to update MRN at the end
+            $deltaByMrn = []; // [mrnId => ['insp' => Δinsp, 'insp_inv' => ΔinspInv, 'bn' => lastBatchNo]]
+
+            // ---------- per-row balance check against running remaining ----------
+            foreach ($norm as $row) {
+                $mrnId = $row['mrn_id'];
+                $bn    = $row['batch_no'];
+
+                $mrn = $mrnRows->get($mrnId);
+                if (!$mrn) {
+                    return self::errorResponse("Invalid MRN batch reference (id: {$mrnId}).");
+                }
+
+                // Old insp qty for this insp row (0 if insert)
+                $oldInsp    = 0.0;
+                $oldInspInv = 0.0;
+                if ($row['insp_id']) {
+                    $ex = $existingById->get($row['insp_id']);
+                    if (!$ex) {
+                        return self::errorResponse("Invalid inspection-batch id [{$row['insp_id']}].");
                     }
-                    $balance = (float) $mrn->quantity - (float) ($mrn->inspection_qty ?? 0.0);
-                    if ($agg['insp'] > $balance + 1e-6) {
-                        $bn = $agg['batch_number'] ?: $mrn->batch_number;
-                        return self::errorResponse("Batch qty cannot be greater than balance qty for batch [{$bn}].");
+                    if ((int)$ex->batch_detail_id !== $mrnId) {
+                        return self::errorResponse("Batch mapping cannot be changed for batch [{$bn}].");
                     }
+                    $oldInsp    = (float)$ex->inspection_qty;
+                    $oldInspInv = (float)$ex->inspection_inv_uom_qty;
+                }
+
+                $deltaInsp    = $row['insp'] - $oldInsp;
+                $deltaInspInv = $toBase($row['insp']) - $oldInspInv;
+
+                if ($deltaInsp > 0) {
+                    $remaining = $remainingByMrn[$mrnId] ?? 0.0;
+                    // Your exact condition: (balance) - (incoming − old) >= 0
+                    if ($deltaInsp > $remaining + 1e-9) {
+                        $bnShow = $bn ?: $mrn->batch_number;
+                        return self::errorResponse("Batch qty cannot exceed balance for batch [{$bnShow}].");
+                    }
+                    // consume remaining for this MRN
+                    $remainingByMrn[$mrnId] = $remaining - $deltaInsp;
+                }
+
+                // accumulate MRN deltas to apply later
+                if (!isset($deltaByMrn[$mrnId])) {
+                    $deltaByMrn[$mrnId] = ['insp' => 0.0, 'insp_inv' => 0.0, 'bn' => $bn];
+                }
+                $deltaByMrn[$mrnId]['insp']    += $deltaInsp;
+                $deltaByMrn[$mrnId]['insp_inv']+= $deltaInspInv;
+
+                // build row payload for insert/upsert
+                $payload = [
+                    'header_id'              => $inspection->id,
+                    'detail_id'              => $inspectionDetail->id,
+                    'batch_detail_id'        => $mrnId,
+                    'item_id'                => $inspectionDetail->item_id,
+                    'batch_number'           => $row['batch_no'],
+                    'manufacturing_year'     => $row['mfg'],
+                    'expiry_date'            => $row['exp'],
+                    'quantity'               => $row['rec'],
+                    'inspection_qty'         => $row['insp'],
+                    'accepted_qty'           => $row['acc'],
+                    'rejected_qty'           => $row['rej'],
+                    'inventory_uom_qty'      => $toBase($row['rec']),
+                    'inspection_inv_uom_qty' => $toBase($row['insp']),
+                    'accepted_inv_uom_qty'   => $toBase($row['acc']),
+                    'rejected_inv_uom_qty'   => $toBase($row['rej']),
+                    'updated_at'             => $now,
+                ];
+
+                if ($row['insp_id']) {
+                    $payload['id'] = $row['insp_id'];
+                    $updateRows[]  = $payload;
+                } else {
+                    $payload['created_at'] = $now;
+                    $createRows[] = $payload;
                 }
             }
 
-            // --------- Insert inspection batch rows (single query) ----------
-            InspBatchDetail::insert($rows);
-
-            // --------- Update MRN batches with conditional atomic increments ----------
-            // (Not transactional; we still protect against obvious races by requiring enough balance at update time)
-            foreach ($byMrn as $id => $agg) {
-                $affected = MrnBatchDetail::where('id', $id)
-                    ->whereRaw('(quantity - IFNULL(inspection_qty,0)) >= ?', [$agg['insp']])
-                    ->update([
-                        'inspection_qty'         => DB::raw('IFNULL(inspection_qty,0) + ' . (float) $agg['insp']),
-                        'inspection_inv_uom_qty' => DB::raw('IFNULL(inspection_inv_uom_qty,0) + ' . (float) $agg['insp_inv']),
-                        'updated_at'             => $now,
-                    ]);
-
-                // If 0 rows affected here, there was a race; we can only report it (no rollback by request)
-                if ($affected === 0) {
-                    // You can decide to return a warning instead of error if you prefer
-                    continue;
-                }
+            // ---------- write rows ----------
+            if (!empty($createRows)) {
+                InspBatchDetail::insert($createRows);
+            }
+            if (!empty($updateRows)) {
+                InspBatchDetail::upsert(
+                    $updateRows,
+                    ['id'],
+                    [
+                        'batch_number','manufacturing_year','expiry_date',
+                        'quantity','inspection_qty','accepted_qty','rejected_qty',
+                        'inventory_uom_qty','inspection_inv_uom_qty',
+                        'accepted_inv_uom_qty','rejected_inv_uom_qty',
+                        'updated_at'
+                    ]
+                );
             }
 
-            return self::successResponse("Batch details successfully saved.");
+            // ---------- reflect deltas into MRN (atomic math; no transaction) ----------
+            foreach ($deltaByMrn as $mrnId => $d) {
+                $Δinsp    = (float) $d['insp'];      // may be negative
+                $ΔinspInv = (float) $d['insp_inv'];
 
+                MrnBatchDetail::where('id', $mrnId)->update([
+                    'inspection_qty'         => DB::raw('GREATEST(0, IFNULL(inspection_qty,0) + ' . $Δinsp    . ')'),
+                    'inspection_inv_uom_qty' => DB::raw('GREATEST(0, IFNULL(inspection_inv_uom_qty,0) + ' . $ΔinspInv . ')'),
+                    'updated_at'             => $now,
+                ]);
+            }
+
+            return self::successResponse('Batch details successfully saved.');
         } catch (\Throwable $e) {
-            // No rollback (per your request)
             return self::errorResponse($e->getMessage() . ' on line ' . $e->getLine());
         }
     }
 
-    public static function insertChecklistData(array $itemChecklists, $inspection, $inspectionDetail)
+
+
+    // Manage Checklist Data
+    public static function manageChecklistData(array $itemChecklists, $inspection, $inspectionDetail)
     {
         try {
             if (empty($itemChecklists)) {
-                return self::successResponse("No item checklists to save.");
+                return self::successResponse('No item checklists to save.');
             }
 
-            $now  = now();
-            $rows = [];
+            $now         = now();
+            $insertRows  = [];
+            $updateRows  = [];
 
             foreach ($itemChecklists as $val) {
-                $rows[] = [
-                    'header_id'          => $inspection->id,
-                    'detail_id'          => $inspectionDetail->id,
-                    'item_id'            => $inspectionDetail->item_id,
-                    'checklist_id'       => Arr::get($val, 'checkList_id'),
-                    'checklist_name'     => Arr::get($val, 'checkList_name'),
-                    'checklist_detail_id'=> Arr::get($val, 'detail_id'),
-                    'name'               => Arr::get($val, 'parameter_name'),
-                    'value'              => Arr::get($val, 'parameter_value'),
-                    'result'             => Arr::get($val, 'result'),
-                    'created_at'         => $now,
-                    'updated_at'         => $now,
+                // normalize inputs
+                $row = [
+                    'header_id'           => $inspection->id,
+                    'detail_id'           => $inspectionDetail->id,
+                    'item_id'             => $inspectionDetail->item_id,
+                    'checklist_id'        => Arr::get($val, 'checkList_id'),
+                    'checklist_name'      => Arr::get($val, 'checkList_name'),
+                    'checklist_detail_id' => Arr::get($val, 'detail_id'),
+                    'name'                => Arr::get($val, 'parameter_name'),
+                    'value'               => Arr::get($val, 'parameter_value'),
+                    'result'              => Arr::get($val, 'result'),
                 ];
+
+                $id = Arr::get($val, 'insp_checklist_id');
+
+                if ($id) {
+                    // UPDATE path
+                    $updateRows[] = array_merge($row, [
+                        'id'         => (int) $id,
+                        'updated_at' => $now,
+                    ]);
+                } else {
+                    // INSERT path
+                    $insertRows[] = array_merge($row, [
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                }
             }
 
-            InspChecklist::insert($rows);
+            // Bulk insert new items
+            if (!empty($insertRows)) {
+                InspChecklist::insert($insertRows);
+            }
 
-            return self::successResponse("Item checklists successfully saved.");
+            // Bulk update existing items (atomic upsert on primary key id)
+            if (!empty($updateRows)) {
+                // Uses Laravel's query builder upsert (MySQL/MariaDB/Postgres supported)
+                DB::table('erp_insp_checklists')->upsert(
+                    $updateRows,
+                    ['id'], // unique-by (primary key)
+                    [
+                        'header_id',
+                        'detail_id',
+                        'item_id',
+                        'checklist_id',
+                        'checklist_name',
+                        'checklist_detail_id',
+                        'name',
+                        'value',
+                        'result',
+                        'updated_at',
+                    ]
+                );
+                // If your DB version doesn’t support upsert, fall back to per-row updates:
+                // foreach ($updateRows as $r) {
+                //     $id = $r['id']; unset($r['id']);
+                //     DB::table('erp_insp_checklists')->where('id', $id)->update($r);
+                // }
+            }
+
+            return self::successResponse('Item checklists successfully saved.');
         } catch (\Throwable $e) {
             return self::errorResponse($e->getMessage() . ' on line ' . $e->getLine());
         }

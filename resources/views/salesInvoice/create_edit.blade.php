@@ -4112,7 +4112,10 @@
                 let docId = row?.header?.id;
                 let mainDocId = row?.header?.id;
                 if (type === "so") {
-                    docId = row?.header?.customer_id;
+                    let customerId = row?.header?.customer_id;
+                    let paymentTermsId = row?.header?.payment_term_id;
+                    let creditDays = row?.header?.credit_days ? row?.header?.credit_days : 0;
+                    docId = customerId + "-" + paymentTermsId + "-" + creditDays;
                 }
                 if (type === "lr") {
                     docId = row?.id;

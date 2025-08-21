@@ -2113,6 +2113,8 @@ $(document).on("click", "#add_new_head_exp", (e) => {
     let new_exp_id = $("#new_exp_id").val() || "";
     let new_exp_name = $("#new_exp_name").val() || "";
     let new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
+    let hsn_id = $("#new_exp_id").attr("data-hsn-id") || 0;
+
     let new_exp_tax_amount = (
         Number($("#new_exp_tax_amount").val()) || 0
     ).toFixed(2);
@@ -2129,6 +2131,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
         <tr class="display_summary_exp_row">
             <td>${tbl_row_count}</td>
             <td>${new_exp_name}
+                <input type="hidden" name="exp_summary[${tbl_row_count}][hsn_id]" value="${hsn_id}">
                 <input type="hidden" name="exp_summary[${tbl_row_count}][ted_e_id]" value="${new_exp_id}">
                 <input type="hidden" name="exp_summary[${tbl_row_count}][e_id]" value="">
                 <input type="hidden" name="exp_summary[${tbl_row_count}][e_name]" value="${new_exp_name}">

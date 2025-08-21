@@ -345,7 +345,7 @@ class ErpSaleOrderController extends Controller
                         ->where('status', ConstantHelper::ACTIVE)
                         ->get();
         $parentUrl = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $order -> book ?-> service ?-> alias);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $order -> book ?-> master_service ?-> alias);
         foreach ($order -> items as &$soItem) {
             $referencedAmount = ErpSoItem::where('sq_item_id', $soItem -> id) -> sum('order_qty');
             if (isset($referencedAmount) && $referencedAmount > 0) {

@@ -69,6 +69,8 @@
                                         <th class="text-end">BALANCE QTY</th>
                                         <th class="text-end">RATE</th>
                                         <th class="text-end">VALUE</th>
+                                        <th class="text-end">Payment Term</th>
+                                        <th class="text-end">Credit Days</th>
 									</tr>
 								</thead>
 								<tbody id="soDataTable">

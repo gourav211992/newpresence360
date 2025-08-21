@@ -199,25 +199,25 @@ return [
     ])->toArray(),
 
     # For Local Environment
-    // 'masterindia' => [
-    //     'base_url' => "https://clientbasic.mastersindia.co/",
-    //     'user_name'=>"pchaudhary@sheelafoam.com",
-    //     'password'=>"Sandbox@1234#",
-    //     'client_id'=>"bsqAOYonRLVjfmvbas",
-    //     'client_secret'=>"rTXo4nvVv1XMITjVS0b9grwU",
-    //     'grant_type'=>"password",
-    //     'gstin_client_id'=>"JapKhzIHwAVplxgYjB"
-    // ],
-
-    # For Live Environment
     'masterindia' => [
-        'base_url' => "https://commonapi.mastersindia.co/",
-        'user_name'=>"himanshu.bansal@sheelafoam.com",
-        'password'=>"Sheela@123",
-        'client_id'=>"JapKhzIHwAVplxgYjB",
-        'client_secret'=>"HmpX8cpmnzTlkw6dgyzZCYw4",
+        'base_url' => "https://clientbasic.mastersindia.co/",
+        'user_name'=>"pchaudhary@sheelafoam.com",
+        'password'=>"Sandbox@1234#",
+        'client_id'=>"bsqAOYonRLVjfmvbas",
+        'client_secret'=>"rTXo4nvVv1XMITjVS0b9grwU",
         'grant_type'=>"password",
         'gstin_client_id'=>"JapKhzIHwAVplxgYjB"
     ],
+
+    # For Live Environment
+    // 'masterindia' => [
+    //     'base_url' => "https://commonapi.mastersindia.co/",
+    //     'user_name'=>"himanshu.bansal@sheelafoam.com",
+    //     'password'=>"Sheela@123",
+    //     'client_id'=>"JapKhzIHwAVplxgYjB",
+    //     'client_secret'=>"HmpX8cpmnzTlkw6dgyzZCYw4",
+    //     'grant_type'=>"password",
+    //     'gstin_client_id'=>"JapKhzIHwAVplxgYjB"
+    // ],
 
 ];

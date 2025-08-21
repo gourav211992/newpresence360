@@ -539,7 +539,7 @@ class InspectionController extends Controller
                             ? json_decode($component['inspectionData'], true)
                             : $component['inspectionData'];
                         if (is_array($itemChecklists)) {
-                            $inspChecklist = InspectionService::insertChecklistData($itemChecklists, $inspection, $inspectionDetail);
+                            $inspChecklist = InspectionService::manageChecklistData($itemChecklists, $inspection, $inspectionDetail);
                             if ($inspChecklist['status'] == 'error') {
                                 \DB::rollBack();
                                 return response()->json([
@@ -559,7 +559,7 @@ class InspectionController extends Controller
                             : $component['batch_details'];
 
                         if (is_array(value: $batchDetails)) {
-                            $inspBatchDetail = InspectionService::insertBatchDetails($batchDetails, $inspection, $inspectionDetail);
+                            $inspBatchDetail = InspectionService::manageBatchDetails($batchDetails, $inspection, $inspectionDetail);
                             if ($inspBatchDetail['status'] == 'error') {
                                 \DB::rollBack();
                                 return response()->json([
@@ -1101,6 +1101,46 @@ class InspectionController extends Controller
                             $inspAttr->attr_name = $itemAttribute->attribute_group_id;
                             $inspAttr->attr_value = $inspAttrName ?? null;
                             $inspAttr->save();
+                        }
+                    }
+
+                    #Save item checklists
+                    if (!empty($component['inspectionData'])) {
+                        $itemChecklists = is_string($component['inspectionData'])
+                            ? json_decode($component['inspectionData'], true)
+                            : $component['inspectionData'];
+                        if (is_array($itemChecklists)) {
+                            $inspChecklist = InspectionService::manageChecklistData($itemChecklists, $inspection, $inspectionDetail);
+                            if ($inspChecklist['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspChecklist['message'],
+                                    'error' => ''
+                                ], 422);
+                            }
+                        } else {
+                            \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
+                        }
+                    }
+
+                    #Save batch details
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
+
+                        if (is_array(value: $batchDetails)) {
+                            $inspBatchDetail = InspectionService::manageBatchDetails($batchDetails, $inspection, $inspectionDetail);
+                            if ($inspBatchDetail['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspBatchDetail['message'],
+                                    'error' => ''
+                                ], 422);
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
                         }
                     }
 

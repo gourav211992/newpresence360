@@ -2,34 +2,33 @@
 
 namespace App\Http\Controllers\Kaizen;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\Helper;
 use Illuminate\Http\Request;
-use App\Models\Organization;
 use App\Helpers\ConstantHelper;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\Kaizen\ErpKaizenImprovement;
 use App\Http\Requests\Kaizen\ErpKaizenImprovementRequest;
 
-
 class ImprovementController extends Controller
 {
-     public function index(Request $request)
+    public function index(Request $request)
     {
+
         
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization?->id ?? null;
+        $organizationId = $user?->organization_id ?? null;
+        ErpKaizenImprovement::query()->update(['organization_id' => $organizationId]);
+
         if ($request->ajax()) {
-            $ErpKaizenImprovements = ErpKaizenImprovement::
-            // where('organization_id', $organizationId)->
-                orderBy('id', 'desc');
-    
-                return DataTables::of($ErpKaizenImprovements)
-                ->addIndexColumn()
-                ->editColumn('type', function ($imp) {
-                    return $imp->type ?? 'N/A';
+            $erpKaizenImprovements = ErpKaizenImprovement::where('organization_id', $organizationId)
+                ->orderBy('id', 'desc');
+                return DataTables::of($erpKaizenImprovements)
+                    ->addIndexColumn()
+                    ->editColumn('type', function ($imp) {
+                        return $imp->type ?? 'N/A';
                 })
                 ->editColumn('description', function ($imp) {
                     return $imp->description ?? 'N/A';
@@ -66,8 +65,8 @@ class ImprovementController extends Controller
                                     <i data-feather="edit" class="me-50"></i> Edit
                                 </a>
                                 <a href="#" class="dropdown-item text-danger delete-btn" 
-                                   data-url="' . route('improvement-masters.destroy', $imp->id) . '" 
-                                   data-message="Are you sure you want to delete this Improvement Master?">
+                                data-url="' . route('improvement-masters.destroy', $imp->id) . '" 
+                                data-message="Are you sure you want to delete this Improvement Master?">
                                     <i data-feather="trash-2" class="me-50"></i> Delete
                                 </a>
                             </div>
@@ -77,8 +76,8 @@ class ImprovementController extends Controller
                 ->rawColumns(['status', 'actions']) 
                 ->make(true);
         }
-    
-         $status = ConstantHelper::STATUS;
+            
+        $status = ConstantHelper::STATUS;
 
         return view('kaizen.evaluation.index', compact('status'));
     }
@@ -87,43 +86,32 @@ class ImprovementController extends Controller
     {
         DB::beginTransaction();
         try {
+            $validated = $request->validated();
             $user = Helper::getAuthenticatedUser();
             $organization = $user->organization;
-            $validated = $request->validated();
-            $parentUrl = ConstantHelper::DISCOUNT_MASTER_SERVICE_ALIAS;
-            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $policyData = Helper::getPolicyByServiceId($serviceId);
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validated['group_id'] = $policyLevelData['group_id'];
-                    $validated['company_id'] = $policyLevelData['company_id'];
-                    $validated['organization_id'] = $policyLevelData['organization_id'];
-                } else {
-                    $validated['group_id'] = $organization->group_id;
-                    $validated['company_id'] = $organization->company_id;
-                    $validated['organization_id'] = null;
-                }
-            } else {
-                $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = $organization->company_id;
-                $validated['organization_id'] = null;
-            }
 
-            $ErpKaizenImprovement = ErpKaizenImprovement::create($validated);
+            $organization_id = $organization ? $organization->id : null;
+            $group_id = $organization ? $organization->group_id : null; 
+            $company_id = $organization ? $organization->company_id : null;
+
+            $validated['organization_id']=$organization_id;
+            $validated['group_id']=$group_id;
+            $validated['company_id']=$company_id;
+          
+            $erpKaizenImprovement = ErpKaizenImprovement::create($validated);
+
             DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Record created successfully',
-                'data' => $ErpKaizenImprovement,
+                'data' => $erpKaizenImprovement,
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'An error occurred while creating the Discount Master: ' . $e->getMessage()
+                'message' => 'An error occurred while creating the Kaizen Improvement: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -132,46 +120,21 @@ class ImprovementController extends Controller
     {
         DB::beginTransaction();
         try {
-            $user = Helper::getAuthenticatedUser();
-            $organization = $user->organization;
             $validated = $request->validated();
+            $erpKaizenImprovement = ErpKaizenImprovement::findOrFail($id);
+            $erpKaizenImprovement->update($validated);
 
-            $ErpKaizenImprovement = ErpKaizenImprovement::findOrFail($id);
-
-            $parentUrl = ConstantHelper::DISCOUNT_MASTER_SERVICE_ALIAS;
-            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $policyData = Helper::getPolicyByServiceId($serviceId);
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validated['group_id'] = $policyLevelData['group_id'];
-                    $validated['company_id'] = $policyLevelData['company_id'];
-                    $validated['organization_id'] = $policyLevelData['organization_id'];
-                } else {
-                    $validated['group_id'] = $organization->group_id;
-                    $validated['company_id'] = $organization->company_id;
-                    $validated['organization_id'] = null;
-                }
-            } else {
-                $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = $organization->company_id;
-                $validated['organization_id'] = null;
-            }
-
-            $ErpKaizenImprovement->update($validated);
             DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Record updated successfully',
-                'data' => $ErpKaizenImprovement,
+                'data' => $erpKaizenImprovement,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'An error occurred while updating the Discount Master: ' . $e->getMessage()
+                'message' => 'An error occurred while updating the Kaizen Improvement: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -186,11 +149,36 @@ class ImprovementController extends Controller
                 'status' => true,
                 'message' => 'Record deleted successfully'
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'An error occurred while deleting the Improvement Master: ' . $e->getMessage()
+                'message' => 'An error occurred while deleting the Kaizen Improvement: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function pdfView(Request $request){
+        $user = Helper::getAuthenticatedUser();
+        $organizationId = $user?->organization_id ?? null;
+
+        $types = ErpKaizenImprovement::select('type')->distinct()->pluck('type');
+        $selects = ['marks'];
+
+        foreach ($types as $type) {
+            $selects[] = DB::raw("MAX(CASE WHEN type = '{$type}' THEN description END) AS `{$type}`");
+        }
+
+        $data = ErpKaizenImprovement::select($selects)->where('marks', '!=', 0)->where('organization_id', $organizationId)
+            ->groupBy('marks')
+            ->orderBy('marks')
+            ->get();
+     
+        $pdf = PDF::loadView('kaizen.evaluation.pdf', [
+            'data' => $data,
+        ]);
+
+        return $pdf->download('kaizen-evaluation.pdf');
+
     }
 }

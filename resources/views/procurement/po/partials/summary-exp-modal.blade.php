@@ -75,6 +75,8 @@
                                         <td>{{ $expKey + 1 }}</td>
                                         <td class="text-right">
                                             {{ $headerExpense->ted_name }}
+                                            <input type="hidden" name="exp_summary[{{ $expKey + 1 }}][hsn_id]"
+                                                value="{{ $headerExpense->hsn_id }}">
                                             <input type="hidden" name="exp_summary[{{ $expKey + 1 }}][ted_e_id]"
                                                 value="{{ $headerExpense->ted_id }}">
                                             <input type="hidden" name="exp_summary[{{ $expKey + 1 }}][e_id]"
