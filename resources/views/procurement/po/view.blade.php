@@ -6,12 +6,10 @@
         max-height: 300px; /* Set the height of the scrollable body */
         position: relative;
     }
-    
     #prModal .po-order-detail {
         width: 100%;
         border-collapse: collapse;
     }
-    
     #prModal .po-order-detail thead {
         position: sticky;
         top: 0; /* Stick the header to the top of the table container */
@@ -23,11 +21,11 @@
         text-align: left;
         padding: 8px;
     }
-    
+
     #prModal .po-order-detail td {
         padding: 8px;
     }
-    
+
     </style>
 @endsection
 @section('content')
@@ -106,15 +104,28 @@
                                                     <input type="date" class="form-control" value="{{ $po->document_date }}" name="document_date">
                                                 </div>
                                             </div>
+
                                             <div class="row align-items-center mb-1">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-5"> 
+                                                <div class="col-md-3">
+                                                    <label class="form-label">{{ $short_title }} Procurement Type <span
+                                                            class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select class="form-select" name="procurement_type"
+                                                        id="procurement_type">
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Location <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
                                                     <input type="hidden" name="store_id" value="{{$po->store_id}}">
                                                     <input disabled type="text" value="{{$po?->store_location->store_name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="store" />
-                                                </div> 
-                                            </div>                                            
+                                                </div>
+                                            </div>
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Reference No </label>
@@ -125,11 +136,11 @@
                                             </div>
                                         </div>
                                         {{-- Approval History Section --}}
-                                        @include('partials.approval-history', ['document_status' => $po->document_status, 'revision_number' => $revision_number]) 
+                                        @include('partials.approval-history', ['document_status' => $po->document_status, 'revision_number' => $revision_number])
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row" id="vendor_section">
                                 <div class="col-md-12">
                                     <div class="card quation-card">
@@ -194,25 +205,25 @@
                                                 <div class="col-md-4">
                                                     <div class="customer-billing-section h-100">
                                                         <p>Billing Address</p>
-                                                        <div class="bilnbody">  
+                                                        <div class="bilnbody">
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                 </label>
                                                                 <div class="mrnaddedd-prim org_address">
                                                                     {{ $po?->latestBillingAddress()?->display_address }}
-                                                                </div>   
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div> 
+                                                </div>
                                                 <div class="col-md-4">
                                                     <div class="customer-billing-section h-100">
                                                         <p>Delivery Address</p>
-                                                        <div class="bilnbody">  
+                                                        <div class="bilnbody">
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
                                                                 </label>
-                                                                <div class="mrnaddedd-prim delivery_address">{{$po?->latestDeliveryAddress()?->display_address}}</div>   
+                                                                <div class="mrnaddedd-prim delivery_address">{{$po?->latestDeliveryAddress()?->display_address}}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -223,7 +234,7 @@
                                 </div>
                             </div>
                            <div class="card" id="item_section">
-                           <div class="card-body customernewsection-form"> 
+                           <div class="card-body customernewsection-form">
                             <div class="border-bottom mb-2 pb-25">
                                <div class="row">
                                 <div class="col-md-6">
@@ -351,9 +362,9 @@
                                                         </td>
                                                     </tr>
                                                     <tr class="voucher-tab-foot {{$isDifferentCurrency ? '' : 'd-none'}}" id="exchangeDiv">
-                                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
+                                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>
                                                         <td>
-                                                            <div class="quottotal-bg justify-content-end"> 
+                                                            <div class="quottotal-bg justify-content-end">
                                                                 <h5 id="f_total_after_exp_rate">0.00</h5>
                                                             </div>
                                                         </td>
@@ -638,7 +649,6 @@ function getDocNumberByBookId(bookId) {
          }
          const parameters = data.data.parameters;
         setServiceParameters(parameters);
-        
         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
             $("#tax_required").val(parameters?.tax_required[0]);
         } else {
@@ -698,6 +708,35 @@ function setServiceParameters(parameters) {
     if(isFeature && isPast) {
         docDateInput.removeAttr('min');
         docDateInput.removeAttr('max');
+    }
+
+    const $procurementTypeSelect = $('#procurement_type');
+    const poProcurementType = @json($po->procurement_type ?? '') || parameters?.po_procurement_type || '';
+    const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+
+    if (poProcurementType === 'All') {
+        $procurementTypeSelect.empty();
+        PO_PROCUREMENT_TYPE_VALUES.forEach(function(value) {
+            console.log(true);
+
+            $procurementTypeSelect.append(
+                $('<option>', {
+                    value: value,
+                    text: value,
+                    selected: value === poProcurementType,
+                })
+            );
+        });
+    } else {
+        $procurementTypeSelect
+            .empty()
+            .append($('<option>', {
+                value: poProcurementType,
+                text: poProcurementType,
+                selected: true,
+                disabled: true
+            }));
+
     }
 
     /*Reference from*/
@@ -770,7 +809,7 @@ function initializeAutocomplete1(selector, type) {
             $("#vendor_id").val(itemId);
             $("#vendor_code").val(itemCode);
             let type = '{{ request()->route("type") }}';
-            let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type) 
+            let actionUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type)
     + '?id=' + itemId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {

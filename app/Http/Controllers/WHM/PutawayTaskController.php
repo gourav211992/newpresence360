@@ -8,6 +8,8 @@ use App\Helpers\Helper;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\UnloadingResource;
+use App\Models\Item;
+use App\Models\MrnBatchDetail;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -85,7 +87,10 @@ class PutawayTaskController extends Controller
             ]);
         }
 
-        $items = ErpItemUniqueCode::select('job_id','group_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes', \DB::raw('COUNT(*) as quantity'))
+        $items = ErpItemUniqueCode::with(['item' => function($q){
+                    $q->select('id','is_serial_no','is_asset');
+                }])
+                ->select('job_id','group_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes','batch_number','manufacturing_year','expiry_date','serial_no', \DB::raw('COUNT(*) as quantity'))
                 ->where('store_id', $request->store_id)
                 ->where('job_id',$request->job_id)
                 ->where('job_type', CommonHelper::PUTAWAY)
@@ -216,7 +221,7 @@ class PutawayTaskController extends Controller
             ->where('job_type',CommonHelper::PUTAWAY)
             ->where('doc_type', CommonHelper::RECEIPT)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','item_uid')
+            ->select('uid','item_uid','batch_number','manufacturing_year','expiry_date','serial_no')
             ->get();
 
         return $packets;
@@ -255,7 +260,7 @@ class PutawayTaskController extends Controller
         })
         ->where('job_type', CommonHelper::PUTAWAY)
         ->whereIn('status',[CommonHelper::PENDING,CommonHelper::SCANNED])
-        ->select('uid','job_id','morphable_id as putaway_item_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
+        ->select('uid','job_id','morphable_id as putaway_item_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id','batch_number','manufacturing_year','expiry_date','serial_no')
         ->get();
 
         return [
@@ -268,9 +273,14 @@ class PutawayTaskController extends Controller
     public function saveAsDraft(Request $request){
         $validator = Validator::make($request->all(),[
             'job_id' => ['required'],
-            'packet_ids' => ['required', 'array'],
+            'packets' => ['required', 'array'],
+            'packets.*.packet_id' => ['required', 'string'],
+            'packets.*.serial_no' => ['nullable', 'string'],
+            'packets.*.manufacturing_year' => ['nullable', 'integer'],
             'storage_point_id' => ['required']
         ],[
+            'packets.required' => 'Packets are required',
+            'packets.*.packet_id.required' => 'Each packet must have an packet_id',
             'job_id.required' => 'Job id is required',
             'packet_ids.required' => 'Packet ids are required',
             'storage_point_id.required' => 'Storage point id is required',
@@ -289,13 +299,17 @@ class PutawayTaskController extends Controller
             ]);
         }
 
-        $packets = ErpItemUniqueCode::where('job_id', $request->job_id)
-            ->whereIn('item_uid', $request->packet_ids)
+        $packetIds = collect($request->packets)->pluck('packet_id')->toArray();
+        $packets = ErpItemUniqueCode::with(['item' => function($q){
+                    $q->select('id','is_serial_no','is_asset');
+            }])
+            ->where('job_id', $request->job_id)
+            ->whereIn('item_uid', $packetIds)
             ->where('job_type', CommonHelper::PUTAWAY)
             ->get();
 
         $validPackets = $packets->pluck('item_uid')->toArray();
-        $invalidPackets = array_diff($request->packet_ids, $validPackets);
+        $invalidPackets = array_diff($packetIds, $validPackets);
 
         if (!empty($invalidPackets)) {
             throw ValidationException::withMessages([
@@ -314,6 +328,48 @@ class PutawayTaskController extends Controller
             ]);
         }
 
+        // Build map of packets by item_uid
+        $requestPackets = collect($request->packets)->keyBy('packet_id');
+        // Track serials to detect duplicates
+        $seenSerials = [];
+
+        foreach ($packets as $packet) {
+            $packetId = $packet->item_uid;
+            $item = $packet->item;
+            $requestData = $requestPackets[$packetId] ?? null;
+
+            if (!$requestData) {
+                continue; // skip if packet not found in request (shouldn't happen)
+            }
+
+            $serialNo = $requestData['serial_no'] ?? null;
+            $manufacturingYear = $requestData['manufacturing_year'] ?? null;
+
+            // If is_serial_no == 1, then serial_no is required
+            if ($item && $item->is_serial_no == 1 && empty($serialNo)) {
+                throw ValidationException::withMessages([
+                    "packets" => ["Serial number is required for packet ID: {$packetId}"],
+                ]);
+            }
+
+            // ✅ Validate manufacturing_year if item is an asset
+            if ($item && $item->is_asset == 1 && empty($manufacturingYear)) {
+                throw ValidationException::withMessages([
+                    "packets" => ["Manufacturing year is required for asset-type packet ID: {$packetId}"],
+                ]);
+            }
+
+            // Optional: Check for duplicate serial numbers (if not null)
+            if (!empty($serialNo)) {
+                if (in_array($serialNo, $seenSerials)) {
+                    throw ValidationException::withMessages([
+                        "packets" => ["Duplicate serial number found: {$serialNo}"],
+                    ]);
+                }
+                $seenSerials[] = $serialNo;
+            }
+        }
+
         \DB::beginTransaction();
         try {
             // Get Login User
@@ -324,17 +380,20 @@ class PutawayTaskController extends Controller
                 $job->status = CommonHelper::IN_PROGRESS;
                 $job->save();
             }
-            
-            // Update Task Status
-            ErpItemUniqueCode::where('job_id',$request->job_id)
-            ->where('job_type', CommonHelper::PUTAWAY)
-            ->whereIn('item_uid',$request->packet_ids)
-            ->update([
-                'status' => CommonHelper::SCANNED,
-                'storage_point_id' => $request->storage_point_id,
-                'action_by' => $user->id,
-                'action_at' => now()
-            ]);
+
+            // Update packets
+            foreach ($packets as $packet) {
+                $meta = $requestPackets[$packet->item_uid];
+
+                // Update packet
+                $packet->status = CommonHelper::SCANNED;
+                $packet->storage_point_id = $request->storage_point_id;
+                $packet->manufacturing_year = $meta['manufacturing_year'];
+                $packet->serial_no = $meta['serial_no'];
+                $packet->action_by = $user->id;
+                $packet->action_at = now();
+                $packet->save();
+            }
 
             \DB::commit();
             return [

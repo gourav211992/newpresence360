@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Models;
@@ -10,7 +11,7 @@ use App\Traits\Deletable;
 use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
 use Illuminate\Support\Facades\Schema;
-use App\Interfaces\Exportable; 
+use App\Interfaces\Exportable;
 
 
 
@@ -36,9 +37,9 @@ class Item extends Model implements Exportable
         'storage_uom_count',
         'storage_weight',
         'storage_volume',
-        'is_serial_no', 
-        'is_batch_no', 
-        'is_expiry',   
+        'is_serial_no',
+        'is_batch_no',
+        'is_expiry',
         'is_inspection',
         'inspection_checklist_id',
         'is_traded_item',
@@ -62,18 +63,18 @@ class Item extends Model implements Exportable
         'lead_days',
         'safety_days',
         'shelf_life_days',
-        'po_positive_tolerance',  
-        'po_negative_tolerance', 
-        'so_positive_tolerance',  
-        'so_negative_tolerance',  
-        'group_id',     
-        'company_id',       
+        'po_positive_tolerance',
+        'po_negative_tolerance',
+        'so_positive_tolerance',
+        'so_negative_tolerance',
+        'group_id',
+        'company_id',
         'organization_id',
         'service_type',
         'storage_type',
         'status',
         'document_status',
-        'approver_level', 
+        'approver_level',
         'revision_number',
         'revision_date',
         'created_at',
@@ -91,8 +92,8 @@ class Item extends Model implements Exportable
     {
         return $this->belongsTo(Unit::class, 'storage_uom_id');
     }
-    
-    
+
+
     public function alternateUOMs()
     {
         return $this->hasMany(AlternateUOM::class);
@@ -124,11 +125,11 @@ class Item extends Model implements Exportable
     //     return $this->belongsToMany(SubType::class, 'erp_item_subtypes');
     // }
 
-    
+
     public function subTypes()
     {
         return $this->hasMany(ItemSubType::class);
-        // ->using(ItemSubType::class); 
+        // ->using(ItemSubType::class);
     }
 
     public function inventoryDetails()
@@ -262,7 +263,7 @@ class Item extends Model implements Exportable
     }
 
     public function scopeSearchByKeywords($query, $term): mixed
-    { 
+    {
         $keywords = preg_split('/\s+/', trim($term));
         return $query->where(function ($q) use ($keywords) {
             foreach ($keywords as $word) {
@@ -316,35 +317,21 @@ class Item extends Model implements Exportable
     public function loadInspectionChecklists()
     {
         $checkLists = [];
-        
-        if ($this->is_inspection) {
+
+        if ($this->inspection_checklist_id) {
             if ($this->inspectionChecklist()->exists()) {
                 $checkLists = $this->inspectionChecklist()->with('details.values')->get()->toArray();
             } elseif ($this->category_id && $this->category && $this->category->inspectionChecklist()->exists()) {
-                $checkLists = $this->category->inspectionChecklist()->with('details.values')->get()->toArray();
+                $checkLists = $this->category?->inspectionChecklist()->with('details.values')->get()->toArray();
             }
         } else{
-            $checkLists = $this->category->inspectionChecklist()->with('details.values')->get()->toArray();
+            $checkLists = $this->category?->inspectionChecklist()->with('details.values')->get()->toArray();
         }
 
         return $checkLists;
     }
 
-    // Check Item Inspection
-    public function hasInspection()
-    {
-        if (!is_null($this->is_inspection)) {
-            return $this->is_inspection == '1' ? 'yes' : 'no';
-        }
-    
-        if ($this->category_id && $this->category && !is_null($this->category->is_inspection)) {
-            return $this->category->is_inspection == '1' ? 'yes' : 'no';
-        }
-    
-        return '';
-    }
-
-       // Corrected function to get all table columns.  Use the model's table name.
+    // Corrected function to get all table columns.  Use the model's table name.
     public static function getAllTableColumns()
     {
         return Schema::getColumnListing((new self())->getTable());
@@ -365,7 +352,6 @@ class Item extends Model implements Exportable
         $columns['Group'] = 'group.name';
         $columns['Company'] = 'company.name';
         $columns['Organization'] = 'organization.name';
-       
 
         // 2. Table columns
        $skipColumns = [
@@ -380,14 +366,13 @@ class Item extends Model implements Exportable
             'service_type','document_status','storage_type',
        ];
 
-    
         foreach ($this->getFillable() as $column) {
             if (in_array($column, $skipColumns)) continue;
             $columns[ucwords(str_replace('_', ' ', $column))] = $column;
         }
 
         $columns['Created By'] = 'auth_user.name';
-       // 3.Attributes 
+       // 3.Attributes
         for ($i = 1; $i <= 5; $i++) {
             $columns["Attribute {$i} Group Name"] = "attribute_{$i}_group_name";
             $columns["Attribute {$i} Attribute Name"] = "attribute_{$i}_attribute_name";
@@ -438,7 +423,6 @@ class Item extends Model implements Exportable
     {
         $assetCode = Helper::generateAssetCode($this->asset_category_id);
         return $assetCode;
-        
     }
 
 

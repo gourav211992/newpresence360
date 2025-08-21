@@ -665,6 +665,7 @@ class ErpSaleOrderController extends Controller
                     'currency_code' => $request -> currency_code,
                     'payment_term_id' => $request -> payment_terms_id,
                     'payment_term_code' => $request -> payment_terms_code,
+                    'credit_days' => $request -> credit_days ?? 0,
                     'document_status' => ConstantHelper::DRAFT,
                     'approval_level' => 1,
                     'remarks' => $request -> final_remarks,
@@ -940,6 +941,7 @@ class ErpSaleOrderController extends Controller
                                             'qty' => $bomDetail['qty'],
                                             'station_id' => $bomDetail['station_id'],
                                             'station_name' => $bomDetail['station_name'],
+                                            'remark' => isset($bomDetail['remark']) ? $bomDetail['remark'] : null
                                         ]);
                                     }
                                 }
@@ -1339,6 +1341,7 @@ class ErpSaleOrderController extends Controller
                 }
                 SaleModuleHelper::cashCustomerMasterData($saleOrder);
                 SaleModuleHelper::updateEInvoiceDataFromHelper($saleOrder, false);
+                SaleModuleHelper::updateOrCreateSoPaymentTerms($saleOrder -> id, $saleOrder -> payment_term_id, $saleOrder -> credit_days);
                 DB::commit();
                 return response() -> json([
                     'message' => ($saleOrder -> document_type == ConstantHelper::SQ_SERVICE_ALIAS 
@@ -2120,6 +2123,7 @@ class ErpSaleOrderController extends Controller
                                 $bomDetail -> uom_name = $bomDetail -> uom ?-> name;
                                 $bomDetail -> item_attributes_array = $bomDetail -> item_attributes_array();
                                 $bomDetail -> qty = $bomDetail -> qty;
+                                $bomDetail -> remark = $bomDetail -> remark;
                                 //If request has BOM attributes -> check for the selected value
                                 if (isset($bomAttributes) && count($bomAttributes) > 0)
                                 //Get the current BOM from the request

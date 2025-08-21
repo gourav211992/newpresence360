@@ -175,46 +175,13 @@ class ErpFreightChargesController extends Controller
                     ->orWhere('customer_id', '');
                 })->first();
         }
-        if (!$freightCharge) {
-            $freightCharge = (clone $query)
-                ->where('source_route_id', $sourceId)
-                ->where('destination_route_id', $destinationId)
-                ->where('customer_id', $customerId)
-                ->first();
-        }
-
-        // $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicleTypeId, $customerId) {
-        //     $query->where('source_route_id', $sourceId)
-        //         ->where('destination_route_id', $destinationId)
-        //         ->where(function ($q) use ($vehicleTypeId) {
-        //             $q->when($vehicleTypeId, function ($q2) use ($vehicleTypeId) {
-        //                 $q2->where(function ($inner) use ($vehicleTypeId) {
-        //                     $inner->where('vehicle_type_id', $vehicleTypeId)
-        //                             ->orWhereNull('vehicle_type_id');
-        //                 });
-        //             }, function ($q2) {
-        //                 $q2->whereNull('vehicle_type_id');
-        //             });
-        //         })
-        //         ->where(function ($q) use ($customerId) {
-        //             $q->when($customerId, function ($q2) use ($customerId) {
-        //                 $q2->where(function ($inner) use ($customerId) {
-        //                     $inner->where('customer_id', $customerId)
-        //                             ->orWhereNull('customer_id');
-        //                 });
-        //             }, function ($q2) {
-        //                 $q2->whereNull('customer_id');
-        //             });
-        //         });
-        // })->first();
-
-
 
         if (!$freightCharge) {
             return response()->json(['message' => 'No freight charge found.'], 404);
         }
 
         return response()->json([
+            'message' => 'Get freight charge data',
             'vehicle_type_id' => $freightCharge->vehicle_type_id,
             'vehicle_type_name' => optional($freightCharge->vehicleType)->name,
             'distance' => $freightCharge->distance,

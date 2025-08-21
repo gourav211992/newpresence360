@@ -51,7 +51,7 @@
                                         </svg>
                                         Print
                                     </a>
-                                    <a href="{{ route('material-receipt.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                    {{-- <a href="{{ route('material-receipt.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                             <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -59,7 +59,7 @@
                                             <rect x="6" y="14" width="12" height="8"></rect>
                                         </svg>
                                         Print Labels
-                                    </a>
+                                    </a> --}}
                                 @endif
                                 @if($buttons['draft'])
                                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
@@ -85,12 +85,12 @@
                                     <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
                                 @else
                                     @if($buttons['amend'])
-                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" 
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                                         class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                             <i data-feather='edit'></i> Amendment
                                         </button>
                                         @if (@$mrn->deviationJob)
-                                            <button type="button" data-bs-toggle="modal" id="deviation-button" 
+                                            <button type="button" data-bs-toggle="modal" id="deviation-button"
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                                 <i data-feather='edit'></i> Deviation
                                             </button>
@@ -268,6 +268,15 @@
                                                             <select class="form-select" name="payment_term_id">
                                                                 <option value="{{@$mrn->payment_term_id}}">{{@$mrn->paymentTerm->name}}</option>
                                                             </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control mw-100"
+                                                                id="credit_days" name="credit_days"
+                                                                value="{{ @$mrn->credit_days }}" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -482,7 +491,7 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad itemTable"
                                                         data-json-key="components_json"
                                                         data-row-selector="tr[id^='row_']">
                                                         <thead>
@@ -661,6 +670,10 @@
         @include('procurement.material-receipt.partials.summary-disc-modal')
         {{-- Add expenses modal--}}
         @include('procurement.material-receipt.partials.summary-exp-modal')
+        {{-- Asset Detail Modal --}}
+        @include('procurement.material-receipt.partials.asset-detail-modal')
+        {{-- Item Batch --}}
+        @include('procurement.material-receipt.partials.item-batch-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -1039,13 +1052,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
         var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
-        let currentIndex = '';                                                                
+        let currentIndex = '';
 
         if(currentProcessType == 'jo')
         {
@@ -2567,7 +2581,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -3100,7 +3114,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -3468,7 +3482,7 @@
                                 // };
                                 let label = '';
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -4055,6 +4069,7 @@
                     $('.asn_process').prop('disabled', true);
                     $(".supplier_invoice_no").prop('readonly', false);
                     $(".supplier_invoice_date").prop('readonly', false);
+                    seedAllLockedRows();
 
                     switch (moduleProcess) {
                         case 'asn-process':

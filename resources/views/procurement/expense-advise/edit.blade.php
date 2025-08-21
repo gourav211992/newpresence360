@@ -1591,6 +1591,8 @@
                 item_id: itemId,
                 purchase_order_id: getVal("[name*='[purchase_order_id]']"),
                 po_detail_id: getVal("[name*='[po_detail_id]']"),
+                job_order_id: getVal("[name*='[job_order_id]']"),
+                jo_detail_id: getVal("[name*='[jo_detail_id]']"),
                 remark: getVal("[name*='[remark]']"),
                 uom_id: getVal("[name*='[uom_id]']"),
                 qty: getVal("[name*='[accepted_qty]']"),
@@ -2327,7 +2329,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -2750,7 +2752,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }

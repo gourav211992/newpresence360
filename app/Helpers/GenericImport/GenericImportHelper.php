@@ -1,0 +1,56 @@
+<?php
+
+
+namespace App\Helpers\GenericImport;
+
+use App\Helpers\ConstantHelper;
+
+class GenericImportHelper
+{
+    public static function importConfigByAlias(string $alias): array
+    {
+        return match ($alias) {
+            ConstantHelper::SO_SERVICE_ALIAS => [
+                'type' => ConstantHelper::SO_SERVICE_ALIAS,
+                'importer' => \App\Imports\Sales\SalesOrderItemImport::class,
+                'sample_file_prefix' => 'so_item',
+                'route' => 'salesOrder.import',
+                'view' => 'salesOrder.edit',
+            ],
+            ConstantHelper::PSV_SERVICE_ALIAS => [
+                'type' => ConstantHelper::PSV_SERVICE_ALIAS,
+                'importer' => \App\Imports\GenericItemImport::class,
+                'sample_file_prefix' => 'psv_item',
+                'route' => 'import.save',
+                'view' => 'psv.edit',
+            ],
+            default => throw new \Exception("Invalid alias"),
+        };
+    }
+
+    public static function getHeaderMap(string $alias): array
+    {
+        return match ($alias) {
+            ConstantHelper::SO_SERVICE_ALIAS => [
+                'item_code'     => 'Item Code',
+                'item_name'     => 'Item Name',
+                'hsn_code'      => 'HSN Code',
+                'uom_code'      => 'UOM Code',
+                'order_qty'     => 'Order Quantity',
+                'rate'          => 'Rate',
+                'delivery_date' => 'Delivery Date',
+                'remarks'       => 'Remarks',
+                'attribute'     => 'Attribute',
+            ],
+            ConstantHelper::PSV_SERVICE_ALIAS => [
+                'item_code'     => 'Item Code',
+                'item_name'     => 'Item Name',
+                'attribute'     => 'Attribute',
+                'uom_code'      => 'UOM Code',
+                'physical_qty'  => 'Physical Qty',
+                'remarks'       => 'Remarks',
+            ],
+            default => [],
+        };
+    }
+}

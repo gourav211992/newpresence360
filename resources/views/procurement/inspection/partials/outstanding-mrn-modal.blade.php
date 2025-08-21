@@ -11,9 +11,7 @@
 					</p>
 				</div>
 				<div class="d-flex align-items-start gap-2">
-					<button type="button" class="btn btn-primary btn-sm mrnProcess">
-						<i data-feather="check-circle"></i> Process
-					</button>
+		
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 			</div>
@@ -43,6 +41,9 @@
 						<label class="form-label">&nbsp;</label><br/>
 						<button type="button" class="btn btn-warning btn-sm clearMrnFilter">
 							<i data-feather="x-circle"></i> Clear
+						</button>
+						<button type="button" class="btn btn-primary btn-sm mrnProcess">
+							<i data-feather="check-circle"></i> Process
 						</button>
 					</div>
 					<div class="col-md-12">

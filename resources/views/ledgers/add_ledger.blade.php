@@ -257,7 +257,7 @@
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_percentage_label">
                                                         <div class="col-md-2">
-                                                            <label class="form-label"> % TDS Calculation <span
+                                                            <label class="form-label"> % TDS With PAN <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
 
@@ -277,6 +277,19 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tds_capping" name="tds_capping" step="any" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row align-items-center mb-1" id="tds_percentage_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> % TDS Without PAN <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_without_pan" name="tds_without_pan" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
 
@@ -346,6 +359,7 @@
             //
             
             const Existingledgers = @json($Existingledgers); // Pass from controller
+            const ExistingTdsSections = @json($ExistingTdsSections); // Pass existing TDS sections from controller
             const redirectUrl =
                 "{{ route('ledgers.index') }}"; // Fix: was incorrectly routing to 'cost-center.index'
 
@@ -371,6 +385,37 @@
                     return;
                 }
 
+                // Check if TDS section already exists in selected TDS groups
+                let selectedGroups = $('#ledger_group_id').val() || [];
+                let selectedTdsSection = $('#tds_section').val();
+                
+                if (selectedTdsSection && selectedGroups.length > 0) {
+                    // Check if any of the selected groups have TDS in their name (indicating TDS group)
+                    let hasTdsGroup = false;
+                    selectedGroups.forEach(groupId => {
+                        let groupOption = $('#ledger_group_id option[value="' + groupId + '"]');
+                        if (groupOption.text().toLowerCase().includes('tds')) {
+                            hasTdsGroup = true;
+                        }
+                    });
+                    
+                    if (hasTdsGroup) {
+                        // Check if TDS section already exists in any of the selected groups
+                        let duplicateTdsSection = ExistingTdsSections.some(existing => {
+                            return existing.tds_section === selectedTdsSection && 
+                                   existing.ledger_group_ids.some(existingGroupId => 
+                                       selectedGroups.includes(existingGroupId.toString())
+                                   );
+                        });
+                        
+                        if (duplicateTdsSection) {
+                            $('.preloader').hide();
+                            showToast('error', 'This TDS section type already exists in the selected TDS group.', 'Duplicate TDS Section');
+                            return;
+                        }
+                    }
+                }
+
                 // $('.preloader').show();
                 submitBtn.prop('disabled', true);
                 // Proceed with AJAX submission
@@ -379,6 +424,7 @@
                     method: form.attr('method'),
                     data: form.serialize(),
                     success: function(response) {
+                        console.log(response);
                         $('.preloader').hide();
                         Swal.fire({
                             icon: 'success',

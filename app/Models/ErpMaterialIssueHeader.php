@@ -26,6 +26,7 @@ class ErpMaterialIssueHeader extends Model
         'book_id',
         'book_code',
         'issue_type',
+        'enforce_uic_scanning',
         'document_type',
         'document_number',
         'document_date',
@@ -110,6 +111,14 @@ class ErpMaterialIssueHeader extends Model
     public function items()
     {
         return $this -> hasMany(ErpMiItem::class, 'material_issue_id');
+    }
+    public function store()
+    {
+        return $this -> belongsTo(ErpStore::class, 'from_store_id');
+    }
+    public function erpStore()
+    {
+        return $this -> belongsTo(ErpStore::class, 'from_store_id');
     }
     public function from_store()
     {

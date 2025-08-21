@@ -15,8 +15,6 @@ return new class extends Migration
         Schema::create('erp_equip_sparepart_details', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('erp_equipment_id')->index();
-            $table->string('item_code')->nullable();
-            $table->string('item_name')->nullable();
             $table->unsignedBigInteger('item_id')->nullable();
             $table->json('attributes')->nullable();
             $table->string('uom');

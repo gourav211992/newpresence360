@@ -37,7 +37,7 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
 });
 
 $(document).on('change','#itemTable > tbody .form-check-input',(e) => {
-    const allChecked = $("#itemTable > tbody .form-check-input:not(:disabled)").length === 
+    const allChecked = $("#itemTable > tbody .form-check-input:not(:disabled)").length ===
                        $("#itemTable > tbody .form-check-input:checked:not(:disabled)").length;
 
     $('#itemTable > thead .form-check-input').prop('checked', allChecked);
@@ -82,7 +82,6 @@ $(document).on('click', '.itemRemarkSubmit', (e) => {
     if(!remarkValue.length) {
         rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
         $("#itemTable #row_"+rowCount).find('.addRemarkBtn').after(rowHidden);
-        
     } else{
         $("#itemTable #row_"+rowCount).find("[name*='remark']").val(textValue);
     }
@@ -123,7 +122,7 @@ $("input[type='number']").on("keydown", function(event) {
 });
 
 /*Qty enabled and disabled*/
-function qtyEnabledDisabled() {    
+function qtyEnabledDisabled() {
     $("tr[id*='row_']").each(function(index,item) {
         let qtyDisabled = false;
         if($(item).find("[name*='[attr_name]']").length) {
@@ -307,5 +306,107 @@ document.querySelectorAll('#orderTypeSelect').forEach((radio) => {
 $(document).on('change', '#procurement_type', function () {
     let selectedValue = this.value;
     $("#procurement_type").val(selectedValue);
-    
+
 });
+
+function copyItemRow() {
+    let $rows = $("#itemTable > tbody tr");
+    let $checked = $rows.find(".form-check-input:checked");
+
+    if ($rows.length === 0) {
+        Swal.fire({
+            title: "Error!",
+            text: "Please add at least one item to copy.",
+            icon: "error",
+        });
+        return;
+    }
+
+    if ($checked.length === 0) {
+        Swal.fire({
+            title: "Error!",
+            text: "Please select at least one item to copy.",
+            icon: "error",
+        });
+        return;
+    }
+
+    let currentRowCount = $rows.length;
+    if ($checked.length !== 1) {
+        Swal.fire({
+            title: "Error!",
+            text: "Multiple items can not be cloned, Please check single item.",
+            icon: "error",
+        });
+        return;
+    }
+
+    try {
+        let $row = $checked.closest("tr");
+        let $clone = cloneRow($row, ++currentRowCount);
+        console.log($clone.html());
+
+        $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after($clone);
+        $clone.closest("tr").find("input[name*='attr_group_id']").remove();
+        $clone.closest("tr").find("input[name*='pi_item_id']").val("");
+
+        initAutocompVendor("[name*='[vendor_code]']");
+        initializeAutocomplete2(".comp_item_code");
+        console.log($clone.html());
+
+        setTimeout(() => {
+            $clone.closest("tr").find(".attributeBtn").trigger("click");
+        }, 100);
+
+        $(".form-check-input").each(function () {
+            $(this).prop("checked", false);
+        });
+
+    } catch (error) {
+        console.error("Error copying item row:", error);
+        Swal.fire({
+            title: "Error!",
+            text: "An unexpected error occurred while copying the item row.",
+            icon: "error",
+        });
+    }
+}
+
+function cloneRow($row, newIndex) {
+    let $clone = $row.clone();
+
+    $clone.attr({
+        id: "row_" + newIndex,
+        "data-index": newIndex,
+        "data-count": newIndex,
+        "data-row-count": newIndex,
+    });
+
+    $clone.closest("tr").attr("id", "row_" + newIndex);
+    $clone.find("[data-index]").attr("data-index", newIndex);
+    $clone.find("[data-row-count]").attr("data-row-count", newIndex);
+    $clone.find("[data-row-count]").attr("data-row-count", newIndex);
+
+    $clone.find("[name]").each(function () {
+        let name = $(this).attr("name");
+        if (name) {
+            name = name.replace(/\[\d+\]/g, "[" + newIndex + "]");
+            $(this).attr("name", name);
+        }
+    });
+
+    $clone.find("[id]").each(function () {
+        let id = $(this).attr("id");
+        if (id) {
+            id = id.replace(/_\d+$/, "_" + newIndex);
+            $(this).attr("id", id);
+        }
+    });
+
+    $clone
+        .find('input[type="checkbox"]')
+        .prop("checked", false)
+        .attr("data-id", "")
+        .val(newIndex);
+    return $clone;
+}

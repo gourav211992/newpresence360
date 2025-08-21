@@ -870,7 +870,7 @@
 <div class="modal fade" id="sendMail" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-         <form class="ajax-submit-2" method="POST" action="{{ route('sale.invoice.eInvoiceMail') }}"
+         <form class="ajax-submit-2" method="POST" action="{{ route('tranport.invoice.eInvoiceMail') }}"
             data-redirect="{{ $redirect_url }}" enctype='multipart/form-data'>
             @csrf
             <input type="hidden" name="action_type" id="action_type">
@@ -946,6 +946,25 @@
             <p>Are you sure you want to <strong>Amend</strong> this <strong>Invoice</strong>?</p>
             <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
             <button type="button" data-bs-dismiss="modal" onclick="amendConfirm();"
+               class="btn btn-primary">Confirm</button>
+         </div>
+      </div>
+   </div>
+</div>
+
+<div class="modal fade text-start alertbackdropdisabled" id="generateinvoice" tabindex="-1"
+   aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header p-0 bg-transparent">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         </div>
+         <div class="modal-body alertmsg text-center warning">
+            <i data-feather='alert-circle'></i>
+            <h2>Are you sure?</h2>
+            <p>Are you sure you want to <strong>Performa Invoice</strong> to <strong> Final Invoice</strong>?</p>
+            <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" data-bs-dismiss="modal" onclick="invoiceConfirm();"
                class="btn btn-primary">Confirm</button>
          </div>
       </div>

@@ -1957,7 +1957,8 @@ class CrDrReportController extends Controller
                         $query->when(function () use ($request) {
                             return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
                         }, function ($q) {
-                            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
+                            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                            ;
                         });           }]);
                     $i->with([
                         'ledger.organization',

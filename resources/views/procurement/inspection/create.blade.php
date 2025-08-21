@@ -94,7 +94,7 @@
                                 <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
                                     <i data-feather='save'></i> Save as Draft
                                 </button>
-                                <button type="submit" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted">
                                     <i data-feather="check-circle"></i> Submit
                                 </button>
                             </div>
@@ -342,7 +342,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="consignment_no"
-                                                                class="form-control  consignment_no"
+                                                                class="form-control consignment_no"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
@@ -431,6 +431,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
+                                                                <th>Batch</th>
                                                                 <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
@@ -442,7 +443,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="10">
+                                                                <td rowspan="10" colspan="11">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
@@ -491,6 +492,8 @@
         @include('procurement.inspection.partials.outstanding-mrn-modal')
         <!-- Inspection CHecklist Modal  -->
         @include('procurement.inspection.partials.inspection-checklist-modal')
+        <!-- Batch Detail Modal  -->
+        @include('procurement.inspection.partials.item-batch-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -557,18 +560,26 @@
     </div>
 @endsection
 @section('scripts')
-<script type="text/javascript">
-    let actionUrlTax = '{{route("inspection.tax.calculation")}}';
-    var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
+    <script type="text/javascript">
+        let actionUrlTax = '{{route("inspection.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         window.onload = function () {
             localStorage.removeItem('selectedMrnIds');
             currentProcessType = null;
+            if (feather) {
+                feather.replace({
+                    width: 14,
+                    height: 14
+                });
+            }
         };
         let currentProcessType = null;
         let tableRowCount = 0;
@@ -1839,6 +1850,13 @@
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
                     $("#vendor_name").prop('readonly', true);
                     $(".editAddressBtn").addClass('d-none');
+
+                    if (feather) {
+                        feather.replace({
+                            width: 14,
+                            height: 14
+                        });
+                    }
 
                     // Supplier details
 

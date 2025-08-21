@@ -29,6 +29,7 @@ class MrnDetail extends Model
         'so_id',
         'vendor_asn_id',
         'vendor_asn_item_id',
+        'procurement_type',
         'item_id',
         'item_code',
         'item_name',
@@ -53,11 +54,11 @@ class MrnDetail extends Model
         'inventory_uom_id',
         'inventory_uom_qty',
         'inventory_uom_code',
-        'accepted_inv_uom_id', 
+        'accepted_inv_uom_id',
         'accepted_inv_uom_code',
-        'accepted_inv_uom_qty', 
+        'accepted_inv_uom_qty',
         'rejected_inv_uom_id',
-        'rejected_inv_uom_code', 
+        'rejected_inv_uom_code',
         'rejected_inv_uom_qty',
         'rate',
         'basic_value',
@@ -144,6 +145,11 @@ class MrnDetail extends Model
     public function storage_points()
     {
         return $this->hasMany(MrnItemLocation::class, 'mrn_detail_id');
+    }
+
+    public function batches()
+    {
+        return $this->hasMany(MrnBatchDetail::class, 'detail_id');
     }
 
     public function attributeHistories()

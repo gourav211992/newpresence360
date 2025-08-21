@@ -317,7 +317,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                      'sub_type' => $subTypeValue,
                     'is_traded_item' => $isTradedItem,
                     'is_asset' => $isAsset,
-                    'asset_category' => $row['assetcategory'] ?? null,
+                    'asset_category_id' => $row['assetcategory'] ?? null,
                     'brand_name' => $row['brand'] ?? null,
                     'model_no' => $row['modelno'] ?? null,
                     'remarks' => "Processing item upload",
@@ -449,7 +449,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
 
               if ($isAsset == 1) {
                 try {
-                    $assetDetails = $this->service->getAssetCategoryDetailsByName($uploadedItem->asset_category);
+                    $assetDetails = $this->service->getAssetCategoryDetailsByName($uploadedItem->asset_category_id);
                     $assetCategoryId = $assetDetails['asset_category_id'];
                     $expectedLife = $assetDetails['expected_life_years'];
                     $maintenanceSchedule = $assetDetails['maintenance_schedule'];

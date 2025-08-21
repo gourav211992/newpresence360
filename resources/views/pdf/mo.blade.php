@@ -243,18 +243,6 @@
                         {!! $html !!}
                         @endif
                     </td>
-                    @if(count($machine_check))
-                        <td
-                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                            {{@$val->machine->name}}
-                        </td>
-                    @endif
-                    @if(count($sheet_check))
-                        <td
-                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                            {{@$val->number_of_sheet}}
-                        </td>
-                    @endif
                     <td
                     style="vertical-align: middle; padding:7px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
                         <b> {{ isset($val->item_name) ? @$val -> item_name : "" }}</b>(
@@ -276,6 +264,18 @@
                         style="vertical-align: middle; width:8%; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{@$val->qty}}
                     </td>
+                    @if(count($machine_check))
+                        <td
+                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            {{@$val->machine->name}}
+                        </td>
+                    @endif
+                    @if(count($sheet_check))
+                        <td
+                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            {{@$val->number_of_sheet}}
+                        </td>
+                    @endif
                     <td
                         style=" width:15%; vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
 

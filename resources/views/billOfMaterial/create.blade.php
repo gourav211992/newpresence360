@@ -1,8 +1,9 @@
+
 @extends('layouts.app')
 @section('content')
 @php
 $routeAlias = $servicesBooks['services'][0]?->alias ?? null;
-if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS) 
+if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
 {
    $routeAlias = 'bill-of-material';
 } else {
@@ -13,8 +14,8 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
     @csrf
     {{-- correct below code level count --}}
 <input type="hidden" name="orverhead_level_count"/>
-<input type="hidden" name="consumption_method" id="consumption_method" value=""/> 
-<input type="hidden" name="quote_bom_id" id="quote_bom_id" value=""/> 
+<input type="hidden" name="consumption_method" id="consumption_method" value=""/>
+<input type="hidden" name="quote_bom_id" id="quote_bom_id" value=""/>
 <input type="hidden" name="type" value="{{$serviceAlias}}">
 <div class="app-content content ">
    <div class="content-overlay"></div>
@@ -24,14 +25,14 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
          <div class="row">
             @include('layouts.partials.breadcrumb-add-edit', [
              'title' => $routeAlias == 'quotation-bom' ? 'Quotation BOM' : 'Production BOM',
-             'menu' => 'Home', 
+             'menu' => 'Home',
              'menu_url' => url('home'),
              'sub_menu' => 'Add New'
              ])
             <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                <div class="form-group breadcrumb-right">
                   <input type="hidden" name="document_status" id="document_status">
-                  <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button> 
+                  <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                   <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                </div>
@@ -58,45 +59,45 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                            <div class="col-md-8">
                               <div class="">
                                  <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                    </div>
                                     <div class="col-md-5">
                                        <select class="form-select" id="book_id" name="book_id">
                                           @foreach($books as $book)
                                              <option value="{{$book->id}}">{{ucfirst($book->book_code)}}</option>
-                                          @endforeach 
-                                       </select>  
+                                          @endforeach
+                                       </select>
                                        <input type="hidden" name="book_code" id="book_code">
                                     </div>
                                  </div>
                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">BOM No <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">BOM No <span class="text-danger">*</span></label>
+                                    </div>
 
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-5">
                                         <input type="text" name="document_number" class="form-control" id="document_number">
-                                    </div> 
+                                    </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
-                                     <div class="col-md-3"> 
-                                         <label class="form-label">BOM Date <span class="text-danger">*</span></label>  
-                                     </div>  
-                                     <div class="col-md-5"> 
+                                     <div class="col-md-3">
+                                         <label class="form-label">BOM Date <span class="text-danger">*</span></label>
+                                     </div>
+                                     <div class="col-md-5">
                                          <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
-                                     </div> 
+                                     </div>
                                  </div>
-                                 <div class="row align-items-center mb-1 d-none" id="reference_from"> 
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Reference from</label>  
-                                    </div> 
-                                    <div class="col-md-5 action-button"> 
+                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Reference from</label>
+                                    </div>
+                                    <div class="col-md-5 action-button">
                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 prSelect"><i data-feather="plus-square"></i> Quotation Bom</button>
                                     </div>
                                 </div>
                               </div>
-                           </div> 
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -105,24 +106,24 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                     <div class="card quation-card">
                         <div class="card-header newheader">
                             <div>
-                                <h4 class="card-title">Product Details</h4> 
+                                <h4 class="card-title">Product Details</h4>
                             </div>
                         </div>
-                        <div class="card-body"> 
+                        <div class="card-body">
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="mb-1">
-                                        <label class="form-label">Product Code <span class="text-danger">*</span></label> 
+                                        <label class="form-label">Product Code <span class="text-danger">*</span></label>
                                         <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" />
                                     </div>
-                                </div> 
+                                </div>
                                 <div class="col-md-3">
                                     <div class="mb-1">
-                                        <label class="form-label">Product Name <span class="text-danger">*</span></label> 
+                                        <label class="form-label">Product Name <span class="text-danger">*</span></label>
                                         <input type="hidden" name="item_id" id="head_item_id">
                                         <input type="text" id="head_item_name" placeholder="Select" class="form-control mw-100 ledgerselecct" name="item_name" readonly />
                                     </div>
-                                </div> 
+                                </div>
                                 <div class="col-md-3">
                                     <div class="mb-1">
                                         <label class="form-label">UOM <span class="text-danger">*</span></label>
@@ -141,7 +142,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                 <div class="col-md-3">
                                     <div class="mb-1">
                                         <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                        <input type="text" id="customer_name" placeholder="Select" class="form-control mw-100 ledgerselecct" name="customer_name" readonly /> 
+                                        <input type="text" id="customer_name" placeholder="Select" class="form-control mw-100 ledgerselecct" name="customer_name" readonly />
                                     </div>
                                 </div>
                                 @endif
@@ -153,8 +154,8 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             {{-- <option value="">Select</option> --}}
                                             @foreach($productionTypes as $productionType)
                                                 <option value="{{$productionType}}">{{ucfirst($productionType)}}</option>
-                                            @endforeach 
-                                         </select>   
+                                            @endforeach
+                                         </select>
                                     </div>
                                 </div>
                                 @endif
@@ -164,8 +165,8 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                         <select class="form-select" id="production_route_id" name="production_route_id">
                                             @foreach($productionRoutes as $productionRoute)
                                                 <option value="{{$productionRoute->id}}" data-perc="{{$productionRoute->safety_buffer_perc}}">{{ucfirst($productionRoute->name)}}</option>
-                                            @endforeach 
-                                         </select>   
+                                            @endforeach
+                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -182,17 +183,17 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             {{-- <option value="">Select</option> --}}
                                             @foreach($customizables as $customizable)
                                                 <option value="{{$customizable}}" {{$customizable == 'no' ? 'selected' : ''}}>{{ucfirst($customizable)}}</option>
-                                            @endforeach 
-                                         </select>   
+                                            @endforeach
+                                         </select>
                                     </div>
                                 </div>
                                 @endif
-                                
+
                             </div>
                         </div>
-                    </div>                                    
-                </div> 
-                <div class="col-md-12">                                
+                    </div>
+                </div>
+                <div class="col-md-12">
                     {{-- Append Attribute here  --}}
                     <div class="card">
                         <div class="card-body customernewsection-form px-0">
@@ -231,7 +232,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                 <div class="tab-pane fade show active" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                     <div class="table-responsive pomrnheadtffotsticky" style="overflow-x: auto;">
                                         <table id="itemTable"
-                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" 
+                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
                                         data-json-key="components_json"
                                         data-row-selector="tr[id^='row_']">
                                             <thead>
@@ -261,7 +262,6 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             </thead>
                                             {{-- <tbody class="mrntableselectexcel" style="display: block; overflow-x: auto; white-space: nowrap;"> --}}
                                             <tbody class="mrntableselectexcel">
-                                                
                                             </tbody>
                                             <tfoot>
                                                 <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
@@ -281,10 +281,10 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                             </td>
                                                         </tr>
                                                         <tr class="item_detail_row">
-                                                            
+
                                                         </tr>
                                                         <tr class="item_detail_row">
-                                                            
+
                                                         </tr>
                                                     </table>
                                                     </td>
@@ -297,7 +297,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                                     <strong>BOM Summary</strong>
                                                                     @if($canView)
                                                                     <div class="addmendisexpbtn">
-                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
+                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button>
                                                                     </div>
                                                                     @endif
                                                                     </h6>
@@ -346,7 +346,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                 <th width="160px" id="section_required2">Section</th>
                                                 <th width="160px" id="sub_section_required2">Sub Section</th>
                                                 <th>Instructions</th>
-                                                <th class="text-center align-middle" width="100px">Attachment</th>  
+                                                <th class="text-center align-middle" width="100px">Attachment</th>
                                             </tr>
                                         </thead>
                                         <tbody class="mrntableselectexcel">
@@ -360,11 +360,11 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                     </div>
                     <div class="card">
                         <div class="card-body customernewsection-form">
-                            
+
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="row">
-                                       
+
                                         <div class="col-md-4">
                                             <div class="mb-1">
                                             <label class="form-label">
@@ -377,15 +377,15 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                         <div class = "col-md-6" style = "margin-top:19px;">
                                             <div class = "row" id = "main_bom_file_preview">
                                             </div>
-                                        </div>  
+                                        </div>
                                     </div>
-                                   
+
                                     <div class="col-md-12">
-                                        <div class="mb-1">  
+                                        <div class="mb-1">
                                             <label class="form-label">
                                                 <strong>Final Remarks</strong>
-                                            </label> 
-                                            <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                            </label>
+                                            <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -422,13 +422,12 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                      </tr>
                   </thead>
                   <tbody>
-                     
                   </tbody>
                </table>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submit_attribute">Select</button>
          </div>
       </div>
@@ -478,6 +477,9 @@ $(function(){
    setTimeout(() => {
         $("#book_id").trigger('change');
    },0);
+
+    $('#th_bacth_inherit_requird').hide();
+
    // For product code
     function initializeAutocomplete1(selector, type) {
             $(selector).autocomplete({
@@ -495,7 +497,7 @@ $(function(){
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
-                                    code: item.item_code || '', 
+                                    code: item.item_code || '',
                                     item_id: item.id
                                 };
                             }));
@@ -604,7 +606,7 @@ $(function(){
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
       if (bookId) {
-         getDocNumberByBookId(bookId); 
+         getDocNumberByBookId(bookId);
       } else {
          $("#document_number").val('');
          $("#book_id").val('');
@@ -641,7 +643,7 @@ $(function(){
                     alert(data.message);
                 }
             });
-        }); 
+        });
     }
 
     /*Set Service Parameter*/
@@ -742,8 +744,8 @@ $(function(){
                         td2.attr("colspan", newColspanValue);
                     }
                 }
-        }  
-       }     
+        }
+       }
 
        if (parameters.component_overhead_required && !parameters.component_overhead_required.includes('yes')) {
            $("#component_overhead_required").remove();
@@ -758,10 +760,10 @@ $(function(){
             }
        }
         // Handle Batch Inheritance
-       if (parameters.bacth_inherit_requird && parameters.bacth_inherit_requird.includes('no')) {
-            $('#th_bacth_inherit_requird').hide();
+       if (parameters.bacth_inherit_requird && parameters.bacth_inherit_requird.includes('yes')) {
+            $('#th_bacth_inherit_requird').show();
        }
-       
+
        let reference_from_service = parameters?.reference_from_service;
         if(reference_from_service?.length) {
             let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
@@ -785,7 +787,6 @@ $(function(){
             //     // location.href = "{{url($routeAlias)}}";
             // },1500);
         }
-        
    }
 
     function itemCodeChange(itemId, customerId = null) {
@@ -798,16 +799,15 @@ $(function(){
                     if(customerId) {
                         return false;
                     }
-                  let item_name = data.data.item?.item_name || ''; 
-                  let item_id = data.data.item?.id || ''; 
-                  let uom_id = data.data.item?.uom_id || ''; 
-                  let uom_name = data.data.item?.uom?.name || ''; 
+                  let item_name = data.data.item?.item_name || '';
+                  let item_id = data.data.item?.id || '';
+                  let uom_id = data.data.item?.uom_id || '';
+                  let uom_name = data.data.item?.uom?.name || '';
                   $("#head_item_name").val(item_name);
                   $("#head_item_id").val(item_id);
                   $("#head_uom_id").val(uom_id);
                   $("#head_uom_name").val(uom_name);
                   $(".heaer_item").remove();
-                  
                   if($(".customer_div").length) {
                       $(".customer_div").before(data.data.html);
                     } else {
@@ -841,7 +841,6 @@ $(function(){
            itemCodeChange(null)
        }
    });
-   
 });
 
 // for component item code
@@ -872,7 +871,7 @@ function initializeAutocomplete2(selector, type) {
                         return {
                             id: item.id,
                             label: `${item.item_name} (${item.item_code})`,
-                            code: item.item_code || '', 
+                            code: item.item_code || '',
                             item_id: item.id,
                             uom_name:item.uom?.name,
                             uom_id:item.uom_id,
@@ -941,7 +940,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
     let rowsLength = getUniqueRowCount();
     /*Check header attribute required*/
     let itemCode = $("#item_code").val();
-    let selectedAttrRequired = false; 
+    let selectedAttrRequired = false;
 
     let a = $("select[name*='[attr_name]']").filter(function () {
         return !$(this).val();
@@ -953,7 +952,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
     if(!$(".heaer_item").length) {
       selectedAttrRequired = true;
     }
-    
     let head_item_id = $("#head_item_id").val();
     let itemObj = {
       item_code : itemCode,
@@ -1012,7 +1010,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
             });
         });
     }
-    
     let componentAttr = [];
     if($("tr input[type='hidden'][name*='[attr_group_id]']").length) {
         $("tr input[type='hidden'][name*='[attr_group_id]']").each(function () {
@@ -1090,7 +1087,7 @@ $(document).on('click', '#addNewInstructionBtn', (e) => {
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
     let d_date = $("input[name='document_date']").val() || '';
     let book_id = $("#book_id").val() || '';
-    let actionUrl = '{{route("bill.of.material.instruction.row")}}'+'?count='+rowsLength+'&type='+type+'&d_date='+d_date+'&book_id='+book_id; 
+    let actionUrl = '{{route("bill.of.material.instruction.row")}}'+'?count='+rowsLength+'&type='+type+'&d_date='+d_date+'&book_id='+book_id;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
@@ -1136,7 +1133,7 @@ $(document).on('click', '.attributeBtn', (e) => {
 
 /*For comp attr*/
 function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-    let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");  
+    let currentTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
     let actionUrl = '{{route("bill.of.material.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&current_tab=${currentTab}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
@@ -1224,7 +1221,6 @@ $(document).on('click', '.addOverHeadItemBtn', (e) => {
             <td colspan="2"></td>
             <td class="text-center"></td>
         </tr>`;
-        
         $("#itemOverheadTbl tbody").empty().append(tr);
         $(".item_display_overhead_row").find(".addOverheadItemRow").addClass('d-none');
         $(".item_display_overhead_row:last").find(".addOverheadItemRow").removeClass('d-none');
@@ -1313,7 +1309,7 @@ function initLedger()
 // initLedger();
 /*Display item detail*/
 $(document).on('input change focus', '#itemTable tr input', (e) => {
-   let currentTr = e.target.closest('tr'); 
+   let currentTr = e.target.closest('tr');
    let pName = $(currentTr).find("[name*='component_item_name']").val();
    let itemId = $(currentTr).find("[name*='item_id']").val();
    if (itemId) {
@@ -1626,7 +1622,7 @@ function initializeVendorAutocomplete() {
         source: function (request, response) {
             const $input = this.element;
             const $row = $input.closest('tr');
-            let itemId = $row.find("[name*='item_id']").val() || ''; 
+            let itemId = $row.find("[name*='item_id']").val() || '';
             $.ajax({
                 url: '/search',
                 method: 'GET',
@@ -1759,11 +1755,11 @@ function getBomItemCost(itemId,itemAttributes)
                }
             } else {
                $("tr.trselected .linkAppend").addClass('d-none');
-               $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2)); 
+               $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2));
             }
          } else {
             $("tr.trselected .linkAppend").addClass('d-none');
-            $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2));  
+            $("tr.trselected").find("[name*='[item_cost]']").val(Number(0).toFixed(2));
          }
         //  $("#attribute").modal("hide");
          // $("tr.trselected").find("[name*='[qty]']").trigger('focus');
@@ -1808,7 +1804,7 @@ function openBomRequest()
     initializeAutocompleteQt("customer_po", "customer_id_po", "customer", "customer_code", "company_name");
 
 }
-function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") 
+function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
 {
     $("#" + selector).autocomplete({
         source: function(request, response) {
@@ -1827,7 +1823,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                         return {
                             id: item.id,
                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                            code: item[labelKey1] || '', 
+                            code: item[labelKey1] || '',
                         };
                     }));
                 },
@@ -1857,7 +1853,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
     });
 }
 
-function getBoms() 
+function getBoms()
 {
     let header_book_id = $("#book_id").val() || '';
     let series_id = $("#book_id_qt_val").val() || '';
@@ -2095,7 +2091,7 @@ function initializeAutocompleteTED(selector, idSelector, nameSelector, type, per
             }
         });
     }
-} 
+}
 
 // Hide item level overhead popup id
 function hideOverheadPopupData() {
@@ -2271,7 +2267,6 @@ $(document).on('click', '.addOverheadItemRow', (e) => {
             if (data.status == 200) {
                 let indexCount = data.data.indexCount;
                 let rowCount = data.data.rowCount;
-                
                 let $tbody = $("#itemOverheadTbl tbody");
                 if ($tbody.find("tr.item_display_overhead_row").length > 0) {
                     $tbody.find("tr.item_display_overhead_row:last").after(data.data.html);
@@ -2431,7 +2426,7 @@ $(document).on('keyup', '.item_display_overhead_row input[name*="perc"]', (e) =>
         row.find('input[name*="amnt"]').addClass('disabled-input');
     } else {
         row.find('input[name*="amnt"]').val('').removeClass('disabled-input');;
-    }   
+    }
     hideOverheadPopupData();
 });
 

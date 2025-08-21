@@ -2528,20 +2528,14 @@ class Helper
         // Auth::guard('web')->login(User::find(2));
         // auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         // auth() -> user() -> auth_user_id = $authUser->id;
-        $authUser =  request()->user();
-        $user = $authUser->authUser();
-
-        $user->authenticable_type = $authUser->authenticable_type;
-        $user->auth_user_id = $authUser->id;
-        return $user;
-
-        // if (Auth::guard('web')->check()) {
-        //     return Auth::guard('web')->user();
-        // } elseif (Auth::guard('web2')->check()) {
-        //     return Auth::guard('web2')->user();
-        // } else {
-        //     return request()->user();
-        // }
+        return request()->user();
+        if (Auth::guard('web')->check()) {
+            return Auth::guard('web')->user();
+        } elseif (Auth::guard('web2')->check()) {
+            return Auth::guard('web2')->user();
+        } else {
+            return request()->user();
+        }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
     {
@@ -3095,7 +3089,7 @@ class Helper
         return $html;
     }
 
-    public static function getAccessibleServicesFromMenuAlias(string $menuAlias, string $selectedServiceAlias = ''): array
+    public static function getAccessibleServicesFromMenuAlias(string $menuAlias, string $selectedServiceAlias = null): array
     {
         $authUser = Helper::getAuthenticatedUser();
         $organizationMenu = OrganizationMenu::withDefaultGroupCompanyOrg()->where([
@@ -4048,11 +4042,8 @@ class Helper
                         ->doesntHave('asset'); // must not have linked asset
                 })
                 ->exists();
-            
-            $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
-           
-            
-            if ($assets && !$mrn_assets->isEmpty()) {
+
+            if ($assets) {
                 $mrn = MrnHeader::find($mrn_id);
                 if (empty($mrn)) {
                     DB::rollBack();
@@ -4088,7 +4079,14 @@ class Helper
 
                 $glPostingBookId = $glPostingBookParam->parameter_value[0];
 
-                
+                $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
+                if (empty($mrn_assets)) {
+                    DB::rollBack();
+                    return [
+                        'status' => false,
+                        'message' => 'MRN not found'
+                    ];
+                }
                 foreach ($mrn_assets as $mrn_asset) {
                     $category_id = $mrn_asset->asset_category_id;
                     $asset_name = $mrn_asset->asset_name;
@@ -4197,7 +4195,7 @@ class Helper
                         'mrn_header_id' => $mrn->id,
                         'asset_code' => $asset_code,
                         'asset_name' => $asset_name,
-                        'quantity' => $mrn_detail->accepted_inv_uom_qty,
+                        'quantity' => $mrn_detail->accepted_qty,
                         'category_id' => $category_id,
                         'reference_doc_id' => $mrn->id,
                         'reference_series' => ConstantHelper::MRN_SERVICE_ALIAS,
@@ -4255,7 +4253,6 @@ class Helper
                     'data' => []
                 ];
             } else {
-                DB::commit();
                 return [
                     'status' => true,
                     'message' => "MRN does not have any asset to register",

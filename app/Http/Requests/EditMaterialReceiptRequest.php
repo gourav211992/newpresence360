@@ -30,8 +30,16 @@ class EditMaterialReceiptRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected $organization_id;
+    protected $group_id;
+
     protected function prepareForValidation(): void
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $this->organization_id = $organization ? $organization->id : null;
+        $this->group_id = $organization ? $organization->group_id : null;
         $this->processComponentJson('components_json');
     }
 

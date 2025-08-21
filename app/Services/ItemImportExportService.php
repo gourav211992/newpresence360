@@ -36,24 +36,35 @@ use Exception;
 
 class ItemImportExportService
 {
-    public function generateItemCode(array $subTypes, $subCategoryInitials, $itemInitials)
+   public function generateItemCode(array $subTypes, $subCategoryInitials, $itemInitials)
     {
+
         $subType = $this->getItemSubTypeCode($subTypes);
         $baseCode = $subType . $subCategoryInitials . $itemInitials;
-        $lastSimilarItem = Item::where('item_code', 'like', "{$baseCode}%")
+
+        $lastInUpload = UploadItemMaster::where('item_code', 'like', "{$baseCode}%")
             ->withDefaultGroupCompanyOrg()
             ->orderBy('item_code', 'desc')
             ->first();
 
-        $nextSuffix = '001';
-        if ($lastSimilarItem) {
-            $lastSuffix = intval(substr($lastSimilarItem->item_code, -3));
-            $nextSuffix = str_pad($lastSuffix + 1, 3, '0', STR_PAD_LEFT);
+        if ($lastInUpload) {
+            $lastSuffix = intval(substr($lastInUpload->item_code, -3));
+        } 
+
+        else {
+            $lastInItem = Item::where('item_code', 'like', "{$baseCode}%")
+                ->withDefaultGroupCompanyOrg()
+                ->orderBy('item_code', 'desc')
+                ->first();
+
+            $lastSuffix = $lastInItem ? intval(substr($lastInItem->item_code, -3)) : 0;
         }
+
+        $nextSuffix = str_pad($lastSuffix + 1, 3, '0', STR_PAD_LEFT);
 
         return $baseCode . $nextSuffix;
     }
-
+    
     private function getItemSubTypeCode(array $types): string
     {
         $types = array_unique(array_map('strtoupper', $types));

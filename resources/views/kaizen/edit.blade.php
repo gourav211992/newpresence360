@@ -245,6 +245,25 @@
                                                             <option>Select</option>
                                                         </select>
                                                     </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Select Occurence <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <select class="form-select" name="occurence">
+                                                            <option value=""
+                                                                {{ $kaizen->occurence = '' ? 'selected' : '' }}>
+                                                                Select</option>
+                                                            <option value="one time"
+                                                                {{ $kaizen->occurence = 'one time' ? 'selected' : '' }}>One
+                                                                Time
+                                                            </option>
+                                                            <option value="monthly"
+                                                                {{ $kaizen->occurence = 'monthly' ? 'selected' : '' }}>
+                                                                Monthly
+                                                            </option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -332,6 +351,17 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-12">
+                                                        <div class="form-check form-check-primary custom-checkbox">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                id="safety" name="improvement_type[]"
+                                                                value="{{ App\Helpers\CommonHelper::SAFETY }}"
+                                                                {{ $kaizen->safety_imp_id ? 'checked' : '' }}>
+                                                            <label class="form-label" for="safety">SAFETY</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div id="accordionWrapa50" role="tablist" aria-multiselectable="true">
                                                     <div class="accordion-item border" id="productivity-accordion"
                                                         style="display: none">
@@ -360,14 +390,16 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::PRODUCTIVITY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::PRODUCTIVITY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->productivity_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::PRODUCTIVITY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::PRODUCTIVITY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->productivity_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -404,14 +436,16 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::QUALITY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::QUALITY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->quality_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::QUALITY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::QUALITY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->quality_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -450,14 +484,16 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::COST }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::COST] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->cost_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::COST]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::COST] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->cost_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                                 <td><input type="text"
@@ -499,14 +535,16 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::DELIVERY }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::DELIVERY] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->delivery_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::DELIVERY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::DELIVERY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->delivery_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -543,14 +581,16 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::MORAL }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::MORAL] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->moral_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::MORAL]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::MORAL] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->moral_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>
@@ -587,14 +627,62 @@
                                                                                         name="improvement[{{ App\Helpers\CommonHelper::INNOVATION }}]">
                                                                                         <option value="">Select One
                                                                                         </option>
-                                                                                        @forelse ($improvements[App\Helpers\CommonHelper::INNOVATION] as $id => $improvement)
-                                                                                            <option
-                                                                                                value="{{ $id }}"
-                                                                                                {{ $kaizen->innovation_imp_id == $id ? 'selected' : '' }}>
-                                                                                                {{ $improvement }}
-                                                                                            </option>
-                                                                                        @empty
-                                                                                        @endforelse
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::INNOVATION]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::INNOVATION] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->innovation_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
+                                                                                    </select>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="accordion-item border" id="safety-accordion"
+                                                        style="display: none">
+                                                        <h2 class="accordion-header" id="safety-heading">
+                                                            <button type="button"
+                                                                class="accordion-button collapsed no-bg text-dark font-small-4"
+                                                                data-bs-toggle="collapse" data-bs-target="#safety">
+                                                                <strong>safety</strong>
+                                                            </button>
+                                                        </h2>
+                                                        <div class="accordion-collapse collapse show" id="safety">
+                                                            <div class="accordion-body pt-0">
+                                                                <div class="table-responsive-md">
+                                                                    <table
+                                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Select safety <span
+                                                                                        class="text-danger">*</span></th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <tr>
+                                                                                <td>
+                                                                                    <select class="form-select select2"
+                                                                                        name="improvement[{{ App\Helpers\CommonHelper::SAFETY }}]">
+                                                                                        <option value="">Select One
+                                                                                        </option>
+                                                                                        @if (isset($improvements[App\Helpers\CommonHelper::SAFETY]))
+                                                                                            @forelse ($improvements[App\Helpers\CommonHelper::SAFETY] as $id => $improvement)
+                                                                                                <option
+                                                                                                    value="{{ $id }}"
+                                                                                                    {{ $kaizen->safety_imp_id == $id ? 'selected' : '' }}>
+                                                                                                    {{ $improvement }}
+                                                                                                </option>
+                                                                                            @empty
+                                                                                            @endforelse
+                                                                                        @endif
                                                                                     </select>
                                                                                 </td>
                                                                             </tr>

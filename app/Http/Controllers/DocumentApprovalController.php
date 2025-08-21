@@ -3,7 +3,9 @@ namespace App\Http\Controllers;
 
 use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
+use App\Helpers\SaleModuleHelper;
 use App\Jobs\SendEmailJob;
+use App\Models\ErpFinancialYear;
 use App\Models\ErpMaterialIssueHeader;
 use App\Models\ErpMaterialReturnHeader;
 use App\Models\ErpPlHeader;
@@ -11,6 +13,7 @@ use App\Models\ErpProductionSlip;
 use App\Models\ErpRateContract;
 use App\Models\ErpRfqHeader;
 use App\Models\ErpSaleInvoice;
+use App\Models\ErpSaleInvoiceHistory;
 use App\Models\ErpTransporterRequest;
 use App\Models\ErpTransporterRequestBid;
 use App\Models\PackingList;
@@ -274,6 +277,24 @@ class DocumentApprovalController extends Controller
             $saleInvoice->approval_level = $approveDocument['nextLevel'];
             $saleInvoice->document_status = $approveDocument['approvalStatus'];
             $saleInvoice->save();
+
+            $bookTypeServiceAlias = $saleInvoice -> document_type;
+            $approvalStatus = $saleInvoice -> document_status;
+
+            if ($actionType == 'approve' && in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::POSTED]) && 
+            in_array($bookTypeServiceAlias, [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])) {
+                $fy = Helper::getFinancialYear($saleInvoice -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldSaleInvoice = ErpSaleInvoiceHistory::where('source_id', $saleInvoice -> id) 
+                        -> where('revision_number', $saleInvoice -> revision_number - 1) -> first();
+                    if ($oldSaleInvoice) {
+                        SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear, $oldSaleInvoice);
+                    }
+                } else {
+                    SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear);
+                }
+            }
 
             DB::commit();
             return response()->json([

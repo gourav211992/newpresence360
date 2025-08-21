@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -122,6 +123,12 @@ class ErpPslipItem extends Model
     public function attributes()
     {
         return $this -> hasMany(ErpPslipItemAttribute::class, 'pslip_item_id');
+    }
+
+    public function checklists()
+    {
+        return $this->hasMany(InspChecklist::class, 'detail_id')
+            ->whereType(ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS);
     }
     
     public function uom()

@@ -68,7 +68,6 @@ class ErpLorryReceiptController extends Controller
             ->withDraftListingLogic() 
             ->orderByDesc('id');
 
-        // Apply filters if needed
         if ($request->filled('lr_no')) {
             $lrs->where('document_number', 'like', '%' . $request->lr_no . '%');
         }
@@ -108,17 +107,20 @@ class ErpLorryReceiptController extends Controller
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
                     return $createdBy;
                 })
-            ->editColumn('document_status', function ($row) {
+           ->addColumn('document_status_html', function ($row) {
                 $colors = [
-                    'draft'    => 'badge-light-warning',
-                    'approved'   => 'badge-light-success',
-                    'rejected'=> 'badge-light-danger',
-                    'submitted'=>'badge-light-primary',
+                    'draft' => 'badge-light-warning',
+                    'approved' => 'badge-light-success',
+                    'rejected' => 'badge-light-danger',
+                    'submitted' => 'badge-light-primary',
                     'partially_approved' => 'badge-light-warning',
+                    'approval_not_required' => 'badge-light-success', 
                 ];
                 $badge = $colors[$row->document_status] ?? 'badge-light-secondary';
-                return '<span class="badge rounded-pill ' . $badge . '">' . ucfirst($row->document_status) . '</span>';
+                $status = $row->document_status === 'approval_not_required' ? 'Approved' : ucfirst($row->document_status);
+                return '<span class="badge rounded-pill ' . $badge . '">' . $status . '</span>';
             })
+
             ->addColumn('action', function ($row) {
                 return '
                     <div class="dropdown">
@@ -175,145 +177,146 @@ class ErpLorryReceiptController extends Controller
     }
 
 
-public function edit(Request $request, $id)
-{
-     $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-            ->where('status', ConstantHelper::ACTIVE)
-            ->get();
-   
-    $user = Helper::getAuthenticatedUser();
-    $segments = request()->segments(); 
-    $pathUrl = $segments[0] . '/' . $segments[1];
-    $pathUrl = str_replace('/', '_', $pathUrl);
-    $redirectUrl = route('logistics.lorry-receipt.edit', $id); 
-    $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
+    public function edit(Request $request, $id)
+    {
+       $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+                ->where('status', ConstantHelper::ACTIVE)
+                ->select('id', 'name', 'email')
+                ->get();
+    
+        $user = Helper::getAuthenticatedUser();
+        $segments = request()->segments(); 
+        $pathUrl = $segments[0] . '/' . $segments[1];
+        $pathUrl = str_replace('/', '_', $pathUrl);
+        $redirectUrl = route('logistics.lorry-receipt.edit', $id); 
+        $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
 
-    $isRevision = $request->has('revisionNumber');
-    $revNo = $isRevision ? intval($request->revisionNumber) : null;
+        $isRevision = $request->has('revisionNumber');
+        $revNo = $isRevision ? intval($request->revisionNumber) : null;
 
-    if ($isRevision) {
-        $historyLr = ErpLorryReceiptHistory::with([
-            'consignor',
-            'consignee',
-            'driver',
-            'vehicle',
-            'locations.route',
-            'mediaAttachments'
-        ])
-        ->where('source_id', $id)
-        ->where('revision_number', $revNo)
-        ->first();
-        $Id = $historyLr->source_id;
- 
-        if (!$historyLr) {
-            $lr = ErpLorryReceipt::with([
-                'consignor',
-                'consignee',
-                'driver',
-                'vehicle',
-                'locations.route',
+        if ($isRevision) {
+            $historyLr = ErpLorryReceiptHistory::with([
+                'consignor:id,company_name',
+                'consignee:id,company_name',
+                'driver:id,name',
+                'vehicle:id,lorry_no,vehicle_type_id',
+                'locations.route:id,name',
                 'mediaAttachments'
-            ])->findOrFail($id);
-            $historyLr = $lr;
-            $Id = $lr->id;
+            ])
+            ->where('source_id', $id)
+            ->where('revision_number', $revNo)
+            ->first();
+            $Id = $historyLr->source_id;
+    
+            if (!$historyLr) {
+                $lr = ErpLorryReceipt::with([
+                    'consignor:id,company_name',
+                    'consignee:id,company_name',
+                    'driver:id,name',
+                    'vehicle:id,lorry_no,vehicle_type_id',
+                    'locations.route:id,name',
+                    'mediaAttachments'
+                ])->findOrFail($id);
+                $historyLr = $lr;
+                $Id = $lr->id;
+            } else {
+                $lr = $historyLr;
+                
+            }
         } else {
-            $lr = $historyLr;
-            
+            $lr = ErpLorryReceipt::with([
+                'consignor:id,company_name,email',
+                'consignee:id,company_name,email',
+                'driver:id,name',
+                'vehicle:id,lorry_no,vehicle_type_id',
+                'locations.route:id,name',
+                'mediaAttachments'
+            ])->where('id', $id)->withDefaultGroupCompanyOrg()->firstOrFail();
+            $historyLr = $lr;
+            $revNo = $lr->revision_number;
+            $Id = $lr->id;
         }
-    } else {
-        $lr = ErpLorryReceipt::with([
-            'consignor',
-            'consignee',
-            'driver',
-            'vehicle',
-            'locations.route',
-            'mediaAttachments'
-        ])->where('id', $id)->withDefaultGroupCompanyOrg()->firstOrFail();
-        $historyLr = $lr;
-        $revNo = $lr->revision_number;
-        $Id = $lr->id;
+
+        if (!$lr) {
+            return redirect()->route('logistics.lorry-receipt.index')->with('error', 'Lorry Receipt not found.');
+        }
+
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
+
+        if (count($servicesBooks['services']) === 0) {
+            return redirect()->route('/');
+        }
+
+        $series         = Helper::getBookSeriesNew($lorryReceiptType, $pathUrl)->get();
+        $firstService   = $servicesBooks['services'][0];
+        $lorryCharges   = ConstantHelper::LORRY_CHARGES;
+        $customers      = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->select('id', 'company_name', 'email')->get();
+        $drivers        = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->select('id', 'name')->get();
+        $locations      = InventoryHelper::getAccessibleLocations();
+        $vehicleNumbers = ErpVehicle::withDefaultGroupCompanyOrg()->where('status','active')->select('id', 'lorry_no', 'vehicle_type_id')->get();
+        $userType       = Helper::userCheck();
+        $routeMasters   = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->select('id', 'name')->get();
+
+        $revision_number = $historyLr->revision_number;
+        $buttons = Helper::actionButtonDisplay(
+            $historyLr->book_id,
+            $historyLr->document_status,
+            $historyLr->id,
+            $historyLr->total_charges,
+            $historyLr->approval_level,
+            $historyLr->created_by ?? 0,
+            $userType['type']
+        );
+
+        $approvalHistory = Helper::getApprovalHistory(
+            $historyLr->book_id,
+            $Id,
+            $revNo,
+            $historyLr->total_charges,
+            $historyLr->created_by ?? 0
+        );
+
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
+
+        return view('logistics.lorry-receipt.edit', compact(
+            'lr',
+            'series',
+            'routeMasters',
+            'approvalHistory',
+            'docStatusClass',
+            'buttons',
+            'customers',
+            'drivers',
+            'vehicleNumbers',
+            'locations',
+            'lorryCharges',
+            'revision_number',
+            'users'
+        ));
     }
 
-    if (!$lr) {
-        return redirect()->route('logistics.lorry-receipt.index')->with('error', 'Lorry Receipt not found.');
+
+
+
+    public function getCostCentersByLocation($locationId)
+    {
+        $costCenters = CostCenterOrgLocations::with('costCenter')
+            ->where('location_id', $locationId)
+            ->get()
+            ->pluck('costCenter')
+            ->map(function ($center) {
+                return [
+                    'id' => $center->id,
+                    'name' => $center->name,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $costCenters,
+        ]);
     }
-
-    $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
-
-    if (count($servicesBooks['services']) === 0) {
-        return redirect()->route('/');
-    }
-
-    $series         = Helper::getBookSeriesNew($lorryReceiptType, $pathUrl)->get();
-    $firstService   = $servicesBooks['services'][0];
-    $lorryCharges   = ConstantHelper::LORRY_CHARGES;
-    $customers      = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $drivers        = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $locations      = InventoryHelper::getAccessibleLocations();
-    $vehicleNumbers = ErpVehicle::withDefaultGroupCompanyOrg()->where('status','active')->get();
-    $userType       = Helper::userCheck();
-    $routeMasters   = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-
-    $revision_number = $historyLr->revision_number;
-    $buttons = Helper::actionButtonDisplay(
-        $historyLr->book_id,
-        $historyLr->document_status,
-        $historyLr->id,
-        $historyLr->total_charges,
-        $historyLr->approval_level,
-        $historyLr->created_by ?? 0,
-        $userType['type']
-    );
-
-    $approvalHistory = Helper::getApprovalHistory(
-        $historyLr->book_id,
-        $Id,
-        $revNo,
-        $historyLr->total_charges,
-        $historyLr->created_by ?? 0
-    );
-
-    $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
-
-    return view('logistics.lorry-receipt.edit', compact(
-        'lr',
-        'series',
-        'routeMasters',
-        'approvalHistory',
-        'docStatusClass',
-        'buttons',
-        'customers',
-        'drivers',
-        'vehicleNumbers',
-        'locations',
-        'lorryCharges',
-        'revision_number',
-        'users'
-    ));
-}
-
-
-
-
- public function getCostCentersByLocation($locationId)
-{
-    $costCenters = CostCenterOrgLocations::with('costCenter')
-        ->where('location_id', $locationId)
-        ->get()
-        ->pluck('costCenter')
-        ->map(function ($center) {
-            return [
-                'id' => $center->id,
-                'name' => $center->name,
-            ];
-        })
-        ->values();
-
-    return response()->json([
-        'success' => true,
-        'data' => $costCenters,
-    ]);
-}
 
 
 
@@ -518,8 +521,10 @@ public function edit(Request $request, $id)
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
             $document_status = $approveDocument['approvalStatus'];
             $lr->document_status = $document_status;
+             $lr->save();
             } else {
                 $lr->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+                $lr->save();
             }
         }
         
@@ -609,167 +614,95 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
 
 
 
- public function getFreePointData(Request $request)
+public function getFreePointData(Request $request)
 {
-    $locationId = $request->location_id;
-    $sourceId = $request->source_id;
-    $vehicleId = $request->vehicle_id;
-    $customerId = $request->customer_id;
-    $vehicle = ErpVehicle::find($vehicleId);
-    $vehicleTypeIds = is_array($vehicle->vehicle_type_id) ? $vehicle->vehicle_type_id : [$vehicle->vehicle_type_id];
+    $locationId  = $request->location_id;
+    $sourceId    = $request->source_id;
+    $vehicleId   = $request->vehicle_id;
+    $customerId  = $request->customer_id;
+
+    $vehicle        = ErpVehicle::find($vehicleId);
+    $vehicleTypeIds = (array) ($vehicle->vehicle_type_id ?? []);
+    
+    $amount     = null;
+    $pricing    = null;
     $multiPoint = null;
-    $amount = null;
-    $pricing = null;
 
- 
-    $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
-        ->where(function ($q) use ($vehicleTypeIds) {
-            if (!empty($vehicleTypeIds)) {
-                $q->where(function ($inner) use ($vehicleTypeIds) {
-                    foreach ($vehicleTypeIds as $id) {
-                        $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
-                    }
-                });
-            }
-        })
-        ->where('customer_id', $customerId)
-        ->first();
-
-    if (!$pricing) {
-        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
-            ->where(function ($q) use ($vehicleTypeIds) {
-                if (!empty($vehicleTypeIds)) {
-                    $q->where(function ($inner) use ($vehicleTypeIds) {
-                        foreach ($vehicleTypeIds as $id) {
-                            $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
-                        }
-                    });
+    $vehicleTypeFilter = function ($q) use ($vehicleTypeIds) {
+        if (!empty($vehicleTypeIds)) {
+            $q->where(function ($inner) use ($vehicleTypeIds) {
+                foreach ($vehicleTypeIds as $id) {
+                    $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
                 }
-            })
-            ->where(function ($q) {
-                $q->whereNull('customer_id')
-                ->orWhere('customer_id', '');
-            })
-            ->first();
-    }
+            });
+        }
+    };
 
-    if (!$pricing) {
-        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+    $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+        ->where($vehicleTypeFilter)
+        ->where('customer_id', $customerId)
+        ->where('status', 'active')
+        ->first()
+        ?? ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+            ->where($vehicleTypeFilter)
+            ->where(fn($q) => $q->whereNull('customer_id')->orWhere('customer_id', ''))
+            ->where('status', 'active')
+            ->first()
+        ?? ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
             ->where('customer_id', $customerId)
+            ->where('status', 'active')
+            ->first()
+        ?? ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+            ->where('status', 'active')
             ->first();
-    }
-
-    if (!$pricing) {
-        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
-            ->first();
-      }
-
-    // $pricing = ErpLogisticsMultiFixedPricing::where(function ($query) use ($sourceId, $vehicleTypeIds, $customerId) {
-    //         $query->where('source_route_id', $sourceId)
-    //           ->where(function ($q) use ($vehicleTypeIds) {
-    //                 if (!empty($vehicleTypeIds)) {
-    //                     $q->where(function ($inner) use ($vehicleTypeIds) {
-    //                         foreach ($vehicleTypeIds as $id) {
-    //                             $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
-    //                         }
-    //                         $inner->orWhereNull('vehicle_type_id');
-    //                     });
-    //                 } else {
-    //                     $q->whereNull('vehicle_type_id');
-    //                 }
-    //             })
-
-    //             ->where(function ($q) use ($customerId) {
-    //                 $q->when($customerId, function ($q2) use ($customerId) {
-    //                     $q2->where(function ($inner) use ($customerId) {
-    //                         $inner->where('customer_id', $customerId)
-    //                                 ->orWhereNull('customer_id');
-    //                     });
-    //                 }, function ($q2) {
-    //                     $q2->whereNull('customer_id');
-    //                 });
-    //             });
-    //     })->first();
 
     if ($pricing) {
         $matchedLocation = ErpLogisticsMultiFixedLocation::where('location_route_id', $locationId)
-        ->where('multi_fixed_pricing_id', $pricing->id)->first();
-         
+            ->where('multi_fixed_pricing_id', $pricing->id)
+            ->first();
         if ($matchedLocation) {
             $amount = $matchedLocation->amount;
-            
         }
     }
-
-
     $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
         ->where('source_route_id', $sourceId)
         ->where('customer_id', $customerId)
-        ->first();
-
-  if (!$multiPoint) {
-        $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+        ->first()
+        ?? ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
             ->where('source_route_id', $sourceId)
-            ->where(function ($q) {
-                $q->whereNull('customer_id')
-                ->orWhere('customer_id', '');
-            })
-            ->first();
-    }
-
-    if (!$multiPoint) {
-        $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+            ->where(fn($q) => $q->whereNull('customer_id')->orWhere('customer_id', ''))
+            ->first()
+        ?? ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
             ->where('source_route_id', $sourceId)
             ->first();
-    }
-
-    //  $multiPoint = ErpLogisticsMultiPointPricing::where(function ($query) use ($sourceId, $customerId) {
-    //         $query->where('source_route_id', $sourceId)
-    //              ->where(function ($q) use ($customerId) {
-    //                 $q->when($customerId, function ($q2) use ($customerId) {
-    //                     $q2->where(function ($inner) use ($customerId) {
-    //                         $inner->where('customer_id', $customerId)
-    //                                 ->orWhereNull('customer_id');
-    //                     });
-    //                 }, function ($q2) {
-    //                     $q2->whereNull('customer_id');
-    //                 });
-    //             });
-    //     })->withDefaultGroupCompanyOrg()->first();
-    //     if(!$multiPoint){
-
-    //         $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
-    //             ->where('source_route_id', $sourceId)
-    //             ->first();
-    //     }
-   
 
     if ($pricing && $multiPoint) {
         return response()->json([
-            'status' => 'both_exist',
-            'amount' => $amount ?? 0,
-            'free_point' => $multiPoint->free_point,
-            'free_amount' => $multiPoint->amount,
+            'status'       => 'both_exist',
+            'amount'       => $amount ?? 0,
+            'free_point'   => $multiPoint->free_point,
+            'free_amount'  => $multiPoint->amount,
         ]);
     }
+
     if ($pricing) {
         return response()->json([
             'status' => 'exists_in_fixed',
-            'amount' => $amount ?? 0,
+            'amount' => $amount ?? '',
         ]);
     }
+
     if ($multiPoint) {
         return response()->json([
-            'status' => 'free_point',
-            'free_point' => $multiPoint->free_point,
+            'status'      => 'free_point',
+            'free_point'  => $multiPoint->free_point,
             'free_amount' => $multiPoint->amount,
         ]);
     }
 
-    return response()->json([
-        'status' => 'not_found',
-    ]);
+    return response()->json(['status' => 'not_found']);
 }
+
 
 
  public function revoke(Request $request)
@@ -908,7 +841,6 @@ public function lorryMail(Request $request)
 
     $encryptedEmail = Crypt::encryptString($consignee->email);
     $approveLink = route('lorry-receipt.approve', ['id' => $lr->id, 'email' => $encryptedEmail]); 
-
     
     $description = <<<HTML
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
@@ -1016,7 +948,8 @@ public function approveReceipt($id, $encryptedEmail)
 {
     $email = Crypt::decryptString($encryptedEmail);
 
-    $customer = Customer::where('email', $email)->first();
+    $customer = \DB::table('erp_customers')->where('email', $email)->first();
+
     $data = [
         'name' => $customer ? $customer->company_name : 'User',
         'remarks' => '',
@@ -1029,10 +962,10 @@ public function approveReceipt($id, $encryptedEmail)
         return view('logistics.lorry-receipt.success', $data);
     }
 
-    $lr = ErpLorryReceipt::findOrFail($id);
+    $lr = \DB::table('erp_logistics_lorry_receipt')->where('id', $id)->first();
 
-    if ($lr->consignee->email !== $email) {
-        $data['remarks'] = 'Unauthorized: Email does not match consignee. You are not allowed to approve this receipt.';
+    if (!$lr) {
+        $data['remarks'] = 'Lorry Receipt not found.';
         $data['status'] = 'error';
         return view('logistics.lorry-receipt.success', $data);
     }
@@ -1043,8 +976,21 @@ public function approveReceipt($id, $encryptedEmail)
         return view('logistics.lorry-receipt.success', $data);
     }
 
-    $lr->consignee_status = 'approved';
-    $lr->save();
+
+   $consignee = null;
+    if ($lr->consignee_id) {
+        $consignee = \DB::table('erp_customers')->where('id', $lr->consignee_id)->first();
+    }
+
+    if (!$consignee || $consignee->email !== $email) {
+        $data['remarks'] = 'Unauthorized: Email does not match consignee. You are not allowed to approve this receipt.';
+        $data['status'] = 'error';
+        return view('logistics.lorry-receipt.success', $data);
+    }
+
+   \DB::table('erp_logistics_lorry_receipt')
+    ->where('id', $id)
+    ->update(['consignee_status' => 'approved']);
 
     $data['remarks'] = 'Your Lorry Receipt has been successfully approved!';
     $data['status'] = 'success';

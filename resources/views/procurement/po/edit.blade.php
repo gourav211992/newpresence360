@@ -43,11 +43,11 @@
                                     <button type="submit"
                                         class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
                                         value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                @endif
+                                @endif 
                                 @if (
                                     !intval(request('amendment') ?? 0) &&
-                                        $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
-                                        $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
+                                        // $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
+                                        // $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
                                         $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
                                     <a href="{{ url(request()->route('type')) }}/{{ $po->id }}/pdf" target="_blank"
                                         class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
@@ -169,6 +169,19 @@
                                                             value="{{ $po->document_date }}" name="document_date">
                                                     </div>
                                                 </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">{{ $short_title }} Procurement Type
+                                                            <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" name="procurement_type"
+                                                            id="procurement_type">
+                                                        </select>
+                                                    </div>
+                                                </div>
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
@@ -249,6 +262,17 @@
                                                             <input type="hidden" id="delivery_address_id"
                                                                 name="delivery_address_id"
                                                                 value="{{ $po->latestDeliveryAddress()?->id }}" />
+
+                                                            <input type="hidden" value="{{ $fromCountry }}"
+                                                                id="country_id" name="country_id" />
+                                                            <input type="hidden" value="{{ $fromState }}"
+                                                                id="state_id" name="state_id" />
+
+                                                            <input type="hidden" value="" id="party_country_id"
+                                                                name="party_country_id" />
+                                                            <input type="hidden" value="" id="party_state_id"
+                                                                name="party_state_id" />
+
 
                                                             <input type="hidden"
                                                                 value="{{ $po->latestShippingAddress()?->state?->id }}"
@@ -392,6 +416,13 @@
                                                     <a href="javascript:;" id="addNewItemBtn"
                                                         class="btn btn-sm btn-outline-primary d-none">
                                                         <i data-feather="plus"></i> Add Item</a>
+                                                    @if ($buttons['submit'] || $buttons['draft'])
+                                                        <a href="#" onclick = "copyItemRow();"
+                                                            id = "copy_item_section"
+                                                            style = "{{ isset($po->po_items) && count($po->po_items) ? '' : 'display:none;' }}"
+                                                            class="btn btn-sm btn-outline-primary">
+                                                            <i data-feather="copy"></i> Copy Item</a>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -565,17 +596,20 @@
                                                     <div class="mb-1">
                                                         <label class="form-label">Terms & Conditions</label>
                                                         <select class="form-select select2" name="term_id[]" multiple>
-                                                            @foreach ($termsAndConditions as $termsAndCondition)
-                                                                @if (in_array($termsAndCondition->id, $po->TermsConditions->pluck('term_id')->toArray()))
-                                                                    <option value="{{ $termsAndCondition->id }}" selected>
-                                                                        {{ $termsAndCondition->term_name }}</option>
-                                                                @else
-                                                                    <option value="{{ $termsAndCondition->id }}">
-                                                                        {{ $termsAndCondition->term_name }}</option>
-                                                                @endif
+                                                            @foreach($termsAndConditions as $termsAndCondition)
+                                                            <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
+                                                </div>
+
+                                                <div class="col-md-12">
+                                                    <textarea name="terms_data" id="summernote" class="form-control " {{ $po->document_status !=\App\Helpers\ConstantHelper::DRAFT ? "disabled" : ''}} placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : "" }}</textarea>
+                                                    <small class="text-muted d-block text-end">
+                                                        <span id="termsCharCount">0</span>/250 characters
+                                                    </small>
+                                                    <input type="hidden" name="tnc" id="tnc" value="{{ isset($po->tnc) ? $po->tnc : "" }}">
+                                                    <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -1021,6 +1055,7 @@
 @section('scripts')
     <script type="text/javascript">
         let type = '{{ request()->route('type') }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
         let actionUrlTax = '{{ route('po.tax.calculation', ['type' => ':type']) }}'.replace(':type', type);
         var getLocationUrl = '{{ route('store.get') }}';
         var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type);
@@ -1030,6 +1065,33 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/po.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
+        @if($po->document_status != \App\Helpers\ConstantHelper::DRAFT)
+        $('#summernote').summernote('disable');
+        // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
+        $(document).on('change', 'select[name="term_id[]"]', function () {
+            let selectedText = $(this).find('option:selected').data('detail') || '';
+            $('#summernote').summernote('code', selectedText);
+            updateSummernoteData();
+        });
+
+        // Function to update char count & hidden input
+        function updateSummernoteData() {
+            let content = $('#summernote').summernote('code');
+            let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
+            $('#termsCharCount').text(plainText.length);
+            $('#tnc').val(content); // store HTML content in hidden input
+        }
+
+        // Bind Summernote change events
+        $('#summernote').on('summernote.change', function (we, contents, $editable) {
+            updateSummernoteData();
+        });
+
+        // Initialize Summernote (example)
+        $('#summernote').summernote({
+            height: 200
+        });
+        @endif
         /*Clear local storage*/
         @if ($pi_item_ids)
             let pi_item_ids = "{{ $pi_item_ids }}";
@@ -1269,6 +1331,34 @@
                 docDateInput.removeAttr('max');
             }
 
+            /* Procurement Type */
+            const $procurementTypeSelect = $('#procurement_type');
+            const poProcurementType = @json($po->procurement_type ?? '') || parameters?.po_procurement_type || '';
+            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+
+            if (poProcurementType === 'All') {
+                $procurementTypeSelect.empty();
+                PO_PROCUREMENT_TYPE_VALUES.forEach(function(value) {
+
+                    $procurementTypeSelect.append(
+                        $('<option>', {
+                            value: value,
+                            text: value,
+                            selected: value === poProcurementType,
+                        })
+                    );
+                });
+            } else {
+                $procurementTypeSelect
+                    .empty()
+                    .append($('<option>', {
+                        value: poProcurementType,
+                        text: poProcurementType,
+                        selected: true,
+                    }));
+
+            }
+
             /*Reference from*/
             let reference_from_service = parameters.reference_from_service;
             if (reference_from_service.length) {
@@ -1464,6 +1554,7 @@
                         $("#vendor_name").prop('readonly', true);
                         $("#book_id").prop('disabled', true);
                         $(".editAddressBtn").addClass('d-none');
+                        document.getElementById('copy_item_section').style.display = "";
                         let locationId = $("[name='store_id'] option:selected").val();
                         getLocation(locationId);
                     } else if (data.status == 422) {
@@ -1573,6 +1664,10 @@
                     }
                 }
             });
+            console.log("editItemIds", editItemIds);
+
+            console.log("itemIds", itemIds);
+
             if (itemIds.length) {
                 itemIds.forEach(function(item, index) {
 
@@ -1589,9 +1684,12 @@
                         }
                     }
 
+                    console.log($(`#row_${item}`).length, $(`#row_${item}`));
+
                     $(`#row_${item}`).remove();
                 });
             }
+
             if (editItemIds.length == 0 && itemIds.length == 0) {
                 alert("Please first add & select row item.");
             }
@@ -1608,6 +1706,7 @@
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly', false);
                 $("#book_id").prop('disabled', false);
+                document.getElementById('copy_item_section').style.display = "none";
                 getLocation();
             }
             setTableCalculation();
@@ -2237,8 +2336,8 @@
                         data: 'vendor_select',
                         name: 'vendor_select',
                         render: renderData,
-                        orderable: false,
-                        searchable: false
+                        orderable: true,
+                        searchable: true
                     },
                     {
                         data: 'so_no',
@@ -2366,7 +2465,7 @@
                         name: 'vendor_select',
                         render: renderData,
                         orderable: false,
-                        searchable: false
+                        searchable: true
                     },
                     {
                         data: 'location',
@@ -2391,12 +2490,14 @@
         }
         $(document).on('keyup', '#item_name_search', (e) => {
             $('#prModal .po-order-detail').DataTable().ajax.reload();
+            $('#prModal .po-order-detail .vendor-select', this).trigger('change.select2');
         });
 
         /*Checkbox for pi item list*/
         @if ($serviceAlias == 'po')
             $(document).on('change', '#prModal .po-order-detail > thead .form-check-input', (e) => {
                 if (e.target.checked) {
+                    // in this add check that the only select the vendor from the
                     if ($('.pi_item_checkbox').first().closest('tr').find("[name='vend_name']").length) {
                         let selectedVendorId = $('.pi_item_checkbox:checked').first().closest('tr').find(
                             "[name='vend_name']").val() || '';
@@ -2449,10 +2550,16 @@
         });
         @if ($serviceAlias == 'po')
             $(document).on('change', '#prDataTable .pi_item_checkbox', function(e) {
+                let currentPoVendorId = $('#vendor_id').val() || '';
                 let selectedVendorId = localStorage.getItem('selectedVendorId') || null;
                 let currentCheckedVendorId = $(this).closest('tr').find("[name='vend_name']").val();
                 if (!currentCheckedVendorId) {
                     this.checked = false;
+                    return;
+                }
+                if (currentPoVendorId && currentPoVendorId !== currentCheckedVendorId) {
+                    this.checked = false;
+                    console.log('Vendor mismatch:', currentPoVendorId, currentCheckedVendorId);
                     return;
                 }
                 if (this.checked) {
@@ -2666,6 +2773,14 @@
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
 
+                        setTimeout(() => {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index,
+                                item) {
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex, "#itemTable");
+                            });
+                        }, 100);
+
                         //Update Qnt
                         if (data?.data?.updatedGroupItems?.length) {
                             $('tr[data-group-item]').each(function() {
@@ -2719,6 +2834,7 @@
                         $("#vendor_name").prop('readonly', true);
                         $("#book_id").prop('disabled', true);
                         $(".editAddressBtn").addClass('d-none');
+                        document.getElementById('copy_item_section').style.display = "";
                         let locationId = $("[name='store_id'] option:selected").val();
                         getLocation(locationId);
                         if (finalDiscounts.length) {
@@ -3050,6 +3166,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
+                                    hsn_id: item.hsn_id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
                                 };
@@ -3064,12 +3181,16 @@
                 appendTo: modalId,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
+                    var hsnId = ui?.item?.hsn_id;
                     var itemId = ui.item.id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
 
+                    console.log('Selected item:', ui.item);
+
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -3077,7 +3198,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }
@@ -3156,8 +3277,7 @@
         });
 
 
-
-        // Short CLose 
+        // Short CLose
         $(document).on('click', '#shortCloseBtn', (e) => {
             let itemIds = [];
             $('#itemTable > tbody .form-check-input').each(function() {

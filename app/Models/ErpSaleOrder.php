@@ -50,6 +50,7 @@ class ErpSaleOrder extends Model
         'currency_code',
         'payment_term_id',
         'payment_term_code',
+        'credit_days',
         'document_status',
         'approval_level',
         'remarks',

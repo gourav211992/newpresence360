@@ -2185,7 +2185,7 @@ class GateEntryController extends Controller
             ]
         );
 
-        $fileName = 'Meterial-Receipt-' . date('Y-m-d') . '.pdf';
+        $fileName = 'Gate Entry-' . date('Y-m-d') . '.pdf';
         return $pdf->stream($fileName);
     }
 
@@ -2584,6 +2584,13 @@ class GateEntryController extends Controller
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
                     ->with(['vendorAsn'])
+                    ->whereHas('vendorAsn', function ($query) use ($asnNumber) {
+                        if (!empty($asnNumber)) {
+                            $query->whereIn('id', $asnNumber)
+                            ->where('asn_for', 'po');
+                        }
+                        $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
+                    })
                     ->get();
 
                 foreach ($siItems as $siItem) {
@@ -2944,6 +2951,13 @@ class GateEntryController extends Controller
                 $siItems = VendorAsnItem::where('jo_prod_id', $joItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
                     ->with(['vendorAsn'])
+                    ->whereHas('vendorAsn', function ($query) use ($asnNumber) {
+                        if (!empty($asnNumber)) {
+                            $query->whereIn('id', $asnNumber)
+                            ->where('asn_for', 'jo');
+                        }
+                        $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
+                    })
                     ->get();
 
                 foreach ($siItems as $siItem) {

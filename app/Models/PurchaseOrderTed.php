@@ -12,6 +12,9 @@ class PurchaseOrderTed extends Model
     protected $table = 'erp_purchase_order_ted';
 
     protected $fillable = [
+        'hsn_id',
+        'tax_amount',
+        'tax_breakup',
         'purchase_order_id',
         'po_item_id',
         'ted_type',
@@ -28,9 +31,19 @@ class PurchaseOrderTed extends Model
         'ted_name'
     ];
 
-    public $referencingRelationships = [
-        'taxDetail' => 'ted_id'
+    protected $casts = [
+        'tax_breakup' => 'array',
     ];
+
+    public $referencingRelationships = [
+        'hsn' => 'hsn_id',
+        'taxDetail' => 'ted_id',
+    ];
+
+    public function getTaxBreakupAttribute($value)
+    {
+        return json_decode($value, true);
+    }
 
     public function getTedNameAttribute()
     {
@@ -43,30 +56,35 @@ class PurchaseOrderTed extends Model
             case 'Tax':
                 $tedName = TaxDetail::where('id', $tedId)->value('tax_type');
                 break;
-    
+
             case 'Expense':
                 $tedName = ExpenseMaster::where('id', $tedId)->value('name');
                 break;
-    
+
             case 'Discount':
                 $tedName = DiscountMaster::where('id', $tedId)->value('name');
                 break;
-    
+
             default:
                 $tedName = null;
                 break;
         }
         return $tedName;
     }
-    
+
     public function purchaseOrder()
     {
-        return $this->belongsTo(PurchaseOrder::class,'purchase_order_id');
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
     }
 
     public function poItem()
     {
-        return $this->belongsTo(PoItem::class,'po_item_id');
+        return $this->belongsTo(PoItem::class, 'po_item_id');
+    }
+
+    public function hsn()
+    {
+        return $this->belongsTo(Hsn::class);
     }
 
     public function taxDetail()

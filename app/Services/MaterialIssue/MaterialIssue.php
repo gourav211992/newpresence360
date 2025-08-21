@@ -1,7 +1,17 @@
 <?php
 namespace App\Services\MaterialIssue;
 
+use App\Helpers\CommonHelper;
+use App\Helpers\ConstantHelper;
+use App\Lib\Services\WHM\WhmJob;
+use App\Models\Configuration;
+use App\Models\ErpMaterialIssueHeader;
 use App\Models\ErpMiItem;
+use App\Models\ErpPwoItem;
+use App\Models\JobOrder\JoItem;
+use App\Models\JobOrder\JoProduct;
+use App\Models\MoItem;
+use App\Models\PiItem;
 
 class MaterialIssue
 {
@@ -57,5 +67,33 @@ class MaterialIssue
         //Final item delete
         $miItem->delete();
         return ['status' => 'success', 'message' => ''];
+    }
+
+    public function createWhmJob(ErpMaterialIssueHeader $mi, $user)
+    {
+        // Get configuration detail
+        $orgEnforceUicScanning = Configuration::where('type','organization')
+            ->where('type_id', $user->organization_id)
+            ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+            ->first();
+        
+        //If MI is approved
+        if(in_array($mi->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+            && $orgEnforceUicScanning && strtolower($orgEnforceUicScanning->config_value) === 'yes')
+        {
+            //Issue Job
+            //Picking Job
+            if ($mi -> from_sub_store -> is_warehouse_required) {
+                (new WhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PICKING);
+            //Dispatch Job
+            } else if ($mi -> uic_scan_for_issue === "yes" || $mi -> to_sub_store -> is_warehouse_required) { 
+                (new WhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::DISPATCH);
+            }
+            //Receive Job
+            //Putaway Job
+            if ($mi -> to_sub_store -> is_warehouse_required) {
+                (new WhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
+            }
+        }
     }
 }

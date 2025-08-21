@@ -64,9 +64,11 @@ class MultiPointPricingRequest extends FormRequest
                 $query = \DB::table('erp_logistics_mp_pricing')
                     ->where('source_route_id', $source)->whereNull('deleted_at');
 
-                if ($customer) {
-                  $query->where('customer_id', $customer);
-                } 
+                if (is_null($customer)) {
+                    $query->whereNull('customer_id');
+                } else {
+                    $query->where('customer_id', $customer);
+                }
 
                 if ($id) {
                     $query->where('id', '!=', $id);

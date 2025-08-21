@@ -21,6 +21,7 @@ let bookDetails = window.routes.bookDetails;
 let amendUrl = window.routes.amend;
 let getSeries = window.routes.getSeries;
 let redirectUrl = window.routes.redirectUrl;
+let invConfirmUrl = window.routes.invConfirmUrl;
 // Optional: use them in fetch, axios, etc.
 $('#order_date_input').on('blur', function() {
     if(checkDateRange(this)){
@@ -76,7 +77,7 @@ function getItemTax(itemIndex)
             customer_id : $("#customer_id_input").val(),
             header_book_id : headerBookId ? headerBookId : $("#series_id_input").val(),
             store_id : $("#store_id_input").val(),
-            document_id : order ? order.id : ''
+            document_id : ''
         },
         success: function(data) {
             const taxInput = document.getElementById('item_tax_' + itemIndex);
@@ -1346,6 +1347,55 @@ function submitAmend()
     $("#transport_invoice_form").submit();
 }
 
+function invoiceConfirm() {
+    var orderId = order ? order.id : null;
+    
+    if (!orderId) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Order ID missing!',
+            icon: 'error',
+        });
+        return;
+    }
+
+    $.ajax({
+        url: invConfirmUrl, // Laravel route
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            id: orderId,
+            _token: "{{ csrf_token() }}"
+        },
+        success: function(res) {
+            if (res.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: res.message,
+                    icon: 'success',
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: res.message || "Something went wrong!",
+                    icon: 'error',
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Request failed!',
+                icon: 'error',
+            });
+        }
+    });
+}
+
+
 let isProgrammaticChange = false; // Flag to prevent recursion
 
 document.addEventListener('input', function (e) {
@@ -1632,33 +1682,41 @@ function onItemClick(itemRowId)
                 if (Array.isArray(data?.lrDetails) && data.lrDetails.length > 0) {
                     let html = '';
                     let lrs = '';
-                    html+= `
-                    <span class="badge rounded-pill badge-light-primary"><strong>HSN Code</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
-                    `;
+                    
                     data.lrDetails.forEach(lr => {
-                        
                         html += `
-                            
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>Service</strong>: <span>${lr.item_name}</span>
-                            </span>
-                           
-                        `;
-                        lrs += `
-                        <span class="badge rounded-pill badge-light-primary">
                                 <strong>LR Date</strong>: <span>${lr.document_date}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>Point Charges</strong>: <span>${lr.points_charges}</span>
+                                <strong>Service</strong>: <span>${lr.item_name}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>LR Charges</strong>: <span>${lr.lr_charges}</span>
-                            </span>
-                            <span class="badge rounded-pill badge-light-primary">
-                                <strong>Freight Charges</strong>: <span>${lr.freight_charges}</span>
-                            </span>
+                                <strong>HSN Code</strong>: <span id="current_item_hsn_code">${lr.hsn_code ?? ''}</span>
+                            </span> 
+                        `;
+
+                        // ✅ now iterate locations of this LR
+                        lr.locations.forEach(location => {
+                            lrs += `
+                            <div class="row-line" style="margin-bottom: 8px;">
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Point Name</strong>: <span>${location.route_name}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Freight Charges</strong>: <span>${location.amount}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>No Of articles</strong>: <span>${location.no_of_articles}</span>
+                                </span>
+                                <span class="badge rounded-pill badge-light-primary">
+                                    <strong>Weight</strong>: <span>${location.weight}</span>
+                                </span>
+                            </div>
                             `;
+                        });
                     });
+
                     
                     
                 if (data?.item && data?.item?.category && data?.item?.sub_category) {
@@ -2591,7 +2649,7 @@ $(document).on('click','#billAddressEditBtn',(e) => {
     $("#edit-address-billing").modal('show');
 });
 function sendMailTo() {
-        const customerEmail = order ? order.customer.email : "";
+        const customerEmail = order ? order.customer_email : "";
         const customerName = order ? order.customer.company_name : "";
         const emailInput = document.getElementById('cust_mail');
         const header = document.getElementById('send_mail_heading_label');

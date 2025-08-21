@@ -10,25 +10,33 @@ use App\Models\Compliance;
 use App\Models\Customer;
 use App\Models\ErpAddress;
 use App\Models\ErpAttribute;
+use App\Models\ErpCustomerSaleSummary;
+use App\Models\ErpFinancialYear;
 use App\Models\ErpInvoiceItem;
+use App\Models\ErpInvoicePaymentTerm;
 use App\Models\ErpItemAttribute;
 use App\Models\ErpProductionSlip;
 use App\Models\ErpPslipItem;
 use App\Models\ErpPslipItemDetail;
 use App\Models\ErpSaleInvoice;
+use App\Models\ErpSaleInvoiceHistory;
 use App\Models\ErpSaleOrder;
 use App\Models\ErpSaleOrderTed;
+use App\Models\ErpSaleReturn;
+use App\Models\ErpSaleReturnHistory;
 use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItem;
 use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemBom;
 use App\Models\ErpSoItemDelivery;
+use App\Models\ErpSoPaymentTerm;
 use App\Models\ErpStore;
 use App\Models\ErpTransportInvoice;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\Organization;
 use App\Models\OrganizationBookParameter;
+use App\Models\PaymentTermDetail;
 use App\Models\Unit;
 use App\Models\Vendor;
 use Carbon\Carbon;
@@ -492,5 +500,134 @@ class SaleModuleHelper
         } else {
             return $soOrderType;
         }
+    }
+
+    public static function updateOrCreateSoPaymentTerms(int $soHeaderId, int $paymentTermId, $creditDays)
+    {
+        //Get the payment terms data
+        $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+        //Return if no record is found
+        if ($paymentTermDetails->isEmpty()) {
+            return;
+        }
+        //Array to keep track of inserted records
+        $soPaymentTermIds = [];
+        //Update or save the data 
+        foreach($paymentTermDetails as $paymentTermDetail){
+            $soPaymentTerm = ErpSoPaymentTerm::updateOrCreate(
+                [
+                    'so_header_id' => $soHeaderId,
+                    'payment_term_id' => $paymentTermDetail->payment_term_id,
+                    'payment_term_detail_id' => $paymentTermDetail->id,
+                ],
+                [
+                    'trigger_type' => $paymentTermDetail->trigger_type,
+                    'credit_days' => $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0,
+                    'percent' => $paymentTermDetail -> percent
+                ]
+            );
+            array_push($soPaymentTermIds, $soPaymentTerm -> id);
+        }
+        //Delete the records no longer required (of current so_header_id)
+        ErpSoPaymentTerm::where('so_header_id', $soHeaderId) -> whereNotIn('id', $soPaymentTermIds) -> delete();
+    }
+
+    public static function updateOrCreateInvoicePaymentTerms(int $invoiceHeaderId, string $headerDocumentDate, int $paymentTermId, $creditDays)
+    {
+        //Get the payment terms data
+        $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+        //Return if no record is found
+        if ($paymentTermDetails->isEmpty()) {
+            return;
+        }
+        //Array to keep track of inserted records
+        $soPaymentTermIds = [];
+        //Due Date
+        $dueDate = $headerDocumentDate;
+        $creditDueDate = $headerDocumentDate;
+        if ($creditDays && $creditDays > 0) {
+            $parsedDocumentDate = Carbon::parse($headerDocumentDate);
+            $creditDueDate = $parsedDocumentDate -> addDays($creditDays) -> format('Y-m-d');
+        }
+        //Update or save the data 
+        foreach($paymentTermDetails as $paymentTermDetail){
+            $soPaymentTerm = ErpInvoicePaymentTerm::updateOrCreate(
+                [
+                    'invoice_header_id' => $invoiceHeaderId,
+                    'payment_term_id' => $paymentTermDetail->payment_term_id,
+                    'payment_term_detail_id' => $paymentTermDetail->id,
+                ],
+                [
+                    'trigger_type' => $paymentTermDetail->trigger_type,
+                    'credit_days' => $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0,
+                    'percent' => $paymentTermDetail -> percent,
+                    'due_date' => $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? $creditDueDate : $dueDate
+                ]
+            );
+            array_push($soPaymentTermIds, $soPaymentTerm -> id);
+        }
+        //Delete the records no longer required (of current so_header_id)
+        ErpInvoicePaymentTerm::where('invoice_header_id', $invoiceHeaderId) -> whereNotIn('id', $soPaymentTermIds) -> delete();
+    }
+
+    public static function buildCustomerSaleInvoiceSummary(ErpSaleInvoice $saleInvoice, ErpFinancialYear $fyYear, ErpSaleInvoiceHistory|null $oldSaleInvoice = null)
+    {
+        //Only run for approved documents and SI, SI-DNOTE
+        $requiredStatuses = [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED];
+        $requiredDocumentTypes = [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
+        if (!in_array($saleInvoice -> document_status, $requiredStatuses) || !in_array($saleInvoice -> document_type, $requiredDocumentTypes)) {
+            return;
+        }
+        //Create or update the summary
+        $customerSaleSummary = ErpCustomerSaleSummary::firstOrCreate([
+            'group_id' => $saleInvoice -> group_id,
+            'company_id' => $saleInvoice -> company_id,
+            'organization_id' => $saleInvoice -> organization_id,
+            'customer_id' => $saleInvoice -> customer_id,
+            'fy_id' => $fyYear -> id,
+            'currency_id' => $saleInvoice -> org_currency_id
+        ]);
+        $customerSaleSummary -> fy_code = $fyYear -> alias;
+        //Default to current invoice value to be incremented
+        $newInvoiceValue = $saleInvoice -> total_item_value - $saleInvoice -> total_discount_value;
+        $incrementInvoiceValue = $newInvoiceValue;
+        //Update - Amend
+        if ($oldSaleInvoice) {
+            //Keep the difference
+            $oldSaleInvoice = $oldSaleInvoice -> total_item_value - $oldSaleInvoice -> total_discount_value;
+            $incrementInvoiceValue = $newInvoiceValue - $oldSaleInvoice;
+        }
+        //Increment the value or difference
+        $customerSaleSummary -> increment('total_invoice_value', $incrementInvoiceValue);
+    }
+
+    public static function buildCustomerSaleReturnSummary(ErpSaleReturn $saleInvoice, ErpFinancialYear $fyYear, ErpSaleReturnHistory|null $oldSaleInvoice = null)
+    {
+        //Only run for approved documents and SI, SI-DNOTE
+        $requiredStatuses = [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED];
+        if (!in_array($saleInvoice -> document_status, $requiredStatuses)) {
+            return;
+        }
+        //Create or update the summary
+        $customerSaleSummary = ErpCustomerSaleSummary::firstOrCreate([
+            'group_id' => $saleInvoice -> group_id,
+            'company_id' => $saleInvoice -> company_id,
+            'organization_id' => $saleInvoice -> organization_id,
+            'customer_id' => $saleInvoice -> customer_id,
+            'fy_id' => $fyYear -> id,
+            'currency_id' => $saleInvoice -> org_currency_id
+        ]);
+        $customerSaleSummary -> fy_code = $fyYear -> alias;
+        //Default to current invoice value to be incremented
+        $newInvoiceValue = $saleInvoice -> total_item_value - $saleInvoice -> total_discount_value;
+        $incrementInvoiceValue = $newInvoiceValue;
+        //Update - Amend
+        if ($oldSaleInvoice) {
+            //Keep the difference
+            $oldSaleInvoice = $oldSaleInvoice -> total_item_value - $oldSaleInvoice -> total_discount_value;
+            $incrementInvoiceValue = $newInvoiceValue - $oldSaleInvoice;
+        }
+        //Increment the value or difference
+        $customerSaleSummary -> increment('total_return_value', $incrementInvoiceValue);
     }
 }

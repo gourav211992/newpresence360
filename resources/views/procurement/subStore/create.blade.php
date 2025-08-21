@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 @section('content')
 
@@ -110,6 +111,14 @@
                                                     <input type="checkbox" name="is_warehouse_required" id="is_warehouse_required_input" />
                                                 </div>
                                             </div>
+                                            <div class="row align-items-center mb-1" id = "uic_scan_for_issue_header">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Enforce UIC Scan while Issuing<span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="checkbox" name="uic_scan_for_issue" id="uic_scan_for_issue_input" />
+                                                </div>
+                                            </div>
                                         <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Parent Location(s)<span class="text-danger">*</span></label>
@@ -184,6 +193,8 @@
         let stationWiseFieldInput = document.getElementById('station_wise_consumption_input');
         let warehouseFieldElement = document.getElementById('is_warehouse_required_header');
         let warehouseFieldInput = document.getElementById('is_warehouse_required_input');
+        let uicScanForIssueFieldElement = document.getElementById('uic_scan_for_issue_header');
+        let uicScanForIssueFieldInput = document.getElementById('uic_scan_for_issue_input');
 
         let stockStoreTypeElement = document.getElementById('stock-store-header');
         if (element.value === "{{App\Helpers\ConstantHelper::SHOP_FLOOR}}") {
@@ -194,12 +205,14 @@
         }
         if (element.value === "{{App\Helpers\ConstantHelper::STOCKK}}") {
             warehouseFieldElement.classList.remove('d-none');
+            uicScanForIssueFieldElement.classList.remove('d-none');
             stockStoreTypeElement.classList.remove('d-none');
         } else {
             warehouseFieldInput.checked = false;
+            uicScanForIssueFieldInput.checked = false;
+            uicScanForIssueFieldElement.classList.add('d-none');
             warehouseFieldElement.classList.add('d-none');
             stockStoreTypeElement.classList.add('d-none');
-
         }
     }
 

@@ -69,6 +69,16 @@ class CommonHelper
     const AFTER_KAIZEN = 'after kaizen';
     const BEFORE_KAIZEN = 'before kaizen';
 
+    const IMPROVEMENT_TYPES = [
+        self::PRODUCTIVITY,
+        self::INNOVATION,
+        self::QUALITY,
+        self::COST,
+        self::MORAL,
+        self::DELIVERY,
+        self::SAFETY,
+    ];
+
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,
         self::PAGE_LENGTH_20,
@@ -118,6 +128,16 @@ class CommonHelper
     const WORK_MODE = [
         'In Office',
         'REMOTE'
+    ];
+
+    const IMPROVEMENT_TYPE = [
+        self::PRODUCTIVITY,
+        self::INNOVATION,
+        self::QUALITY,
+        self::COST,
+        self::MORAL,
+        self::DELIVERY,
+        self::SAFETY
     ];
 
     public static function dateFormat($date)

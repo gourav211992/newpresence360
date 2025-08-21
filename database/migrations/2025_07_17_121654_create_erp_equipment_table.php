@@ -14,14 +14,6 @@ return new class extends Migration
     {
         Schema::create('erp_equipment', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('book_id');
-            $table->string('document_number');
-            $table->date('document_date')->nullable();
-            $table->string('doc_number_type')->default('Manually');
-            $table->string('doc_reset_pattern')->nullable();
-            $table->string('doc_prefix')->nullable();
-            $table->string('doc_suffix')->nullable();
-            $table->integer('doc_no')->nullable();
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->unsignedBigInteger('group_id')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
@@ -34,11 +26,15 @@ return new class extends Migration
             $table->string('upload_document')->nullable();
             $table->text('final_remarks')->nullable();
             
+            $table->unsignedBigInteger('book_id');
+            $table->string('document_number');
+            $table->date('document_date')->nullable();
+            $table->enum('doc_number_type', ['Auto', 'Manually'])->default('Manually');
+            $table->enum('doc_reset_pattern', ['Never', 'Yearly', 'Quarterly', 'Monthly'])->nullable();
+            $table->string('doc_prefix')->nullable();
+            $table->string('doc_suffix')->nullable();
+            $table->integer('doc_no')->nullable();
             $table->string('document_status', 50);
-            $table->integer('approval_level')->default(1);
-            $table->integer('revision_number')->default(0);
-            $table->date('revision_date')->nullable();
-            $table->string('type', 100);
             
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

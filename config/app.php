@@ -176,6 +176,9 @@ return [
         Yajra\DataTables\DataTablesServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
         App\Providers\ViewServiceProvider::class,
+
+        // P360 Packages
+        //P360\ClientConfig\P360ClientConfigServiceProvider::class,
     ])->toArray(),
 
     /*

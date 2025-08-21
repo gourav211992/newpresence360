@@ -26,6 +26,7 @@ window.pageData = {
         amend :  "{{ route('sale.order.amend', isset($order) ? $order -> id : 0) }}",
         calTax : "{!!route('tax.calculate.sales', ['alias' => $order?->book?->service?->alias??" "]) !!}",
         getSeries : "{{ url('get-series') }}/",
+        invConfirmUrl :"{{ route('sale.transporterInvoice.confirm') }}",
     };
 </script>
 

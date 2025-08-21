@@ -39,6 +39,8 @@
                                                 <th>Alias</th>
                                                 <th>Type</th>
                                                 <th>Sub Type</th>
+                                                <th>Warehouse Required</th>
+                                                <th>UIC Scan for Issue</th>
                                                 <th>Location(s)</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
@@ -79,6 +81,8 @@ $(document).ready(function() {
                 { data: 'code', render: renderData },
                 { data: 'type', render: renderData },
                 { data: 'sub_type_name', render: renderData },
+                { data: 'warehouse_required', render: renderData },
+                { data: 'uic_scan_for_issue', render: renderData },
                 { data: 'store_name', render: renderData },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false }

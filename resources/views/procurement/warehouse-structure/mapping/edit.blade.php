@@ -277,14 +277,14 @@
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_weight]"
-                                                                            value="{{ number_format($val->max_weight, 2) }}"
+                                                                            value="{{ $val->max_weight }}"
                                                                             {{ $val->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_volume]"
-                                                                            value="{{ number_format($val->max_volume, 2) }}"
+                                                                            value="{{ $val->max_volume }}"
                                                                             {{ $val->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>

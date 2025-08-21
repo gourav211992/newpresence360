@@ -120,6 +120,6 @@ protected static function booted()
     }
     public function payments()
     {
-        return $this->hasMany(VoucherReference::class, 'payment_voucher_id');
+        return $this->hasMany(VoucherReference::class,'payment_voucher_id');
     }
 }

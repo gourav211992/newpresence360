@@ -19,6 +19,7 @@ use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPlRequest;
 use App\Models\Address;
 use App\Helpers\DynamicFieldHelper;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\AttributeGroup;
 use App\Models\Category;
 use App\Models\ErpPlDynamicField;
@@ -342,7 +343,6 @@ class ErpPlController extends Controller
                 'approvalHistory' => $approvalHistory,
                 'revision_number' => $revision_number,
                 'docStatusClass' => $docStatusClass,
-                'typeName' => $typeName,
                 'stores' => $stores,
                 'vendors' => $vendors,
                 'stations' => $stations,

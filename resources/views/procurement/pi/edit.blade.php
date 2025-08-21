@@ -155,81 +155,81 @@
                                         </div>
 
                                         <div class="row align-items-center mb-1">
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                            </div>  
-                                            <div class="col-md-5"> 
+                                            <div class="col-md-3">
+                                                <label class="form-label">Location <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <select class="form-select" disabled id="store_id" name="store_id">
                                                 @foreach($locations as $location)
                                                 <option value="{{$location->id}}" {{$location->id == $pi?->store_id ? 'selected' : ''}}>{{ $location?->store_name }}</option>
-                                                @endforeach 
-                                            </select> 
-                                            </div> 
+                                                @endforeach
+                                            </select>
+                                            </div>
                                         </div>
                                         <div class="row align-items-center mb-1 d-none" id = "department_id_header">
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Requester</label>  
-                                            </div>  
-                                            <div class="col-md-5">  
+                                            <div class="col-md-3">
+                                                <label class="form-label">Requester</label>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <select class="form-select" disabled id="sub_store_id" name="sub_store_id">
                                                     <option value="{{$pi?->sub_store_id}}">{{$pi?->sub_store?->name ?? $pi?->requester?->name}}</option>
-                                                </select>  
+                                                </select>
                                             </div>
                                         </div>
                                         @if ($pi->requester_type === "User")
                                         <div class="row align-items-center mb-1" id = "user_id_header">
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Requester <span class="text-danger">*</span></label>  
-                                            </div>  
-                                            <div class="col-md-5">  
+                                            <div class="col-md-3">
+                                                <label class="form-label">Requester <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <select disabled class="form-select" id="user_id" name="user_id">
                                                     <option value="">Select</option>
                                                     @foreach($users as $user)
                                                     <option value="{{$user->id}}" {{$selecteduserId == $user->id ? 'selected' : ''}}>{{ucfirst($user->name)}}</option>
-                                                    @endforeach 
-                                                </select>  
+                                                    @endforeach
+                                                </select>
                                             </div>
                                         </div>
                                         @endif
                                         {{-- <div class="row align-items-center mb-1" id="department_id_header">
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Department <span class="text-danger">*</span></label>  
-                                            </div>  
-                                            <div class="col-md-5">  
+                                            <div class="col-md-3">
+                                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <select class="form-select" id="department_id" name="department_id">
                                                     <option value="">Select</option>
                                                     @foreach($departments as $department)
                                                     <option value="{{$department->id}}" {{$pi->department_id == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                                    @endforeach 
-                                                </select>  
+                                                    @endforeach
+                                                </select>
                                             </div>
                                         </div> --}}
-                                        <div class="row align-items-center mb-1 d-none" id="reference_from"> 
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Reference from</label>  
-                                            </div> 
-                                            <div class="col-md-5 action-button"> 
+                                        <div class="row align-items-center mb-1 d-none" id="reference_from">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Reference from</label>
+                                            </div>
+                                            <div class="col-md-5 action-button">
                                                 <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 soSelect"><i data-feather="plus-square"></i> Sale Order</button>
                                             </div>
                                         </div>
                                         @if($saleOrders?->count())
                                         <div class="row align-items-center mb-1">
-                                            <div class="col-md-3"> 
-                                                <label class="form-label">Sales Order</label>  
-                                            </div>  
-                                            <div class="col-md-5">  
+                                            <div class="col-md-3">
+                                                <label class="form-label">Sales Order</label>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
                                             </div>
                                         </div>
                                         @endif
                                     </div>
                                     {{-- Approval History Section --}}
-                                    @include('partials.approval-history', ['document_status' => $pi->document_status, 'revision_number' => $revision_number]) 
+                                    @include('partials.approval-history', ['document_status' => $pi->document_status, 'revision_number' => $revision_number])
                                 </div>
                             </div>
                         </div>
                         <div class="card" id="item_section">
-                        <div class="card-body customernewsection-form"> 
+                        <div class="card-body customernewsection-form">
                         <div class="border-bottom mb-2 pb-25">
                             <div class="row">
                             <div class="col-md-6">
@@ -243,6 +243,9 @@
                                     <i data-feather="x-circle"></i> Delete</a>
                                     <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
                                         <i data-feather="plus"></i> Add Item</a>
+                                        <a href="#" onclick = "copyItemRow();" id = "copy_item_section"
+                                        style = "{{ isset($pi->pi_items) && count($pi->pi_items) ? '' : 'display:none;' }}" class="btn btn-sm btn-outline-primary">
+                                                        <i data-feather="copy"></i> Copy Item</a>
                                     </div>
                                 </div>
                             </div>
@@ -258,7 +261,7 @@
                                                 <div class="form-check form-check-primary custom-checkbox">
                                                     <input type="checkbox" class="form-check-input" id="Email">
                                                     <label class="form-check-label" for="Email"></label>
-                                                </div> 
+                                                </div>
                                             </th>
                                             <th width="200px">Item Code</th>
                                             <th width="300px">Item Name</th>
@@ -289,8 +292,8 @@
                                                 </tr>
                                                 <tr>
                                                 </tr>
-                                                <tr> 
-                                                </tr> 
+                                                <tr>
+                                                </tr>
                                                 <tr>
                                                 </tr>
                                                 <tr>
@@ -424,7 +427,7 @@
               <p>Are you sure you want to <strong>Amendment</strong> this <strong>PI</strong>? After Amendment this action cannot be undone.</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
-          </div> 
+          </div>
       </div>
   </div>
 </div>
@@ -777,6 +780,7 @@ fetch(actionUrl).then(response => {
             }
             initAutocompVendor("[name*='[vendor_code]']");
             initializeAutocomplete2('.comp_item_code');
+            document.getElementById('copy_item_section').style.display = "";
         } else if(data.status == 422) {
            Swal.fire({
             title: 'Error!',
@@ -832,6 +836,7 @@ $(document).on('click','#deleteBtn', (e) => {
     }
     if(editItemIds.length == 0 && itemIds.length == 0) {
       alert("Please first add & select row item.");
+      document.getElementById('copy_item_section').style.display = "none";
     }
     if (editItemIds.length) {
       $("#deleteComponentModal").find("#deleteConfirm").attr('data-ids',JSON.stringify(editItemIds));
@@ -913,7 +918,8 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       let pi_item_id = $(currentTr).find("[name*='[pi_item_id]']").val() || '';
       let so_id = $(currentTr).find("[name*='[so_id]']").val() || '';
       let store_id = $("#store_id").val() || '';
-      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&pi_item_id='+pi_item_id+'&so_id='+so_id+'&store_id='+store_id;
+      let sub_store_id = $("#sub_store_id").val() || '';
+      let actionUrl = '{{route("pi.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&pi_item_id='+pi_item_id+'&so_id='+so_id+'&store_id='+store_id+'&sub_store_id='+sub_store_id;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {
@@ -942,7 +948,7 @@ $(document).on('click','#deleteConfirm', (e) => {
     if(!$("#itemTable [id*=row_]").length) {
         $("th .form-check-input").prop('checked',false);
         $("#reference_from").removeClass('d-none');
-        $("#orderTypeSelect").prop('disabled', false);        
+        $("#orderTypeSelect").prop('disabled', false);
     }
 });
 
@@ -963,7 +969,7 @@ $(document).on('click', '#amendmentBtn', (e) => {
     $("#amendmentModal").modal('show');
 });
 
-$(document).on('click', '#amendmentSubmit', (e) => {    
+$(document).on('click', '#amendmentSubmit', (e) => {
 let url = new URL(window.location.href);
 url.search = '';
 url.searchParams.set('amendment', 1);
@@ -1020,7 +1026,7 @@ function openSaleRequest()
     initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "po_item_list", "item_code", "item_name");
 }
 
-function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") 
+function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
 {
     $("#" + selector).autocomplete({
         source: function(request, response) {
@@ -1039,7 +1045,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                         return {
                             id: item.id,
                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                            code: item[labelKey1] || '', 
+                            code: item[labelKey1] || '',
                         };
                     }));
                 },
@@ -1067,18 +1073,18 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
     }).focus(function() {
         if (this.value === "") {
             $(this).autocomplete("search", "");
-            $("#" + selectorSibling).val(""); 
+            $("#" + selectorSibling).val("");
             getSoItems();
         }
-    }).blur(function() {  
+    }).blur(function() {
         if ($(this).val().trim() === "") {
-            $("#" + selectorSibling).val("");  
+            $("#" + selectorSibling).val("");
             getSoItems();
         }
     });
 }
 
-function getSoItems() 
+function getSoItems()
 {
     let isAttribute = 0;
     if($("#attributeCheck").is(':checked')) {
@@ -1226,7 +1232,7 @@ $(document).on('click', '.soProcess', (e) => {
                         return {
                             id: item.id,
                             label: `${item.item_name} (${item.item_code})`,
-                            code: item.item_code || '', 
+                            code: item.item_code || '',
                             item_id: item.id,
                             item_name:item.item_name,
                             uom_name:item.uom?.name,
@@ -1404,7 +1410,6 @@ $(document).on('click', '.soSubmitProcess', (e) => {
                 }
             });
         }
-        
     } else {
         // $("#soSubmitModal").modal('hide');
         Swal.fire({
@@ -1472,7 +1477,7 @@ $(document).on('click', '#revokeButton', (e) => {
             }
             location.reload();
         });
-    }); 
+    });
 });
 
 /*Final process submit*/

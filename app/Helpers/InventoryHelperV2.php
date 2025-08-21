@@ -17,6 +17,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\ErpAttribute;
 use App\Models\ItemAttribute;
+use App\Models\Configuration;
 
 use App\Models\StockLedger;
 use App\Models\StockLedgerReservation;
@@ -37,111 +38,196 @@ class InventoryHelperV2
 {
     public function __construct() {}
 
-    // Update Stock Ledger From Inspection
+    // Update Stock Receipt
     public static function updateReceiptStock($documentHeader, $inspection = null)
     {
         try {
-            $documentDetails = $documentHeader->items->where('is_inspection', 1);
+            $user = Helper::getAuthenticatedUser();
+            
+            // --- Check Configuration for UIC scanning
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
 
-            foreach ($documentDetails as $detail) {
-                $stockLedgerQuery = StockLedger::withDefaultGroupCompanyOrg()
-                    ->where('document_header_id', $detail->mrn_header_id)
-                    ->where('document_detail_id', $detail->id)
-                    ->where('item_id', $detail->item_id)
-                    ->where('store_id', $detail->store_id)
-                    ->where('sub_store_id', $detail->sub_store_id)
-                    ->where('transaction_type', 'receipt')
-                    ->whereNull('utilized_id')
-                    ->whereRaw('hold_qty > 0')
-                    ->orderBy('original_receipt_date', 'ASC')
-                    ->orderBy('document_date', 'ASC')
-                    ->orderBy('id', 'ASC');
+            $cfgYes = $config && strcasecmp((string) $config->config_value, 'yes') === 0;
+    
+            // cache for sub-store flags
+            static $subStoreWarehouseCache = [];
 
-                $stockLedger = $stockLedgerQuery->first();
-                if (!$stockLedger || $stockLedger->hold_qty <= 0) continue;
+            // returns true if sub-store (or its store) requires warehouse/putaway
+            $subStoreHasWarehouse = function (?int $subStoreId) use (&$subStoreWarehouseCache): bool {
+                if (!$subStoreId) return false;
+                if (array_key_exists($subStoreId, $subStoreWarehouseCache)) {
+                    return $subStoreWarehouseCache[$subStoreId];
+                }
 
-                $acceptedQty = (float) $detail->accepted_inv_uom_qty;
-                $rejectedQty = (float) $detail->rejected_inv_uom_qty;
-                $processedQty = $acceptedQty + $rejectedQty;
+                // Only fetch the flag columns; adjust model/columns if different
+                $sub = ErpSubStore::select('id','is_warehouse_required')->find($subStoreId);
+                $flag = (int)($sub->is_warehouse_required ?? 0) === 1;
 
-                $totalItemCost = $detail->basic_value - ($detail->discount_amount + $detail->header_discount_amount);
+                return $subStoreWarehouseCache[$subStoreId] = $flag;
+            };
 
-                // ✅ 1. Merge or Create Accepted Ledger
-                if ($acceptedQty > 0) {
-                    $acceptedLedger = StockLedger::withDefaultGroupCompanyOrg()
-                        ->where('document_header_id', $detail->mrn_header_id)
-                        ->where('document_detail_id', $detail->id)
+            $documentDetails = $documentHeader->items()
+                ->where('is_inspection', 1)
+                ->with('batches')        // assumes Detail model has: public function batches() { return $this->hasMany(...); }
+                ->get();
+            foreach ($documentDetails as $documentDetail) {
+                if(empty($documentDetail->batches)){
+                    return self::errorResponse("Error in updateReceiptStock: Batch details not found.");
+                }
+                foreach ($documentDetail->batches as $detail) {    
+                    // Find the original HOLD ledger row
+                    $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                        ->where('document_header_id', $detail->header_id)
+                        ->where('document_detail_id', $detail->detail_id)
+                        ->where('lot_number', $detail->batch_number)
                         ->where('item_id', $detail->item_id)
-                        ->where('store_id', $detail->store_id)
-                        ->where('sub_store_id', $detail->sub_store_id)
+                        ->where('store_id', $documentHeader->store_id)
+                        ->where('sub_store_id', $documentHeader->sub_store_id)
                         ->where('transaction_type', 'receipt')
-                        ->where('hold_qty', 0)
-                        ->where('receipt_qty', '>', 0)
                         ->whereNull('utilized_id')
+                        ->whereRaw('receipt_qty > 0')
+                        // ->whereRaw('hold_qty > 0')
+                        ->orderBy('original_receipt_date', 'ASC')
+                        ->orderBy('document_date', 'ASC')
                         ->orderBy('id', 'ASC')
-                        ->first();
+                        ->get();
 
-                    if (!$acceptedLedger) {
-                        $acceptedLedger = $stockLedger->replicate();
-                        $acceptedLedger->receipt_qty = $acceptedQty;
-                        $acceptedLedger->hold_qty = 0;
+                    if (empty($stockLedger)) {
+                        continue;
                     }
+                    foreach($stockLedger as $stockLedger) {
+                        $acceptedQty  = (float) ($detail->accepted_inv_uom_qty ?? 0);
+                        $rejectedQty  = (float) ($detail->rejected_inv_uom_qty ?? 0);
+                        $processedQty = $acceptedQty + $rejectedQty;
+                        // Proportional costing (prevents double counting when both exist)
+                        $totalItemCost  = (float) (($documentDetail->basic_value ?? 0) - (($documentDetail->discount_amount ?? 0) + ($documentDetail->header_discount_amount ?? 0)));
+                        $totalProcessed = max($processedQty, 0.0);
+            
+                        $acceptedCost = ($acceptedQty > 0 && $totalProcessed > 0)
+                            ? round($totalItemCost * ($acceptedQty / $totalProcessed), 2)
+                            : 0.0;
+            
+                        $rejectedCost = ($rejectedQty > 0 && $totalProcessed > 0)
+                            ? round($totalItemCost - $acceptedCost, 2)
+                            : 0.0;
 
-                    $acceptedLedger->receipt_qty = $acceptedQty;
-                    $acceptedLedger->cost_per_unit = round($acceptedLedger->receipt_qty > 0 ? $totalItemCost / $acceptedLedger->receipt_qty : 0, 6);
-                    $acceptedLedger->total_cost = round($totalItemCost, 2);
-                    $acceptedLedger->document_status = $documentHeader->document_status;
-                    self::updateStockCost($acceptedLedger);
-                    $acceptedLedger->save();
-                }
+                        // ------------------------------------------------------------
+                        // 1) ACCEPTED: target store = main store (detail->store_id)
+                        // ------------------------------------------------------------
+                        if ($acceptedQty > 0) {
+                            $acceptedStoreId  = (int) ($inspection->store_id ?? $documentHeader->store_id);
+                            $acceptedSubStore = (int) ($inspection->sub_store_id ?? $documentHeader->sub_store_id);
 
-                // ✅ 2. Merge or Create Rejected Ledger
-                if ($inspection && $rejectedQty > 0 && $inspection->rejected_sub_store_id) {
-                    $rejectedLedger = StockLedger::withDefaultGroupCompanyOrg()
-                        ->where('document_header_id', $detail->mrn_header_id)
-                        ->where('document_detail_id', $detail->id)
-                        ->where('item_id', $detail->item_id)
-                        ->where('store_id', $detail->store_id)
-                        ->where('sub_store_id', $inspection->rejected_sub_store_id)
-                        ->where('transaction_type', 'receipt')
-                        ->where('hold_qty', 0)
-                        ->where('receipt_qty', '>', 0)
-                        ->whereNull('utilized_id')
-                        ->orderBy('id', 'ASC')
-                        ->first();
+                            // only use putaway when cfgYes = true AND sub-store requires warehouse
+                            $acceptedUsePutaway = $cfgYes && $subStoreHasWarehouse($acceptedSubStore);
+                            $acceptedQtyField   = $acceptedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
+                            // Try to merge into an existing non-hold ledger in that target column
+                            $acceptedLedger = StockLedger::withDefaultGroupCompanyOrg()
+                                ->where('document_header_id', $detail->header_id)
+                                ->where('document_detail_id', $detail->detail_id)
+                                ->where('lot_number', $detail->batch_number)
+                                ->where('item_id', $detail->item_id)
+                                ->where('store_id', $acceptedStoreId)
+                                ->where('sub_store_id', $acceptedSubStore)
+                                ->where('transaction_type', 'receipt')
+                                ->where('hold_qty', 0)
+                                ->where($acceptedQtyField, '>', 0)
+                                ->whereNull('utilized_id')
+                                ->orderBy('id', 'ASC')
+                                ->first();
+            
+                            if (!$acceptedLedger) {
+                                $acceptedLedger = $stockLedger->replicate();
+                                $acceptedLedger->hold_qty     = 0;
+                                $acceptedLedger->utilized_id  = null;
+                                $acceptedLedger->store_id     = $acceptedStoreId;      // ensure correct store
+                                $acceptedLedger->sub_store_id = $acceptedSubStore; // ensure correct sub-store
+                            }
+            
+                            // Reset both qty columns, then set chosen one
+                            $acceptedLedger->receipt_qty         = 0;
+                            $acceptedLedger->putaway_pending_qty = 0;
+                            $acceptedLedger->{$acceptedQtyField} = $acceptedQty;
+            
+                            $acceptedLedger->cost_per_unit   = round($acceptedQty > 0 ? ($acceptedCost / $acceptedQty) : 0, 6);
+                            $acceptedLedger->total_cost      = $acceptedCost;
+                            $acceptedLedger->document_status = $documentHeader->document_status;
+            
+                            self::updateStockCost($acceptedLedger);
+                            $acceptedLedger->save();
+                        }
+            
+                        // ------------------------------------------------------------
+                        // 2) REJECTED: target store = inspection->rejected_store_id (if present), else main
+                        //              target sub-store = inspection->rejected_sub_store_id
+                        // ------------------------------------------------------------
+                        if ($inspection && $rejectedQty > 0 && ($inspection->rejected_sub_store_id ?? null)) {
+                            $rejectedStoreId  = (int) ($inspection->store_id ?? $documentHeader->store_id);
+                            $rejectedSubStore = (int) $inspection->rejected_sub_store_id;
 
-                    if (!$rejectedLedger) {
-                        $rejectedLedger = $stockLedger->replicate();
-                        $rejectedLedger->receipt_qty = $rejectedQty;
-                        $rejectedLedger->hold_qty = 0;
-                        $rejectedLedger->sub_store_id = $inspection->rejected_sub_store_id;
+                            $rejectedUsePutaway = $cfgYes && $subStoreHasWarehouse($rejectedSubStore);
+                            $rejectedQtyField   = $rejectedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
+            
+                            $rejectedLedger = StockLedger::withDefaultGroupCompanyOrg()
+                                ->where('document_header_id', $detail->header_id)
+                                ->where('document_detail_id', $detail->detail_id)
+                                ->where('lot_number', $detail->batch_number)
+                                ->where('item_id', $detail->item_id)
+                                ->where('store_id', $rejectedStoreId)
+                                ->where('sub_store_id', $rejectedSubStore)
+                                ->where('transaction_type', 'receipt')
+                                ->where('hold_qty', 0)
+                                ->where($rejectedQtyField, '>', 0)
+                                ->whereNull('utilized_id')
+                                ->orderBy('id', 'ASC')
+                                ->first();
+            
+                            if (!$rejectedLedger) {
+                                $rejectedLedger = $stockLedger->replicate();
+                                $rejectedLedger->hold_qty     = 0;
+                                $rejectedLedger->utilized_id  = null;
+                                $rejectedLedger->store_id     = $rejectedStoreId;  // move to rejected store (can be different)
+                                $rejectedLedger->sub_store_id = $rejectedSubStore; // rejected sub-store
+                            }
+            
+                            // Reset both qty columns, then set chosen one
+                            $rejectedLedger->receipt_qty         = 0;
+                            $rejectedLedger->putaway_pending_qty = 0;
+                            $rejectedLedger->{$rejectedQtyField} = $rejectedQty;
+            
+                            $rejectedLedger->cost_per_unit   = round($rejectedQty > 0 ? ($rejectedCost / $rejectedQty) : 0, 6);
+                            $rejectedLedger->total_cost      = $rejectedCost;
+                            $rejectedLedger->document_status = $documentHeader->document_status;
+            
+                            self::updateStockCost($rejectedLedger);
+                            $rejectedLedger->save();
+                        }
+            
+                        // ------------------------------------------------------------
+                        // 3) Reduce or delete original HOLD row
+                        // ------------------------------------------------------------
+                        // $stockLedger->hold_qty -= $processedQty;
+                        $stockLedger->receipt_qty -= $processedQty;
+            
+                        if ($stockLedger->receipt_qty <= 0) {
+                            $stockLedger->attributes()->delete();
+                            $stockLedger->delete();
+                        } else {
+                            $stockLedger->save(); // Partial hold remains
+                        }
                     }
-
-                    $rejectedLedger->receipt_qty = $rejectedQty;
-                    $rejectedLedger->cost_per_unit = round($rejectedLedger->receipt_qty > 0 ? $totalItemCost / $rejectedLedger->receipt_qty : 0, 6);
-                    $rejectedLedger->total_cost = round($totalItemCost, 2);
-                    $rejectedLedger->document_status = $documentHeader->document_status;
-                    self::updateStockCost($rejectedLedger);
-                    $rejectedLedger->save();
                 }
-
-                // ✅ 3. Adjust or Delete Original Hold Ledger
-                $stockLedger->hold_qty -= $processedQty;
-
-                if ($stockLedger->hold_qty <= 0) {
-                    $stockLedger->attributes()->delete();
-                    $stockLedger->delete();
-                } else {
-                    $stockLedger->save(); // Partial hold remains
-                }
+                
             }
-
+    
             return self::successResponse("MRN details updated successfully.", []);
         } catch (\Exception $e) {
             return self::errorResponse("Error in updateReceiptStock: " . $e->getMessage());
         }
     }
-
 
     // Update document status while update mrn
     private static function updateStockCost($stockLedger)

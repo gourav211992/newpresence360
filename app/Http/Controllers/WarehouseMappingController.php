@@ -224,8 +224,7 @@ class WarehouseMappingController extends Controller
                     $whDetail->status = 'active';
                     $whDetail->save();
 
-                    $updatedDetailIds[] = $whDetail->id; // ✅ Add updated ID to prevent deletion
-
+                    $updatedDetailIds[] = $whDetail->id;
                     if (!$whDetail->storage_number && ($whDetail->is_storage_point == 1)) {
                         $randomNumber = strtoupper(Str::random(rand(6, 8)));
                         $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) . '-' . $randomNumber;
@@ -234,7 +233,6 @@ class WarehouseMappingController extends Controller
                     }
                 }
 
-                // ✅ Delete details that are no longer present in the request
                 $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
                 WhDetail::whereIn('id', $detailsToDelete)->forceDelete();
             }

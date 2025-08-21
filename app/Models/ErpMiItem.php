@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Helpers\InventoryHelper;
 use App\Models\JobOrder\JoItem;
 use App\Models\JobOrder\JoProduct;
+use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -207,5 +208,13 @@ class ErpMiItem extends Model
     public function jo_product()
     {
         return $this -> belongsTo(JoProduct::class, 'jo_product_id');
+    }
+    public function uniqueCodes()
+    {
+        return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
+    }
+    public function stockReservation()
+    {
+        return $this->hasMany(StockLedgerReservation::class, 'issue_detail_id','id');
     }
 }

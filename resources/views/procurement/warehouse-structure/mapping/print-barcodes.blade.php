@@ -23,6 +23,9 @@
                     <div>
                         {{ $packet?->storage_number }}
                     </div>
+                    <div>
+                        {{ $packet?->heirarchy_name }}
+                    </div>
                     <!-- <div>
                     Document No. : {{ $packet?->mrnHeader?->book_code }}-{{ $packet?->mrnHeader?->document_number }}
                     </div> -->

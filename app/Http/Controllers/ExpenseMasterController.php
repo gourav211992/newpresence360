@@ -1,16 +1,18 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Helpers\ConstantHelper;
-use Yajra\DataTables\DataTables;
-use App\Models\ExpenseMaster;
-use App\Models\Ledger;
-use App\Http\Requests\ExpenseMasterRequest;
-use App\Helpers\Helper;
+
 use Auth;
+use App\Models\Hsn;
+use App\Models\Ledger;
+use App\Helpers\Helper;
 use App\Models\Organization;
 use Illuminate\Http\Request;
+use App\Models\ExpenseMaster;
+use App\Helpers\ConstantHelper;
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\ExpenseMasterRequest;
 
 class ExpenseMasterController extends Controller
 {
@@ -22,30 +24,31 @@ class ExpenseMasterController extends Controller
 
         if ($request->ajax()) {
             $expenseMasters = ExpenseMaster::with([
-                'expenseLedger', 
+                'hsn',
+                'expenseLedger',
                 'serviceProviderLedger',
                 'expenseLedgerGroup',
                 'serviceProviderLedgerGroup'
-                ])
+            ])
                 ->orderBy('id', 'desc');
-    
-                return DataTables::of($expenseMasters)
-                ->addIndexColumn() 
+
+            return DataTables::of($expenseMasters)
+                ->addIndexColumn()
                 ->editColumn('name', function ($expense) {
                     return $expense->name ?? 'N/A';
                 })
                 ->editColumn('alias', function ($expense) {
                     return $expense->alias ?? 'N/A';
                 })
-                ->editColumn('percentage', function ($expense) {
-                    return number_format($expense->percentage, 2) ?? '0.00';
-                })
+                // ->editColumn('percentage', function ($expense) {
+                //     return number_format($expense->percentage, 2) ?? '0.00';
+                // })
                 ->editColumn('expense_ledger_id', function ($expense) {
                     return $expense->expenseLedger->name ?? 'N/A';
                 })
-                ->editColumn('service_provider_ledger_id', function ($expense) {
-                    return $expense->serviceProviderLedger->name ?? 'N/A';
-                })
+                // ->editColumn('service_provider_ledger_id', function ($expense) {
+                //     return $expense->serviceProviderLedger->name ?? 'N/A';
+                // })
                 ->editColumn('is_purchase', function ($expense) {
                     return $expense->is_purchase ? '1' : '0';
                 })
@@ -59,12 +62,13 @@ class ExpenseMasterController extends Controller
                     } elseif ($expense->status == 'inactive') {
                         $statusClass = 'badge-light-danger';
                     } elseif ($expense->status == 'draft') {
-                        $statusClass = 'badge-light-warning'; 
+                        $statusClass = 'badge-light-warning';
                     }
                     return '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
                         . ucfirst($expense->status ?? 'Unknown') . '</span>';
                 })
                 ->addColumn('actions', function ($expense) {
+
                     return '
                         <div class="dropdown">
                             <button type="button" class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -75,6 +79,8 @@ class ExpenseMasterController extends Controller
                                     data-id="' . $expense->id . '"
                                     data-name="' . $expense->name . '"
                                     data-alias="' . $expense->alias . '"
+                                    data-hsn_id="' . optional($expense->hsn)->id . '"
+                                    data-hsn_name="' . optional($expense->hsn)->code . '"
                                     data-expense_ledger_id="' . optional($expense->expenseLedger)->id . '"
                                     data-expense_ledger_name="' . optional($expense->expenseLedger)->name . '"
                                     data-expense_ledger_group_id="' . optional($expense->expenseLedgerGroup)->id . '"
@@ -89,8 +95,8 @@ class ExpenseMasterController extends Controller
                                     data-status="' . $expense->status . '">
                                     <i data-feather="edit" class="me-50"></i> Edit
                                 </a>
-                                <a href="#" class="dropdown-item text-danger delete-btn" 
-                                   data-url="' . route('expense-masters.destroy', $expense->id) . '" 
+                                <a href="#" class="dropdown-item text-danger delete-btn"
+                                   data-url="' . route('expense-masters.destroy', $expense->id) . '"
                                    data-message="Are you sure you want to delete this Expense Master?">
                                     <i data-feather="trash-2" class="me-50"></i> Delete
                                 </a>
@@ -98,16 +104,18 @@ class ExpenseMasterController extends Controller
                         </div>
                     ';
                 })
-                ->rawColumns(['status', 'actions']) 
+                ->rawColumns(['status', 'actions'])
                 ->make(true);
         }
-        $ledgers = Ledger::where('status', 1) 
+        $hsns = Hsn::where('status', 'active')
+            ->get();
+        $ledgers = Ledger::where('status', 1)
             ->get();
         $status = ConstantHelper::STATUS;
-    
-        return view('procurement.expense-master.index', compact('ledgers','status'));
+
+        return view('procurement.expense-master.index', compact('ledgers', 'status', 'hsns'));
     }
-    
+
     public function store(ExpenseMasterRequest $request)
     {
         DB::beginTransaction();
@@ -137,14 +145,14 @@ class ExpenseMasterController extends Controller
                 $validated['organization_id'] = null;
             }
             $expenseMaster = ExpenseMaster::create($validated);
-            DB::commit(); 
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Record created successfully',
                 'data' => $expenseMaster,
             ], 201);
         } catch (\Exception $e) {
-            DB::rollBack(); 
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while creating the Expense Master: ' . $e->getMessage()

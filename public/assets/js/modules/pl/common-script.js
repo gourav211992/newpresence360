@@ -1259,6 +1259,12 @@ function viewModeScript(disable = true)
         });
         //Remove add delete button
         document.getElementById('add_delete_item_section').style.display = disable ? "none" : "";
+        //Readonly the terms and conditions
+        if (disable) {
+            $('#summernote1').summernote('disable');
+        } else {
+            $('#summernote1').summernote('enable');
+        }
     } else {
         return;
     }

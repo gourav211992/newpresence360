@@ -16,6 +16,7 @@ class PurchaseOrder extends Model
     use HasFactory, DateFormatTrait, DynamicFieldsTrait ,FileUploadTrait,DefaultGroupCompanyOrg;
 
     protected $table = 'erp_purchase_orders';
+<<<<<<< HEAD
     
     protected $fillable = [
         'type',
@@ -28,6 +29,21 @@ class PurchaseOrder extends Model
         'book_id', 
         'book_code', 
         'document_number',
+=======
+
+    protected $fillable = [
+        'type',
+        'po_type',
+        'organization_id',
+        'group_id',
+        'company_id',
+        'department_id',
+        'store_id',
+        'book_id',
+        'book_code',
+        'document_number',
+        'procurement_type',
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
         'document_date',
         'revision_number',
         'revision_date',
@@ -88,7 +104,11 @@ class PurchaseOrder extends Model
         });
     }
 
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public $referencingRelationships = [
         'vendor' => 'vendor_id',
         'bill_address' => 'billing_address',
@@ -118,7 +138,11 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(ErpStore::class, 'store_id', 'id');
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public function scopeOfType($query, $type)
     {
         return $query->where('type', $type);
@@ -142,7 +166,11 @@ class PurchaseOrder extends Model
         }
         return $this->attributes['document_status'];
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public function source()
     {
         return $this->hasOne(PurchaseOrderHistory::class, 'source_id');
@@ -223,7 +251,11 @@ class PurchaseOrder extends Model
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'billing');
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public function ship_address_details()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'shipping')->with(['city', 'state', 'country']);
@@ -350,7 +382,11 @@ class PurchaseOrder extends Model
     {
         return $this->addresses()->where('type', 'location')->latest()->first();
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public function createdBy()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
@@ -364,7 +400,11 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PiPoMapping::class,'po_id','id');
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpPoDynamicField::class, 'header_id');

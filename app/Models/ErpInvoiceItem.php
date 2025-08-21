@@ -11,8 +11,44 @@ use App\Models\WHM\ErpItemUniqueCode;
 class ErpInvoiceItem extends Model
 {
     use HasFactory, SoftDeletes;
-protected $table = 'erp_ti_invoice_items';
-     protected $guarded = ['id'];
+
+    protected $fillable = [
+        'sale_invoice_id',
+        'sale_order_id',
+        'invoice_id',
+        'land_lease_id',
+        'lease_item_type',
+        'lease_schedule_id',
+        'dn_id',
+        'item_id',
+        'item_code',
+        'store_id',
+        'item_name',
+        'customer_item_id',
+        'customer_item_name',
+        'customer_item_code',
+        'hsn_id',
+        'store_id',
+        'sub_store_id',
+        'hsn_code',
+        'uom_id',
+        'uom_code',
+        'order_qty',
+        'invoice_qty',
+        'dnote_qty',
+        'inventory_uom_id',
+        'inventory_uom_code',
+        'inventory_uom_qty',
+        'rate',
+        'item_discount_amount',
+        'header_discount_amount',
+        'item_expense_amount',
+        'header_expense_amount',
+        'tax_amount',
+        'total_item_amount',
+        'remarks',
+    ];
+
     protected $appends = [
         'return_balance_qty',
         'balance_qty',

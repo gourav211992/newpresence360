@@ -103,6 +103,11 @@ class JoProduct extends Model
         return $this->belongsTo(Item::class, 'item_id');
     }
 
+    public function serviceItem()
+    {
+        return $this->belongsTo(Item::class, 'service_item_id');
+    }
+
     public function hsn()
     {
         return $this->belongsTo(Hsn::class, 'hsn_id');

@@ -145,7 +145,26 @@ $(document).ready(function () {
                 { data: 'destination_name' },
                 { data: 'driver_name' },
                 { data: 'vehicle_no' },
-                { data: 'document_status' },
+                {
+                data: 'document_status',
+                render: function(data, type, row) {
+                    switch(data?.toLowerCase()) {
+                        case 'approval_not_required':
+                        case 'approved':
+                            return '<span class="badge rounded-pill badge-light-success">Approved</span>';
+                        case 'draft':
+                            return '<span class="badge rounded-pill badge-light-warning">Draft</span>';
+                        case 'rejected':
+                            return '<span class="badge rounded-pill badge-light-danger">Rejected</span>';
+                        case 'partially_approved':
+                            return '<span class="badge rounded-pill badge-light-warning">Partially Approved</span>';
+                        case 'submitted':
+                            return '<span class="badge rounded-pill badge-light-primary">Submitted</span>';
+                        default:
+                            return row.document_status_html || data; 
+                    }
+                 }
+              },
                 {
                     data: 'created_by', 
                     name: 'created_by', 

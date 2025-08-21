@@ -600,9 +600,10 @@
 
                                                                                 <!-- Hidden Inputs -->
                                                                                 <input type="hidden" name="sub_total" id="subTotalInput" value="0.00">
-                                                                                <input type="hidden" name="total_freight" id="totalFreightInput" value="0.00">
+                                                                                <input type="hidden" id="totalFreightInput" class="totalFreightInput" name="total_freight" value="0.00">
 
                                                                                 <input type="hidden" id="fixedAmountGlobal" value="0">
+                                                                                 <input type="hidden" id="sourceDefaultAmountGlobal" value="0">
                                                                                 <input type="hidden" id="activeFreePointGlobal" value="0">
                                                                                 <input type="hidden" id="freeAmountGlobal" value="0">
                                                                             </td>
@@ -707,11 +708,11 @@
 
     const total = subTotal + lr + freightCharge;
 
-    $('#freightAmount').text(subTotal.toFixed(2));
     $('#subTotalAmount').text(subTotal.toFixed(2));
     $('#lrCharges').text(lr.toFixed(2));
     $('#FreightCharges').text(freightCharge.toFixed(2));
     $('#totalFreightAmount').text(total.toFixed(2));
+console.log($('#totalFreightAmount').html());
 
     // Update hidden fields
     $('#subTotalInput').val(subTotal.toFixed(2));
@@ -882,7 +883,7 @@ $(document).on('click', '#deleteSelected', function (e) {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            applyFreightToRows(selectedRows.length); 
+           applyFreightToRows(null, null, selectedRows)
             calculateTotals();
             updateRouteDetailsUI();
         }
@@ -985,12 +986,10 @@ $(document).on('focus', '.route-master-autocomplete', function () {
                     );
                 }
 
-                // Match typed term
                 const matches = filtered.filter(item =>
                     item.label.toLowerCase().includes(term)
                 );
 
-                // If no match, return "No results"
                 if (!matches.length) {
                     response([{ label: 'No results found', value: '', id: null, disabled: true }]);
                 } else {
@@ -1009,6 +1008,7 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
                 if (type === 'source' || type === 'destination') {
                     $(`#${type}IdInput`).val(ui.item.id);
+                      $(this).trigger('sorrceDestination', ui);
                 }
 
                 if (type === 'location') {
@@ -1198,6 +1198,7 @@ $('.vehicle-number-autocomplete').each(function () {
             }
             $(this).val(ui.item.label);
             $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
+            $(this).trigger('vehicleNumberSelected', ui);
             return false;
         }
     }).focus(function () {
@@ -1229,6 +1230,7 @@ $('.vehicle-number-autocomplete').each(function () {
                 customer_id:customerId
             },
             success: function (response) {
+                if(response.message == 'Get freight charge data'){
                 $('#distance').val(response.distance).prop('disabled', true);
                 $('#freight_charges').val(response.freight_charges).prop('disabled', true);
                 $('#distanceInput').val(response.distance);
@@ -1239,15 +1241,39 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
                 $('#routeSource').text(response.source_name);
                 $('#routeDestination').text(response.destination_name);
+                }else if(response.message && response.message.includes('No freight charge found')){
+                    console.log('else wala part');
+                $('#distance').val('').prop('disabled', false);
+                $('#freight_charges').val('').prop('disabled', false);
+                $('#distanceInput').val('');
+                $('#freightCharges').val('');
+
+                // ✅ Set text content for display
+                $('#routeVehicle').text('');
+                $('#routeCapacity').text('');
+                $('#routeSource').text('');
+                $('#routeDestination').text('');
+                }
+                
+
             },
             error: function () {
                 $('#distance, #freight_charges').val('').prop('disabled', false);
+                $('#freight_charges').val('').prop('disabled', false);
+                $('#distanceInput').val('');
+                $('#freightCharges').val('');
+
+                // ✅ Set text content for display
+                $('#routeVehicle').text('');
+                $('#routeCapacity').text('');
+                $('#routeSource').text('');
+                $('#routeDestination').text('');
             }
         });
     }
 $('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]')
     .on('autocompleteselect autocompletechange', function () {
-       
+        
         const sourceId = $('input[name="source_id"]').val();
         const destId = $('input[name="destination_id"]').val();
         const vehicleId = $('input[name="vehicle_number_id"]').val();
@@ -1257,16 +1283,20 @@ $('input[name="source_name"], input[name="destination_name"], input[name="vehicl
         console.log('destId:', destId);
         console.log('vehicleId:', vehicleId);
         console.log('custId:', custId);
-
-        if (sourceId && destId && vehicleId && custId) {
+        if (sourceId && destId && vehicleId) {
             fetchFreightCharge();
+
+            // Clear related fields
+            $('#activeFreePointGlobal').val('');
+            $('#fixedAmountGlobal').val('');
+            $('#freeAmountGlobal').val('');
+            $('.totalFreightInput').val('');
+
+            calculateTotals();
         }
     });
 
 
-
-
-    // ✅ This will now work globally:
     $(document).on('change', 'input[name*="[weight]"], input[name*="[no_of_articles]"]', function () {
         updateRouteDetailsUI(); 
         fetchFreightCharge();   
@@ -1308,13 +1338,11 @@ $(document).ready(function () {
         }
     }
 
-    // On change
     $('#locationId').on('change', function () {
         const locationId = $(this).val();
         loadCostCenters(locationId);
     });
 
-    // On page load
     const initialLocationId = $('#locationId').val();
     if (initialLocationId) {
         loadCostCenters(initialLocationId);
@@ -1336,7 +1364,7 @@ let freeAmount = null;
 let globalSourceId = $('#sourceIdInput').val();
 
 let pricingCache = {}
-
+// checkFreePoint(locationId, sourceId, vehicleId, customerId, $row);
   function checkFreePoint(locationId = null, sourceId = null, vehicleId = null, customerId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
@@ -1364,47 +1392,50 @@ let pricingCache = {}
                 freeAmount: parseInt(res.free_amount || 0),
             };
 
-            // Set globals
             $('#activeFreePointGlobal').val(pricingCache[locationId].free_point || 0);
             $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
             $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-            applyFreightToRows(pricingCache[locationId]); 
+            applyFreightToRows(pricingCache[locationId], $targetRow); 
         }
     });
 }
 
+function applyFreightToRows($specificRow = null,$row, deletedRow = null) {
 
-function applyFreightToRows($specificRow = null, deletedRow = null) {
-    const $rows = $('#item-table-body').find('tr');
-    let zeroFreightCount = 0;
-
-    $rows.each(function () {
-        const freightAmount = parseFloat($(this).find('input[name*="[freight]"]').val()) || 0;
-        if (freightAmount === 0) {
-            zeroFreightCount++;
-        }
-    });
     const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
     const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
+    if (deletedRow !== null) {
+        const $rows = $('#item-table-body').find('tr');
+        //$rows.eq(0).find('input[name*="[freight]"]').val(0);
 
-    const processRow = ($row, index) => {
-        const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
-        const $freightInput = $row.find('input[name*="[freight]"]');
+        if (deletedRow.length <= activeFreePoint) {
+            for (let i = 0; i < activeFreePoint && i < $rows.length; i++) {
+                $rows.eq(i).find('input[name*="[freight]"]').val(0);
+            }
+        }
 
-        if (!locationId) return;
-       const pricing = pricingCache[locationId];
+        return;
+    }
+   
+    const freightAmount = parseFloat($row.find('input[name*="[freight]"]').val()) || 0;
+
+    const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
+    const $freightInput = $row.find('input[name*="[freight]"]');
+
+    if (!locationId) return;
+       const pricing = $specificRow;
 
     if (!pricing) {
         $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         return;
     }
+   
+    $index = $row.index();
 
-
-        if (pricing) {
+     if (pricing) {
             if (pricing.type === 'both_exist') {
-              if (index < activeFreePoint) {
-                console.log(`Row index: ${index}, activeFreePoint: ${activeFreePoint}`);
+              if ($index < activeFreePoint) {
 
                 $freightInput.val(0);
             } else {
@@ -1417,21 +1448,27 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
             }
 
             }else if (pricing.type === 'free_point') {
-                if (index < activeFreePoint) {
+                if ($index < activeFreePoint) {
                     $freightInput.val(0);
                 } else {
                     $freightInput.val(parseFloat(pricing.freeAmount));
                 }
             } else if (pricing.type === 'exists_in_fixed') {
-                $freightInput.val(parseFloat(pricing.amount));
+                if(pricing.amount === 0){
+                   $freightInput.val('');
+                }else{
+                    $freightInput.val(parseFloat(pricing.amount));
+                }
+                
             } else {
                 $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
             }
         } else {
             $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
-    };
-    if (deletedRow !== null) {
+
+
+        if (deletedRow !== null) {
         const $targetRow = $rows.eq(deletedRow);
         const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
         const $freightInput = $targetRow.find('input[name*="[freight]"]');
@@ -1445,15 +1482,7 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
         }
     }
 
-
-    if ($specificRow && $specificRow.length) {
-        processRow($specificRow, $specificRow.index());
-    } else {
-        $rows.each(function (index) {
-            processRow($(this), index);
-        });
-    }
-
+    
     calculateTotals();
 }
 
@@ -1575,7 +1604,6 @@ function addFiles(element, previewElementId) {
         return;
     }
 
-    // Remove duplicates by name + size
     fileInputData[inputId] = allFiles.reduce((unique, file) => {
         if (!unique.some(f => f.name === file.name && f.size === file.size)) {
             unique.push(file);
@@ -1583,7 +1611,6 @@ function addFiles(element, previewElementId) {
         return unique;
     }, []);
 
-    // Create new DataTransfer object
     const newDt = new DataTransfer();
     fileInputData[inputId].forEach(file => newDt.items.add(file));
     input.files = newDt.files;
@@ -1627,7 +1654,6 @@ document.addEventListener('click', function (e) {
                 removeInput.value = existing.join(',');
             }
         } else {
-            // Create hidden input if not exists
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'removed_media_ids';
@@ -1657,45 +1683,106 @@ document.addEventListener('click', function (e) {
 </script>
 
 <script>
-    //consignor and consinee not select same js code
     $(document).ready(function () {
-        $('input[name="consignee_name"]').on('change blur', function () {
-            const consignor = $('input[name="customer_name"]').val().trim().toLowerCase();
-            const consignee = $(this).val().trim().toLowerCase();
 
-            if (consignor && consignee && consignor === consignee) {
+        function clearFieldAndId(fieldNameSelector) {
+            const $input = $(fieldNameSelector);
+            const nameAttr = $input.attr('name');
+
+            const idName = nameAttr.replace('[location_name]', '[location_id]');
+            const $idInput = $(`input[name="${idName}"]`);
+
+            $input.val('').trigger('change');
+            $idInput.val('');
+        }
+
+        function checkForSameName(field1, field2, label1, label2) {
+            const val1 = $(field1).val().trim().toLowerCase();
+            const val2 = $(field2).val().trim().toLowerCase();
+
+            if (val1 && val2 && val1 === val2) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Same Name Not Allowed',
-                    text: 'Consignor and Consignee cannot be the same.',
+                    title: 'Something went wrong !',
+                    text: `${label1} and ${label2} cannot be the same.`,
                 });
 
-                $(this).val('');
-                $('input[name="consignee_id"]').val('');
+                clearFieldAndId(field2);
+                return true;
             }
+            return false;
+        }
+
+        function checkLocationAgainstSourceDest($locationInput) {
+            const locationVal = $locationInput.val().trim().toLowerCase();
+            const sourceVal = $('input[name="source_name"]').val().trim().toLowerCase();
+            const destVal = $('input[name="destination_name"]').val().trim().toLowerCase();
+
+            if (locationVal && (locationVal === sourceVal || locationVal === destVal)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Location Not Allowed',
+                    text: 'Location cannot be same as Source or Destination.',
+                });
+
+                clearFieldAndId($locationInput);
+                return true;
+            }
+            return false;
+        }
+
+        $('input[name="consignee_name"], input[name="destination_name"]').on('change blur', function () {
+            checkForSameName('input[name="customer_name"]', 'input[name="consignee_name"]', 'Consignor', 'Consignee');
+            checkForSameName('input[name="source_name"]', 'input[name="destination_name"]', 'Source', 'Destination');
         });
 
-        $(document).on('autocomplete.select', '.customer-autocomplete', function (e, ui) {
-            const type = $(this).data('type');
+     
+        $(document).on('autocompleteselect', 'input[name="customer_name"], input[name="consignee_name"], input[name="source_name"], input[name="destination_name"]', function (e, ui) {
             const selectedName = ui.item.label.trim().toLowerCase();
+            const fieldName = $(this).attr('name');
 
-            const otherName = type === 'consignor'
-                ? $('input[name="consignee_name"]').val().trim().toLowerCase()
-                : $('input[name="customer_name"]').val().trim().toLowerCase();
+            let matchSelector = '', label1 = '', label2 = '';
 
-            if (selectedName && selectedName === otherName) {
+            if (fieldName === 'customer_name') {
+                matchSelector = 'input[name="consignee_name"]';
+                label1 = 'Consignor';
+                label2 = 'Consignee';
+            } else if (fieldName === 'consignee_name') {
+                matchSelector = 'input[name="customer_name"]';
+                label1 = 'Consignor';
+                label2 = 'Consignee';
+            } else if (fieldName === 'source_name') {
+                matchSelector = 'input[name="destination_name"]';
+                label1 = 'Source';
+                label2 = 'Destination';
+            } else if (fieldName === 'destination_name') {
+                matchSelector = 'input[name="source_name"]';
+                label1 = 'Source';
+                label2 = 'Destination';
+            }
+
+            const matchVal = $(matchSelector).val().trim().toLowerCase();
+            if (selectedName && matchVal && selectedName === matchVal) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Same Name Not Allowed',
-                    text: 'Consignor and Consignee cannot be the same.',
+                    title: 'Something went wrong!',
+                    text: `${label1} and ${label2} cannot be the same.`,
                 });
 
+                clearFieldAndId(this);
                 e.preventDefault();
                 return false;
             }
         });
+
+        $(document).on('change blur autocompleteselect', 'input[name^="locations"][name$="[location_name]"]', function () {
+            checkLocationAgainstSourceDest($(this));
+        });
+
     });
 </script>
+
+
 
 <script>
     // multipoint filed disable js code
@@ -1730,12 +1817,113 @@ document.addEventListener('click', function (e) {
     });
 
 
+// Check if table has any data
+function tableHasData() {
+    let hasData = false;
+
+    $('#item-table-body tr').each(function () {
+        $(this).find('input[type="text"], input[type="number"], select').each(function () {
+            const val = $(this).val();
+            if (val !== null && val.toString().trim() !== '') {
+                hasData = true;
+                return false; // break inner loop
+            }
+        });
+        if (hasData) {
+            return false; // break outer loop
+        }
+    });
+
+    return hasData;
+}
+
+// Check if fields are empty and table has data
+function shouldClearTable() {
+    const sourceName = $('input[name="source_name"]').val();
+    const destinationName = $('input[name="destination_name"]').val();
+    const vehicleNumber = $('input[name="vehicle_number"]').val();
+    const consignorName = $('input[name="consignor_name"]').val();
+
+    return (sourceName === '' || vehicleNumber === '' || destinationName === '' || consignorName === '') && tableHasData();
+}
+
+// Clear table data and reset fields
+function clearTableAndFields() {
+    $('#item-table-body tr').each(function () {
+        $(this).find('input, textarea').val('');
+        $(this).find('select').prop('selectedIndex', 0);
+    });
+
+    $('#activeFreePointGlobal').val('');
+    $('#fixedAmountGlobal').val('');
+    $('#freeAmountGlobal').val('');
+    $('#distanceInput').val('');
+    $('#freightCharges').val('');
+
+    calculateTotals();
+    fetchFreightCharge();
+
+    $('#totalFreightAmount').html('0.0');
+    $('#totalFreightInput').val('');
+    $('#freightCharges').val('');
+    
+    $('#FreightCharges').html('0.0');
+    $('#routePoints').html('');
+    $('#routeWeight').html('');
+    $('#routeArticles').html('');
+    $('#routeVehicle').html('');
+    $('#routeCapacity').html('');
+    $('#routeSource').html('');
+    $('#routeDestination').html('');
+
+    console.log("Cleared table and global fields because source or vehicle was changed or cleared.");
+}
+
+$(document).on('sourceDestination', 'input.route-master-autocomplete', function (event, ui) {
+    $('#sourceIdInput').val(ui.item.id); 
+    $('#totalFreightAmount').html('0.0');
+    $('#totalFreightInput').val('');
+    $('#freightCharges').val('');
+    
+    $('#FreightCharges').html('0.0');
+    if (tableHasData()) {
+        clearTableAndFields();
+    }
+});
+
+$(document).on('vehicleNumberSelected', '.vehicle-number-autocomplete', function (e, ui) {
+    $('#vehicle_number_id').val(ui.item.id); 
+     fetchFreightCharge();
+    $('#totalFreightAmount').html('0.0');
+    $('#totalFreightInput').val('');
+    $('#freightCharges').val('');
+    $('#FreightCharges').html('0.0');
+    if (tableHasData()) {
+        clearTableAndFields();
+    }
+});
+
+$(document).on('input', 'input[name="source_name"], input[name="vehicle_number"]', function () {
+    const $this = $(this);
+
+    if ($this.attr('name') === 'source_name' && $this.val().trim() === '') {
+        $('#sourceIdInput').val('');
+    }
+
+    if ($this.attr('name') === 'vehicle_number' && $this.val().trim() === '') {
+        $('#vehicle_number_id').val('');
+    }
+
+    if (shouldClearTable()) {
+        clearTableAndFields();
+    }
+});
+
+
+
+
 
 </script>
-
-
-
-
 
 @endsection
 

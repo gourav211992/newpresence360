@@ -6,6 +6,10 @@ use App\Helpers\CommonHelper;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\StockLedgerResource;
+use App\Models\ErpAttribute;
+use App\Models\ErpAttributeGroup;
+use App\Models\ErpStore;
+use App\Models\ErpSubStore;
 use App\Models\StockLedger;
 use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Http\Request;
@@ -17,11 +21,24 @@ class StockLookoutController extends Controller
 {
 
     public function index(Request $request){
+        $validator = Validator::make($request->all(),[
+            'store_id' => 'required|integer',
+        ],[
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
         $itemId = $request->query('item_id');
         $storeId = $request->query('store_id');
+        $isAttribute = $request->query('is_attribute');
+        $isSubStore = $request->query('is_sub_store');
         $subStoreId = $request->query('sub_store_id');
         $attrGroup = $request->query('attribute_name');
         $attrValue = $request->query('attribute_value');
+        $search = $request->search;
 
         $query = StockLedger::with(['item' => function($q){
                 $q->select('id','item_name','item_code');
@@ -33,31 +50,37 @@ class StockLookoutController extends Controller
             ->when($storeId, function($q) use($storeId){
                 $q->where('store_id', $storeId)->groupBy('store_id');
             })
-            ->when($subStoreId, function($q) use($subStoreId){
-                $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
-            })
-            ->when($itemId, function($query) use($itemId){
-                $query->whereHas('item', function($q) use ($itemId) {
-                     $q->where('id', $itemId);
-                });
+            // ->when($subStoreId, function($q) use($subStoreId){
+            //     $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
+            // })
+            // ->when($itemId, function($query) use($itemId){
+            //     $query->whereHas('item', function($q) use ($itemId) {
+            //          $q->where('id', $itemId);
+            //     });
+            // })
+            ->when($search, function($q) use($search){
+                $q->whereHas('item', function($q) use ($search) {
+                        $q->where('item_name', 'like', '%'.$search.'%')
+                        ->orWhere('item_code','like', '%'.$search.'%');
+                    });
             })
             ->withDefaultGroupCompanyOrg()
             ->whereNull('utilized_id')
             ->where('transaction_type', 'receipt');
         
         // Attribute filtering
-        if (!empty($attrGroup) && !empty($attrValue)) {
-            foreach ($attrGroup as $key => $group) {
-                if (!empty($attrValue[$key])) {
-                    $query->where(function ($subQuery) use ($group, $attrValue, $key) {
-                        $subQuery->whereJsonContains('item_attributes', [
-                            'attr_name' => $group,
-                            'attr_value' => $attrValue[$key]
-                        ]);
-                    });
-                }
-            }
-        }
+        // if (!empty($attrGroup) && !empty($attrValue)) {
+        //     foreach ($attrGroup as $key => $group) {
+        //         if (!empty($attrValue[$key])) {
+        //             $query->where(function ($subQuery) use ($group, $attrValue, $key) {
+        //                 $subQuery->whereJsonContains('item_attributes', [
+        //                     'attr_name' => $group,
+        //                     'attr_value' => $attrValue[$key]
+        //                 ]);
+        //             });
+        //         }
+        //     }
+        // }
 
         $query->select('id',
                 'group_id',
@@ -86,9 +109,20 @@ class StockLookoutController extends Controller
         // Attributes Check
         $query->groupBy('item_id');
 
-        $inventory_reports = $query->get();
+        $inventory_reports = $query->paginate(50);
         return [
-            'data' => StockLedgerResource::collection($inventory_reports)
+            // 'data' => StockLedgerResource::collection($inventory_reports)
+            "data" => [
+                'records' =>  StockLedgerResource::collection($inventory_reports),
+                'pagination' => [
+                    'current_page' => $inventory_reports->currentPage(),
+                    'last_page' => $inventory_reports->lastPage(),
+                    'per_page' => $inventory_reports->perPage(),
+                    'total' => $inventory_reports->total(),
+                    'from' => $inventory_reports->firstItem(),
+                    'to' => $inventory_reports->lastItem(),
+                ],
+            ],
         ];
 
     }
@@ -181,6 +215,137 @@ class StockLookoutController extends Controller
         
         return [
             "data" => $items
+        ];
+
+    }
+
+    public function applyFilter(Request $request){
+        $validator = Validator::make($request->all(),[
+            'store_id' => 'required|integer',
+        ],[
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $subStoreId = $request->sub_store_id ? ($request->sub_store_id == 0 ? NULL : $request->sub_store_id) : NULL;
+        $filters = $request->input('warehouse', []);
+        $levelKeys = array_keys($filters);
+        $deepestLevelKey = end($levelKeys);  // gets the deepest level (e.g., "8")
+        $lastLevelValues = $filters[$deepestLevelKey] ?? [];
+
+        $storagePointIds = $this->getStoragePointIdsFromFilter([
+            $deepestLevelKey => $lastLevelValues
+        ]);
+
+        $selectFields = [
+            'store_id',
+            'sub_store_id',
+            'item_id',
+            'item_name',
+            'item_code',
+            'storage_point_id',
+            \DB::raw('COUNT(*) as total_quantity')
+        ];
+
+        // Conditionally include 'item_attributes'
+        if ($request->is_attribute == 1) {
+            $selectFields[] = 'item_attributes';
+        }
+        
+        $items = ErpItemUniqueCode::query()
+            ->when($request->is_sub_store == 1, function($q) {
+                $q->with(['subStore' => function($q){
+                    $q->select('id','name');
+                }]);
+            })
+            ->select($selectFields)
+            ->when(!empty($storagePointIds), function($q) use ($storagePointIds) {
+                $q->whereIn('storage_point_id', $storagePointIds);
+            })
+            ->when($request->store_id,function($q) use($request){
+                $q->where('store_id',$request->store_id);
+            })
+            ->when($subStoreId,function($q) use($subStoreId){
+                $q->where('sub_store_id',$subStoreId);
+            })
+            ->when(!empty($request->input('attributes')), function($q) use ($request) {
+                foreach ($request->input('attributes') as $attrName => $attrValue) {
+                    $q->whereJsonContains('item_attributes', [
+                        'attr_name' => (string) $attrName,
+                        'attr_value' => (string) $attrValue
+                    ]);
+                }
+            })
+            ->where('status', CommonHelper::SCANNED)
+            ->groupBy('storage_point_id','item_id')
+            ->get();
+
+        $filteredArray = [];
+
+        if($request->store_id){
+            $store = ErpStore::select('id','store_name')->find($request->store_id);
+            $filteredArray['store'] = $store ? $store->store_name : null;
+            $filteredArray['store_id'] = $request->store_id;
+        }
+
+        if($request->sub_store_id){
+            $subStore = ErpSubStore::select('id','name')->find($request->sub_store_id);
+            $filteredArray['sub_store'] = $subStore ? $subStore->name : null;
+            $filteredArray['sub_store_id'] = $request->sub_store_id;
+        }
+
+        if($filters){
+            foreach($filters as $levelId => $storageIds){
+                $level = DB::table('erp_wh_levels')->select('name')->where('id',$levelId)->first();
+
+                if (!$level) {
+                    continue; // skip if level not found
+                }
+                
+                foreach ($storageIds as $id) {
+                    // Check if this id is already a storage point
+                    $whDetail = DB::table('erp_wh_details')
+                                ->select('name')
+                                ->where('id', $id)
+                                ->first();
+
+                    if ($whDetail) {
+                        $filteredArray['warehouse'][] = [
+                            'label_id' => $levelId,
+                            'label' => $level->name,
+                            'value_id' => $id,
+                            'value' => $whDetail->name
+                        ];
+                    }
+                }
+
+            }
+        }
+
+        if($request->input('attributes')){
+            foreach ($request->input('attributes') as $attrGroupId => $attrId) {
+                $attributeGroup = ErpAttributeGroup::select('name')->where('id',$attrGroupId)->first();
+                $attribute = ErpAttribute::select('value')->where('id',$attrId)->first();
+
+                if ($attributeGroup && $attribute) {
+                    $filteredArray['attributes'][] = [
+                        'label_id' => $attrGroupId,
+                        'label' => $attributeGroup->name,
+                        'value_id' => $attrId,
+                        'value' => $attribute->value,
+                    ];
+                }
+            }
+        }
+        
+        return [
+            "data" => [
+                'items' => $items,
+                'filter_request' => $filteredArray
+            ]
         ];
 
     }

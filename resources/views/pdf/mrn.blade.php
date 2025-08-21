@@ -171,18 +171,38 @@
                         </tr>
                         <tr>
                             <td>
-                                <b>PO No:</b>
+                                <b>ASN No:</b>
                             </td>
                             <td style="font-weight: 900;">
-                                {{ @$mrn->po->document_number }}
+                                @if(isset($mrn->items[0]->vendorAsn))
+                                    {{ $mrn->items[0]->vendorAsn->book->book_code ?? '' }} - {{ $mrn->items[0]->vendorAsn->document_number ?? '' }}
+                                @endif
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <b>PO Date:</b>
+                                <b>ASN Date:</b>
                             </td>
                             <td style="font-weight: 900;">
-                                {{ $mrn->po ? date('d-M-y', strtotime(@$mrn->po->document_date)) : '' }}
+                                {{ $mrn->items[0]->vendorAsn ? date('d-M-y', strtotime(@$mrn->items[0]->vendorAsn->document_date)) : '' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <b>GE No:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                @if(isset($mrn->items[0]->ge))
+                                    {{ $mrn->items[0]->ge->book->book_code ?? '' }} - {{ $mrn->items[0]->ge->document_number ?? '' }}
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <b>GE Date:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ $mrn->items[0]->ge ? date('d-M-y', strtotime(@$mrn->items[0]->ge->document_date)) : '' }}
                             </td>
                         </tr>
                         <tr>
@@ -329,7 +349,7 @@
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
                     HSN Code
                 </td>
-                <td colspan="3"
+                <td colspan="4"
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
@@ -365,7 +385,10 @@
             <tr>
                 <td
                     style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
-                    PO Qty.</td>
+                    Order Qty.</td>
+                <td
+                    style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
+                    Received Qty.</td>
                 <td
                     style="padding: 1px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: left;">
                     Receiving Qty.</td>
@@ -423,27 +446,53 @@
                                 @endforeach
                             @endif
                             {{ @$val->item_code }}<br />
-                            {{ @$val->remark }}
+                            {{ @$val->remark }}<br />
+                            @if (isset($val->po))
+                                {{ $val->po->book->book_code }}-{{ $val->po->document_number }}<br>
+                                {{ date('d-M-y', strtotime($val->po->document_date)) }}<br>
+                            @endif
                         </div>
                     </td>
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{ @$val->hsn_code }}
                     </td>
+                    @php
+                        $poQty = match (optional($val->header)->reference_type) {
+                            'po' => optional($val->poItem)->order_qty,
+                            'jo' => optional($val->joItem)->order_qty,
+                            'so' => optional($val->soItem)->qty,
+                            default => $val->order_qty ?? 0,
+                        };
+                    @endphp
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ @$val->order_qty }}
-                    </td>
-                    <td
-                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format(@$val->accepted_qty, 2) }}
+                        {{ number_format(@$poQty, 2) }}
                     </td>
                     @php
-                        $balanceQty =
-                            ($val?->poItem?->order_qty ?? 0.0) -
-                            ($val?->poItem?->short_close_qty ?? 0.0) -
-                            ($val?->poItem?->grn_qty ?? 0.0);
+                        $referenceType = optional($val->header)->reference_type;
+                        $shortCloseQty = 0.0;
+                        $grnQty = 0.0;
+                        $balanceQty = 0.0;
+
+                        if ($referenceType === 'po') {
+                            $shortCloseQty = $val?->poItem?->short_close_qty ?? 0.0;
+                            $grnQty = $val?->poItem?->grn_qty ?? 0.0;
+                            $balanceQty = ($poQty ?? 0.0) - $shortCloseQty - $grnQty;
+                        } elseif ($referenceType === 'jo') {
+                            $shortCloseQty = $val?->joItem?->short_close_qty ?? 0.0;
+                            $grnQty = $val?->joItem?->grn_qty ?? 0.0;
+                            $balanceQty = ($poQty ?? 0.0) - $shortCloseQty - $grnQty;
+                        }
                     @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ number_format(@$grnQty, 2) }}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        {{ number_format(@$val->order_qty, 2) }}
+                    </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{ number_format(@$balanceQty, 2) }}
@@ -457,7 +506,7 @@
                         {{ @$val->rate }}
                     </td>
                     @php
-                        $total = $val->accepted_qty * $val->rate;
+                        $total = $val->order_qty * $val->rate;
                     @endphp
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">

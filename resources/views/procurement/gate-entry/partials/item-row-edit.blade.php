@@ -1,10 +1,10 @@
 @foreach($mrn->items as $key => $item)
    @php
-        $readOnly = '';
-        if($item->vendor_asn_id && $item->vendor_asn_item_id)
-        {
-            $readOnly = 'readonly';
-        }
+      $readOnly = '';
+      if($item->vendor_asn_id && $item->vendor_asn_item_id)
+      {
+         $readOnly = 'readonly';
+      }
       $rowCount = $key + 1;
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
@@ -60,9 +60,11 @@
          </select>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end accepted_qty" name="components[{{$rowCount}}][accepted_qty]" value="{{number_format(($item->accepted_qty), 2, '.', '')}}" step="any" {{ $readOnly }}/>
+         <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{number_format(($item->accepted_qty), 2, '.', '')}}" step="any" {{ $readOnly }}/>
       </td>
-      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{number_format(($item->rate), 2, '.', '')}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
+      <td>
+         <input type="number" name="components[{{$rowCount}}][rate]" value="{{number_format(($item->rate), 2, '.', '')}}" class="form-control mw-100 text-end rate checkNegativeVal" readonly />
+      </td>
       <td>
          <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{number_format(($item->accepted_qty*$item->rate), 2, '.', '')}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
       </td>

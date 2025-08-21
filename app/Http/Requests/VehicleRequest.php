@@ -143,8 +143,8 @@ class VehicleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'transporter_id.required' => 'Transporter is required.',
-            'transporter_id.exists'   => 'Selected transporter does not exist.',
+            'transporter_id.required' => 'Organization is required.',
+            'transporter_id.exists'   => 'Selected organization does not exist.',
 
             'lorry_no.required'       => 'Vehicle number is required.',
             'lorry_no.regex'          => 'Invalid vehicle number format. Example: MH12AB1234',

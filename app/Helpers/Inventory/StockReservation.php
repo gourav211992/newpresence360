@@ -83,6 +83,20 @@ class StockReservation
             $data['sub_store_id'] = $item ?-> header -> main_sub_store_id;
             $data['store_id'] = $item ?-> header -> store_id;
             $data['requested_qty'] = $item -> inventory_uom_qty;
+        } else if ($bookType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $attributes = $item -> attributes;
+            $selectedAttributes = [];
+            foreach ($attributes as $attribute) { 
+                array_push($selectedAttributes, $attribute -> attr_val);
+            }
+            $data['selected_attributes'] = $selectedAttributes;
+            $data['uom_id'] = $item -> inventory_uom_id;
+            $data['requested_qty'] = $item -> inventory_uom_qty;
+            $data['stock_type'] = $item ?-> stock_type;
+            $data['wip_station_id'] = $item ?-> wip_station_id;
+            $data['station_id'] = $item ?-> from_station_id;
+            $data['sub_store_id'] = $item ?-> from_sub_store_id;
+            $data['store_id'] = $item ?-> from_store_id;
         }
         return $data;
     }
@@ -156,7 +170,7 @@ class StockReservation
             $issueStockLedger->receipt_qty = 0;
             $issueStockLedger->issue_qty = $stockLedger -> reserved_qty;
             $issueStockLedger->reserved_qty = 0;
-            $issueStockLedger->original_receipt_date = null;
+            $issueStockLedger->original_receipt_date = $stockLedger -> original_receipt_date;
             $issueStockLedger->created_at = Carbon::now() -> format('Y-m-d');
             $issueStockLedger->updated_at = Carbon::now() -> format('Y-m-d');
             $issueStockLedger->created_by = $authUser -> auth_user_id;
@@ -185,6 +199,15 @@ class StockReservation
                 $receiveStockLedger->store =  $header -> store ?-> store_name;
                 $receiveStockLedger->sub_store_id =  $header -> staging_sub_store_id;
                 $receiveStockLedger->sub_store =  $header -> staging_sub_store ?-> name;
+            }
+            if ($bookType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+                $receiveStockLedger->store_id =  $header -> to_store_id;
+                $receiveStockLedger->store =  $header -> to_store ?-> store_name;
+                $receiveStockLedger->sub_store_id =  $header -> to_sub_store_id;
+                $receiveStockLedger->sub_store =  $header -> to_sub_store ?-> name;
+                $receiveStockLedger->stock_type =  $issueStockLedger -> stock_type;
+                $receiveStockLedger->station_id =  $header -> to_station_id;
+                $receiveStockLedger->wip_station_id =  $header -> wip_station_id;
             }
 
             $receiveStockLedger->document_header_id = $headerId;

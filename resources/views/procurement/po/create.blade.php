@@ -95,6 +95,17 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
+                                                        <label class="form-label">{{ $short_title }} Procurement Type <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" name="procurement_type"
+                                                            id="procurement_type">
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Location <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
@@ -152,7 +163,6 @@
                                                                 name="hidden_state_id" />
                                                             <input type="hidden" id="hidden_country_id"
                                                                 name="hidden_country_id" />
-
                                                             <input type="hidden" id="delivery_country_id"
                                                                 name="delivery_country_id" />
                                                             <input type="hidden" id="delivery_state_id"
@@ -207,6 +217,10 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
+                                                                    <input type="hidden" value=""
+                                                                        id="party_country_id" name="party_country_id" />
+                                                                    <input type="hidden" value=""
+                                                                        id="party_state_id" name="party_state_id" />
                                                                     <label class="form-label w-100">Vendor Address <span
                                                                             class="text-danger">*</span>
                                                                         <a href="javascript:;"
@@ -222,6 +236,10 @@
                                                     <div class="col-md-4">
                                                         <div class="customer-billing-section h-100">
                                                             <p>Billing Address</p>
+                                                            <input type="hidden" value="{{ $fromCountry }}"
+                                                                id="country_id" name="country_id" />
+                                                            <input type="hidden" value="{{ $fromState }}"
+                                                                id="state_id" name="state_id" />
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <label class="form-label w-100">Billing Address <span
@@ -273,6 +291,9 @@
                                                     <a href="javascript:;" id="addNewItemBtn"
                                                         class="btn btn-sm btn-outline-primary d-none">
                                                         <i data-feather="plus"></i> Add Item</a>
+                                                    <a href="#" onclick = "copyItemRow();" id = "copy_item_section"
+                                                        style = "display:none;" class="btn btn-sm btn-outline-primary">
+                                                        <i data-feather="copy"></i> Copy Item</a>
                                                 </div>
                                             </div>
                                         </div>
@@ -433,13 +454,21 @@
                                                 <div class="col-md-6 mt-2">
                                                     <div class="mb-1">
                                                         <label class="form-label">Terms & Conditions</label>
-                                                        <select class="form-select select2" name="term_id[]" multiple>
-                                                            @foreach ($termsAndConditions as $termsAndCondition)
-                                                                <option value="{{ $termsAndCondition->id }}">
-                                                                    {{ $termsAndCondition->term_name }}</option>
+                                                        <select class="form-select select2" name="term_id[]" >
+                                                            <option value="">Select</option>
+                                                            @foreach($termsAndConditions as $termsAndCondition)
+                                                            <option value="{{$termsAndCondition->id}}" data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option> 
                                                             @endforeach
                                                         </select>
                                                     </div>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <textarea name="terms_data" id="summernote" class="form-control" placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ $po->tnc ?? "" }}</textarea>
+                                                    <small class="text-muted d-block text-end">
+                                                        <span id="termsCharCount">0</span>/250 characters
+                                                    </small>
+                                                    <input type="hidden" name="tnc" id="tnc">
+                                                    <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -685,6 +714,7 @@
 @section('scripts')
     <script type="text/javascript">
         var type = '{{ request()->route('type') }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
         var actionUrlTax = '{{ route('po.tax.calculation', ['type' => ':type']) }}'.replace(':type', type);
         var getLocationUrl = '{{ route('store.get') }}';
         var getAddressOnVendorChangeUrl = "{{ route('po.get.address', ['type' => ':type']) }}".replace(':type', type);
@@ -694,6 +724,35 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/po.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
+        
+        // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
+        $(document).on('change', 'select[name="term_id[]"]', function () {
+            let selectedText = $(this).find('option:selected').data('detail') || '';
+            $('#summernote').summernote('code', selectedText);
+            updateSummernoteData();
+        });
+
+        // Function to update char count & hidden input
+        function updateSummernoteData() {
+            let content = $('#summernote').summernote('code');
+            let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
+            $('#termsCharCount').text(plainText.length);
+            $('#tnc').val(content); // store HTML content in hidden input
+        }
+
+        // Bind Summernote change events
+        $('#summernote').on('summernote.change', function (we, contents, $editable) {
+            updateSummernoteData();
+        });
+
+        // Initialize Summernote (example)
+        $('#summernote').summernote({
+            height: 200
+        });
+
+
+
+
         $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -782,6 +841,33 @@
             if (isFeature && isPast) {
                 docDateInput.removeAttr('min');
                 docDateInput.removeAttr('max');
+            }
+
+            /* Procurement Type */
+            const poProcurementType = parameters?.po_procurement_type || '';
+            const $procurementTypeSelect = $('#procurement_type');
+            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+
+            if (poProcurementType[0] === 'All') {
+                $procurementTypeSelect.empty();
+                PO_PROCUREMENT_TYPE_VALUES.forEach(function(value) {
+                    $procurementTypeSelect.append(
+                        $('<option>', {
+                            value: value,
+                            text: value,
+                            selected: value === poProcurementType[0],
+                        })
+                    );
+                });
+            } else {
+                $procurementTypeSelect
+                    .empty()
+                    .append($('<option>', {
+                        value: poProcurementType,
+                        text: poProcurementType,
+                        selected: true,
+                    }));
+
             }
 
             /*Reference from*/
@@ -995,6 +1081,7 @@
                         $("#vendor_name").prop('readonly', true);
                         $("#book_id").prop('disabled', true);
                         $(".editAddressBtn").addClass('d-none');
+                        document.getElementById('copy_item_section').style.display = "";
                         let locationId = $("[name='store_id'] option:selected").val();
                         getLocation(locationId);
                     } else if (data.status == 422) {
@@ -1046,6 +1133,7 @@
                 $("#vendor_name").prop('readonly', false);
                 $("#book_id").prop('disabled', false);
                 getLocation();
+                document.getElementById('copy_item_section').style.display = "none";
             }
             setTableCalculation();
         });
@@ -1399,6 +1487,7 @@
                         getIndents();
                     }
                 }
+                $(".select2").select2();
             });
         });
 
@@ -1597,8 +1686,8 @@
                     data: 'vendor_select',
                     name: 'vendor_select',
                     render: renderData,
-                    orderable: false,
-                    searchable: false
+                    orderable: true,
+                    searchable: true
                 },
                 {
                     data: 'so_no',
@@ -1954,6 +2043,7 @@
                         $("#book_id").prop('disabled', true);
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='store_id'] option:selected").val();
+                        document.getElementById('copy_item_section').style.display = "none";
                         getLocation(locationId);
                         if (finalDiscounts.length) {
                             let rows = '';
@@ -2069,6 +2159,7 @@
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
+                                    hsn_id: item.hsn_id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
                                 };
@@ -2083,11 +2174,16 @@
                 appendTo: modalId,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
                     var itemId = ui.item.id;
+                    var hsnId = ui?.item?.hsn_id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
+
+                    console.log('Selected item:', ui.item);
+
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -2095,7 +2191,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }

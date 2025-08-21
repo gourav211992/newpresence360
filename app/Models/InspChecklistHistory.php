@@ -1,4 +1,4 @@
-<?php   
+<?php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -13,13 +13,14 @@ class InspChecklistHistory extends Model
     protected $table = "erp_insp_checklists_history";
     protected $fillable = [
         'source_id',
-        'header_id', 
-        'detail_id', 
-        'item_id', 
-        'checklist_id', 
-        'checklist_detail_id', 
-        'name', 
-        'value'
+        'header_id',
+        'detail_id',
+        'item_id',
+        'checklist_id',
+        'checklist_detail_id',
+        'name',
+        'value',
+        'type',
     ];
 
     public function source()

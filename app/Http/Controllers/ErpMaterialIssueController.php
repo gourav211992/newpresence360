@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ApiGenericException;
+use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\Helper;
+use App\Helpers\Inventory\StockReservation;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
@@ -13,10 +15,12 @@ use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TransactionReportHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpMaterialIssueRequest;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\Address;
 use App\Helpers\DynamicFieldHelper;
 use App\Models\AttributeGroup;
 use App\Models\Category;
+use App\Models\Configuration;
 use App\Models\ErpMiDynamicField;
 use App\Models\AuthUser;
 use App\Models\Country;
@@ -62,6 +66,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 use Yajra\DataTables\DataTables;
+use App\Helpers\Configuration\Helper as ConfigurationHelper;
+use App\Helpers\Configuration\Constants as ConfigurationConstant;
 
 class ErpMaterialIssueController extends Controller
 {
@@ -81,7 +87,8 @@ class ErpMaterialIssueController extends Controller
                 //Date Filters
                 $dateRange = $request -> date_range ??  null;
                 $docs = ErpMaterialIssueHeader::withDefaultGroupCompanyOrg() ->  bookViewAccess($pathUrl) ->  
-                withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> whereIn('from_store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
+                withDraftListingLogic() ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) 
+                -> whereIn('from_store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
                     $custQuery -> where('customer_id', $request -> customer_id);
                 }) -> when($request -> book_id, function ($bookQuery) use($request) {
                     $bookQuery -> where('book_id', $request -> book_id);
@@ -215,11 +222,13 @@ class ErpMaterialIssueController extends Controller
                 ]);
             }
         }
-        $parentURL = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
-        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => $create_button,'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME],
-            'autoCompleteFilters' => $autoCompleteFilters,]);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
+        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && 
+        isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        return view('materialIssue.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 
+            'create_button' => $create_button,
+            'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME],
+            'autoCompleteFilters' => $autoCompleteFilters]);
     }
     public function getBasicFilters()
     {
@@ -254,16 +263,10 @@ class ErpMaterialIssueController extends Controller
         $firstService = $servicesBooks['services'][0];
         $user = Helper::getAuthenticatedUser();
         $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME;
-        $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
         $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
         $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg() 
         -> where('status', ConstantHelper::ACTIVE) -> get();
         $departments = UserHelper::getDepartments($user -> auth_user_id);
-        $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
-        -> where('status', ConstantHelper::ACTIVE) -> get();
-        $stations = Station::withDefaultGroupCompanyOrg()
-        ->where('status', ConstantHelper::ACTIVE)
-        ->get();
         $currentfyYear = Helper::getCurrentFinancialYear();
         $selectedfyYear = Helper::getFinancialYear(Carbon::now());
         $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
@@ -273,14 +276,11 @@ class ErpMaterialIssueController extends Controller
             'services' => $servicesBooks['services'],
             'selectedService'  => $firstService ?-> id ?? null,
             'series' => array(),
-            'countries' => $countries,
             'typeName' => $typeName,
             'stores' => $stores,
             'vendors' => $vendors,
-            'stations' => $stations,
             'departments' => $departments['departments'],
             'selectedDepartmentId' => $departments['selectedDepartmentId'],
-            'requesters' => $users,
             'selectedUserId' => null,
             'redirect_url' => $redirectUrl,
             'current_financial_year' => $selectedfyYear,
@@ -290,104 +290,87 @@ class ErpMaterialIssueController extends Controller
     }
     public function edit(Request $request, String $id)
     {
-        try {
-            $parentUrl = request() -> segments()[0];
-            $redirect_url = route('material.issue.index');
-            $user = Helper::getAuthenticatedUser();
-            $servicesBooks = [];
-            if (isset($request -> revisionNumber))
-            {
-                $doc = ErpMaterialIssueHeaderHistory::with(['book', 'media_files']) -> with('items', function ($query) {
-                    $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> where('source_id', $id)->first();
-                $ogDoc = ErpMaterialIssueHeader::find($id);
-            } else {
-                $doc = ErpMaterialIssueHeader::with(['book', 'media_files']) -> with('items', function ($query) {
-                    $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> find($id);
-                $ogDoc = $doc;
-            }
-            $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
-            if (isset($doc)) {
-                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
-            }            
-            $revision_number = $doc->revision_number;
-            $totalValue = ($doc -> total_item_value - $doc -> total_discount_value) + 
-            $doc -> total_tax_value + $doc -> total_expense_value;
-            $userType = Helper::userCheck();
-            $buttons = Helper::actionButtonDisplay($doc->book_id,$doc->document_status , $doc->id, $totalValue, 
-            $doc->approval_level, $doc -> created_by ?? 0, $userType['type'], $revision_number);
-            $books = Helper::getBookSeriesNew(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, ) -> get();
-            $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
+        $parentUrl = request() -> segments()[0];
+        $redirect_url = route('material.issue.index');
+        $user = Helper::getAuthenticatedUser();
+        $servicesBooks = [];
+        if (isset($request -> revisionNumber))
+        {
+            $doc = ErpMaterialIssueHeaderHistory::with(['book', 'media_files']) -> with('items', function ($query) {
+                $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
+                    $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
+                }]);
+            }) -> where('source_id', $id)->firstOrFail();
+            $ogDoc = ErpMaterialIssueHeader::where('id',$id) -> firstOrFail();
+        } else {
+            $doc = ErpMaterialIssueHeader::with(['book', 'media_files']) -> with('items', function ($query) {
+                $query -> with(['from_item_locations', 'to_item_locations']) -> with(['item' => function ($itemQuery) {
+                    $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
+                }]);
+            }) -> where("id", $id) -> firstOrFail();
+            $ogDoc = $doc;
+        }
+        $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
+        $revision_number = $doc->revision_number;
+        $totalValue = ($doc -> total_item_value - $doc -> total_discount_value) + 
+        $doc -> total_tax_value + $doc -> total_expense_value;
+        $buttons = Helper::actionButtonDisplay($doc->book_id,$doc->document_status , $doc->id, $totalValue, 
+        $doc->approval_level, $doc -> created_by ?? 0, 'user', $revision_number);
+        $books = Helper::getBookSeriesNew(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, ) -> get();
+        $revNo = $doc->revision_number;
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
             $revNo = $doc->revision_number;
-            if($request->has('revisionNumber')) {
-                $revNo = intval($request->revisionNumber);
-            } else {
-                $revNo = $doc->revision_number;
-            }
-            $docValue = $doc->total_amount ?? 0;
+        }
+        $docValue = $doc->total_amount ?? 0;
+        $approvalHistory = collect([]);
+        if ($doc -> document_status != ConstantHelper::DRAFT) {
             $approvalHistory = Helper::getApprovalHistory($doc->book_id, $ogDoc->id, $revNo, $docValue, $doc -> created_by);
-            $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$doc->document_status] ?? '';
-            $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
-            $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
-            -> get();
-            $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
-            $stations = Station::withDefaultGroupCompanyOrg()
-            ->where('status', ConstantHelper::ACTIVE)
-            ->get();
-            foreach ($doc -> items as $docItem) {
-                $docItem -> max_qty_attribute = 9999999;
-                if ($docItem -> mo_item_id) {
-                    $moItem = MoItem::find($docItem -> mo_item_id);
-                    if (isset($moItem)) {
-                        $avlStock = $moItem -> getAvlStock($doc -> from_store_id);
-                        $balQty = min($avlStock, $moItem -> mi_balance_qty);
-                        $docItem -> max_qty_attribute = $docItem -> issue_qty + $balQty;
-                    }
+        }
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$doc->document_status] ?? '';
+        $typeName = ConstantHelper::MATERIAL_ISSUE_SERVICE_NAME;
+        $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg()->where('status', ConstantHelper::ACTIVE) 
+        -> get();
+        $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));
+        foreach ($doc -> items as $docItem) {
+            $docItem -> max_qty_attribute = 9999999;
+            if ($docItem -> mo_item_id) {
+                $moItem = MoItem::find($docItem -> mo_item_id);
+                if (isset($moItem)) {
+                    $avlStock = $moItem -> getAvlStock($doc -> from_store_id);
+                    $balQty = min($avlStock, $moItem -> mi_balance_qty);
+                    $docItem -> max_qty_attribute = $docItem -> issue_qty + $balQty;
                 }
             }
-            $departments = UserHelper::getDepartments($user -> auth_user_id);
-            $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
-            -> where('status', ConstantHelper::ACTIVE) -> get();   
-            $toSubStores = InventoryHelper::getAccesibleSubLocations($doc -> to_store_id ?? 0, 0, ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES);
-            $fromSubStores = InventoryHelper::getAccesibleSubLocations($doc -> from_store_id ?? 0, 0, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
-            $stockTypes = InventoryHelper::getStockType();
-            $dynamicFieldsUI = $doc -> dynamicfieldsUi();
-
-            $data = [
-                'user' => $user,
-                'series' => $books,
-                'order' => $doc,
-                'countries' => $countries,
-                'buttons' => $buttons,
-                'approvalHistory' => $approvalHistory,
-                'revision_number' => $revision_number,
-                'docStatusClass' => $docStatusClass,
-                'typeName' => $typeName,
-                'stores' => $stores,
-                'vendors' => $vendors,
-                'stations' => $stations,
-                'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
-                'services' => $servicesBooks['services'],
-                'departments' => $departments['departments'],
-                'selectedDepartmentId' => $doc ?-> department_id,
-                'current_financial_year' => $selectedfyYear,
-                'requesters' => $users,
-                'selectedUserId' => $doc ?-> user_id,
-                'toSubStores' => $toSubStores,
-                'fromSubStores' => $fromSubStores,
-                'dynamicFieldsUi' => $dynamicFieldsUI,
-                'redirect_url' => $redirect_url,
-                'stockTypes' => $stockTypes
-            ];
-            return view('materialIssue.create_edit', $data);  
-        } catch(Exception $ex) {
-            dd($ex -> getMessage());
         }
+        $departments = UserHelper::getDepartments($user -> auth_user_id);  
+        $stockTypes = InventoryHelper::getStockType();
+        $dynamicFieldsUI = $doc -> dynamicfieldsUi();
+        $data = [
+            'user' => $user,
+            'series' => $books,
+            'order' => $doc,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'revision_number' => $revision_number,
+            'docStatusClass' => $docStatusClass,
+            'typeName' => $typeName,
+            'stores' => $stores,
+            'vendors' => $vendors,
+            'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
+            'services' => $servicesBooks['services'],
+            'departments' => $departments['departments'],
+            'selectedDepartmentId' => $doc ?-> department_id,
+            'current_financial_year' => $selectedfyYear,
+            'selectedUserId' => $doc ?-> user_id,
+            'dynamicFieldsUi' => $dynamicFieldsUI,
+            'redirect_url' => $redirect_url,
+            'stockTypes' => $stockTypes
+        ];
+        return view('materialIssue.create_edit', $data);  
+        
     }
     public function store(ErpMaterialIssueRequest $request)
     {
@@ -402,9 +385,9 @@ class ErpMaterialIssueController extends Controller
             $miService = new MaterialIssue();
 
             DB::beginTransaction();
-            $user = Helper::getAuthenticatedUser();
+            $authUser = Helper::getAuthenticatedUser();
             //Auth credentials
-            $organization = Organization::find($user -> organization_id);
+            $organization = Organization::find($authUser -> organization_id);
             $organizationId = $organization ?-> id ?? null;
             $groupId = $organization ?-> group_id ?? null;
             $companyId = $organization ?-> company_id ?? null;
@@ -436,6 +419,7 @@ class ErpMaterialIssueController extends Controller
                         ], 422);
                     }
             }
+            $enforceUicScanning = ConfigurationHelper::getConfigurationValueOfOrg(ConfigurationConstant::ORG_CONFIG_ENFORCE_UIC_SCANNING, $organizationId);
             $materialIssue = null;
             $fromStore = ErpStore::find($request -> store_from_id);
             $toStoreId = ($request->store_to_id);
@@ -499,6 +483,7 @@ class ErpMaterialIssueController extends Controller
                     'book_id' => $request -> book_id,
                     'book_code' => $request -> book_code,
                     'issue_type' => $request -> issue_type,
+                    'enforce_uic_scanning' => $enforceUicScanning,
                     'document_number' => $document_number,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
@@ -973,6 +958,9 @@ class ErpMaterialIssueController extends Controller
                         'message' => $errorMessage
                     ], 422);
                 }
+                //Job
+                $miService -> createWhmJob($materialIssue, $authUser);
+                
                 DB::commit();
                 $printOption = 'Material Issue';
                 if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == "Job Work")
@@ -1023,6 +1011,16 @@ class ErpMaterialIssueController extends Controller
                 );
             }
         }
+        if ($materialIssue -> enforce_uic_scanning == 'yes' && 
+            (($materialIssue -> from_sub_store ?-> is_warehouse_required || $materialIssue -> from_sub_store ?-> uic_scan_for_issue == 'yes')
+             || $materialIssue -> to_sub_store ?-> is_warehouse_required)
+        ) {
+            $stockReservation = StockReservation::stockReservation(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $items);
+            if ($stockReservation['status'] == 'error') {
+                return $stockReservation['message'];
+            }
+            return "";
+        }
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
         if(isset($issueRecords['data']) && count($issueRecords['data']) > 0){
             ErpMiItemLocation::where('material_issue_id', $materialIssue->id)
@@ -1051,13 +1049,13 @@ class ErpMaterialIssueController extends Controller
                     'inventory_uom_qty' => $val -> issuedBy -> issue_qty
                 ]);
             }
-            $stockLedgers = StockLedger::where('book_type',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME)
-                                ->where('document_header_id',$materialIssue->id)
-                                ->where('organization_id',$materialIssue->organization_id)
-                                ->where('transaction_type','issue')
-                                ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
-                                ->groupBy('document_detail_id')
-                                ->get();
+            // $stockLedgers = StockLedger::where('book_type',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME)
+            //                     ->where('document_header_id',$materialIssue->id)
+            //                     ->where('organization_id',$materialIssue->organization_id)
+            //                     ->where('transaction_type','issue')
+            //                     ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
+            //                     ->groupBy('document_detail_id')
+            //                     ->get();
 
             // foreach($stockLedgers as $stockLedger) {
             //     $miItem = ErpMiItem::find($stockLedger->document_detail_id);
@@ -1069,6 +1067,9 @@ class ErpMaterialIssueController extends Controller
             return $issueRecords['message'];
         }
         if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
+            if ($materialIssue -> to_sub_store ?-> is_warehouse_required) {
+                return "";
+            }
             $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
             if ($issueRecords['status'] == 'error') {
                 return $issueRecords['message'];
@@ -1491,22 +1492,7 @@ class ErpMaterialIssueController extends Controller
             );
 
             return $pdf->stream('Material_Issue.pdf');
-        }
-        // public function report(){
-        //     $issue_data = ErpMaterialIssueHeader::where('issue_type', 'Consumption')
-        //         ->withWhereHas('items', function ($query) {
-        //             $query->whereHas('attributes', function ($subQuery) {
-        //                 $subQuery->where('attribute_name', 'TYPE'); // Ensure the attribute name is 'TYPE'
-        //             }, '=', 1); // Ensure only one attribute exists
-        //         })
-        //         ->get();
-        //     $issue_items_ids = ErpMiItem::whereIn('material_issue_id',[$issue_data->pluck('id')])->pluck('id');
-        //     $return_data = ErpMrItem::whereIn('mi_item_id',[$issue_items_ids])->get();
-        //     return view('materialIssue.report',[
-        //         'issues' =>$issue_data,
-        //         'return' =>$return_data,
-        //     ]);
-        // }
+    }
     public function report(Request $request)
     {
         $pathUrl = request()->segments()[0];

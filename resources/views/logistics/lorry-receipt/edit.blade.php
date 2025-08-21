@@ -116,7 +116,11 @@
                                  @if (isset($lr) && isset($docStatusClass))
                                        <div class="col-md-6 text-sm-end">
                                           <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{ucfirst(string: $lr->document_status)}}</span>
+                                                Status : <span class="{{ $docStatusClass }} {{ $lr->document_status == 'approval_not_required' ? 'text-success' : '' }}">
+    {{ $lr->document_status == 'approval_not_required' ? 'Approved' : ucfirst($lr->document_status) }}
+</span>
+
+ 
                                           </span>
                                        </div>
                                           
@@ -289,6 +293,7 @@
                                              value="{{ old('customer_name', @$lr->consignor->company_name ?? '') }}"  />
                                           <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
                                              value="{{ old('customer_id', @$lr->consignor_id) }}" id="customer_id"/>
+                                            
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -299,6 +304,8 @@
                                              value="{{ old('consignee_name', @$lr->consignee->company_name ?? '') }}" />
                                           <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
                                              value="{{ old('consignee_id', @$lr->consignee_id) }}" id="consignee_id"/>
+                                             <input type="hidden" name="consignee_email" data-type="consignee"
+                                             value="{{ old('consignee_email', @$lr->consignee->email) }}" id="consigneeemail"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -306,7 +313,7 @@
                                           <label class="form-label" for="vehicle">Vehicle No.<span class="text-danger">*</span></label>
                                           <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-number-autocomplete editable-field"
                                              placeholder="Select Vehicle" id="vehicle_number"
-                                             value="{{ old('vehicle_number', @$lr->vehicle->lorry_no ?? '') }}" />
+                                             value="{{ old('vehicle_number', (@$lr->vehicle->lorry_no ?? '') . (isset($lr->vehicle->vehicleType->name) ? ' (' . $lr->vehicle->vehicleType->name . ')' : '')) }}" />
                                           <input type="hidden" name="vehicle_number_id" class="vehicle-number-id editable-field"
                                              value="{{ old('vehicle_number_id', @$lr->vehicle_id) }}" id="vehicle_number_id"/>
                                        </div>
@@ -928,7 +935,7 @@ function handleFormStatusControl(status = null) {
 
     // Enable/Disable fields
     document.querySelectorAll('.editable-field').forEach(function (el) {
-        if (formStatus === 'submitted' || formStatus === 'approved') {
+        if (formStatus === 'submitted' || formStatus === 'approved' || formStatus === 'approval_not_required') {
             el.setAttribute('disabled', 'disabled');
         } else {
             el.removeAttribute('disabled');
@@ -939,7 +946,7 @@ function handleFormStatusControl(status = null) {
     const deleteButton = document.querySelector("#deleteButton");
     const addItemButton = document.querySelector("#addItemButton");
 
-    if (formStatus === 'submitted' || formStatus === 'approved') {
+    if (formStatus === 'submitted' || formStatus === 'approved' || formStatus === 'approval_not_required') {
         deleteButton?.classList.add('d-none');
         addItemButton?.classList.add('d-none');
     } else {
@@ -1162,7 +1169,7 @@ $(document).on('click', '#deleteSelected', function (e) {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            applyFreightToRows(selectedRows.length); 
+            applyFreightToRows(null, null, selectedRows)
             calculateTotals();
             updateRouteDetailsUI();
         }
@@ -1660,42 +1667,46 @@ let pricingCache = {}
             $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
             $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-            applyFreightToRows(pricingCache[locationId]); 
+            applyFreightToRows(pricingCache[locationId], $targetRow); 
         }
     });
 }
 
 
-function applyFreightToRows($specificRow = null, deletedRow = null) {
-    const $rows = $('#item-table-body').find('tr');
-    let zeroFreightCount = 0;
+function applyFreightToRows($specificRow = null,$row, deletedRow = null) {
 
-    $rows.each(function () {
-        const freightAmount = parseFloat($(this).find('input[name*="[freight]"]').val()) || 0;
-        if (freightAmount === 0) {
-            zeroFreightCount++;
-        }
-    });
     const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
     const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
+    if (deletedRow !== null) {
+        const $rows = $('#item-table-body').find('tr');
+        //$rows.eq(0).find('input[name*="[freight]"]').val(0);
 
-    const processRow = ($row, index) => {
-        const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
-        const $freightInput = $row.find('input[name*="[freight]"]');
+        if (deletedRow.length <= activeFreePoint) {
+            for (let i = 0; i < activeFreePoint && i < $rows.length; i++) {
+                $rows.eq(i).find('input[name*="[freight]"]').val(0);
+            }
+        }
 
-        if (!locationId) return;
-       const pricing = pricingCache[locationId];
+        return;
+    }
+   
+    const freightAmount = parseFloat($row.find('input[name*="[freight]"]').val()) || 0;
+
+    const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
+    const $freightInput = $row.find('input[name*="[freight]"]');
+
+    if (!locationId) return;
+       const pricing = $specificRow;
 
     if (!pricing) {
         $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         return;
     }
+    $index = $row.index();
 
-
-        if (pricing) {
+     if (pricing) {
             if (pricing.type === 'both_exist') {
-              if (index < activeFreePoint) {
-                console.log(`Row index: ${index}, activeFreePoint: ${activeFreePoint}`);
+              if ($index < activeFreePoint) {
 
                 $freightInput.val(0);
             } else {
@@ -1716,20 +1727,19 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
             } else if (pricing.type === 'exists_in_fixed') {
                 $freightInput.val(parseFloat(pricing.amount));
             } else {
-                // fallback
                 $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
             }
         } else {
-            // No pricing for this location
             $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
-    };
-    if (deletedRow !== null) {
+
+
+        if (deletedRow !== null) {
         const $targetRow = $rows.eq(deletedRow);
         const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
         const $freightInput = $targetRow.find('input[name*="[freight]"]');
 
-        const pricing = pricingCache[locationId]; // assuming pricing was cached
+        const pricing = pricingCache[locationId]; 
 
         if (deletedRow <= activeFreePoint) {
             $freightInput.val(0);
@@ -1738,15 +1748,7 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
         }
     }
 
-
-    if ($specificRow && $specificRow.length) {
-        processRow($specificRow, $specificRow.index());
-    } else {
-        $rows.each(function (index) {
-            processRow($(this), index);
-        });
-    }
-
+    
     calculateTotals();
 }
 
@@ -2167,8 +2169,9 @@ function sendMailTo() {
         $('.mail_modal').prop('disabled', false);
         $('[name="cc_to[]"]').prop('disabled', false);
         $('[name="cc_to[]"]').prop('readonly', false);
+        $('[name="email_to"]').val($('#consigneeemail').val());
 
-        const vendorEmail = "{{ isset($po) ? $po->vendor->email : '' }}";
+        const vendorEmail = $('#consigneeemail').val();
         const vendorName = "{{ isset($po) ? $po->vendor->company_name : '' }}";
         const emailInput = document.getElementById('cust_mail');
         const header = document.getElementById('send_mail_heading_label');

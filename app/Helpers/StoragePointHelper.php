@@ -158,10 +158,11 @@ class StoragePointHelper
                 });
 
                 if ($availablePoints->isNotEmpty()) {
-                    $data = self::successResponse('Fallback: Showing available storage points without mapping.', $availablePoints->map(function ($detail) {
-                        $detail->parents = implode(' → ', self::getParentHierarchy($detail->parent_id));
-                        return $detail;
-                    })->values());
+                    // $data = self::successResponse('Fallback: Showing available storage points without mapping.', $availablePoints->map(function ($detail) {
+                    //     $detail->parents = implode(' → ', self::getParentHierarchy($detail->parent_id));
+                    //     return $detail;
+                    // })->values());
+                    $data = self::successResponse('Fallback: Showing available storage points without mapping.', $availablePoints->values());
                     return $data;
                 }
             }
@@ -235,11 +236,11 @@ class StoragePointHelper
             ->get();
 
         return $details->filter(fn($detail) => $detail->is_storage_point == 1 && self::hasSpace($detail))
-        ->map(function ($detail) {
-            $parents = self::getParentHierarchy($detail->parent_id);
-            $detail->parents = implode(' → ', $parents);
-            return $detail;
-        })
+        // ->map(function ($detail) {
+        //     $parents = self::getParentHierarchy($detail->parent_id);
+        //     $detail->parents = implode(' → ', $parents);
+        //     return $detail;
+        // })
         ->values(); // reset index
     }
 
@@ -274,12 +275,12 @@ class StoragePointHelper
 
         return \DB::table('erp_wh_details')
             ->whereIn('id', $finalIds)
-            ->get()
-            ->map(function ($detail) {
-                $parents = self::getParentHierarchy($detail->parent_id);
-                $detail->parents = implode(' → ', $parents); // Optional: format as "Zone → Bay → Rack"
-                return $detail;
-            });
+            ->get();
+            // ->map(function ($detail) {
+            //     $parents = self::getParentHierarchy($detail->parent_id);
+            //     $detail->parents = implode(' → ', $parents); // Optional: format as "Zone → Bay → Rack"
+            //     return $detail;
+            // });
     }
 
     // Find Child Storage Points
@@ -513,8 +514,8 @@ class StoragePointHelper
             }
 
             // Fetch parent hierarchy
-            $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
-            $storagePoint->parents = implode(' → ', $parentHierarchy); // Optional formatting
+            // $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
+            // $storagePoint->parents = implode(' → ', $parentHierarchy); // Optional formatting
 
             return self::successResponse("Storage point details fetched successfully.", $storagePoint);
 
@@ -533,7 +534,7 @@ class StoragePointHelper
             // Fetch by ID
             $storagePoint = \DB::table('erp_wh_details')
                 ->where('id', $storagePointId)
-                ->select('id','name','max_weight','max_volume','current_weight','current_volume','storage_number','parent_id')
+                ->select('id','heirarchy_name','name','max_weight','max_volume','current_weight','current_volume','storage_number','parent_id')
                 ->first();
 
             if (!$storagePoint) {
@@ -541,8 +542,8 @@ class StoragePointHelper
             }
 
             // Fetch parent hierarchy
-            $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
-            $storagePoint->parents = implode(' → ', $parentHierarchy);
+            // $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
+            // $storagePoint->parents = implode(' → ', $parentHierarchy);
 
             return self::successResponse("Storage point details fetched successfully.", $storagePoint);
 

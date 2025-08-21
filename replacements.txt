@@ -1,0 +1,1 @@
+regex:https://staqo:[^@]+@bitbucket\.org/ ==> https://bitbucket.org/

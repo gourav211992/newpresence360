@@ -22,8 +22,8 @@ class ErpPlRequest extends FormRequest
    {
        return [
            'book_id' => 'required|numeric|integer|exists:erp_books,id',
-           'book_code' => 'required|string|max:10',
-           'document_no' => 'required|string|max:50',
+           'book_code' => 'required|string',
+           'document_no' => 'required|string',
            'document_date' => 'required|date',
            'store_id' => 'required|numeric|integer|exists:erp_stores,id',
            'main_sub_store_id' => 'required|numeric|integer|exists:erp_sub_stores,id',

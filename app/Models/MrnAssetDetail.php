@@ -1,4 +1,4 @@
-<?php   
+<?php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -11,16 +11,16 @@ class MrnAssetDetail extends Model
 
     protected $table = "erp_mrn_asset_details";
     protected $fillable = [
-        'header_id', 
-        'detail_id', 
-        'asset_category_id', 
-        'item_id', 
-        'asset_code', 
-        'asset_name', 
-        'capitalization_date', 
-        'brand_name', 
-        'model_no', 
-        'estimated_life', 
+        'header_id',
+        'detail_id',
+        'asset_category_id',
+        'procurement_type',
+        'asset_code',
+        'asset_name',
+        'capitalization_date',
+        'brand_name',
+        'model_no',
+        'estimated_life',
         'salvage_value'
     ];
 

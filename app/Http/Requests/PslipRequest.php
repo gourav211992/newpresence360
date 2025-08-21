@@ -23,10 +23,15 @@ class PslipRequest extends FormRequest
     {
         $rules = [
             'book_id' => 'required',
+            // 'fg_sub_store_id' => 'required',
             'cons.*.item_qty' => 'required|numeric|min:0.01',
             'item_qty.*' => 'required|numeric|min:1',
             'item_accepted_qty.*' => 'required|numeric|min:1',
         ];
+
+        if(!$this->input('id')) {
+            $rules['fg_sub_store_id'] = 'required|numeric';
+        }
 
         $today = now()->toDateString();
         $isPast = false;
@@ -78,11 +83,15 @@ class PslipRequest extends FormRequest
         if($productionBom) {
             $machines = $productionBom?->machines()
             ->where('status', ConstantHelper::ACTIVE)
-            ->get(); 
+            ->get();
         }
         if($machines->isNotEmpty()) {
-            $rules['machine_id.*'] = 'required|array|min:1';
+            $rules['machine_id'] = 'array';
+            $rules['machine_id.*'] = 'nullable|array'; 
             $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
+
+            // $rules['machine_id.*'] = 'required|array|min:1';
+            // $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
         }
         return $rules;
     }
@@ -95,11 +104,11 @@ class PslipRequest extends FormRequest
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
                 $pslipBomMappingId = $component['pslip_bom_cons_id'] ?? null;
-                if($pslipBomMappingId) {
-                    $moBomMapping = PslipBomConsumption::find($moBomMappingId);
-                } else {
-                    $moBomMapping = MoBomMapping::find($moBomMappingId);
-                }
+                // if($pslipBomMappingId) {
+                //     $moBomMapping = PslipBomConsumption::find($pslipBomMappingId);
+                // } else {
+                // }
+                $moBomMapping = MoBomMapping::find($moBomMappingId);
                 $rm_type = 'R';
                 $itemWipStationId = null;
                 if($moBomMapping?->rm_type =='sf') {
@@ -108,6 +117,7 @@ class PslipRequest extends FormRequest
                 }
 
                 $requiredQty = floatval($component['item_qty']);
+                $consumptionQty = floatval($component['consumption_qty']);
                 $itemAttributes = $moBomMapping->attributes ?? [];
                 foreach ($itemAttributes as $itemAttr) {
                     $selectedAttributeIds[] = $itemAttr['attribute_value'];
@@ -126,19 +136,20 @@ class PslipRequest extends FormRequest
                     $rm_type,
                     $itemWipStationId
                 );
+
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
-                if ($requiredQty > $stockBalanceQty) {
+                if ($consumptionQty > $stockBalanceQty) {
                     $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
             }
         });
     }
-    
 
     public function messages(): array
     {
         return [
             'book_id.required' => 'The series is required.',
+            'fg_sub_store_id.required' => 'The sub store is required.',
             'cons.*.item_qty.required' => 'Stock not available.',
             'document_date.in' => 'The document date must be today.',
             'document_date.required' => 'The document date is required.',
@@ -152,7 +163,6 @@ class PslipRequest extends FormRequest
             'item_accepted_qty.*.numeric'  => 'Accepted quantity must be a number.',
             'item_accepted_qty.*.min'      => 'Accepted quantity must be at least 1.',
         ];
- 
     }
 
     protected function failedValidation(Validator $validator)

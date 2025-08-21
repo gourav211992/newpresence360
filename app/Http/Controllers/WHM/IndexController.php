@@ -144,6 +144,7 @@ class IndexController extends Controller
             ->where('job_id', $request->job_id)
             ->whereIn('storage_point_id', $storagePointIds)
             ->where('status', CommonHelper::SCANNED)
+            ->whereNull('utilized_id')
             ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','vendor_id','storage_point_id')
             ->get()
             ->groupBy('storage_point_id');
@@ -196,12 +197,16 @@ class IndexController extends Controller
             },'storagePoint' => function($q){
                 $q->select('id', 'storage_number');
             }])
-        ->where('job_id',$request->job_id)
+        ->when($request->job_id, function($q) use($request){
+            $q->where('job_id',$request->job_id);
+        })
         ->where('storage_point_id', $storagePointId)
         ->where('status',CommonHelper::SCANNED)
+        ->whereNull('utilized_id')
         ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','vendor_id','storage_point_id')
         ->get();
 
+        $storagePoint->quantity = count($scannedPackets);
         $storagePoint->scanned_packets = $scannedPackets;
 
         return [
@@ -252,19 +257,26 @@ class IndexController extends Controller
             throw new ValidationException($validator);
         }
 
+        $item = ErpItemUniqueCode::select('item_name','item_code','item_attributes')->where('item_uid',$request->packet_id)->first();
+
         $unicodes = ErpItemUniqueCode::with(['actionBy' => function($q){
                 $q->select('id','name');
             },'storagePoint' => function($q){
-                $q->select('id', 'storage_number');
+                $q->select('id', 'storage_number', 'heirarchy_name', 'name');
+            },'store' => function($q){
+                $q->select('id', 'store_name');
             }])
             ->where('item_uid',$request->packet_id)
-            ->select('uid','item_uid', 'action_at','action_by','job_type','status','storage_point_id')
+            ->select('uid','item_uid', 'action_at','action_by','job_type','status','storage_point_id','book_code','doc_no','created_at','store_id')
             ->get();
 
         $trackingResources = TrackingResource::collection($unicodes);
 
         return [
-            'data' => $trackingResources,
+            'data' => [
+                'item' => $item,
+                'tracking' => $trackingResources
+            ],
             'message' => 'Data fetched successfully.',
         ];
     }

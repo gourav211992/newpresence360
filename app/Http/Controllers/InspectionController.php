@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use DB;
+use PDF;
 use DateTime;
 use stdClass;
 use Carbon\Carbon;
@@ -18,13 +19,17 @@ use App\Models\InspectionTed;
 use App\Models\InspChecklist;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
+use App\Models\InspBatchDetail;
 use App\Models\InspectionItemAttribute;
 
 use App\Models\InspectionTedHistory;
+use App\Models\InspBatchDetailHistory;
 use App\Models\InspectionHeaderHistory;
 use App\Models\InspectionDetailHistory;
 use App\Models\InspectionItemLocation;
 use App\Models\InspectionItemAttributeHistory;
+
+use App\Models\MrnBatchDetail;
 
 use App\Models\Hsn;
 use App\Models\Tax;
@@ -63,6 +68,7 @@ use App\Models\ErpEinvoiceLog;
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\BookHelper;
+use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
@@ -366,10 +372,34 @@ class InspectionController extends Controller
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    $checklistValidation = self::validateInspectionCheckList($component);
-                    if ($checklistValidation) {
-                        \DB::rollBack();
-                        return $checklistValidation; // ❗ Stop further processing
+                    // Check Inspection CheckLists
+                    if($item && count($item->loadInspectionChecklists())) {
+                        $inspectionData = (isset($component['inspectionData']) && is_string($component['inspectionData']))
+                                ? json_decode($component['inspectionData'], true)
+                                : $component['inspectionData'];
+                        $inspectionValidator = InspectionHelper::validateInspectionCheckList((array) $inspectionData, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
+                    }
+
+                    // Check Item Batches
+                    if($item && $item->is_batch_no) {
+                        $batchDetails = (isset($component['batch_details']) && is_string($component['batch_details']))
+                                ? json_decode($component['batch_details'], true)
+                                : $component['batch_details'];
+                        $inspectionValidator = InspectionHelper::validateBatches((array) $batchDetails, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
                     }
                     $so_id = null;
                     $inputQty = 0.00;
@@ -508,24 +538,38 @@ class InspectionController extends Controller
                         $itemChecklists = is_string($component['inspectionData'])
                             ? json_decode($component['inspectionData'], true)
                             : $component['inspectionData'];
-
                         if (is_array($itemChecklists)) {
-                            foreach ($itemChecklists as $i => $val) {
-                                $inspChecklist = new InspChecklist();
-                                $inspChecklist->header_id = $inspection->id;
-                                $inspChecklist->detail_id = $inspectionDetail->id;
-                                $inspChecklist->item_id = $inspectionDetail->item_id;
-                                $inspChecklist->checklist_id = $val['checkList_id'];
-                                $inspChecklist->checklist_name = $val['checkList_name'];
-                                $inspChecklist->checklist_detail_id = $val['detail_id'];
-                                $inspChecklist->name = $val['parameter_name'];
-                                $inspChecklist->value = $val['parameter_value'];
-                                $inspChecklist->result = $val['result'];
-                                $inspChecklist->save();
-
+                            $inspChecklist = InspectionService::insertChecklistData($itemChecklists, $inspection, $inspectionDetail);
+                            if ($inspChecklist['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspChecklist['message'],
+                                    'error' => ''
+                                ], 422);
                             }
                         } else {
                             \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
+                        }
+                    }
+
+                    #Save batch details
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
+
+                        if (is_array(value: $batchDetails)) {
+                            $inspBatchDetail = InspectionService::insertBatchDetails($batchDetails, $inspection, $inspectionDetail);
+                            if ($inspBatchDetail['status'] == 'error') {
+                                \DB::rollBack();
+                                return response()->json([
+                                    'message' => $inspBatchDetail['message'],
+                                    'error' => ''
+                                ], 422);
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
                         }
                     }
                 }
@@ -607,8 +651,45 @@ class InspectionController extends Controller
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->first();
 
-            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader');
+            // if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+            //     $mainStore = $inspection?->erpSubStore?->is_warehouse_required;
+            //     $rejectedStore = $inspection?->rejectedSubStore?->is_warehouse_required;
+            //     if($mainStore){
+            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'main_store');
+            //     }
+            //     if($rejectedStore && $inspection->rejectedSubStore){
+            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'rejected_store');
+            //     }
+            // }
+
+            // Preconditions: approved status AND config = 'yes'
+            $approvedSet = (array) ConstantHelper::DOCUMENT_STATUS_APPROVED;
+            $isApproved  = in_array($inspection->document_status, $approvedSet, true);
+            $cfgYes      = $config && strcasecmp((string) $config->config_value, 'yes') === 0;
+            if ($isApproved && $cfgYes) {
+                // Cache relations (will lazy-load if not eager-loaded)
+                $mainSubStore     = $inspection->erpSubStore;
+                $rejectedSubStore = $inspection->rejectedSubStore;
+
+                // Compute flags (treat null as false)
+                $mainNeedsPutaway     = (int) ($mainSubStore->is_warehouse_required ?? 0) === 1;
+                $rejectedNeedsPutaway = (int) ($rejectedSubStore->is_warehouse_required ?? 0) === 1;
+
+                // Build targets and create jobs in one pass
+                $targets = [];
+                if ($mainNeedsPutaway) {
+                    $targets[] = 'main_store';
+                }
+                if ($rejectedSubStore && $rejectedNeedsPutaway) {
+                    $targets[] = 'rejected_store';
+                }
+
+                if (!empty($targets)) {
+                    $whmJob = new WhmJob();
+                    foreach ($targets as $target) {
+                        $whmJob->createJob($inspection->id, \App\Models\InspectionHeader::class, $jobType = null, $target);
+                    }
+                }
             }
 
             DB::commit();
@@ -876,11 +957,19 @@ class InspectionController extends Controller
                         $reference_type = 'mrn';
                     }
 
-                    // Validate Inspection CheckList
-                    $checklistValidation = self::validateInspectionCheckList($component);
-                    if ($checklistValidation) {
-                        \DB::rollBack();
-                        return $checklistValidation; // ❗ Stop further processing
+                    // Check Inspection
+                    if($item && count($item->loadInspectionChecklists())) {
+                        $inspectionData = is_string($component['inspectionData'])
+                                ? json_decode($component['inspectionData'], true)
+                                : $component['inspectionData'];
+                        $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
                     }
 
                     // Validate Quantity Backend
@@ -1573,83 +1662,60 @@ class InspectionController extends Controller
         $user = Helper::getAuthenticatedUser();
 
         $organization = Organization::where('id', $user->organization_id)->first();
+
         $organizationAddress = Address::with(['city', 'state', 'country'])
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $purchaseReturn = InspectionHeader::with(['vendor', 'currency', 'items', 'book', 'expenses'])
+        $inspection = InspectionHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
-        $shippingAddress = $purchaseReturn->shippingAddress;
-        $billingAddress = $purchaseReturn->billingAddress;
-        $buyerAddress = $purchaseReturn?->erpStore?->address;
 
-        $totalItemValue = $purchaseReturn->total_item_amount ?? 0.00;
-        $totalDiscount = $purchaseReturn->total_discount ?? 0.00;
-        $totalTaxes = $purchaseReturn->total_taxes ?? 0.00;
+
+        $shippingAddress = $inspection->shippingAddress;
+        $billingAddress = $inspection->billingAddress;
+
+        $totalItemValue = $inspection->total_item_amount ?? 0.00;
+        $totalDiscount = $inspection->total_discount ?? 0.00;
+        $totalTaxes = $inspection->total_taxes ?? 0.00;
         $totalTaxableValue = ($totalItemValue - $totalDiscount);
         $totalAfterTax = ($totalTaxableValue + $totalTaxes);
-        $totalExpense = $purchaseReturn->expense_amount ?? 0.00;
+        $totalExpense = $inspection->expense_amount ?? 0.00;
         $totalAmount = ($totalAfterTax + $totalExpense);
-        $amountInWords = NumberHelper::convertAmountToWords($purchaseReturn->total_amount);
-        $approvedBy = Helper::getDocStatusUser(get_class($purchaseReturn), $purchaseReturn -> id, $purchaseReturn -> document_status);
+        $amountInWords = NumberHelper::convertAmountToWords($inspection->total_amount);
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$purchaseReturn->document_status] ?? '';
-        $taxes = InspectionTed::where('header_id', $purchaseReturn->id)
-            ->where('ted_type', 'Tax')
-            ->select('ted_type','ted_id','ted_name', 'ted_percentage', DB::raw('SUM(ted_amount) as total_amount'),DB::raw('SUM(assesment_amount) as total_assesment_amount'))
-            ->groupBy('ted_name', 'ted_percentage')
-            ->get();
-        $sellerShippingAddress = $purchaseReturn->latestShippingAddress();
-        $sellerBillingAddress = $purchaseReturn->latestBillingAddress();
-        $eInvoice = $purchaseReturn->irnDetail()->first();
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$inspection->document_status] ?? '';
+        $sellerShippingAddress = $inspection->latestShippingAddress();
+        $sellerBillingAddress = $inspection->latestBillingAddress();
+        $buyerAddress = $inspection?->erpStore?->address;
 
-        // QrCode::format('png')->size(300)->generate($eInvoice->signed_qr_code, $qrCodePath);
-        $qrCodeBase64 = EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code);
+        $pdf = PDF::loadView(
+            'pdf.inspection',
+            [
+                'user' => $user,
+                'inspection' => $inspection,
+                'shippingAddress' => $shippingAddress,
+                'billingAddress' => $billingAddress,
+                'organization' => $organization,
+                'amountInWords' => $amountInWords,
+                'organizationAddress' => $organizationAddress,
+                'totalItemValue' => $totalItemValue,
+                'totalDiscount' => $totalDiscount,
+                'totalTaxes' => $totalTaxes,
+                'totalTaxableValue' => $totalTaxableValue,
+                'totalAfterTax' => $totalAfterTax,
+                'totalExpense' => $totalExpense,
+                'totalAmount' => $totalAmount,
+                'imagePath' => $imagePath,
+                'docStatusClass' => $docStatusClass,
+                'sellerShippingAddress' => $sellerShippingAddress,
+                'sellerBillingAddress' => $sellerBillingAddress,
+                'buyerAddress' => $buyerAddress
+            ]
+        );
 
-
-        $options = new Options();
-        $options->set('defaultFont', 'Helvetica');
-        $dompdf = new Dompdf($options);
-
-        $html = view('pdf.purchase-return',
-        [
-            'pb' => $purchaseReturn,
-            'user' => $user,
-            'shippingAddress' => $shippingAddress,
-            'buyerAddress' => $buyerAddress,
-            'billingAddress' => $billingAddress,
-            'organization' => $organization,
-            'amountInWords' => $amountInWords,
-            'organizationAddress' => $organizationAddress,
-            'totalItemValue' => $totalItemValue,
-            'totalDiscount' => $totalDiscount,
-            'totalTaxes' => $totalTaxes,
-            'totalTaxableValue' => $totalTaxableValue,
-            'totalAfterTax' => $totalAfterTax,
-            'totalExpense' => $totalExpense,
-            'totalAmount' => $totalAmount,
-            'imagePath' => $imagePath,
-            'eInvoice' => $eInvoice,
-            'approvedBy' => $approvedBy,
-            'qrCodeBase64' => $qrCodeBase64
-        ]
-        )->render();
-
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        $pdfPath = 'invoices/pdfs/invoice_' . $eInvoice->ack_no . '.pdf';
-        Storage::disk('local')->put($pdfPath, $dompdf->output());
-
-        $fileName = 'IRN-' . date('Y-m-d') . '.pdf';
-        // return $dompdf->stream($fileName);
-
-        return response($dompdf->output())
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="Einvoice_' . $eInvoice->ack_no . '.pdf"');
+        $fileName = 'Inspection-' . date('Y-m-d') . '.pdf';
+        return $pdf->stream($fileName);
     }
 
     # Submit Amendment
@@ -1848,9 +1914,9 @@ class InspectionController extends Controller
                         if($storeId) {
                             $mrnHeader->where('store_id', $storeId);
                         }
-                        if($subStoreId) {
-                            $mrnHeader->where('sub_store_id', $subStoreId);
-                        }
+                        // if($subStoreId) {
+                        //     $mrnHeader->where('sub_store_id', $subStoreId);
+                        // }
                         if($mrnDocNumber) {
                             $mrnHeader->where('id', $mrnDocNumber);
                         }
@@ -2515,31 +2581,31 @@ class InspectionController extends Controller
     }
 
     // Validate Inspection Checklist
-    private static function validateInspectionCheckList(array $component)
-    {
-        $inspectionJson = $component['inspectionData'] ?? null;
-        if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+    // private static function validateInspectionCheckList(array $component)
+    // {
+    //     $inspectionJson = $component['inspectionData'] ?? null;
+    //     if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
 
-        $inspectionItems = json_decode($inspectionJson, true);
-        if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
-            return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
-        }
+    //     $inspectionItems = json_decode($inspectionJson, true);
+    //     if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
+    //         return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+    //     }
 
-        $grouped = collect($inspectionItems)->groupBy('detail_id');
-        foreach ($grouped as $detailId => $entries) {
-            $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
-            $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
-            if (empty($param['parameter_name'])) {
-                return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
-            }
+    //     $grouped = collect($inspectionItems)->groupBy('detail_id');
+    //     foreach ($grouped as $detailId => $entries) {
+    //         $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
+    //         $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
+    //         if (empty($param['parameter_name'])) {
+    //             return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
+    //         }
 
-            if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
-                return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
-            }
-        }
+    //         if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
+    //             return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
+    //         }
+    //     }
 
-        return null; // ✅ No issues found
-    }
+    //     return null; // ✅ No issues found
+    // }
 
 
     # Helper Functions for Responses

@@ -2,22 +2,6 @@
 @section('styles')
 <style>
 
-.dataTables_wrapper {
-    position: relative;
-}
-
-.dataTables_processing {
-    z-index: 10000 !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%);
-    background: white; /* optional */
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-weight: bold;
-    color: #333;
-}
 .item-name-wrapper {
             min-width: 100px;
             max-width: 150px;
@@ -1437,6 +1421,8 @@
         //Issue Type
         if (issueTypeParameters && issueTypeParameters.length > 0) {
             const issueTypeInput = document.getElementById('issue_type_input');
+            let selectedVal = "{{isset($order) ? $order -> issue_type : ''}}";
+
             if (issueTypeInput) {
                 var issueTypeHtml = ``;
                 var firstIssueType = null;
@@ -1444,7 +1430,7 @@
                     if (issueTypeIndex == 0) {
                         firstIssueType = issueType;
                     }
-                    issueTypeHtml += `<option value = '${issueType}'> ${issueType} </option>`
+                    issueTypeHtml += `<option value = '${issueType}' ${selectedVal == issueType ? 'selected' : ''}> ${issueType} </option>`
                 });
                 if ("{{isset($order)}}") {
                     firstIssueType = "{{isset($order) ? $order -> issue_type : ''}}";

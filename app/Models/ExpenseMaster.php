@@ -12,11 +12,12 @@ use App\Traits\Deletable;
 
 class ExpenseMaster extends Model
 {
-    use HasFactory, SoftDeletes,Deletable,DefaultGroupCompanyOrg;
+    use HasFactory, SoftDeletes, Deletable, DefaultGroupCompanyOrg;
 
-    protected $table = 'erp_expense_master'; 
+    protected $table = 'erp_expense_master';
 
     protected $fillable = [
+        'hsn_id',
         'name',
         'alias',
         'percentage',
@@ -25,12 +26,21 @@ class ExpenseMaster extends Model
         'expense_ledger_id',
         'expense_ledger_group_id',
         'service_provider_ledger_id',
-        'service_provider_ledger_group_id', 
+        'service_provider_ledger_group_id',
         'status',
         'group_id',
         'company_id',
         'organization_id'
     ];
+
+    public $referencingRelationships = [
+        'hsn' => 'hsn_id',
+    ];
+
+    public function hsn()
+    {
+        return $this->belongsTo(Hsn::class);
+    }
 
     public function expenseLedger()
     {
@@ -51,6 +61,4 @@ class ExpenseMaster extends Model
     {
         return $this->belongsTo(Group::class, 'service_provider_ledger_group_id');
     }
-
-    
 }

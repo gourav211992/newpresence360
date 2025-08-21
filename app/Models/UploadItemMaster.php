@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Models;
@@ -42,7 +43,7 @@ class UploadItemMaster extends Model
         'sub_type',
         'is_traded_item',
         'is_asset',
-        'asset_category',
+        'asset_category_id',
         'brand_name',
         'model_no',
         'remarks',

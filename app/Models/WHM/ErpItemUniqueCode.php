@@ -4,6 +4,8 @@ namespace App\Models\WHM;
 
 use App\Models\Attribute;
 use App\Models\Employee;
+use App\Models\ErpStore;
+use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\Item;
 use App\Models\User;
@@ -25,6 +27,7 @@ class ErpItemUniqueCode extends Model
         'organization_id',
         'store_id',
         'sub_store_id',
+        'asset_id',
         'book_id',
         'book_code',
         'doc_type',
@@ -45,6 +48,11 @@ class ErpItemUniqueCode extends Model
         'action_at',
         'job_type',
         'trns_type',
+        'batch_id',
+        'batch_number',
+        'manufacturing_year',
+        'expiry_date',
+        'serial_no',
     ];
 
     // protected  $casts = [
@@ -74,6 +82,16 @@ class ErpItemUniqueCode extends Model
     public function storagePoint()
     {
         return $this->belongsTo(ErpWhDetail::class, 'storage_point_id');
+    }
+
+    public function subStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
 
     public function getItemAttributesAttribute($value)

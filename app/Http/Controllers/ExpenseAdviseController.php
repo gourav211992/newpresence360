@@ -2939,8 +2939,6 @@ class ExpenseAdviseController extends Controller
         )
             ->leftJoin('erp_job_orders', 'erp_job_orders.id', 'erp_jo_products.jo_id')
             ->whereIn('erp_job_orders.book_id', $applicableBookIds)
-            ->where('erp_job_orders.gate_entry_required', 'no')
-            ->where('erp_job_orders.supp_invoice_required', 'no')
             ->whereNotNull('service_item_id')
             ->whereRaw('((order_qty - short_close_qty) > expense_advise_qty)')
             ->whereHas('item', function ($item) use ($itemSearch) {

@@ -59,6 +59,7 @@ class ErpSaleInvoice extends Model
         'currency_code',
         'payment_term_id',
         'payment_term_code',
+        'credit_days',
         'document_status',
         'approval_level',
         'remarks',
@@ -249,5 +250,9 @@ class ErpSaleInvoice extends Model
     public function customerTermDetails()
     {
         return $this -> belongsTo(TermsAndCondition::class, 'customer_terms_id');
+    }
+    public function payment_term_schedules()
+    {
+        return $this -> hasMany(ErpInvoicePaymentTerm::class, 'invoice_header_id');
     }
 }

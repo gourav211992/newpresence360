@@ -12,6 +12,7 @@ class ErpSoJobWorkItem extends Model
     protected $fillable = [
         'sale_order_id',
         'so_item_id',
+        'jo_id',
         'bom_detail_id',
         'station_id',
         'rm_type',

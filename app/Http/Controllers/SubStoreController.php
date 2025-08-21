@@ -56,6 +56,12 @@ class SubStoreController extends Controller
                 ->addColumn('sub_type_name', function ($subStore) {
                     return isset(SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type]) ? SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type] : " ";
                 })
+                ->addColumn('warehouse_required', function ($subStore) {
+                    return $subStore -> is_warehouse_required ? "Yes" : "No";
+                })
+                ->editColumn('uic_scan_for_issue', function ($subStore) {
+                    return $subStore -> uic_scan_for_issue == 'yes' ? "Yes" : "No";
+                })
                 ->addColumn('status', function ($subStore) {
                     return '<span class="badge rounded-pill badge-light-' . ($subStore->status == 'active' ? 'success' : 'danger') . '">'
                         . ucfirst($subStore->status) . '</span>';
@@ -100,12 +106,21 @@ class SubStoreController extends Controller
         $groupId = $organization?->group_id;
         try {
             $erpSubStore =new ErpSubStore();
+            $uicScanForIssue = "no";
+            if ($validatedData['store_location_type'] === ConstantHelper::STOCKK) {
+                if (isset($request -> is_warehouse_required) && $request -> stock_store_types === SubStoreConstants::MAIN_STORE_VALUE) {
+                    $uicScanForIssue = "yes";
+                } else {
+                    $uicScanForIssue = isset($request -> uic_scan_for_issue) ? "yes" : "no";
+                }
+            }
             $data= [
                 'code' => $validatedData['code'], 
                 'name' => $validatedData['name'], 
                 'type'=>$validatedData['store_location_type'],
                 'station_wise_consumption'=>isset($request -> station_wise_consumption) ? 'yes' : 'no',
                 'is_warehouse_required'=>isset($request -> is_warehouse_required) && $request -> stock_store_types === SubStoreConstants::MAIN_STORE_VALUE ? 1 : 0,
+                'uic_scan_for_issue'=> $uicScanForIssue,
                 'status'=>$validatedData['status'],
             ];
             $erpSubStore->fill($data);
@@ -206,12 +221,21 @@ class SubStoreController extends Controller
                     'message' => 'Sub Store not found',
                 ], 404);
             }
+            $uicScanForIssue = "no";
+            if ($subStore -> type === ConstantHelper::STOCKK) {
+                if (isset($request -> is_warehouse_required) && $request -> stock_store_types === SubStoreConstants::MAIN_STORE_VALUE) {
+                    $uicScanForIssue = "yes";
+                } else {
+                    $uicScanForIssue = isset($request -> uic_scan_for_issue) ? "yes" : "no";
+                }
+            }
             $subStore->update([
                 'code' => $validatedData['code'],
                 'name' => $validatedData['name'],
                 'type'=>$validatedData['store_location_type'],
                 'station_wise_consumption'=>isset($request -> station_wise_consumption) ? 'yes' : 'no',
-                'is_warehouse_required'=>isset($request -> is_warehouse_required) ? 1 : 0,
+                'is_warehouse_required'=>isset($request -> is_warehouse_required) && $request -> stock_store_types === SubStoreConstants::MAIN_STORE_VALUE ? 1 : 0,
+                'uic_scan_for_issue' => $uicScanForIssue,
                 'status' => $validatedData['status'],
             ]);
             if ($subStore -> type == ConstantHelper::STOCKK) {

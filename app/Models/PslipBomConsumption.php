@@ -62,8 +62,10 @@ class PslipBomConsumption extends Model
 
     public function pslip_item()
     {
-        return $this->belongsTo(ErpProductionSlip::class,'pslip_item_id');
+        return $this->belongsTo(ErpPslipItem::class,'pslip_item_id');
     }
+
+    
 
     public function item_attributes_array()
     {
@@ -113,7 +115,7 @@ class PslipBomConsumption extends Model
         $storeId = $this->pslip_item->mo_product->mo->store_id ?? null;
         $subStoreId = $this->pslip_item->mo_product->mo->sub_store_id ?? null;
         $stationId = $this->pslip_item->mo_product->mo->station_id ?? null;
-        // dd($storeId,$subStoreId,$stationId,$this->item_id);
+        // dd($this->pslip_item);
         $rm_type = 'R';
         $itemWipStationId = null;
         if($this->rm_type =='sf') {

@@ -51,6 +51,7 @@ use App\Models\ProductSectionDetail;
 use App\Models\ProductSpecification;
 use App\Models\PurchaseIndent;
 use App\Models\PurchaseOrder;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\Service;
 use App\Models\Station;
 use App\Models\SubType;
@@ -169,7 +170,7 @@ class AutocompleteController extends Controller
                     $query->where('code', 'LIKE', "%$term%")
                           ->orWhere('description', 'LIKE', "%$term%");
                 })
-                ->get(['id', 'code', 'description']);
+                ->get(['id', 'code', 'description',]);
 
                 if ($results->isEmpty()) {
                     $results = Hsn::where('status', ConstantHelper::ACTIVE)
@@ -691,7 +692,7 @@ class AutocompleteController extends Controller
                     -> where('is_sale', 1)
                     -> where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
-                    ->get(['id', 'name', 'alias', 'percentage']);
+                    ->get(['id', 'hsn_id', 'name', 'alias', 'percentage']);
             }  elseif ($type === 'po_module_discount') {
                 $ids = json_decode($request->ids, TRUE) ?? [];
                 $ids = array_map('intval', $ids);
@@ -723,7 +724,7 @@ class AutocompleteController extends Controller
                     -> where('is_purchase', 1)
                     -> where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
-                    ->get(['id', 'name', 'alias', 'percentage']);
+                    ->get(['id', 'name', 'alias', 'percentage', 'hsn_id']);
             } elseif ($type === 'po_item_list') {
                 /*This for the PO*/
                 // $selectedAllItemIds = json_decode($request->input('selectedAllItemIds'), true) ?? [];
@@ -1108,9 +1109,9 @@ class AutocompleteController extends Controller
                 $term = $request->q ?? '';
                 $organizationId = auth()->user()?->organization_id ?? null;
 
-                
+
                 $vendorIds = [];
-                
+
                 // Get vendor IDs from RFQ or VendorItem
                 if ($rfqId) {
                     $rfq = ErpRfqHeader::find($rfqId);
@@ -1247,7 +1248,8 @@ class AutocompleteController extends Controller
                     });
                 })
                 ->limit(10)
-                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
+                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 
+                        'payment_terms_id','display_name', 'credit_days', 'credit_days_editable']);
             } else if ($type === 'location') {
                 $results = InventoryHelper::getAccessibleLocations();
             } else if ($type === 'all_stations') {
@@ -1556,8 +1558,7 @@ class AutocompleteController extends Controller
                 }
 
             } else if ($type === "po_document_qt") {
-                $results = PurchaseOrder::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
+                $results = PurchaseOrder::where('document_number', 'LIKE', "%{$term}%")
                     ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
@@ -1565,28 +1566,25 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "jo_document_qt") {
-                $results = JobOrder::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = JobOrder::where('document_number', 'LIKE', "%{$term}%")
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = JobOrder::limit(10)
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "so_document_qt") {
-                $results = ErpSaleOrder::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = ErpSaleOrder::where('document_number', 'LIKE', "%{$term}%")
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = ErpSaleOrder::limit(10)
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "po_asn_document_qt") {
-                $results = VendorAsn::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->where('asn_for', ConstantHelper::PO_SERVICE_ALIAS)
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = VendorAsn::where('document_number', 'LIKE', "%{$term}%")
+                        ->where('asn_for', ConstantHelper::PO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = VendorAsn::limit(10)
@@ -1594,10 +1592,9 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "jo_asn_document_qt") {
-                $results = VendorAsn::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->where('asn_for', ConstantHelper::JO_SERVICE_ALIAS)
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = VendorAsn::where('document_number', 'LIKE', "%{$term}%")
+                        ->where('asn_for', ConstantHelper::JO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = VendorAsn::limit(10)
@@ -1605,10 +1602,9 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "po_ge_document_qt") {
-                $results = GateEntryHeader::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->where('reference_type', ConstantHelper::PO_SERVICE_ALIAS)
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = GateEntryHeader::where('document_number', 'LIKE', "%{$term}%")
+                        ->where('reference_type', ConstantHelper::PO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = GateEntryHeader::limit(10)
@@ -1616,10 +1612,9 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "jo_ge_document_qt") {
-                $results = GateEntryHeader::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->where('reference_type', ConstantHelper::JO_SERVICE_ALIAS)
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = GateEntryHeader::where('document_number', 'LIKE', "%{$term}%")
+                        ->where('reference_type', ConstantHelper::JO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
 
                 if ($results->isEmpty()) {
                     $results = GateEntryHeader::limit(10)
@@ -1627,13 +1622,13 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "mrn_document_qt") {
-                $results = MrnHeader::where('book_code', 'LIKE', "%{$term}%")
-                        ->orWhere('document_number', 'LIKE', "%{$term}%")
-                    ->get(['id', 'document_number', 'book_code']);
+                $results = MrnHeader::where('document_number', 'LIKE', "%{$term}%")
+                        ->get(['id', 'document_number', 'book_code']);
+
                 if ($results->isEmpty()) {
                     $results = MrnHeader::limit(10)
                         ->get(['id', 'document_number', 'book_code']);
-                    }
+                }
             }else if ($type === "bom_document_qt") {
                 $results = Bom::where('type',ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS)
                     ->where('document_number', 'LIKE', "%$term%")

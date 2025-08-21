@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Helpers\ConstantHelper;
 
 return new class extends Migration
 {
@@ -22,7 +21,7 @@ return new class extends Migration
             $table->date('end_date')->nullable();
             $table->string('fy_month')->nullable();
             $table->boolean('lock_fy')->default(false)->nullable();
-            $table->string('status')->default('active')->index(); 
+            $table->string('status')->default('active')->index();
             $table->json('access_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

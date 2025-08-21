@@ -20,6 +20,7 @@ class ErpSubStore extends Model
         'type',
         'station_wise_consumption',
         'is_warehouse_required',
+        'uic_scan_for_issue',
         'status'
     ];
 

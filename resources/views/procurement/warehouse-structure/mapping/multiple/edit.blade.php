@@ -1,3 +1,5 @@
+
+
 @extends('layouts.app')
 
 @section('content')
@@ -256,7 +258,8 @@
                                                                             @if (!empty($parentDetails))
                                                                                 <select
                                                                                     name="details[{{ $groupIndex }}][parent_id][]"
-                                                                                    class="select2" multiple>
+                                                                                    class="form-select mw-100 parent-dropdown select2 parent_id"
+                                                                                    multiple style="min-width: 200px;">
                                                                                     @foreach ($parentDetails as $parent)
                                                                                         <option
                                                                                             value="{{ $parent->id }}"
@@ -288,14 +291,14 @@
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_weight]"
-                                                                            value="{{ number_format($record->max_weight, 2) }}"
+                                                                            value="{{ $record->max_weight }}"
                                                                             {{ $record->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_volume]"
-                                                                            value="{{ number_format($record->max_volume, 2) }}"
+                                                                            value="{{ $record->max_volume }}"
                                                                             {{ $record->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>
