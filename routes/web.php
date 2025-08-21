@@ -1901,6 +1901,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('taxes')->controller(TaxController::class)->group(function () {
         Route::get('/test-tax-calculation', 'testCalculateTax')->name('tax.test.calculate');
         Route::get('/tax-calculation', 'calculateItemTax')->name('tax.calculate');
+        Route::get('/tax-group-calculation', 'calculateTaxGroups')->name('tax.group.calculate');
         Route::get('/tax-calculation', 'calculateItemTax');
         Route::get('/', 'index')->name('tax.index');
         Route::get('/create', 'create')->name('tax.create');
@@ -2411,6 +2412,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
     Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
     Route::get('/production-slip/get-substore', [ErpProductionSlipController::class, 'getSubStore'])->name('production.slip.substore');
+    Route::get('/production-slip/get-item-alternate', [ErpProductionSlipController::class, 'getAlterItems'])->name('production.slip.clone_alterItems');
+    Route::get('/production-slip/get-item-attribute', [ErpProductionSlipController::class, 'getItemAttribute'])->name('production.slip.getattributes');
+    Route::get('/production-slip/get-avl-stock', [ErpProductionSlipController::class, 'getAvlStock'])->name('production.slip.avlStock');
+    Route::get('/production-slip/remove-alternate-item', [ErpProductionSlipController::class, 'removeAlternateItem'])->name('production.slip.remove_alternate_item');
 
     Route::prefix('stores')->controller(StoreController::class)->group(function () {
         # Get Store Address Ajax
@@ -2756,7 +2761,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
     
 
-    Route::resource('plant/bom', MaintBomController::class)->names([
+    Route::resource('plant/maint-bom', MaintBomController::class)->names([
         'index' => 'maint-bom.index',
         'create' => 'maint-bom.create',
         'store' => 'maint-bom.store',
@@ -2764,6 +2769,19 @@ Route::middleware(['user.auth'])->group(function () {
         'show' => 'maint-bom.show',
         'edit' => 'maint-bom.edit',
     ]);
+    
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+    Route::get('/', 'index')->name('maintenance-types.index');
+    Route::post('/', 'store')->name('maintenance-types.store');
+    Route::delete('/', 'delete')->name('maintenance-types.delete');
+});
+
+Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });
+
     Route::resource('plant/maint-wo', MaintWoController::class)->names([
         'create' => 'maint-wo.create',
         'store' => 'maint-wo.store',
@@ -2772,6 +2790,7 @@ Route::middleware(['user.auth'])->group(function () {
         'edit' => 'maint-wo.edit',
     ]);
     Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
+    Route::get('plant/populate-modal', [MaintWoController::class, 'populateModal'])->name('maint-wo.populateModal');
    
     Route::resource('plant/defect-noti', DefectNotificationController::class)
     ->names([
@@ -2977,7 +2996,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/revoke', 'revoke')->name('revoke');
         Route::post('/mail', 'mail')->name('mail');
         Route::get('/process-item', 'processItems')->name('process.items');
-        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
 
     });
@@ -2990,6 +3009,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/mail', 'mail')->name('mail');
         Route::get('/process-item', 'processItems')->name('process.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
+        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::get('/search-items', 'searchItems')->name('search.items');
+        Route::post('/generate-pdf', 'generatePdf')->name('generate-pdf');
 
     });
 
@@ -3052,18 +3074,6 @@ Route::middleware(['user.auth'])->group(function () {
 });
 
 
-
-Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
-    Route::get('/', 'index')->name('maintenance-types.index');
-    Route::post('/', 'store')->name('maintenance-types.store');
-    Route::delete('/', 'delete')->name('maintenance-types.delete');
-});
-
-Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
-        Route::get('/', 'index')->name('defect-types.index');
-        Route::post('/', 'store')->name('defect-types.store');
-        Route::delete('/', 'delete')->name('defect-types.delete');
-    });
     
     
 

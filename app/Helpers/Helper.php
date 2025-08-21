@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\ErpSaleInvoiceHistory;
 use Illuminate\Support\Facades\Cookie;
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
@@ -24,6 +25,7 @@ use App\Models\CRM\ErpCurrencyMaster;
 use App\Models\FixedAssetSetup;
 use App\Models\FixedAssetSub;
 use App\Models\MrnHeader;
+use App\Models\MrnDetail;
 use App\Models\ErpFinancialYear;
 use App\Models\Group;
 use App\Models\HomeLoan;
@@ -912,8 +914,7 @@ class Helper
                 // $query->where('cost_center_id', $cost)
                 return is_array($cost)
                     ? $query->whereIn('cost_center_id', $cost)
-                    : $query->where('cost_center_id', $cost);
-                ;
+                    : $query->where('cost_center_id', $cost);;
             })
             ->where('ledger_parent_id', $ledger_parent)
             ->whereHas('voucher', function ($query) use ($organization_id, $startDate, $endDate, $location) {
@@ -1171,12 +1172,14 @@ class Helper
                 ->orderByDesc('min_value')
                 ->first();
 
+
             if ($approvalWorkflow) {
                 $approve = true;
             }
             //Creator of document cannot approve
             // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
 
+            // dd($user->auth_user_id, $createdBy);
             if ($user->auth_user_id === $createdBy) {
                 $approve = false;
                 $revoke = true;
@@ -1735,7 +1738,7 @@ class Helper
     {
         $user = self::getAuthenticatedUser();
         $book = Book::where('id', $bookId)->first();
-        $bookTypeServiceAlias = $book?->service->alias;
+        $bookTypeServiceAlias = $book?->master_service->alias;
         $docApproval = new DocumentApproval;
         $docApproval->document_type = $bookTypeServiceAlias;
         $docApproval->document_id = $docId;
@@ -2132,30 +2135,30 @@ class Helper
                             });
                     }
                 ])->withSum([
-                        'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
-                            $query->where('ledger_parent_id', $group_id)
-                                ->when(!empty($cost), function ($query) use ($cost) {
-                                    // dd($cost);
-                                    // $query->where('cost_center_id', $cost);
-                                    return is_array($cost)
-                                        ? $query->whereIn('cost_center_id', $cost)
-                                        : $query->where('cost_center_id', $cost);
-                                })
-                                ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
+                    'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                        $query->where('ledger_parent_id', $group_id)
+                            ->when(!empty($cost), function ($query) use ($cost) {
+                                // dd($cost);
+                                // $query->where('cost_center_id', $cost);
+                                return is_array($cost)
+                                    ? $query->whereIn('cost_center_id', $cost)
+                                    : $query->where('cost_center_id', $cost);
+                            })
+                            ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                                    $query->when(!empty($organizations), function ($query) use ($organizations) {
-                                        $query->whereIn('organization_id', $organizations);
-                                    });
-                                    $query->when(!empty($location), function ($query) use ($location) {
-                                        $query->where('location', $location);
-                                    });
-
-                                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                                    $query->orderBy('document_date', 'asc');
-                                    $query->whereBetween('document_date', [$startDate, $endDate]);
+                                $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                    $query->whereIn('organization_id', $organizations);
                                 });
-                        }
-                    ], "debit_amt_{$currency}")
+                                $query->when(!empty($location), function ($query) use ($location) {
+                                    $query->where('location', $location);
+                                });
+
+                                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                $query->orderBy('document_date', 'asc');
+                                $query->whereBetween('document_date', [$startDate, $endDate]);
+                            });
+                    }
+                ], "debit_amt_{$currency}")
                 ->withSum([
                     'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
                         $query->where('ledger_parent_id', $group_id)
@@ -2230,7 +2233,7 @@ class Helper
                     $ledger->closing_type = $closing < 0 ? "Cr" : "Dr";
                     $ledger->opening_type = $opening_type;
                     $ledger->group_id = $group_id; // Default type if no details exist
-    
+
                     unset($ledger->details);
 
                     return $ledger;
@@ -3003,10 +3006,10 @@ class Helper
                         <td>' . $n++ . '</td>
                         <td>
                             ' . ucwords(str_replace(
-                            ['loan', 'Doc', 'Fee'],
-                            ['Loan', 'Document', 'Fee'],
-                            preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
-                        )) . '
+                        ['loan', 'Doc', 'Fee'],
+                        ['Loan', 'Document', 'Fee'],
+                        preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
+                    )) . '
                         </td>
                         <td>
                             <a target="_blank" href="' . asset('storage/' . $data->$column->doc) . '">
@@ -3753,7 +3756,7 @@ class Helper
                 $existingGroups[] = $partyGroups->id;
 
 
-                if (!in_array((int) $group_id, $existingGroups))
+                if (!in_array((int)$group_id, $existingGroups))
                     return [
                         'success' => false,
                         'message' => 'Group ID not mapped with ' . $group,
@@ -3795,7 +3798,7 @@ class Helper
                 $validatedData['created_by'] = self::getAuthenticatedUser()->id;
                 $validatedData['code'] = $code;
                 $validatedData['name'] = $name;
-                $validatedData['ledger_group_id'] = json_encode([(string) $group_id]);
+                $validatedData['ledger_group_id'] = json_encode([(string)$group_id]);
                 $validatedData['status'] = 1;
                 $validatedData['document_status'] = ConstantHelper::APPROVAL_NOT_REQUIRED;
 
@@ -4017,7 +4020,7 @@ class Helper
 
         while (
             FixedAssetRegistration::where('asset_code', $finalItemCode)
-                ->exists()
+            ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
@@ -4026,237 +4029,237 @@ class Helper
         return $finalItemCode;
     }
 
-    public static function mrnAssetRegister($mrn_id)
+    public static function mrnAssetRegister($mrn_id): array
     {
         DB::beginTransaction();
         try {
-            $mrn_asset = MrnAssetDetail::where('header_id', $mrn_id)->first();
-            if (empty($mrn_asset)) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'MRN not found'
-                ];
-            }
-            $salvageValueTotal = 0;
-
-            $category_id = $mrn_asset->asset_category_id;
-            $asset_name = $mrn_asset->asset_name;
-            $capitalize_date = $mrn_asset->capitalization_date;
-            $life = $mrn_asset->estimated_life;
-            $detail_id = json_decode($mrn_asset->detail_id);
-
-            // Example: Ensure $detail_id is an array of integers
-            if (!is_array($detail_id) || !array_reduce($detail_id, fn($carry, $id) => $carry && is_int($id), true)) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'detail_id must be an array of integers.'
-                ];
-            }
-
-            // Input validation
-            if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life) || empty($detail_id)) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life, detail_id) are required.'
-                ];
-            }
-
-            // Validate capitalize_date format (Y-m-d)
-            try {
-                $capitalize_date = Carbon::parse($capitalize_date)->format('Y-m-d');
-            } catch (Exception $e) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'Invalid capitalize_date format. Expected format: Y-m-d',
-                    'error' => $e->getMessage()
-                ];
-            }
-
-            // Validate life (should be a positive number)
-            if (!is_numeric($life) || $life <= 0) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'Asset life must be a positive number.'
-                ];
-            }
-
-            // Validate asset_name
-            if (!is_string($asset_name) || trim($asset_name) === '') {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'Asset name must be a non-empty string.'
-                ];
-            }
-
-            $mrn = MrnHeader::find($mrn_id);
-            if (empty($mrn)) {
-                DB::rollBack();
-                return [
-                    'message' => 'MRN not exist',
-                    'status' => false
-                ];
-            }
-
-            $setup = FixedAssetSetup::where('asset_category_id', $category_id)
-                ->where('act_type', 'company')->first();
-
-            if (empty($setup)) {
-                DB::rollBack();
-                return [
-                    'message' => 'Setup not exist',
-                    'status' => false
-                ];
-            }
-
-            $user = Helper::getAuthenticatedUser();
-            $organization = $user->organization;
-            $book = Book::find($mrn->book_id);
-            if (empty($book)) {
-                DB::rollBack();
-                return [
-                    'message' => 'MRN Book not found',
-                    'status' => false
-                ];
-            }
-
-            $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)
-                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
-                ->first();
-
-            if (!isset($glPostingBookParam) || !isset($glPostingBookParam->parameter_value[0])) {
-                DB::rollBack();
-                return [
-                    'status' => false,
-                    'message' => 'Financial Book Code is not specified',
-                    'data' => []
-                ];
-            }
-
-            $glPostingBookId = $glPostingBookParam->parameter_value[0];
-            $filteredItems = $mrn->items()
-                ->whereIn('id', $detail_id)
-                ->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
+            $assets = MrnHeader::where('id', $mrn_id)
+                ->whereHas('items', function ($q) {
+                    $q->where('basic_value', '>', 0) // must have positive basic_value
+                        ->whereHas('item', function ($q) {
+                            $q->where('is_asset', 1); // must be an asset
+                        })
+                        ->doesntHave('asset'); // must not have linked asset
                 })
-                //->doesntHave('asset')
-                ->get();
-            $asset_codes = [];
+                ->exists();
 
-            foreach ($filteredItems as $mrn_detail) {
-
-                $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
-                    ->where('mrn_header_id', $mrn->id)->first();
-
-                if (!empty($exitingReg)) {
+            if ($assets) {
+                $mrn = MrnHeader::find($mrn_id);
+                if (empty($mrn)) {
                     DB::rollBack();
                     return [
-                        'message' => 'MRN already registered with asset code ' . $exitingReg->asset_code,
+                        'message' => 'MRN not exist',
                         'status' => false
                     ];
                 }
 
-                $asset_code = self::generateAssetCode($category_id);
-                $existingAsset = FixedAssetRegistration::where('asset_code', $asset_code)->first();
+                $user = Helper::getAuthenticatedUser();
+                $organization = $user->organization;
+                $book = Book::find($mrn->book_id);
+                if (empty($book)) {
+                    DB::rollBack();
+                    return [
+                        'message' => 'MRN Book not found',
+                        'status' => false
+                    ];
+                }
 
-                if (!empty($existingAsset)) {
+                $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)
+                    ->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
+                    ->first();
+
+                if (!isset($glPostingBookParam) || !isset($glPostingBookParam->parameter_value[0])) {
                     DB::rollBack();
                     return [
                         'status' => false,
-                        'message' => 'Asset Code ' . $existingAsset->asset_code . ' already exists.',
+                        'message' => 'Financial Book Code is not specified',
                         'data' => []
                     ];
                 }
 
-                $currentValue = $mrn_detail->basic_value;
-                $depreciationPercentage = $setup->salvage_percentage ?? $organization->dep_percentage ?? null;
-                $salvageValue = round($currentValue * ($depreciationPercentage / 100), 2);
-                $method = $organization->dep_method;
+                $glPostingBookId = $glPostingBookParam->parameter_value[0];
 
-                $depreciationRate = 0;
-                if ($method === 'SLM') {
-                    $annualDepreciation = ($currentValue - $salvageValue) / $life;
-                    $depreciationRate = round(($annualDepreciation / $currentValue) * 100, 2);
-                } elseif ($method === 'WDV') {
-                    $depreciationRate = round((1 - pow($salvageValue / $currentValue, 1 / $life)) * 100, 2);
+                $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
+                if (empty($mrn_assets)) {
+                    DB::rollBack();
+                    return [
+                        'status' => false,
+                        'message' => 'MRN not found'
+                    ];
                 }
+                foreach ($mrn_assets as $mrn_asset) {
+                    $category_id = $mrn_asset->asset_category_id;
+                    $asset_name = $mrn_asset->asset_name;
+                    $capitalize_date = $mrn_asset->capitalization_date;
+                    $life = $mrn_asset->estimated_life;
+                    $detail_id = $mrn_asset->detail_id;
 
-                $data = [
-                    'organization_id' => $user->organization_id,
-                    'group_id' => $organization->group_id,
-                    'company_id' => $organization->company_id,
-                    'created_by' => $user->id,
-                    'type' => get_class($user),
-                    'book_id' => $glPostingBookId,
-                    'document_number' => $mrn->document_number,
-                    'document_date' => $mrn->document_date,
-                    'mrn_detail_id' => $mrn_detail->id,
-                    'mrn_header_id' => $mrn->id,
-                    'asset_code' => $asset_code,
-                    'asset_name' => $asset_name,
-                    'quantity' => $mrn_detail->accepted_qty,
-                    'category_id' => $category_id,
-                    'reference_doc_id' => $mrn->id,
-                    'reference_series' => ConstantHelper::MRN_SERVICE_ALIAS,
-                    'ledger_id' => $setup->ledger_id,
-                    'ledger_group_id' => $setup->ledger_group_id,
-                    'capitalize_date' => $capitalize_date,
-                    'last_dep_date' => $capitalize_date,
-                    'vendor_id' => $mrn->vendor_id,
-                    'currency_id' => $mrn->vendor?->currency_id,
-                    'sub_total' => $currentValue,
-                    'tax' => $mrn_detail->tax_value,
-                    'purchase_amount' => $currentValue + $mrn_detail->tax_value,
-                    'supplier_invoice_date' => $mrn->supplier_invoice_date,
-                    'book_date' => $mrn_detail->created_at ?? null,
-                    'supplier_invoice_no' => $mrn->supplier_invoice_no,
-                    'location_id' => $mrn->sub_store_id ?? null,
-                    'cost_center_id' => $mrn->cost_center_id ?? null,
-                    'maintenance_schedule' => $setup->maintenance_schedule ?? null,
-                    'depreciation_method' => $method,
-                    'useful_life' => $life,
-                    'salvage_value' => $salvageValue,
-                    'depreciation_percentage' => $depreciationRate,
-                    'depreciation_percentage_year' => $depreciationRate,
-                    'total_depreciation' => 0,
-                    'dep_type' => $organization->dep_type,
-                    'current_value' => $currentValue,
-                    'current_value_after_dep' => $currentValue,
-                    'document_status' => 'approved',
-                    'approval_level' => 1,
-                    'revision_number' => 0,
-                    'revision_date' => null,
-                    'status' => 'active',
+
+                    // Input validation
+                    if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life) || empty($detail_id)) {
+                        DB::rollBack();
+                        return [
+                            'status' => false,
+                            'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life, detail_id) are required.'
+                        ];
+                    }
+
+                    // Validate capitalize_date format (Y-m-d)
+                    try {
+                        $capitalize_date = Carbon::parse($capitalize_date)->format('Y-m-d');
+                    } catch (Exception $e) {
+                        DB::rollBack();
+                        return [
+                            'status' => false,
+                            'message' => 'Invalid capitalize_date format. Expected format: Y-m-d',
+                            'error' => $e->getMessage()
+                        ];
+                    }
+
+                    // Validate life (should be a positive number)
+                    if (!is_numeric($life) || $life <= 0) {
+                        DB::rollBack();
+                        return [
+                            'status' => false,
+                            'message' => 'Asset life must be a positive number.'
+                        ];
+                    }
+
+                    // Validate asset_name
+                    if (!is_string($asset_name) || trim($asset_name) === '') {
+                        DB::rollBack();
+                        return [
+                            'status' => false,
+                            'message' => 'Asset name must be a non-empty string.'
+                        ];
+                    }
+
+                    $setup = FixedAssetSetup::where('asset_category_id', $category_id)
+                        ->where('act_type', 'company')->first();
+
+                    if (empty($setup)) {
+                        DB::rollBack();
+                        return [
+                            'message' => 'Setup not exist',
+                            'status' => false
+                        ];
+                    }
+                    $mrn_detail = MrnDetail::find($detail_id);
+
+                    $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
+                        ->where('mrn_header_id', $mrn->id)->first();
+
+                    if (!empty($exitingReg)) {
+                        DB::rollBack();
+                        return [
+                            'message' => 'MRN already registered with asset code ' . $exitingReg->asset_code,
+                            'status' => false
+                        ];
+                    }
+
+                    $asset_code = self::generateAssetCode($category_id);
+                    $existingAsset = FixedAssetRegistration::where('asset_code', $asset_code)->first();
+
+                    if (!empty($existingAsset)) {
+                        DB::rollBack();
+                        return [
+                            'status' => false,
+                            'message' => 'Asset Code ' . $existingAsset->asset_code . ' already exists.',
+                            'data' => []
+                        ];
+                    }
+
+                    $currentValue = $mrn_detail->basic_value;
+                    $depreciationPercentage = $setup->salvage_percentage ?? $organization->dep_percentage ?? null;
+                    $salvageValue = round($currentValue * ($depreciationPercentage / 100), 2);
+                    $method = $organization->dep_method;
+
+                    $depreciationRate = 0;
+                    if ($method === 'SLM') {
+                        $annualDepreciation = ($currentValue - $salvageValue) / $life;
+                        $depreciationRate = round(($annualDepreciation / $currentValue) * 100, 2);
+                    } elseif ($method === 'WDV') {
+                        $depreciationRate = round((1 - pow($salvageValue / $currentValue, 1 / $life)) * 100, 2);
+                    }
+
+                    $data = [
+                        'organization_id' => $user->organization_id,
+                        'group_id' => $organization->group_id,
+                        'company_id' => $organization->company_id,
+                        'created_by' => $user->id,
+                        'type' => get_class($user),
+                        'book_id' => $glPostingBookId,
+                        'document_number' => $mrn->document_number,
+                        'document_date' => $mrn->document_date,
+                        'mrn_detail_id' => $mrn_detail->id,
+                        'mrn_header_id' => $mrn->id,
+                        'asset_code' => $asset_code,
+                        'asset_name' => $asset_name,
+                        'quantity' => $mrn_detail->accepted_qty,
+                        'category_id' => $category_id,
+                        'reference_doc_id' => $mrn->id,
+                        'reference_series' => ConstantHelper::MRN_SERVICE_ALIAS,
+                        'ledger_id' => $setup->ledger_id,
+                        'ledger_group_id' => $setup->ledger_group_id,
+                        'capitalize_date' => $capitalize_date,
+                        'last_dep_date' => $capitalize_date,
+                        'vendor_id' => $mrn->vendor_id,
+                        'currency_id' => $mrn->vendor?->currency_id,
+                        'sub_total' => $currentValue,
+                        'tax' => $mrn_detail->tax_value,
+                        'purchase_amount' => $currentValue + $mrn_detail->tax_value,
+                        'supplier_invoice_date' => $mrn->supplier_invoice_date,
+                        'book_date' => $mrn_detail->created_at ?? null,
+                        'supplier_invoice_no' => $mrn->supplier_invoice_no,
+                        'location_id' => $mrn->sub_store_id ?? null,
+                        'cost_center_id' => $mrn->cost_center_id ?? null,
+                        'maintenance_schedule' => $setup->maintenance_schedule ?? null,
+                        'depreciation_method' => $method,
+                        'useful_life' => $life,
+                        'salvage_value' => $salvageValue,
+                        'depreciation_percentage' => $depreciationRate,
+                        'depreciation_percentage_year' => $depreciationRate,
+                        'total_depreciation' => 0,
+                        'dep_type' => $organization->dep_type,
+                        'current_value' => $currentValue,
+                        'current_value_after_dep' => $currentValue,
+                        'document_status' => 'approved',
+                        'approval_level' => 1,
+                        'revision_number' => 0,
+                        'revision_date' => null,
+                        'status' => 'active',
+                    ];
+
+                    $asset = FixedAssetRegistration::create($data);
+
+                    FixedAssetSub::generateSubAssets(
+                        $asset->id,
+                        $asset->asset_code,
+                        $asset->quantity,
+                        $asset->current_value,
+                        $asset->salvage_value
+                    );
+                    $mrn_asset->salvage_value = $salvageValue;
+                    $mrn_asset->asset_code = $asset_code;
+                    $mrn_asset->save();
+                }
+                
+
+                DB::commit();
+
+                return [
+                    'status' => true,
+                    'message' => "Registration Added",
+                    'data' => []
+                ];
+            } else {
+                return [
+                    'status' => true,
+                    'message' => "MRN does not have any asset to register",
+                    'data' => []
                 ];
 
-                $asset = FixedAssetRegistration::create($data);
-
-                FixedAssetSub::generateSubAssets(
-                    $asset->id,
-                    $asset->asset_code,
-                    $asset->quantity,
-                    $asset->current_value,
-                    $asset->salvage_value
-                );
-                $asset_codes[] = $asset_code;
-                $salvageValueTotal += $salvageValue;
             }
-            $mrn_asset->salvage_value = $salvageValueTotal;
-            $mrn_asset->asset_code = $asset_codes;
-            $mrn_asset->save();
-
-            DB::commit();
-
-            return [
-                'status' => true,
-                'message' => "Registration Added",
-                'data' => []
-            ];
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('MRN Asset Register Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);

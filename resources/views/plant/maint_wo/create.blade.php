@@ -705,73 +705,8 @@
 											<th>Doc No</th>
 										  </tr>
 										</thead>
-										<tbody>
-											<tr class="trail-bal-tabl-none">
-											    <th class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_1" data-equipment-id="1">
-														<label class="form-check-label" for="equipment_1"></label>
-													</div> 
-												</th> 
-												<td><strong>Procesor</strong></td> 
-												<td>Running</td>
-												<td>Plant</td>
-												<td>BOM</td>
-												<td>01</td>
-											</tr>
-											<tr class="trail-bal-tabl-none">
-											    <th class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_2" data-equipment-id="2">
-														<label class="form-check-label" for="equipment_2"></label>
-													</div> 
-												</th>
-												<td><strong>Procesor</strong></td> 
-												<td>Running</td>
-												<td>Plant</td>
-												<td>BOM</td>
-												<td>01</td>
-											</tr>
-											<tr class="trail-bal-tabl-none">
-											    <th class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_3" data-equipment-id="3">
-														<label class="form-check-label" for="equipment_3"></label>
-													</div> 
-												</th>
-												<td><strong>Procesor</strong></td> 
-												<td>Running</td>
-												<td>Plant</td>
-												<td>BOM</td>
-												<td>01</td>
-												
-											</tr>
-											<tr class="trail-bal-tabl-none">
-											    <th class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_4" data-equipment-id="4">
-														<label class="form-check-label" for="equipment_4"></label>
-													</div> 
-												</th>
-												<td><strong>Procesor</strong></td> 
-												<td>Running</td>
-												<td>Plant</td>
-												<td>BOM</td>
-												<td>01</td>
-											</tr>
-											<tr class="trail-bal-tabl-none">
-											    <th class="customernewsection-form">
-													<div class="form-check form-check-primary custom-radio">
-														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_5" data-equipment-id="5">
-														<label class="form-check-label" for="equipment_5"></label>
-													</div> 
-												</th>
-												<td><strong>Procesor</strong></td> 
-												<td>Running</td>
-												<td>Plant</td>
-												<td>BOM</td>
-												<td>01</td>
-											</tr>
+										<tbody id="eqptTable">
+											
 											 
 											  
 										</tbody>
@@ -869,39 +804,8 @@
 											<th>Reported By</th>  
 										  </tr>
 										</thead>
-										<tbody>
-											@if(isset($defectNotifications) && $defectNotifications->count() > 0)
-												@foreach($defectNotifications as $index => $defect)
-													<tr class="trail-bal-tabl-none">
-														<td class="customernewsection-form">
-															<div class="form-check form-check-primary custom-radio">
-																<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_{{ $defect->id }}" 
-																	data-defect-id="{{ $defect->id }}"
-																	data-equipment="{{ $defect->equipment?->name ?? 'N/A' }}"
-																	data-defect-type="{{ $defect->defectType?->name ?? 'N/A' }}"
-																	data-priority="{{ $defect->priority ?? '' }}"
-																	data-problem="{{ $defect->problem ?? '' }}"
-																	data-reported-by="{{ $defect->creator?->name ?? 'N/A' }}">
-																<label class="form-check-label" for="defect_row_{{ $defect->id }}"></label>
-															</div> 
-														</td>
-														<td><strong>{{ $defect->document_date ? \Carbon\Carbon::parse($defect->document_date)->format('d-m-Y') : 'N/A' }}</strong></td> 
-														<td>{{ $defect->book?->book_code ?? 'N/A' }}</td>
-														<td>{{ $defect->document_number ?? 'N/A' }}</td>
-														<td>{{ $defect->equipment?->name ?? 'N/A' }}</td>
-														<td>{{ $defect->defectType?->name ?? 'N/A' }}</td>
-														<td>{{ $defect->priority ?? '' }}</td>
-														<td>{{ $defect->problem ?? '' }}</td>
-														<td>{{ $defect->creator?->name ?? 'N/A' }}</td>
-													</tr>
-												@endforeach
-											@else
-												<tr class="trail-bal-tabl-none">
-													<td colspan="9" class="text-center">No defect notifications found</td>
-												</tr>
-											@endif
-											 
-											  
+										<tbody id="defectTable">
+										
 										</tbody>
 
 
@@ -994,12 +898,9 @@
 
 @section('scripts')
 	<script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
-    @include('plant.maint-wo.common-js-route',["wo" => isset($wo) ? $order : null, "route_prefix" => "maint-wo"])
+    @include('plant.maint_wo.common-js-route',["wo" => isset($wo) ? $wo : null, "route_prefix" => "maint-wo"])
     <script src="{{ asset("assets\\js\\modules\\maint-wo\\common-script.js") }}"></script>
-  
-
-
-	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+  	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 	<script>
 		const itemsData = @json($items);
 		let rowCount = 1;
@@ -1153,101 +1054,6 @@
 			let isChecked = $(this).is(':checked');
 			$('.mrntableselectexcel .row-check').prop('checked', isChecked);
 		});
-		function resetParametersDependentElements(data) {
-			let backDateAllowed = false;
-			let futureDateAllowed = false;
-
-			if (data != null) {
-				console.log(data.parameters.back_date_allowed);
-				if (Array.isArray(data?.parameters?.back_date_allowed)) {
-					for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
-						if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
-							backDateAllowed = true;
-							break; // Exit the loop once we find "yes"
-						}
-					}
-				}
-				if (Array.isArray(data?.parameters?.future_date_allowed)) {
-					for (let i = 0; i < data.parameters.future_date_allowed.length; i++) {
-						if (data.parameters.future_date_allowed[i].trim().toLowerCase() === "yes") {
-							futureDateAllowed = true;
-							break; // Exit the loop once we find "yes"
-						}
-					}
-				}
-				//console.log(backDateAllowed, futureDateAllowed);
-
-			}
-
-			const dateInput = document.getElementById("document_date");
-
-			// Determine the max and min values for the date input
-			const today = moment().format("YYYY-MM-DD");
-
-			if (backDateAllowed && futureDateAllowed) {
-				dateInput.removeAttribute("min");
-				dateInput.removeAttribute("max");
-			} else if (backDateAllowed) {
-				dateInput.setAttribute("max", today);
-				dateInput.removeAttribute("min");
-			} else if (futureDateAllowed) {
-				dateInput.setAttribute("min", today);
-				dateInput.removeAttribute("max");
-			} else {
-				dateInput.setAttribute("min", today);
-				dateInput.setAttribute("max", today);
-
-			}
-		}
-
-		$('#book_id').on('change', function () {
-			resetParametersDependentElements(null);
-			let currentDate = new Date().toISOString().split('T')[0];
-			let document_date = $('#document_date').val();
-			let bookId = $('#book_id').val();
-			let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
-				"&document_date=" + document_date;
-			fetch(actionUrl).then(response => {
-				return response.json().then(data => {
-					if (data.status == 200) {
-						resetParametersDependentElements(data.data);
-						$("#book_code_input").val(data.data.book_code);
-						if (!data.data.doc.document_number) {
-							$("#document_number").val('');
-							$('#doc_number_type').val('');
-							$('#doc_reset_pattern').val('');
-							$('#doc_prefix').val('');
-							$('#doc_suffix').val('');
-							$('#doc_no').val('');
-						} else {
-							$("#document_number").val(data.data.doc.document_number);
-							$('#doc_number_type').val(data.data.doc.type);
-							$('#doc_reset_pattern').val(data.data.doc.reset_pattern);
-							$('#doc_prefix').val(data.data.doc.prefix);
-							$('#doc_suffix').val(data.data.doc.suffix);
-							$('#doc_no').val(data.data.doc.doc_no);
-						}
-						if (data.data.doc.type == 'Manually') {
-							$("#document_number").attr('readonly', false);
-						} else {
-							$("#document_number").attr('readonly', true);
-						}
-
-					}
-					if (data.status == 404) {
-						$("#document_number").val('');
-						$('#doc_number_type').val('');
-						$('#doc_reset_pattern').val('');
-						$('#doc_prefix').val('');
-						$('#doc_suffix').val('');
-						$('#doc_no').val('');
-						showToast('error', data.message);
-					}
-				});
-			});
-		});
-
-		$('#book_id').trigger('change');
 		initAutoForItem('.item_code');
 		function updateJsonData() {
 			// Collect Spare Parts Data
@@ -1626,6 +1432,7 @@
 
 		// Simple functions for equipment selection
 		function selectEquipmentReference() {
+			loadModal('eqpt');
 			console.log('Equipment button clicked');
 			$('#reference_type').val('equipment');
 			$('#reference_type_error').hide();
@@ -1643,6 +1450,7 @@
 		}
 		
 		function selectDefectNotificationReference() {
+			loadModal('defect');
 			console.log('Defect notification button clicked');
 			$('#reference_type').val('defect_notification');
 			$('#reference_type_error').hide();
@@ -1676,10 +1484,13 @@
 			if (!equipmentName) {
 				equipmentName = equipmentRow.find('td').eq(0).text().trim();
 			}
+			var eqpt = selectedEquipment.data('eqpt');
 			
 			// Populate equipment fields
-			$('#equipment_name').val(equipmentName);
+			$('#equipment_name').val(selectedEquipment.data('equipment-name'));
 			$('#equipment_id').val(selectedEquipment.data('equipment-id'));
+			$('#maintenance_type').val(selectedEquipment.data('maintenance-type'));
+			
 			
 			// Show equipment detail fields including defect type
 			$('.equipment-detail-field').show();

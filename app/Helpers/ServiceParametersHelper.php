@@ -299,6 +299,43 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ]
     ];
+    const MAINT_WO_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => [ConstantHelper::DEFECT_NOTIFICATION, ConstantHelper::EQPT], //All possible values
+            "default_value" => [ConstantHelper::DEFECT_NOTIFICATION, ConstantHelper::EQPT], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+          [
+            "name" => self::SERVICE_ITEM_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => false,
+            'service_level_visibility' => false,
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ]
+    ];
     const FIXED_ASSET_SERVICE_PARAMETERS = [
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
@@ -2576,6 +2613,7 @@ class ServiceParametersHelper
         // ],
     ];
     const APPLICABLE_SERVICE_PARAMETERS = [
+        ConstantHelper::MAINT_WO=>self::MAINT_WO_SERVICE_PARAMETERS,
         ConstantHelper::TI_SERVICE_ALIAS => self::TI_SERVICE_PARAMETERS,
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_SERVICE_PARAMETERS,
         ConstantHelper::SQ_SERVICE_ALIAS => self::SQ_SERVICE_PARAMETERS,

@@ -5,10 +5,8 @@ window.pageData = {
     editOrder: {{ (isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? 'true' : 'false' }},
     revNoQuery: {{ isset(request()->revisionNumber) ? 'true' : 'false' }},
     woId: {!! json_encode(isset($wo) ? $wo -> id : null) !!},
-    startDate:{!! $current_financial_year['start_date'] ? json_encode($current_financial_year['start_date']) : 'null'  !!},
-    endDate:{!! $current_financial_year['end_date'] ? json_encode($current_financial_year['end_date']) : 'null' !!},
     today: "{!! Carbon\Carbon::now()->format('Y-m-d') !!}",
-    menu_alias : "{!!  request() -> segments()[0] !!}",
+    menu_alias : "plant_maint-wo",
     redirectUrl : "{!! isset($redirectUrl) ? $redirectUrl : '' !!}",
 };
 </script>
@@ -20,6 +18,7 @@ window.pageData = {
         storeData : "{{route('get_store_data')}}",
         bookDetails : "{{route('book.service-series.get')}}",
         getSeries : "{{ url('get-series') }}/",
+        ApiURL: "{{ route('maint-wo.populateModal') }}",
     };
 </script>
 
