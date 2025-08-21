@@ -223,8 +223,6 @@ class InventoryHelper
             }
         }
 
-        // dd('stockLedger', $stockLedger->get());
-
         // Filters for Store, Rack, Shelf, and Bin (if needed)
         if ($storeId) {
             $stockLedger->where('store_id', $storeId);
@@ -486,7 +484,8 @@ class InventoryHelper
             $query -> where('wip_station_id', $itemWipStationId);
         }
 
-        $query -> orderBy('original_receipt_date');
+        $query -> orderBy('expiry_date') 
+        -> orderBy('original_receipt_date');
 
         // Select Records with Grouping and Summing
         $query->select([
@@ -494,6 +493,7 @@ class InventoryHelper
             DB::raw('SUM(receipt_qty - reserved_qty) as total_receipt_qty'),
             DB::raw('SUM(org_currency_cost) as total_org_currency_cost')
         ])
+        ->orderBy('expiry_date') 
         ->orderBy('original_receipt_date')
         ->orderBy('id')
         ->groupBy([
@@ -1258,7 +1258,7 @@ class InventoryHelper
     {
         try{
             $invoiceLedger = $invoiceLedger['invoiceLedger'] ?? null; // as discussed with brijesh
-            $user = Helper::getAuthenticatedUser();
+            // $user = Helper::getAuthenticatedUser();
             $inventoryUomQty = $documentItemLocation->mi_inventory_uom_qty ?? $documentItemLocation->inventory_uom_qty;
             $balanceQty = 0;
             $extraQty = 0;
@@ -1269,7 +1269,7 @@ class InventoryHelper
             $itemCode = $invoiceLedger->item_code;
             if(!is_null($issueQty) && ($issueQty > $inventoryUomQty)){
                 $balanceQty = $issueQty - $inventoryUomQty;
-                $response = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
+                $response = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation, $stockReservation = null);
 
                 $message = $response['message'];
                 $status = $response['status'];
@@ -1299,6 +1299,7 @@ class InventoryHelper
                     ->where('stock_type', $invoiceLedger -> stock_type)
                     ->whereNull('utilized_id')
                     ->whereRaw('receipt_qty > 0')
+                    ->orderBy('expiry_date')
                     ->orderBy('original_receipt_date')
                     ->orderBy('document_date')
                     ->orderBy('id');
@@ -1431,12 +1432,12 @@ class InventoryHelper
                                     $newStockLedger->utilized_date = null;
                                     $newStockLedger->save();
 
-                                    if($stockLedger->hold_qty > 0){
-                                        $newStockLedger->hold_qty = $stockLedger->hold_qty;
-                                        $newStockLedger->save();
-                                        $stockLedger->hold_qty = 0;
-                                        $stockLedger->save();
-                                    }
+                                    // if($stockLedger->hold_qty > 0){
+                                    //     $newStockLedger->hold_qty = $stockLedger->hold_qty;
+                                    //     $newStockLedger->save();
+                                    //     $stockLedger->hold_qty = 0;
+                                    //     $stockLedger->save();
+                                    // }
 
                                     $newStockLedger->total_cost = round(($newStockLedger->cost_per_unit*$newStockLedger->receipt_qty), 2);
                                     $newStockLedger->save();
@@ -1527,7 +1528,6 @@ class InventoryHelper
                 ->whereNull('utilized_id')
                 ->latest()
                 ->first();
-
             if($receiptStockLedger){
                 $receiptStockLedger->total_cost += $mrnJoItem->total_cost;
                 $receiptStockLedger->save();
@@ -1543,7 +1543,7 @@ class InventoryHelper
     }
 
     // Update Issue Stock For Less Qty
-    private static function updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation=NULL)
+    private static function updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation=NULL, $stockReservation = null)
     {
         try{
         $user = Helper::getAuthenticatedUser();
@@ -1557,11 +1557,12 @@ class InventoryHelper
             $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('utilized_id', $invoiceLedger->id)
                 ->whereNotNull('receipt_qty')
-                ->where('hold_qty', '<=' , '0')
+                // ->where('hold_qty', '<=' , '0')
                 ->orderBy('document_date', 'DESC')
                 ->get();
 
             if ($utilizedStockLedger->isNotEmpty()) {
+
                 foreach ($utilizedStockLedger as $val) {
                     $adjustedQty = 0;
                     $adjustedType = 0;
@@ -1693,6 +1694,7 @@ class InventoryHelper
                 ];
             }
         } catch (\Exception $e) {
+            // dd($e);
             \Log::error('Error in updateIssueStockForLessQty: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
@@ -2644,11 +2646,11 @@ class InventoryHelper
                     ->where('document_detail_id',$documentItem->id)
                     ->where('book_type','=',$bookType)
                     ->first();
+                $issueQty = $stockLedger?->issue_qty ?? 0;
                 if(!$stockLedger){
                     $stockLedger = new StockLedger();
                 }
                 $utilizedQty = 0;
-                $issueQty = $stockLedger?->issue_qty ?? 0;
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
 
                 if($invoiceLedger['status'] == 'error'){

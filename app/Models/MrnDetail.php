@@ -81,7 +81,7 @@ class MrnDetail extends Model
         'group_currency',
         'exchange_rate_to_group_currency',
         'selected_item',
-        'remark'
+        'remark',
     ];
 
     public $referencingRelationships = [

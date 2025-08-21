@@ -649,6 +649,7 @@ class ErpProductionSlipController extends Controller
                         // foreach ($bomDetails as $bomDetailKey => $bomDetail) {
                         $alternateId = null;
                         $consArr = [];
+                        // dd($consuptions);
                         foreach ($consuptions as $consuption) {
 
                             $alternateId = $consuption['alternate_id'] ?? null;
@@ -677,14 +678,17 @@ class ErpProductionSlipController extends Controller
                             $bomDetail = MoBomMapping::find($consuption['mo_bom_cons_id']);
                             $item = Item::find($consuption['item_id']);
 
-                            $pslipBomMapping = PslipBomConsumption::where('pslip_id', $productionSlip?->id)
-                                        ->where('pslip_item_id', $psItem?->id)
-                                        ->where('bom_detail_id', $bomDetail->bom_detail_id)
-                                        ->when(isset($consuption['pslip_bom_cons_id']) && !empty($consuption['pslip_bom_cons_id']),
-                                            fn($q) => $q->where('id', $consuption['pslip_bom_cons_id'])
-                                        )
-                                        ->where('station_id', $bomDetail->station_id)
-                                        ->first() ?? new PslipBomConsumption;
+
+                            $pslipBomConsId = @$consuption['pslip_bom_cons_id'];
+                            $pslipBomMapping = PslipBomConsumption::find($pslipBomConsId) ??  new PslipBomConsumption;
+                            // $pslipBomMapping = PslipBomConsumption::where('pslip_id', $productionSlip?->id)
+                            //             ->where('pslip_item_id', $psItem?->id)
+                            //             ->where('bom_detail_id', $bomDetail->bom_detail_id)
+                            //             ->when(isset($consuption['pslip_bom_cons_id']) && !empty($consuption['pslip_bom_cons_id']),
+                            //                 fn($q) => $q->where('id', $consuption['pslip_bom_cons_id'])
+                            //             )
+                            //             ->where('station_id', $bomDetail->station_id)
+                            //             ->first() ?? new PslipBomConsumption;
 
                             $previousConsumption = $pslipBomMapping->exists ? $pslipBomMapping->consumption_qty : 0;
                             $newConsumption = floatval($bomDetail->bom_qty) * floatval($itemDataValue['qty']);
@@ -720,6 +724,9 @@ class ErpProductionSlipController extends Controller
                             $pslipBomMapping->section_id = $bomDetail->section_id;
                             $pslipBomMapping->sub_section_id = $bomDetail->sub_section_id;
                             $pslipBomMapping->save();
+
+                            $consArr[] = $pslipBomMapping->toArray();
+
                             $delta = $newConsumption - $previousConsumption;
                             // Back Update Mo Item Consumption
                             $moProductAttributes = $bomDetail->attributes ?? [];
@@ -747,22 +754,7 @@ class ErpProductionSlipController extends Controller
                             }
                         }
 
-                        // //Order Pulling condition
-                        // if (isset($request -> pwo_item_id[$itemDataKey])) {
-                        //     //Back update in mapping table
-                        //     $pwoSoMapping = PwoSoMapping::where('id', $request -> pwo_item_id[$itemDataKey]) -> first();
-                        //     if (isset($pwoSoMapping)) {
-                        //         $pwoSoMapping -> pslip_qty = ($pwoSoMapping -> pslip_qty - (isset($oldMPsItem) ? $oldMPsItem -> qty : 0)) + $itemDataValue['qty'];
-                        //         $pwoSoMapping -> save();
-                        //     }
-                        //     //Back update in so item
-                        //     $soItem = ErpSoItem::find($pwoSoMapping ?-> so_item_id);
-                        //     if (isset($soItem)) {
-                        //         $soItem -> pslip_qty = ($soItem -> pslip_qty - (isset($oldMPsItem) ? $oldMPsItem -> qty : 0)) + $itemDataValue['qty'];
-                        //         $soItem -> save();
-                        //     }
 
-                        // }
 
                         //Item Attributes
                         if (isset($request -> item_attributes[$itemDataKey])) {
@@ -871,13 +863,7 @@ class ErpProductionSlipController extends Controller
                     $productionSlip->save();
                 }
 
-                // if(isset($psItem) && $psItem) {
-                //     ErpPslipItemAttribute::where([
-                //         'pslip_id' => $productionSlip -> id,
-                //         // 'pslip_item_id' => $psItem ?-> id,
-                //     ]) -> whereNotIn('id', $itemAttributeIds) -> delete();
-                // }
-                //Header TED (Discount)
+
 
                 //Approval check
                 if ($request -> pslip_id)
@@ -1044,13 +1030,7 @@ class ErpProductionSlipController extends Controller
                             'error' => ''
                         ], 422);
                     }
-                    // if($moProdItemReceipt['status'] != 'success') {
-                    //     DB::rollBack();
-                    //     return response() -> json([
-                    //         'status' => 'error',
-                    //         'message' => "Error while updating stock ledger for receipt.",
-                    //     ]);
-                    // }
+
                 }
 
                 // Back Update Mo Product Qty
@@ -1077,35 +1057,15 @@ class ErpProductionSlipController extends Controller
                             $moProduct->pwoMapping->pslip_qty += $deltaQty;
                             $moProduct->pwoMapping->save();
                             if($moProduct?->soItem) {
-                                #to be used after reservation is handled
-                                // $stockLedgerId = StockLedger::where('book_type', ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS)
-                                // ->where('document_header_id',$pslipItem->pslip_id)
-                                // ->where('document_detail_id', $pslipItem->id)
-                                // ->where('organization_id',$productionSlip->organization_id)
-                                // ->where('transaction_type','receipt')
-                                // ->value('id');
-                                # Stock Reservation
-                                #to be used after reservation is handled
-                                // if($stockLedgerId) {
-                                //     $soBalQty = $pslipItem->so_item->order_qty - $pslipItem->so_item->pslip_qty;
-                                //     $reserveQty = min($soBalQty,$pslipItem->qty);
-                                //     $stockReservation = new StockLedgerReservation;
-                                //     $stockReservation->stock_ledger_id = $stockLedgerId;
-                                //     $stockReservation->pslip_id = $pslipItem->pslip_id;
-                                //     $stockReservation->pslip_item_id = $pslipItem->id;
-                                //     $stockReservation->so_id = $pslipItem?->so_id;
-                                //     $stockReservation->so_item_id = $pslipItem?->so_item_id;
-                                //     $stockReservation->quantity = $reserveQty;
-                                //     $stockReservation->save();
-                                //     $stockReservation->stockLedger->reserved_qty += $stockReservation->quantity;
-                                //     $stockReservation->stockLedger->save();
-                                // }
                                 $moProduct->soItem->pslip_qty += $deltaQty;
                                 $moProduct->soItem->save();
                             }
                         }
                     }
                 }
+
+                // $checkPslipBomConsumption = PslipBomConsumption::where('pslip_id', $productionSlip?->id)->get();
+                // dd('checkPslipBomConsumption',$checkPslipBomConsumption, 'consArr', $consArr);
 
                 DB::commit();
 

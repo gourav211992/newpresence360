@@ -18,8 +18,9 @@ use App\Http\Controllers\Kaizen\{IndexController,KaizenController,DesignationCon
 Route::middleware(['user.auth'])->group(function () {
 
     // For Web Routes
-    Route::controller(IndexController::class)->group(function () {
-        Route::get('/dashboard', 'index')->name('kaizen.dashboard');
+    Route::prefix('dashboard')->controller(IndexController::class)->group(function () {
+        Route::get('/', 'index')->name('kaizen.dashboard');
+        Route::get('get/', 'getDashboard')->name('kaizen.get-dashboard');
     });
 
     Route::controller(KaizenController::class)->group(function () {
@@ -37,6 +38,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('improvement-masters')->controller(ImprovementController::class)->group(function () {
         Route::get('/', 'index')->name('improvement-masters.index');
         Route::post('/', 'store')->name('improvement-masters.store');
+        Route::get('/download-pdf', 'pdfView')->name('improvement.pdf-download');
         Route::put('/{id}', 'update')->name('improvement-masters.update');
         Route::delete('/{id}', 'destroy')->name('improvement-masters.destroy');
     });

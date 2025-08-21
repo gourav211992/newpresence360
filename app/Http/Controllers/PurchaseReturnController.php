@@ -53,6 +53,7 @@ use App\Models\Organization;
 use App\Models\NumberPattern;
 use App\Models\AttributeGroup;
 use App\Models\EwayBillMaster;
+use App\Models\ErpFinancialYear;
 
 use App\Models\ErpItem;
 use App\Models\AuthUser;
@@ -71,6 +72,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\MrnModuleHelper;
 use App\Helpers\GstInvoiceHelper;
 use App\Helpers\InventoryHelperV2;
 use App\Helpers\MasterIndiaHelper;
@@ -805,6 +807,23 @@ class PurchaseReturnController extends Controller
                     'error' => ''
                 ], 422);
             }
+
+            // Purchase Return Summary
+            if(in_array($pb->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                // PR Purchase Summary
+                $fy = Helper::getFinancialYear($pb -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id) 
+                        -> where('revision_number', $pb -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -1509,6 +1528,22 @@ class PurchaseReturnController extends Controller
                     'message' => $status['message'],
                     'error' => ''
                 ], 422);
+            }
+
+            // Purchase Return Summary
+            if(in_array($pb->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                // PR Purchase Summary
+                $fy = Helper::getFinancialYear($pb -> document_date);
+                $fyYear = ErpFinancialYear::find($fy['id']);
+                if ((int)$revisionNumber > 0) {
+                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id) 
+                        -> where('revision_number', $pb -> revision_number - 1) -> first();
+                    if ($oldMrn) {
+                        MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear, $oldMrn);
+                    }
+                } else {
+                    MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear);
+                }
             }
 
             DB::commit();

@@ -55,18 +55,18 @@ class EditMaterialReceiptRequest extends FormRequest
             'vendor_id' => 'nullable',
             'currency_id' => 'nullable',
             'payment_term_id' => 'nullable',
-            'gate_entry_no' => [
-                'nullable',
-                'max:50',
-                Rule::unique('erp_mrn_headers')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('group_id', $this->group_id)
-                            ->where('organization_id', $this->organization_id)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($mrnId), // ignore when updating
-            ],
+            // 'gate_entry_no' => [
+            //     'nullable',
+            //     'max:50',
+            //     Rule::unique('erp_mrn_headers')
+            //         ->where(function ($query) {
+            //             return $query
+            //                 ->where('group_id', $this->group_id)
+            //                 ->where('organization_id', $this->organization_id)
+            //                 ->whereNull('deleted_at');
+            //         })
+            //         ->ignore($mrnId), // ignore when updating
+            // ],
             'gate_entry_date' => 'nullable|date',
             'eway_bill_no' => 'nullable|max:50',
             'consignment_no' => 'nullable|max:50',

@@ -18,6 +18,19 @@
                'rejected_qty'        => (float) $b->rejected_qty,
          ];
       })->values();
+
+      $existingCheckList = array_map(function ($item) {
+            return [
+               'insp_checklist_id' => $item['id'],
+               'checkList_id' => $item['checklist_id'],
+               'checkList_name' => $item['checklist_name'],
+               'detail_id' => $item['detail_id'],
+               'parameter_name' => $item['name'],
+               'parameter_value' => $item['value'],
+               'result' => $item['result'] ?? ''
+            ];
+      }, $item->checklists->toArray());
+      
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->header->mrn_header_id}}">
@@ -96,7 +109,7 @@
       </td>
       <td>
          <div class="d-flex">
-            <input type="hidden" name="components[{{$rowCount}}][inspectionData]" />
+            <input type="hidden" id="inspection_data_{{$rowCount}}" name="components[{{$rowCount}}][inspectionData]" value='@json($existingCheckList)' />
             <div class="cursor-pointer ms-50 text-success inspectionChecklistBtn"
                data-row-count="{{ $rowCount }}"
                data-checklist='@json(["is_inspection" => 1, "checkLists" => $inspectionChecklistData])'

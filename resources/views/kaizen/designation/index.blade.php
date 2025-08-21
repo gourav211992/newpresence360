@@ -69,7 +69,7 @@
                                 <input type="text" class="form-control" id="name" name="name" readonly>
                             </div>
                             <div class="col-md-12 mb-1">
-                                <label for="remarks" class="form-label">marks <span class="text-danger">*</span></label>
+                                <label for="remarks" class="form-label">Marks <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="marks" name = "marks" min="0"
                                     max="10">
                             </div>

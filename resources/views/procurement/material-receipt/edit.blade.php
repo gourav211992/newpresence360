@@ -257,7 +257,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                                            <select class="form-select" name="currency_id">
+                                                            <select class="form-select" name="currency_id" disabled>
                                                                 <option value="{{@$mrn->currency_id}}">{{@$mrn->currency->name}}</option>
                                                             </select>
                                                         </div>
@@ -265,7 +265,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
-                                                            <select class="form-select" name="payment_term_id">
+                                                            <select class="form-select" name="payment_term_id" disabled>
                                                                 <option value="{{@$mrn->payment_term_id}}">{{@$mrn->paymentTerm->name}}</option>
                                                             </select>
                                                         </div>
@@ -276,7 +276,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control mw-100"
                                                                 id="credit_days" name="credit_days"
-                                                                value="{{ @$mrn->credit_days }}" />
+                                                                value="{{ @$mrn->credit_days }}" readonly/>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1107,6 +1107,8 @@
         let asn_details_ids = @json($asnDetailsIds);
         let ge_header_ids = @json($geHeaderIds);
         let ge_details_ids = @json($geDetailsIds);
+        let exist_payment_term_id = @json($existPaymentTermId);
+        let exist_credit_days = @json($existCreditDays);
 
         @if($buttons['amend'] && intval(request('amendment') ?? 0))
 
@@ -1315,9 +1317,9 @@
                     $("#vendor_id").val(data?.data?.vendor?.id);
                     $("#vendor_code").val(data?.data?.vendor.vendor_code);
                     let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                    let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                    // let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                     $('[name="currency_id"]').empty().append(curOption);
-                    $('[name="payment_term_id"]').empty().append(termOption);
+                    // $('[name="payment_term_id"]').empty().append(termOption);
                     $("#shipping_id").val(data.data.shipping.id);
                     $("#billing_id").val(data.data.billing.id);
                     // $(".shipping_detail").text(data.data.shipping.display_address);
@@ -2177,7 +2179,6 @@
             cancelButtonText: 'Cancel'
             }).then((result) => {
             if (result.isConfirmed) {
-            $('.preloader').show();
             const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
             const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
             const postingApiUrl = "{{route('material-receipt.post')}}"
@@ -2207,7 +2208,6 @@
                                 text: response.message,
                                 icon: 'error',
                             });
-                            $('.preloader').hide();
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
@@ -2216,13 +2216,11 @@
                             text: 'Some internal error occured',
                             icon: 'error',
                         });
-                        $('.preloader').hide();
                     }
                 });
             }
             }
             else{
-                $('.preloader').hide();
                 $('#postvoucher').modal('hide');
             }
             })
@@ -2546,6 +2544,24 @@
             return moduleTypes;
         }
 
+        function getSelectedPaymentTerms()
+        {
+            let paymentIds = [];
+            let paymentTerms = [];
+            let CreditDays = [];
+
+            $('.po_item_checkbox:checked').each(function() {
+                paymentIds.push($(this).attr('data-payment-id'));
+                paymentTerms.push($(this).attr('data-payment-term'));
+                CreditDays.push($(this).attr('data-credit-days'));
+            });
+            return {
+                paymentIds: paymentIds,
+                paymentTerms: paymentTerms,
+                creditDays: CreditDays,
+            };
+        }
+
         function openPurchaseRequest()
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
@@ -2812,6 +2828,14 @@
                         $(td).addClass('text-end');
                     }
                 },
+                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
             ];
             initializeDataTableCustom('#poModal .po-order-detail',
                 ajaxUrl,
@@ -2888,6 +2912,8 @@
             }
 
             let moduleTypes = getSelectedPoTypes();
+            let paymentTerms = getSelectedPaymentTerms();
+
             $("[name='po_item_ids']").val(ids);
             $(".joSelect").addClass('d-none');
             $(".soSelect").addClass('d-none');
@@ -3017,6 +3043,9 @@
                 geItemIds: geItemIds,
                 asnItemIds: asnItemIds,
                 module_type: moduleTypes,
+                payment_ids: paymentTerms.paymentIds,
+                payment_terms: paymentTerms.paymentTerms,
+                credit_days: paymentTerms.creditDays,
             };
 
             asnProcess(processData, 'po-process');
@@ -3211,6 +3240,14 @@
                         $(td).addClass('text-end');
                     }
                 },
+                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
             ];
             initializeDataTableCustom('#joModal .jo-order-detail',
                 ajaxUrl,
@@ -3288,6 +3325,8 @@
             $("#addNewItemBtn").hide();
             $("[name='jo_item_ids']").val(ids);
             let moduleTypes = getSelectedJoTypes();
+            let paymentTerms = getSelectedPaymentTerms();
+
             if (referenceNo) {
                 $("#referenceNoDiv").show();
                 $("#reference_number_input").val(referenceNo);
@@ -3417,6 +3456,9 @@
                 geItemIds: geItemIds,
                 type: 'jo',
                 module_type: moduleTypes,
+                payment_ids: paymentTerms.paymentIds,
+                payment_terms: paymentTerms.paymentTerms,
+                credit_days: paymentTerms.creditDays,
             };
             asnProcess(processData, 'jo-process');
         });
@@ -4010,6 +4052,11 @@
             const moduleTypes = JSON.stringify(asnData.module_type);
             const moduleType = asnData.module_type?.[0] ?? 'po';
             const processType = asnData.type;
+            const paymentIds = JSON.stringify(asnData.payment_ids);
+            const paymentTerms = JSON.stringify(asnData.payment_ids);
+            const creditDays = JSON.stringify(asnData.credit_days);
+            let existPaymentTermId = JSON.stringify(exist_payment_term_id);
+            let existCreditDays = JSON.stringify(exist_credit_days);
 
             const currencyId = $("[name='currency_id']").val();
             const transactionDate = $("[name='document_date']").val();
@@ -4027,9 +4074,13 @@
                 + '&geIds=' + encodeURIComponent(geIds)
                 + '&geItemIds=' + encodeURIComponent(geItemIds)
                 + '&moduleTypes=' + moduleTypes
+                + '&paymentTerms=' + paymentTerms
+                + '&creditDays=' + creditDays
                 + '&tableRowCount=' + tableRowCount
                 + '&currency_id=' + encodeURIComponent(currencyId)
                 + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&existPaymentTermId=' + encodeURIComponent(existPaymentTermId)
+                + '&existCreditDays=' + encodeURIComponent(existCreditDays)
                 + '&current_row_count=' + current_row_count;
 
             fetch(actionUrl)
@@ -4164,6 +4215,22 @@
                             setAttributesUIHelper(index + 1, "#itemTable");
                         });
                     }, 500);
+                    const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
+                        ? asnData.payment_ids[0]
+                        : '';
+                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0
+                        ? asnData.payment_terms[0]
+                        : '';
+                    const firstCreditDays  = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0
+                        ? asnData.credit_days[0]
+                        : 0;
+                    let payOption = '';
+                    if (firstPaymentId && firstPaymentTerm) {
+                        payOption = `<option value="${firstPaymentId}">${firstPaymentTerm}</option>`;
+                    }
+                    $('[name="payment_term_id"]').empty().append(payOption);
+                    $('[name="credit_days"]').val(firstCreditDays);
+
                 })
                 .catch(() => {
                     Swal.fire({

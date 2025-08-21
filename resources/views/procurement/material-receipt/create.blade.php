@@ -144,6 +144,9 @@
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
                                 <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <button type="button" class="btn btn-info btn-sm mb-50 mb-sm-0 scanQR d-none" data-bs-toggle="modal" data-bs-target="#scanQrModal">
+                                    <i data-feather="camera"></i> Scan QR
+                                </button>
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -296,15 +299,15 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms </label>
-                                                            <select class="form-select" name="payment_term_id">
+                                                            <select class="form-select payment_term_id" name="payment_term_id">
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Credit Days </label>
-                                                            <input type="text" class="form-control mw-100"
-                                                                id="credit_days" name="credit_days" />
+                                                            <input type="text" class="form-control mw-100 credit_days"
+                                                                id="credit_days" name="credit_days" disabled/>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -791,6 +794,50 @@
             </div>
         </div>
     </div>
+    {{-- Scan QR Modal --}}
+    <div class="modal fade" id="scanQrModal" tabindex="-1" aria-labelledby="scanQrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header bg-transparent border-0">
+                    <h1 class="text-center mb-1" id="scanQrModalLabel">Scan QR Code</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body px-4 pb-3">
+                    <!-- Radio Buttons in Single Row -->
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="form-check form-check-inline me-3">
+                            <input class="form-check-input process-type-radio" type="radio" name="process_type" id="radio_asn" value="suppl-inv" checked>
+                            <label class="form-check-label fw-semibold" for="radio_asn">ASN</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input process-type-radio" type="radio" name="process_type" id="radio_ge" value="gate-entry">
+                            <label class="form-check-label fw-semibold" for="radio_ge">GE</label>
+                        </div>
+                    </div>
+
+                    <!-- Input Field for ASN -->
+                    <div class="row align-items-center mb-3 asn-container">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold mb-0">Process Code</label>
+                        </div>
+                        <div class="col-md-8">
+                            <input type="text" name="process_number" class="form-control process_number" placeholder="Enter Number">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer justify-content-center border-0">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Close</button>
+                    <button type="button" class="btn btn-primary asn_process">Process</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
     {{-- Storage Points --}}
     @include('procurement.material-receipt.partials.storage-point-modal')
     {{-- Item Batch --}}
@@ -818,6 +865,7 @@
             localStorage.removeItem('selectedJoIds');
             localStorage.removeItem('selectedSoIds');
             currentProcessType = null;
+            $(".scanQR").removeClass('d-none');
         };
         let currentProcessType = null;
         let tableRowCount = 0;
@@ -1056,13 +1104,6 @@
                         $("#vendor_name").val(data?.data?.vendor?.company_name);
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
-                        $("#credit_days").val(data?.data?.vendor?.credit_days ?? 0);
-                        // Credit days editable check
-                        if (data?.data?.vendor?.credit_days_editable) {
-                            $("#credit_days").prop("readonly", false);
-                        } else {
-                            $("#credit_days").prop("readonly", true);
-                        }
                         let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
                         let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
@@ -1270,6 +1311,7 @@
                         $(".poSelect").addClass('d-none');
                         $(".joSelect").addClass('d-none');
                         $(".soSelect").addClass('d-none');
+                        $(".scanQR").addClass('d-none');
                         $("select[name='currency_id']").prop('disabled', true);
                         $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);
@@ -1325,12 +1367,14 @@
                 $(".joSelect").removeClass('d-none');
                 $(".poSelect").removeClass('d-none');
                 $(".soSelect").removeClass('d-none');
+                $(".scanQR").removeClass('d-none');
+                $(".asn_process").prop("disabled", false)
                 $(".supplier_invoice_no").prop('readonly', false);
                 $(".supplier_invoice_date").prop('readonly', false);
-                $("#importItem").show();
+                $(".importItem").show();
                 $("#referenceNoDiv").hide();
                 $("#reference_number_input").val('');
-                $("#addNewItemBtn").show();
+                $("#addNewItemBtn").removeClass('d-none');
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 $("select[name='currency_id']").prop('disabled', false);
                 $("select[name='payment_term_id']").prop('disabled', true);
@@ -1702,6 +1746,24 @@
             return moduleTypes;
         }
 
+        function getSelectedPaymentTerms()
+        {
+            let paymentIds = [];
+            let paymentTerms = [];
+            let CreditDays = [];
+
+            $('.po_item_checkbox:checked').each(function() {
+                paymentIds.push($(this).attr('data-payment-id'));
+                paymentTerms.push($(this).attr('data-payment-term'));
+                CreditDays.push($(this).attr('data-credit-days'));
+            });
+            return {
+                paymentIds: paymentIds,
+                paymentTerms: paymentTerms,
+                creditDays: CreditDays,
+            };
+        }
+
         function openPurchaseRequest()
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
@@ -1916,6 +1978,14 @@
                         $(td).addClass('text-end');
                     }
                 },
+                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
             ];
             initializeDataTableCustom('#poModal .po-order-detail',
                 ajaxUrl,
@@ -1992,9 +2062,12 @@
             }
 
             let moduleTypes = getSelectedPoTypes();
+            let paymentTerms = getSelectedPaymentTerms();
+
             $("[name='po_item_ids']").val(ids);
             $(".joSelect").addClass('d-none');
             $(".soSelect").addClass('d-none');
+            $(".scanQR").addClass('d-none');
             $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
@@ -2121,6 +2194,9 @@
                 geItemIds: geItemIds,
                 asnItemIds: asnItemIds,
                 module_type: moduleTypes,
+                payment_ids: paymentTerms.paymentIds,
+                payment_terms: paymentTerms.paymentTerms,
+                credit_days: paymentTerms.creditDays,
             };
 
             asnProcess(processData, 'po-process');
@@ -2303,6 +2379,14 @@
                         $(td).addClass('text-end');
                     }
                 },
+                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
             ];
             initializeDataTableCustom('#joModal .jo-order-detail',
                 ajaxUrl,
@@ -2380,10 +2464,12 @@
             }
 
             let moduleTypes = getSelectedJoTypes();
+            let paymentTerms = getSelectedPaymentTerms();
 
             $("[name='jo_item_ids']").val(ids);
             $(".poSelect").addClass('d-none');
             $(".soSelect").addClass('d-none');
+            $(".scanQR").addClass('d-none');
             $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
@@ -2510,6 +2596,9 @@
                 geItemIds: geItemIds,
                 asnItemIds: asnItemIds,
                 module_type: moduleTypes,
+                payment_ids: paymentTerms.paymentIds,
+                payment_terms: paymentTerms.paymentTerms,
+                credit_days: paymentTerms.creditDays,
             };
 
             asnProcess(processData, 'jo-process');
@@ -2732,6 +2821,7 @@
             $("[name='so_item_ids']").val(ids);
             $(".poSelect").addClass('d-none');
             $(".joSelect").addClass('d-none');
+            $(".scanQR").addClass('d-none');
             $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
@@ -3354,6 +3444,9 @@
             const geIds = JSON.stringify(asnData.geIds);
             const geItemIds = JSON.stringify(asnData.geItemIds);
             const moduleTypes = JSON.stringify(asnData.module_type);
+            const paymentIds = JSON.stringify(asnData.payment_ids);
+            const paymentTerms = JSON.stringify(asnData.payment_ids);
+            const creditDays = JSON.stringify(asnData.credit_days);
             const moduleType = asnData.module_type?.[0] ?? 'po';
             const processType = asnData.type;
             let idsLength = ids.length;
@@ -3374,6 +3467,8 @@
                 + '&geIds=' + encodeURIComponent(geIds)
                 + '&geItemIds=' + encodeURIComponent(geItemIds)
                 + '&moduleTypes=' + moduleTypes
+                + '&paymentTerms=' + paymentTerms
+                + '&creditDays=' + creditDays
                 + '&tableRowCount=' + tableRowCount
                 + '&currency_id=' + encodeURIComponent(currencyId)
                 + '&d_date=' + encodeURIComponent(transactionDate)
@@ -3422,22 +3517,27 @@
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');
-                            $(".asn-container").removeClass('d-none');
+                            $(".scanQR").removeClass('d-none');
                             $(".supplier_invoice_no").prop('readonly', true);
                             $(".supplier_invoice_date").prop('readonly', true);
-                            // $('.asn_process').prop('disabled', true);
+                            $("#addNewItemBtn").addClass('d-none');
+                            $(".importItem").hide();
                             break;
 
                         case 'po-process':
                             $(".joSelect").addClass('d-none');
                             $(".poSelect").removeClass('d-none');
-                            $(".asn-container").addClass('d-none');
+                            $(".scanQR").addClass('d-none');
+                            $("#addNewItemBtn").addClass('d-none');
+                            $(".importItem").hide();
                             break;
 
                         default:
                             $(".poSelect").addClass('d-none');
                             $(".joSelect").removeClass('d-none');
-                            $(".asn-container").addClass('d-none');
+                            $(".scanQR").addClass('d-none');
+                            $("#addNewItemBtn").addClass('d-none');
+                            $(".importItem").hide();
                             break;
                     }
 
@@ -3524,6 +3624,22 @@
                         currentIndex = tableRowCount + 1;
                         setAttributesUIHelper(currentIndex,"#itemTable");
                     }, 500);
+                    const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
+                        ? asnData.payment_ids[0]
+                        : '';
+                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0
+                        ? asnData.payment_terms[0]
+                        : '';
+                    const firstCreditDays  = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0
+                        ? asnData.credit_days[0]
+                        : 0;
+                    let payOption = '';
+                    if (firstPaymentId && firstPaymentTerm) {
+                        payOption = `<option value="${firstPaymentId}">${firstPaymentTerm}</option>`;
+                    }
+                    $('[name="payment_term_id"]').empty().append(payOption);
+                    $('[name="credit_days"]').val(firstCreditDays);
+
                 })
                 .catch(() => {
                     Swal.fire({
@@ -3531,6 +3647,25 @@
                         text: 'An unexpected error occurred while processing ASN.',
                         icon: 'error'
                     });
+                // .catch((error) => {
+                //     console.error("ASN Process Error:", error);
+
+                //     let message = error.message || 'Unknown error';
+                //     let lineInfo = '';
+
+                //     if (error.stack) {
+                //         // Extract first line with file/line info
+                //         const stackLines = error.stack.split("\n");
+                //         if (stackLines.length > 1) {
+                //             lineInfo = stackLines[1].trim();
+                //         }
+                //     }
+
+                //     Swal.fire({
+                //         title: 'Error!',
+                //         html: `<b>${message}</b><br><small>${lineInfo}</small>`,
+                //         icon: 'error'
+                //     });
                 });
         }
 

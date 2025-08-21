@@ -23,6 +23,9 @@ class ServiceParametersHelper
      * Parameters with all Applicable/ Possible Values -
      */
     const REFERENCE_FROM_SERVICE_PARAM = 'reference_from_service';
+    const PO_PROCUREMENT_TYPE = 'po_procurement_type';
+    const PO_PROCUREMENT_TYPE_VALUES = ['Buy', 'Lease', 'All'];
+
     const SERVICE_ITEM_PARAM = 'service_item';
     const REFERENCE_FROM_SERIES_PARAM = 'reference_from_series';
     const BACK_DATE_ALLOW_PARAM = 'back_date_allowed';
@@ -165,8 +168,11 @@ class ServiceParametersHelper
         self::SO_TRACKING_REQUIRED => 'SO Tracking Required?',
         self::PROCUREMENT_TYPE_PARAM => 'Procurement Type',
         self::BOM_BATCH_INHERIT_REQUIRED => 'Batch Inheritance Required',
+        self::PO_PROCUREMENT_TYPE => 'Procurement Type',
 
     ];
+
+    // Service Parameters Mapping
     const SERVICE_PARAMETERS_VALUES = [
         self::REFERENCE_FROM_SERVICE_PARAM => [], //Applied
         self::SERVICE_ITEM_PARAM => [],//Applied
@@ -200,7 +206,8 @@ class ServiceParametersHelper
         self::PROCUREMENT_TYPE_PARAM => self::PROCUREMENT_TYPE_VALUES,
         self::GATE_ENTRY_REQUIRED => self::GATE_ENTRY_REQUIRED_VALUES,
         self::PARTIAL_DELIVERY_ALLOWED => self::PARTIAL_DELIVERY_ALLOWED_VALUES,
-        self::BOM_BATCH_INHERIT_REQUIRED => self::BOM_BATCH_INHERIT_REQUIRED_VALUES
+        self::BOM_BATCH_INHERIT_REQUIRED => self::BOM_BATCH_INHERIT_REQUIRED_VALUES,
+        self::INSPECTION_REQUIRED_PARAM => self::INSPECTION_REQUIRED_PARAM_VALUES,
     ];
     const SO_SERVICE_PARAMETERS = [
         [
@@ -336,6 +343,7 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ]
     ];
+    
     const FIXED_ASSET_SERVICE_PARAMETERS = [
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
@@ -396,6 +404,45 @@ class ServiceParametersHelper
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
             "applicable_values" => ["0", ConstantHelper::PI_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0"], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+
+    ];
+    const PDS_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0"], //All possible values
             "default_value" => ["0"], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
@@ -1716,6 +1763,13 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
+        [
+            "name" => self::PO_PROCUREMENT_TYPE,
+            "applicable_values" => self::PO_PROCUREMENT_TYPE_VALUES,
+            "default_value" => ['Buy'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
         // ,
         // [
         //     "name" => self::INDENT_TOLERANCE_LIMIT_PARAM,
@@ -2611,6 +2665,15 @@ class ServiceParametersHelper
         //     'service_level_visibility' => true,
         //     'type' => self::GL_PARAMETERS
         // ],
+
+        //Deepak
+        [
+            "name" => self::INSPECTION_REQUIRED_PARAM,
+            "applicable_values" => self::INSPECTION_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
     ];
     const APPLICABLE_SERVICE_PARAMETERS = [
         ConstantHelper::MAINT_WO=>self::MAINT_WO_SERVICE_PARAMETERS,
@@ -2622,6 +2685,7 @@ class ServiceParametersHelper
         ConstantHelper::TR_SERVICE_ALIAS => self::TR_SERVICE_PARAMETERS,
         ConstantHelper::RC_SERVICE_ALIAS => self::RC_SERVICE_PARAMETERS,
         ConstantHelper::RFQ_SERVICE_ALIAS => self::RFQ_SERVICE_PARAMETERS,
+        ConstantHelper::PDS_SERVICE_ALIAS => self::PDS_SERVICE_PARAMETERS,
         ConstantHelper::PQ_SERVICE_ALIAS => self::PQ_SERVICE_PARAMETERS,
         ConstantHelper::PQC_SERVICE_ALIAS => self::PQC_SERVICE_PARAMETERS,
         ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_SERVICE_PARAMETERS,

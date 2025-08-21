@@ -38,7 +38,7 @@
                 <td colspan="3" style="text-align:center; font-weight:bold; font-size:18px;">KAIZEN IMPLEMENTATION
                     SHEET
                 </td>
-                <td colspan="2" style="text-align: right;"><img style="height: 40px;"
+                <td colspan="3" style="text-align: right;"><img style="height: 40px;"
                         src="{{ public_path('/img/sheelafoam-img.png') }}" alt=""></td>
             </tr>
             <tr>
@@ -55,7 +55,7 @@
                     Revision number</td>
                 <td style="border: 1px solid #000000; text-align:center; padding: 10px; font-weight: 600;">
                     Revision date</td>
-                <td style="border: 1px solid #000000; text-align:center; padding: 10px; font-weight: 600;">Page
+                <td colspan="2" style="border: 1px solid #000000; text-align:center; padding: 10px; font-weight: 600;">Page
                     No.</td>
             </tr>
             <tr>
@@ -66,14 +66,14 @@
                 <td style="border: 1px solid #000000; text-align:center; padding: 10px;">-</td>
                 <td style="border: 1px solid #000000; text-align:center; padding: 10px;">1</td>
                 <td style="border: 1px solid #000000; text-align:center; padding: 10px;">-</td>
-                <td style="border: 1px solid #000000; text-align:center; padding: 10px;">1 of 1</td>
+                <td colspan="2" style="border: 1px solid #000000; text-align:center; padding: 10px;">1 of 1</td>
             </tr>
             <tr>
                 <td colspan="3"
                     style="border: 1px solid #000000; text-align: center; padding: 10px; border-left: none; "><span
                         style="font-weight: 600;">KAIZEN NUMBER:</span> {{ @$kaizen->kaizen_no }}</td>
                 <td></td>
-                <td colspan="3" style="border: 1px solid #000000; text-align: center; padding: 10px;"><span
+                <td colspan="4" style="border: 1px solid #000000; text-align: center; padding: 10px;"><span
                         style="font-weight: 600;">KAIZEN DATE:</span>
                     {{ @$kaizen->kaizen_date ? App\Helpers\CommonHelper::dateFormat2(@$kaizen->kaizen_date) : '' }}</td>
             </tr>
@@ -83,10 +83,11 @@
                         style="font-weight: 600;">DEPARTMENT:</span>
                     {{ isset($kaizen->department->name) ? $kaizen->department->name : '-' }}</td>
                 <td></td>
-                <td colspan="3" style="border: 1px solid #000000; text-align: center; padding: 10px;"><span
+                <td colspan="4" style="border: 1px solid #000000; text-align: center; padding: 10px;"><span
                         style="font-weight: 600;">KAIZEN TEAM:</span>
                     @php
                         $kaizenTeam = $kaizen->kaizenTeam->pluck('name')->toArray();
+                      
                     @endphp
                     {{ implode(',', $kaizenTeam) }}</td>
             </tr>
@@ -95,7 +96,7 @@
                     style="border-left: none; border: 1px solid #000000; background-color: #fc1900; text-align: center; font-weight:700; padding: 10px; color: #ffffff;">
                     BEFORE KAIZEN</td>
                 <td></td>
-                <td colspan="3"
+                <td colspan="4"
                     style="border: 1px solid #000000; background-color: #008000; text-align: center; font-weight:700; padding: 10px; color: #ffffff;">
                     AFTER KAIZEN</td>
             </tr>
@@ -104,6 +105,7 @@
                     @foreach ($attachments['before kaizen'] as $file)
                         @php
                             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                             
                         @endphp
 
                         @if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
@@ -118,10 +120,11 @@
                     @endforeach
                 </td>
                 <td></td>
-                <td colspan="3" style="text-align: center; border: 1px solid #000000;">
+                <td colspan="4" style="text-align: center; border: 1px solid #000000;">
                     @foreach ($attachments['after kaizen'] as $file)
                         @php
                             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                          
                         @endphp
 
                         @if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
@@ -144,7 +147,7 @@
                     style=" border: 1px solid #000000; padding: 10px; background:#f1c40f; color:#000000; text-align:center; font-weight:700;">
                     ANALYSIS &
                     COUNTERMEASURE</td>
-                <td colspan="2"
+                <td colspan="3"
                     style="border: 1px solid #000000; padding: 10px; background:#008000; color:white; text-align:center; font-weight:700;">
                     EFFECT
                     & FINANCIAL
@@ -159,88 +162,93 @@
                     style="vertical-align:top; line-height: 25px; padding: 10px; border: 1px solid #000000;">
                     {{ @$kaizen->counter_measure }}
                 </td>
-                <td colspan="2"
+                <td colspan="3"
                     style="vertical-align:top; line-height: 25px; padding: 10px; border: 1px solid #000000;">
                     {{ @$kaizen->benefits }}
                 </td>
             </tr>
             <tr>
-                <td
-                    style="padding: 5px; text-align: center; font-weight: 700; border: 1px solid #000000; border-left: none;">
+                <td style="padding: 5px; text-align: center; font-weight: 700; border: 1px solid #000000; border-left: none;">
                     Improvement In:
                 </td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->productivity_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                <td style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->productivity) }}; color: #000000; text-align: center;">
                     P</td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->quality_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                <td style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->quality) }}; color: #000000; text-align: center;">
                     Q</td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->cost_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
-                    C</td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px;  background-color: {{ @$kaizen->delivery_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                <td style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->cost) }}; color: #000000; text-align: center;">
+                    C
+                </td>
+                <td style="border: 1px solid #000000; padding: 10px;  background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->delivery) }}; color: #000000; text-align: center;">
                     D
                 </td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->moral_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
-                    M</td>
-                <td
-                    style="border-right: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->innovation_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
-                    I</td>
+                <td style="border: 1px solid #000000; padding: 10px;  background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->safety) }}; color: #000000; text-align: center;">
+                    S
+                </td>
+                <td style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->moral) }}; color: #000000; text-align: center;">
+                    M
+                </td>
+                <td style="border-right: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->innovation) }}; color: #000000; text-align: center;">
+                    I
+                </td>
             </tr>
             <tr>
+                
                 <td
                     style="padding:5px; text-align: center; font-weight: 700; border: 1px solid #000000; border-left: none;">
                     (TICK AS APPLICABLE)
                 </td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->productivity_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+               
+                <td style="border:1px solid #000;padding:10px;background-color:{{ \App\Helpers\CommonHelper::impactKaizenBg($kaizen->productivity) }};color: #000000; text-align: center;"></td>
 
+                <td
+                    style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->quality) }}; color: #000000; text-align: center;">
                 </td>
                 <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->quality_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                    style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->cost) }}; color: #000000; text-align: center;">
                 </td>
                 <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->cost_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                    style="border: 1px solid #000000; padding: 10px;  background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->delivery) }}; color: #000000; text-align: center;">
+                </td>
+                 <td
+                    style="border: 1px solid #000000; padding: 10px;  background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->safety) }}; color: #000000; text-align: center;">
+                </td>
+                
+                <td
+                    style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->moral) }}; color: #000000; text-align: center;">
                 </td>
                 <td
-                    style="border: 1px solid #000000; padding: 10px;  background-color: {{ @$kaizen->delivery_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
-                </td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->moral_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
-                </td>
-                <td
-                    style="border: 1px solid #000000; padding: 10px; background-color: {{ @$kaizen->innovation_imp_id ? '#008000' : '#ffffff' }}; color: #000000; text-align: center;">
+                    style="border: 1px solid #000000; padding: 10px; background-color: {{ \App\Helpers\CommonHelper::impactKaizenBg(@$kaizen->innovation) }}; color: #000000; text-align: center;">
                 </td>
             </tr>
+            
             <tr>
                 <td colspan="4" style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none;">
                     Rating/Evaluation
                 </td>
                 <td colspan="4" style="padding:10px; color: #000000;  border: 1px solid #000000;">
-                    {{ $kaizen->score }}/{{ $kaizen->total_score }}
+                    <b>{{ $kaizen->score }}/{{ $kaizen->total_score }}</b>
                 </td>
             </tr>
+
             <tr>
                 <td colspan="2" style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none;">
-                    Occurence
+                    <b>Occurence</b>
                 </td>
                 <td colspan="2" style="padding:10px; color: #000000;  border: 1px solid #000000;">
-                    Cost Saving
+                    <b>Cost Saving</b>
                 </td>
                 <td colspan="2" style="padding:10px; color: #000000;  border: 1px solid #000000;">
-                    Approved By
+                    <b>Approved By</b>
                 </td>
                 <td colspan="2"
                     style="padding:10px; color: #000000;  border: 1px solid #000000; border-right: none;">
-                    HOU
+                    <b>HOU</b>
                 </td>
             </tr>
             <tr>
                 <td colspan="2"
                     style="padding:10px; color: #000000; border: 1px solid #000000; border-left: none; border-bottom: none;">
-                    {{ @$kaizen->occurence }}
+                    {{ ucfirst(@$kaizen->occurence) }}
                 </td>
                 <td colspan="2"
                     style="padding:10px; color: #000000;  border: 1px solid #000000; border-bottom: none;">
@@ -255,8 +263,9 @@
                     -
                 </td>
             </tr>
+                       
         </table>
     </div>
 </body>
-
 </html>
+

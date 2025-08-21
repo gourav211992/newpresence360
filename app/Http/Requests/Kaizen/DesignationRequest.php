@@ -6,16 +6,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Helpers\Helper;
 use Auth;
-class ErpKaizenImprovementRequest extends FormRequest
+class DesignationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
-
-    protected $organization_id;
-    protected $company_id;
-    protected $group_id;
-
+        protected $organization_id;
+        protected $company_id;
+        protected $group_id;
     public function authorize(): bool
     {
         return true;
@@ -28,6 +26,7 @@ class ErpKaizenImprovementRequest extends FormRequest
         $this->group_id = $organization ? $organization->group_id : null; 
         $this->company_id = $organization ? $organization->company_id : null;
     }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -35,7 +34,8 @@ class ErpKaizenImprovementRequest extends FormRequest
      */
     public function rules(): array
     {
-        $discountId = $this->route('id');
+
+          $designationId = $this->route('id');
             $uniqueScope = function ($query) {
             if ($this->group_id !== null) {
                 $query->where('group_id', $this->group_id);
@@ -55,48 +55,28 @@ class ErpKaizenImprovementRequest extends FormRequest
                 });
             }
         };
-
         return [
-            'type' => [
+             'name' => [
                 'required',
                 'string',
                 'max:255',
             ],
-            'description' => [
+              'marks' => [
                 'required',
                 'string',
                 'max:1000',
-                Rule::unique('erp_kaizen_improvements')
-                    ->where(fn ($q) => $q->where('organization_id', $this->organization_id)->where('type', $this->input('type')))
-                    ->ignore($discountId),
             ],
-            'marks' => [
-                'required',
-                'string',
-                'max:1000',
-                Rule::unique('erp_kaizen_improvements')
-                    ->where(fn ($q) => $q->where('organization_id', $this->organization_id)->where('type', $this->input('type')))
-                    ->ignore($discountId),
-            ],
-            'status' => 'nullable',
         ];
     }
 
-    public function messages(): array
+     public function messages(): array
     {
         return [
-            'type.required' => 'Please provide the improvement type.',
-            'type.unique'   => 'This type already exists for the selected group, company, or organization.',
-            'type.max'      => 'Type may not be greater than 255 characters.',
-
-            'description.required' => 'Please provide a description of the improvement.',
-            'description.unique'   => 'This description already exists for the selected group, company, or organization.',
-            'description.max'      => 'Description may not be greater than 1000 characters.',
-
+            'name.required' => 'Please provide the improvement name.',
+           
             'marks.required' => 'Marks field is required.',
             'marks.unique'   => 'These marks already exist for the selected group, company, or organization.',
             'marks.max'      => 'Marks may not be greater than 1000 characters.',
         ];
     }
-
 }

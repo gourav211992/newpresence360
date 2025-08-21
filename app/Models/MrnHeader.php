@@ -447,4 +447,9 @@ class MrnHeader extends Model
         return $this->morphOne(ErpWhmJob::class, 'morphable');
     }
 
+    public function payment_term_schedules()
+    {
+        return $this -> hasMany(ErpMrnPaymentTerm::class, 'mrn_header_id');
+    }
+
 }

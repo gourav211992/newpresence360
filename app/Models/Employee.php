@@ -143,6 +143,11 @@ class Employee extends Authenticatable
     public function areaMaster()
     {
         return $this->belongsTo(AreaMaster::class, 'organization_id', 'organization_id');
+    }  
+    
+    public function designation()
+    {
+        return $this->belongsTo(Designation::class, 'designation_id', 'id');
     }
 
     public function vouchers()

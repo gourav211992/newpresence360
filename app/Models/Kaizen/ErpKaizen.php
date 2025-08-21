@@ -145,6 +145,9 @@ class ErpKaizen extends Model
         );
     }
 
-
+    public function getCreatedByDesignationMarksAttribute()
+    {
+        return $this->createdBy?->designation?->marks;
+    }
 
 }

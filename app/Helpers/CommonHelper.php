@@ -242,4 +242,11 @@ class CommonHelper
 
         return $docApproval;
     }
+
+    public static function impactKaizenBg($model) {
+            if (!$model || !isset($model->description) || $model->description === 'No Impact') {
+                return '#ffffff';
+            }
+            return '#008000'; 
+    }
 }

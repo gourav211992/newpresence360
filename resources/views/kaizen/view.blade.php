@@ -26,6 +26,9 @@
                         <div class="form-group breadcrumb-right">
                             <a href="{{ route('kaizen.index') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
                                     data-feather="arrow-left-circle"></i> Back</a>
+                            <a href="{{ url('kaizen/download-pdf/') . '/' . $kaizen->id }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i data-feather="download"></i> 
+                                Download PDF
+                            </a>
 
                             @php
                                 if ($kaizen->status == 'approved') {
@@ -245,6 +248,7 @@
                                         </div>
                                         <div class="col-md-12">
                                             <div id="accordionWrapa50" role="tablist" aria-multiselectable="true">
+                                                @if(!empty($kaizen->productivity?->description))
                                                 <div class="accordion-item border" id="productivity-accordion">
                                                     <h2 class="accordion-header" id="productivity-heading">
                                                         <button type="button"
@@ -271,6 +275,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->quality?->description))
                                                 <div class="accordion-item border" id="quality-accordion">
                                                     <h2 class="accordion-header" id="quality-heading">
                                                         <button type="button"
@@ -297,6 +303,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->cost?->description))
                                                 <div class="accordion-item border" id="cost-accordion">
                                                     <h2 class="accordion-header" id="cost-heading">
                                                         <button type="button"
@@ -326,6 +334,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->delivery?->description))
                                                 <div class="accordion-item border" id="delivery-accordion">
                                                     <h2 class="accordion-header" id="delivery-heading">
                                                         <button type="button"
@@ -352,6 +362,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->moral?->description))
                                                 <div class="accordion-item border" id="moral-accordion">
                                                     <h2 class="accordion-header" id="moral-heading">
                                                         <button type="button"
@@ -378,6 +390,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->innovation?->description))
                                                 <div class="accordion-item border" id="innovation-accordion">
                                                     <h2 class="accordion-header" id="innovation-heading">
                                                         <button type="button"
@@ -404,12 +418,14 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
+                                                @if(!empty($kaizen->safety?->description))
                                                 <div class="accordion-item border" id="safety-accordion">
                                                     <h2 class="accordion-header" id="safety-heading">
                                                         <button type="button"
                                                             class="accordion-button collapsed no-bg text-dark font-small-4"
                                                             data-bs-toggle="collapse" data-bs-target="#safety">
-                                                            <strong>safety</strong>
+                                                            <strong>Safety</strong>
                                                         </button>
                                                     </h2>
                                                     <div class="accordion-collapse collapse show" id="safety">
@@ -430,6 +446,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

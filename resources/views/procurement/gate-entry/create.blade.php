@@ -2496,7 +2496,7 @@
 
                     const {
                         vendor,
-                        finalExpenses,
+                        poExpenseTeds,
                         pos,
                         moduleType,
                         vendorAsn
@@ -2561,46 +2561,57 @@
                         $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
                     }
 
-                    // Expenses
                     const $expBody = $("#summaryExpTable tbody");
                     $expBody.find('.display_summary_exp_row').remove();
 
-                    if (finalExpenses.length) {
+                    if (poExpenseTeds.length) {
                         let rows = '';
-                        finalExpenses.forEach((item, i) => {
+                        poExpenseTeds.forEach((item, i) => {
                             const index = i + 1;
                             rows += `
                                 <tr class="display_summary_exp_row">
                                     <td>${index}</td>
-                                    <td>${item.ted_name}
+                                    <td class="text-right">
+                                        ${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][hsn_id]" value="${item.hsn_id}">
                                         <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
                                         <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
                                         <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
                                     </td>
-                                    <td class="text-end">${item.ted_perc ?? 0}
-                                        <input type="hidden" name="exp_summary[${index}][e_perc]" value="${item.ted_perc ?? 0}">
-                                        <input type="hidden" name="exp_summary[${index}][hidden_e_perc]" value="${item.ted_perc}">
-                                        <input type="hidden" name="exp_summary[${index}][e_purch_id]" value="${item.purchase_order_id ?? null}">
-                                        <input type="hidden" name="exp_summary[${index}][e_job_id]" value="${item.job_order_id ?? null}">
-                                        <input type="hidden" name="exp_summary[${index}][e_ref_type]" value="${item.ref_type ?? null}">
+                                    <td class="text-right">
+                                        ${parseFloat(item.ted_amount ?? 0).toFixed(2)}
+                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="${item.ted_amount ?? 0}">
                                     </td>
-                                    <td class="text-end">
-                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="">
+                                    <td class="text-right">
+                                        ${parseFloat(item.tax_amount ?? 0).toFixed(2)}
+                                        <input type="hidden" name="exp_summary[${index}][tax_amount]" value="${item.tax_amount ?? 0}">
+                                    </td>
+                                    <td class="text-right">
+                                        ${(parseFloat(item.ted_amount ?? 0) + parseFloat(item.tax_amount ?? 0)).toFixed(2)}
+                                        <input type="hidden" name="exp_summary[${index}][total]" value="${(parseFloat(item.ted_amount ?? 0) + parseFloat(item.tax_amount ?? 0)).toFixed(2)}">
                                     </td>
                                     <td>
-                                        <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
+                                        ${item.tax_breakup ? formatTaxBreakup(item.tax_breakup) : ''}
+                                        <input type="hidden" name="exp_summary[${index}][tax_breakup]" value='${item.tax_breakup ?? ''}'>
                                     </td>
-                                </tr>`;
+                                    <td>
+                                        <!-- <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a> -->
+                                    </td>
+                                </tr>
+                            `;
                         });
+
                         $expBody.find('#expSummaryFooter').before(rows);
                         $("#f_header_expense_hidden").removeClass('d-none');
                     } else {
                         $("#f_header_expense_hidden").addClass('d-none');
                     }
+
                     $("#reference_type_input").val(processType);
                     setTimeout(() => {
+                        summaryExpTotal();
                         setTableCalculation();
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {
                             setAttributesUIHelper(index + 1, "#itemTable");

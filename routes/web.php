@@ -1456,6 +1456,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
             Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
+            Route::post('/validate-asn', 'processAsn')->name('validate-asn');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -2234,6 +2235,12 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/transporter-invoices/process/items', [TransporterInvoiceController::class, 'processPulledItems'])->name('sale.transporterInvoice.process.items');
     Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
     Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
+    Route::post('/transporter-invoices/e-invoice-mail', [TransportInvoiceController::class, 'InvoiceMail'])
+    ->name('tranport.invoice.eInvoiceMail');
+    Route::post('/transporter-invoices/confirm', [TransportInvoiceController::class, 'confirm'])
+    ->name('sale.transporterInvoice.confirm');
+    Route::get('/transporter-invoices/print', [TransportInvoiceController::class, 'print'])
+    ->name('sale.transporterInvoice.print');
 
 
     # Production Work Order Route
@@ -3000,7 +3007,7 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
 
     });
-    
+
     Route::prefix('pickup-dropoff-schedule')->controller(ErpPdsController::class)->name('pds.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');

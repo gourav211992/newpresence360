@@ -420,7 +420,7 @@ class GateEntryController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
 
             if (isset($request->all()['components'])) {
@@ -686,6 +686,10 @@ class GateEntryController extends Controller
                             $ted = new GateEntryTed;
                             $ted->header_id = $mrn->id;
                             $ted->detail_id = null;
+                            $ted->hsn_id             =      $dis['hsn_id'] ?? null;
+                            $ted->tax_amount         =      $dis['tax_amount'] ?? 0.00;
+                            // $ted->total_amount       =      $dis['total'] ?? ($ted->ted_amount + $ted->tax_amount);
+                            $ted->tax_breakup        =      $dis['tax_breakup'] ?? null;
                             $ted->po_id = $dis['e_purch_id'] ?? null;
                             $ted->jo_id = $dis['e_job_id'] ?? null;
                             $ted->ted_type = 'Expense';
@@ -1161,7 +1165,7 @@ class GateEntryController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
 
             if (isset($request->all()['components'])) {
@@ -1453,6 +1457,10 @@ class GateEntryController extends Controller
                             $ted = GateEntryTed::find($mrnAmountId) ?? new GateEntryTed;
                             $ted->header_id = $mrn->id;
                             $ted->detail_id = null;
+                            $ted->hsn_id             =      $dis['hsn_id'] ?? null;
+                            $ted->tax_amount         =      $dis['tax_amount'] ?? 0.00;
+                            // $ted->total_amount       =      $dis['total'] ?? ($ted->ted_amount + $ted->tax_amount);
+                            $ted->tax_breakup        =      $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -2693,43 +2701,10 @@ class GateEntryController extends Controller
 
         $purchaseOrder = PurchaseOrder::whereIn('id', $uniquePoIds)->first();
 
-        $finalExpenses = [];
-        $poExpenses = PurchaseOrder::whereIn('id', $uniquePoIds)
-            ->with(['headerExpenses' => function ($query) {
-                $query->where('ted_level', 'H');
-            }])
-            ->get()
-            ->keyBy('id');
-
-        $selectedPoItemValues = PoItem::whereIn('id', $ids)
-            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
-            ->groupBy('purchase_order_id')
-            ->pluck('total', 'purchase_order_id');
-
-        $poValues = PoItem::whereIn('purchase_order_id', $uniquePoIds)
-            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
-            ->groupBy('purchase_order_id')
-            ->pluck('total', 'purchase_order_id');
-
-        foreach ($poExpenses as $poId => $po) {
-            $poValue = $poValues[$poId] ?? 0;
-            $selectedPoItemValue = $selectedPoItemValues[$poId] ?? 0;
-
-            foreach ($po->headerExpenses as $expense) {
-                $perc = $poValue > 0 ? ($expense->ted_amount / $poValue) * 100 : 0;
-                $amount = number_format(($selectedPoItemValue * $perc / 100), 2);
-
-                $finalExpenses[] = [
-                    'id' => $expense->id,
-                    'ref_type' => 'po',
-                    'purchase_order_id' => $expense->purchase_order_id,
-                    'ted_id' => $expense->ted_id,
-                    'ted_name' => $expense->ted_name,
-                    'ted_amount' => $amount,
-                    'ted_perc' => round($perc, 8),
-                ];
-            }
-        }
+        $poExpenseTeds = PurchaseOrderTed::whereIn('purchase_order_id', $uniquePoIds)
+            ->where('ted_type','Expense')
+            ->where('ted_level','H')
+            ->get();
 
         $vendorId = $pos->pluck('vendor_id')->unique();
         if ($vendorId->count() > 1) {
@@ -2758,7 +2733,7 @@ class GateEntryController extends Controller
                 'vendor' => $vendor,
                 'vendorAsn' => $vendorAsn,
                 'moduleType' => $moduleType,
-                'finalExpenses' => $finalExpenses,
+                'poExpenseTeds' => $poExpenseTeds,
                 'purchaseOrder' => $purchaseOrder,
             ],
             'status' => 200,
@@ -4114,7 +4089,7 @@ class GateEntryController extends Controller
         $ids = [];
         $asnNumber = (int)$request->asn_number;
         $moduleType = [$request->module_type];
-        $asnData = VendorAsn::find($asnNumber);
+        $asnData = VendorAsn::where('doc_no', $asnNumber)->first();
         if (!$asnData) {
             return response()->json([
                 'status' => 404,

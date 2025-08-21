@@ -17,6 +17,9 @@
                         </div>
                     </div>
                     <div class="content-header-right text-end col-md-6">
+                        <a href="{{ route('improvement.pdf-download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                                data-feather="download"></i> Download Evaluation
+                        </a>
                         <button class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light" data-bs-toggle="modal" data-bs-target="#improvementMasterModal"
                             id="addImprovementMasterBtn">
                             <i data-feather="plus-circle"></i> Add New
@@ -90,7 +93,7 @@
                                     max="10">
                             </div>
                             <div class="col-md-12 mb-1">
-                                <label for="description" class="form-label">Description</label>
+                                <label for="description" class="form-label">Description<span class="text-danger">*</span></label>
                                 <textarea class="form-control" id="description" name="description" placeholder="Enter description"></textarea>
                             </div>
 

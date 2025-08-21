@@ -2515,8 +2515,7 @@ $(document).on("click", ".assetDetailBtn", function () {
     const expectedLife = $(this).data("asset-expected-life");
     const capitalizationDate = $(".document_date").val();
     const salvagePercentage = $(this).data("asset-salvage-perc");
-    const procurementType = $(this).data("data-asset-procurement-type");
-
+    const procurementType = $(this).data("asset-procurement-type");
 
     $(".asset-detail-modal-body").data("row-count", rowCount);
 
@@ -2662,3 +2661,67 @@ function escapeHTML(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// Dynamically bind input event to any .asn_number input
+$(document).on("input", ".asn_number", function () {
+    const container = $(this).closest(".asn-container");
+    const value = $(this).val().trim();
+    container.find(".asn_process").prop("disabled", value.length === 0);
+});
+
+// Handle the click of "Process" button
+$(document).on("click", ".asn_process", function () {
+    const asnInput = $(".process_number");
+    const asnNumber = asnInput.val().trim();
+
+    const moduleType = $("input[name='process_type']:checked").val();
+
+    if (!asnNumber) {
+        Swal.fire({
+            title: "Validation Error",
+            text: "Please enter a process code.",
+            icon: "warning",
+        });
+        return;
+    }
+
+    const button = $(this);
+
+    $.ajax({
+        url: "/material-receipts/validate-asn",
+        type: "POST",
+        data: {
+            _token: $('meta[name="csrf-token"]').attr("content"),
+            asn_number: asnNumber,
+            module_type: moduleType,
+        },
+        beforeSend: function () {
+            button.prop("disabled", true).text("Processing...");
+        },
+        success: function (response) {
+            if (response.status === 200) {
+                let asnData = response.data;
+                currentProcessType = asnData.type;
+                $("#reference_type_input").val(currentProcessType);
+                asnProcess(asnData, "asn-process");
+                $("#scanQrModal").modal('hide');
+            } else {
+                Swal.fire({
+                    title: "Error!",
+                    text: response.message,
+                    icon: "error",
+                });
+            }
+        },
+        error: function () {
+            Swal.fire({
+                title: "Error!",
+                text: "Server error. Please try again.",
+                icon: "error",
+            });
+        },
+        complete: function () {
+            button.prop("disabled", false).text("Process");
+        },
+    });
+});

@@ -577,7 +577,7 @@ class PoController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
 
             if (isset($request->all()['components']) && count($request->all()['components'])) {
@@ -877,6 +877,7 @@ class PoController extends Controller
                             $ted = new PurchaseOrderTed;
                             $ted->purchase_order_id  =      $po->id;
                             $ted->po_item_id         =      null;
+                            $ted->hsn_id             =      $dis['hsn_id'] ?? null;
                             $ted->ted_type           =      'Expense';
                             $ted->ted_level          =      'H';
                             $ted->ted_id             =      $dis['ted_e_id'] ?? null;
@@ -1199,7 +1200,7 @@ class PoController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
             if (isset($request->all()['components']) && count($request->all()['components'])) {
                 $poItemArr = [];
@@ -1560,6 +1561,7 @@ class PoController extends Controller
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
                             $ted = PurchaseOrderTed::find($dis['e_id'] ?? null) ?? new PurchaseOrderTed;
                             $ted->purchase_order_id  =      $po->id;
+                            $ted->hsn_id             =      $dis['hsn_id'] ?? null;
                             $ted->po_item_id         =      null;
                             $ted->ted_type           =      'Expense';
                             $ted->ted_level          =      'H';

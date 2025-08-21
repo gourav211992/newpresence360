@@ -12,6 +12,7 @@ use App\Models\Kaizen\ErpKaizenImprovement;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Lib\Validation\Kaizen\KaizenStoreRequest as Validator;
+use App\Models\Employee;
 use App\Models\Kaizen\ErpKaizenDocument;
 use App\Models\Kaizen\ErpKaizenTeam;
 use Carbon\Carbon;
@@ -325,6 +326,12 @@ class KaizenController extends Controller
                 );
             }
 
+            // Calculate Score
+            $res = $this->calculateScore($kaizen);
+            $kaizen->score = $res['score'];
+            $kaizen->total_score = $res['total_score'];
+            $kaizen->save();
+
             \DB::commit();
             return [
                 "data" => null,
@@ -430,9 +437,30 @@ class KaizenController extends Controller
                 },
                 'approver' => function($q){
                     $q->select('id','name');
+                },
+                'productivity' => function($q){
+                    $q->select('id','description');
+                },
+                'safety' => function($q){
+                    $q->select('id','description');
+                },
+                'innovation' => function($q){
+                    $q->select('id','description');
+                },
+                'cost' => function($q){
+                    $q->select('id','description');
+                },
+                'delivery' => function($q){
+                    $q->select('id','description');
+                },
+                'moral' => function($q){
+                    $q->select('id','description');
+                },
+                'quality' => function($q){
+                    $q->select('id','description');
                 }
             ])->find($id);
-        // dd($kaizen);
+        // dd($kaizen->kaizen_date);
 
         $attachments = ErpKaizenDocument::where('kaizen_id',$id)
             ->get()
@@ -512,20 +540,26 @@ class KaizenController extends Controller
         $score = ErpKaizenImprovement::whereIn('id', $improvementIds)
         ->sum('marks');
 
-        $organizationId = $kaizen->organization_id;
+        $createdBy = $kaizen->created_by ? $kaizen->created_by : 0;
+        $employee = Employee::with('designation')->select('designation_id')->where('id',$createdBy)->first();
+        $designationScore = optional($employee?->designaction)->marks ?? 0;
+        $score += $designationScore;
+        
 
-        $improvementTypes = CommonHelper::IMPROVEMENT_TYPE;
+        // $organizationId = $kaizen->organization_id;
 
-        $totalScore = ErpKaizenImprovement::where('organization_id', $organizationId)
-            ->whereIn('type', $improvementTypes)
-            ->select('type', \DB::raw('MAX(marks) as max_marks'))
-            ->groupBy('type')
-            ->pluck('max_marks')
-            ->sum();
+        // $improvementTypes = CommonHelper::IMPROVEMENT_TYPE;
+
+        // $totalScore = ErpKaizenImprovement::where('organization_id', $organizationId)
+        //     ->whereIn('type', $improvementTypes)
+        //     ->select('type', \DB::raw('MAX(marks) as max_marks'))
+        //     ->groupBy('type')
+        //     ->pluck('max_marks')
+        //     ->sum();
 
         return [
             'score' => $score,
-            'total_score' => $totalScore
+            'total_score' => 80
         ];
     }
 }

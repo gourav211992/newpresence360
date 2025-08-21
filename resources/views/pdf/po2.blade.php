@@ -535,13 +535,15 @@
                         </tr>
                         @endif
                         @foreach($po->headerExpenses as $key => $expense)
-
+                            @php
+                                $totalExp = @$expense->ted_amount + @$expense->tax_amount;
+                            @endphp
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
                                     <b>{{ucFirst($expense->ted_name ?? 'NA') ?? 'NA'}}:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    {{ number_format(@$expense->ted_amount, 2) }}
+                                    {{ number_format($totalExp, 2) }}
                                 </td>
                             </tr>
                         @endforeach
