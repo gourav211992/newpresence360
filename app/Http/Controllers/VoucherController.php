@@ -61,13 +61,13 @@ class VoucherController extends Controller
                 $orgs = [Helper::getAuthenticatedUser()->organization_id];
 
             $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');;
             })->whereIn("organization_id",$orgs)
         ->with([ 'ErpLocation' => function ($query) use ($request, $orgs) {
         $query->when(function () use ($request) {
             return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
-            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');;
         })->whereIn('organization_id', $orgs);
     }])
             ->with('organization')
@@ -129,7 +129,7 @@ class VoucherController extends Controller
                         $balance = VoucherReference::where('voucher_id', $voucher->id)
                             ->withWhereHas('voucherPayRec', function ($query) use($request,$orgs) {
                                 $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
                                 })->whereIn("organization_id",$orgs);
                                 //$query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
@@ -154,7 +154,7 @@ class VoucherController extends Controller
                     ->whereIn('reference', ['On Account'])
                     ->withWhereHas('voucher', function ($query) use($orgs,$request) {
                         $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                        $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                        $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
                     })->whereIn("organization_id",$orgs);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                     })
@@ -182,7 +182,7 @@ class VoucherController extends Controller
                  ->where('reference', 'Advance')
                  ->withWhereHas('voucher', function ($query) use($request,$orgs) {
                      $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs);
             $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                  })
@@ -251,7 +251,7 @@ class VoucherController extends Controller
                                 ->where('voucher_id', $voucher->id)
                                 ->withWhereHas('voucherPayRec', function ($query) use($request,$orgs) {
                                     $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs);
             $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                                 })->where('party_id', $ledger)->sum('amount');
@@ -271,7 +271,7 @@ class VoucherController extends Controller
                         ->whereIn('reference', ['On Account'])
                         ->withWhereHas('voucher', function ($query) use($orgs,$request) {
                             $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs)
                                 ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                         })
@@ -299,7 +299,7 @@ class VoucherController extends Controller
                     ->whereIn('reference', ['Advance'])
                     ->withWhereHas('voucher', function ($query) use($request,$orgs) {
                         $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                            $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                            $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
                         })->whereIn("organization_id",$orgs)
                             ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                     })
@@ -366,7 +366,7 @@ class VoucherController extends Controller
                                 ->withWhereHas('voucherPayRec', function ($query) use ($request,$orgs) {
                                     $query->where('payment_voucher_id','!=',(int)$request->payment_voucher_id);
                                     $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs);
             $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                                 })->where('party_id', $ledger)->sum('amount');
@@ -388,7 +388,7 @@ class VoucherController extends Controller
                         ->whereIn('reference', ['On Account'])
                         ->withWhereHas('voucher', function ($query) use($request,$orgs) {
                             $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs)
                                 ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                         })
@@ -419,7 +419,7 @@ class VoucherController extends Controller
                     ->whereIn('reference', ['Advance'])
                     ->withWhereHas('voucher', function ($query) use($request,$orgs) {
                         $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs)
                             ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                     })
