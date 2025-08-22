@@ -49,6 +49,7 @@ use App\Models\CurrencyExchange;
 use App\Models\LoanProcessFee;
 use App\Models\RecoveryLoan;
 use App\Models\LoanSettlement;
+use App\Models\ErpTransportInvoice;
 
 use App\Models\MrnHeader;
 use App\Models\MrnDetail;
@@ -62,6 +63,7 @@ use App\Models\PbTed;
 use App\Models\PRHeader;
 use App\Models\PRDetail;
 use App\Models\PRTed;
+use App\Models\ErpTransportInvoiceTed;
 
 use App\Models\ExpenseHeader;
 use App\Models\ExpenseDetail;
@@ -265,6 +267,16 @@ class FinancialPostingHelper
 
         if ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) {
             $entries = self::dnVoucherDetails($documentId, $type);
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
+        }
+        else if ($serviceAlias === ConstantHelper::TI_SERVICE_ALIAS) {
+            $entries = self::transportVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -5591,6 +5603,257 @@ class FinancialPostingHelper
             'location' => $document?->store_id
         ];
         $voucherDetails = self::generateVoucherDetailsArray($postingArray, $voucherHeader, $document, 'currency_id', 'document_date', true);
+        return array(
+            'status' => true,
+            'message' => 'Posting Details found',
+            'data' => [
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
+        );
+    }
+
+    public static function transportVoucherDetails(int $documentId, string $type)
+    {
+        
+         $document = ErpTransportInvoice::find($documentId);
+        if (!isset($document)) {
+            return array(
+                'status' => false,
+                'message' => 'Document not found',
+                'data' => []
+            );
+        }
+
+        //Invoice to follow
+        $invoiceToFollow = 0;
+        $postingArray = array(
+            self::CUSTOMER_ACCOUNT => [],
+            self::DISCOUNT_ACCOUNT => [],
+            self::SALES_ACCOUNT => [],
+            self::TAX_ACCOUNT => [],
+            self::EXPENSE_ACCOUNT => [],
+            self::COGS_ACCOUNT => [],
+            self::STOCK_ACCOUNT => []
+        );
+        //Assign Credit and Debit amount for tally check
+        $totalCreditAmount = 0;
+        $totalDebitAmount = 0;
+
+        //Status to check if all ledger entries were properly set
+        $ledgerErrorStatus = null;
+    
+        $customerAccountDebit = 0;
+        //Customer Account initialize
+        if (!$invoiceToFollow) 
+        {
+
+            $customer = Customer::find($document->customer_id);
+            $customerLedgerId = $customer->ledger_id;
+            $customerLedgerGroupId = $customer->ledger_group_id;
+            $customerLedger = Ledger::find($customerLedgerId);
+            $customerLedgerGroup = Group::find($customerLedgerGroupId);
+            //Customer Ledger account not found
+            if (!isset($customerLedger) || !isset($customerLedgerGroup)) {
+                return array(
+                    'status' => false,
+                    'message' => self::ERROR_PREFIX . 'Customer Account not setup',
+                    'data' => []
+                );
+            }
+           
+            $discountSeperatePosting = false;
+            foreach ($document->items as $docItemKey => $docItem) {
+                //Assign Item values
+                $itemValue = $docItem->rate * $docItem->order_qty;
+                $itemTotalDiscount = $docItem->header_discount_amount + $docItem->item_discount_amount;
+                $itemValueAfterDiscount = $itemValue - $itemTotalDiscount;
+                //SALES ACCOUNT
+                $salesAccountLedgerDetails = AccountHelper::getLedgerGroupAndLedgerIdForSalesAccount($document->organization_id, $document->customer_id, $docItem->item_id, $document->book_id);
+                $salesAccountLedgerId = is_a($salesAccountLedgerDetails, Collection::class) ? $salesAccountLedgerDetails->first()['ledger_id'] : null;
+                $salesAccountLedgerGroupId = is_a($salesAccountLedgerDetails, Collection::class) ? $salesAccountLedgerDetails->first()['ledger_group'] : null;
+                $salesAccountLedger = Ledger::find($salesAccountLedgerId);
+                $salesAccountLedgerGroup = Group::find($salesAccountLedgerGroupId);
+                //LEDGER NOT FOUND
+                if (!isset($salesAccountLedger) || !isset($salesAccountLedgerGroup)) {
+                    $ledgerErrorStatus = self::ERROR_PREFIX . 'Sales Account not setup';
+                    break;
+                }
+                $salesCreditAmount = $discountSeperatePosting ? $itemValue : $itemValueAfterDiscount;
+                //Check for same ledger and group in SALES ACCOUNT
+                $existingSalesLedger = array_filter($postingArray[self::SALES_ACCOUNT], function ($posting) use ($salesAccountLedgerId, $salesAccountLedgerGroupId) {
+                    return $posting['ledger_id'] == $salesAccountLedgerId && $posting['ledger_group_id'] == $salesAccountLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingSalesLedger) > 0) {
+                    $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] += $salesCreditAmount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::SALES_ACCOUNT], [
+                        'ledger_id' => $salesAccountLedgerId,
+                        'ledger_group_id' => $salesAccountLedgerGroupId,
+                        'ledger_code' => $salesAccountLedger?->code,
+                        'ledger_name' => $salesAccountLedger?->name,
+                        'ledger_group_code' => $salesAccountLedgerGroup?->name,
+                        'credit_amount' => $salesCreditAmount,
+                        'debit_amount' => 0
+                    ]);
+                }
+              
+                $customerAccountDebit += $itemValueAfterDiscount;
+            }
+            //TAXES ACCOUNT
+            $taxes = ErpTransportInvoiceTed::where('transport_invoice_id', $document->id)->where('ted_type', "Tax")->get();
+            foreach ($taxes as $tax) {
+                $taxDetail = TaxDetail::find($tax->ted_id);
+                $taxLedgerId = $taxDetail->ledger_id ?? null; //MAKE IT DYNAMIC
+                $taxLedgerGroupId = $taxDetail->ledger_group_id ?? null; //MAKE IT DYNAMIC
+                $taxLedger = Ledger::find($taxLedgerId);
+                $taxLedgerGroup = Group::find($taxLedgerGroupId);
+                if (!isset($taxLedger) || !isset($taxLedgerGroup)) {
+                    $ledgerErrorStatus = self::ERROR_PREFIX . 'Tax Account not setup';
+                    break;
+                }
+                $existingTaxLedger = array_filter($postingArray[self::TAX_ACCOUNT], function ($posting) use ($taxLedgerId, $taxLedgerGroupId) {
+                    return $posting['ledger_id'] == $taxLedgerId && $posting['ledger_group_id'] === $taxLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingTaxLedger) > 0) {
+                    $postingArray[self::TAX_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::TAX_ACCOUNT], [
+                        'ledger_id' => $taxLedgerId,
+                        'ledger_group_id' => $taxLedgerGroupId,
+                        'ledger_code' => $taxLedger?->code,
+                        'ledger_name' => $taxLedger?->name,
+                        'ledger_group_code' => $taxLedgerGroup?->name,
+                        'credit_amount' => $tax->ted_amount,
+                        'debit_amount' => 0,
+                    ]);
+                }
+                
+                $customerAccountDebit += $tax -> ted_amount;
+            }
+
+        }
+
+        $totalPaymentTermsAmount = 0;
+        $invoicePaymentTerms = [];
+       
+                //Check for same ledger and group in CUSTOMER ACCOUNT
+                $customer = Customer::find($document->customer_id);
+                $customerLedgerId = $customer->ledger_id;
+                $customerLedgerGroupId = $customer->ledger_group_id;
+                $customerLedger = Ledger::find($customerLedgerId);
+                $customerLedgerGroup = Group::find($customerLedgerGroupId);
+                //Customer Ledger account not found
+                if (!isset($customerLedger) || !isset($customerLedgerGroup)) {
+                    return array(
+                        'status' => false,
+                        'message' => self::ERROR_PREFIX . 'Customer Account not setup',
+                        'data' => []
+                    );
+                }
+                $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingcustomerLedger) > 0) 
+                {
+                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $salesCreditAmount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                        'ledger_id' => $customerLedgerId,
+                        'ledger_group_id' => $customerLedgerGroupId,
+                        'ledger_code' => $customerLedger?->code,
+                        'ledger_name' => $customerLedger?->name,
+                        'ledger_group_code' => $customerLedgerGroup?->name,
+                        'debit_amount' => $salesCreditAmount,
+                        'credit_amount' => 0,
+                    ]);
+                }
+
+        //Check if All Legders exists and posting is properly set
+        if ($ledgerErrorStatus) {
+            return array(
+                'status' => false,
+                'message' => $ledgerErrorStatus,
+                'data' => []
+            );
+        }
+        //Check debit and credit tally
+        foreach ($postingArray as $postAccount) {
+            foreach ($postAccount as $postingValue) {
+                $totalCreditAmount += $postingValue['credit_amount'];
+                $totalDebitAmount += $postingValue['debit_amount'];
+            }
+        }
+        $book = Book::find($document->book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam->parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX . 'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        $currency = Currency::find($document->currency_id);
+        $userData = Helper::userCheck();
+        $voucherHeader = [
+            'voucher_no' => $document->document_number,
+            'document_date' => $document->document_date,
+            'book_id' => $glPostingBookId,
+            'date' => $document->document_date,
+            'amount' => $totalCreditAmount,
+            'currency_id' => $document->currency_id,
+            'currency_code' => $document->currency_code,
+            'org_currency_id' => $document->org_currency_id,
+            'org_currency_code' => $document->org_currency_code,
+            'org_currency_exg_rate' => $document->org_currency_exg_rate,
+            'comp_currency_id' => $document->comp_currency_id,
+            'comp_currency_code' => $document->comp_currency_code,
+            'comp_currency_exg_rate' => $document->comp_currency_exg_rate,
+            'group_currency_id' => $document->group_currency_id,
+            'group_currency_code' => $document->group_currency_code,
+            'group_currency_exg_rate' => $document->group_currency_exg_rate,
+            'reference_service' => $book?->service?->alias,
+            'reference_doc_id' => $document->id,
+            'group_id' => $document->group_id,
+            'company_id' => $document->company_id,
+            'organization_id' => $document->organization_id,
+            'voucherable_type' => $userData['user_type'],
+            'voucherable_id' => $userData['user_id'],
+            'document_status' => ConstantHelper::APPROVED,
+            'approvalLevel' => $document->approval_level,
+            'location' => $document?->store_id
+        ];
+       
+        $voucherDetails = self::generateVoucherDetailsArray(
+    $postingArray,
+    $voucherHeader,
+    $document,
+    'currency_id',
+    'document_date',
+    true
+);
+
+// har detail me se due_date hatao
+foreach ($voucherDetails as &$detail) {
+    if (isset($detail['due_date'])) {
+        unset($detail['due_date']);
+    }
+}
+unset($detail); // reference clear
+// dd($voucherDetails);
+
         return array(
             'status' => true,
             'message' => 'Posting Details found',
