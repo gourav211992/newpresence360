@@ -25,12 +25,10 @@ $(document).on('click', '#approved-button', (e) => {
    $("#approveModal #popupTitle").text("Approve Application");
    $("#approveModal").modal('show');
 });
-$(document).on('click', '#reject-button', (e) => {
-   let actionType = 'reject';
-   $("#approveModal #popupTitle").text("Reject Application");
-   $("#approveModal").find("#action_type").val(actionType);
-   $("#approveModal").modal('show');
-});
+
+// $(document).on('click', '#reject-button', (e) => {
+//    $("#rejectModal").modal('show');
+// });
 
 /*Delete Row*/
 $(document).on('click','#deleteBtn', (e) => {
@@ -87,7 +85,7 @@ $(document).on('click','#deleteInstructionBtn', (e) => {
      alert("Please first add & select row item.");
    }
    if (editItemIds.length) {
-      
+
      $("#deleteInstrunctionComponentModal").find("#deleteInstructionConfirm").attr('data-ids',JSON.stringify(editItemIds));
      $("#deleteInstrunctionComponentModal").modal('show');
    }
@@ -139,7 +137,7 @@ $(document).on('change input',"table input[name*='qty']",(e) => {
 $(document).on('change input',"[name*='item_cost']",(e) => {
    let tr = e.target.closest('tr');
    let itemCost = e.target;
-   let qty = $(e.target).closest('tr').find("[name*='qty']"); 
+   let qty = $(e.target).closest('tr').find("[name*='qty']");
    let itemValue = $(e.target).closest('tr').find("[name*='item_value']");
    let totalItemValue = Number(qty.val()) * Number(itemCost.value);
    itemValue.val(totalItemValue.toFixed(2));
@@ -188,9 +186,9 @@ $(document).on('click', '#approved-button', (e) => {
    $("#approveModal").modal('show');
 });
 $(document).on('click', '#reject-button', (e) => {
-   let actionType = 'reject';
-   $("#approveModal").find("#action_type").val(actionType);
-   $("#approveModal").modal('show');
+    //    let actionType = 'reject';
+    //    $("#approveModal").find("#action_type").val(actionType);
+   $("#rejectModal").modal('show');
 });
 
 /*Bom detail remark js*/
@@ -216,7 +214,7 @@ $(document).on('click', '.itemRemarkSubmit', (e) => {
     if(!remarkValue.length) {
         rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
         $("#itemTable #row_"+rowCount).find('.addRemarkBtn').after(rowHidden);
-        
+
     } else{
         $("#itemTable #row_"+rowCount).find("[name*='remark']").val(textValue);
     }
@@ -287,7 +285,7 @@ function setTableCalculation() {
       });
       $(`#item_sub_total_row_${rowCount}`).find("#total").attr('amount', Number(itemOverheadAmnt)).text(Number(itemOverheadAmnt).toFixed(2));
       $(item).find("[name*='[overhead_amount]']").val(Number(itemOverheadAmnt).toFixed(2));
-     
+
       totalItemValue+=itemValue;
       $(item).find("[name*='[item_value]']").val(itemValue.toFixed(2));
       totalItemOverhead+=itemOverheadAmnt;
@@ -319,7 +317,7 @@ function setTableCalculation() {
           }
           levelTotal += amnt;
       });
-      tempAmnt += levelTotal;  
+      tempAmnt += levelTotal;
       subtotal+=levelTotal;
       $(`#sub_total_row_${level}`).find("#total").attr('amount', tempAmnt).text(canView ? tempAmnt.toFixed(2) : '0.00');
    }
@@ -331,7 +329,7 @@ function setTableCalculation() {
  }
 
  /*Qty enabled and disabled*/
-function qtyEnabledDisabled() {    
+function qtyEnabledDisabled() {
     $("tr[id*='row_']").each(function(index,item) {
         let qtyDisabled = false;
         if($(item).find("[name*='[attr_name]']").length) {
@@ -478,7 +476,7 @@ function showConsumptionPopup(rowCount) {
 // Added for visible seprate tab button
 document.addEventListener("DOMContentLoaded", function () {
    function updateButtonVisibility() {
-       let activeTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");   
+       let activeTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
        document.querySelectorAll(".tab-action").forEach(button => {
            if (button.getAttribute("data-tab") === activeTab) {
                button.classList.remove("d-none");
@@ -507,7 +505,7 @@ $(document).on('input', '.percentage_input', function () {
    }
 });
 
-setTimeout(() => {   
+setTimeout(() => {
    let overheadLevelCount = $("tr[id*='sub_total_row_']").length || 1;
    $("input[name='orverhead_level_count']").val(overheadLevelCount);
 }  , 100);
@@ -618,7 +616,7 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
    let $input = $lastRow.find(inputSelector);
 
    if ($input.length) {
-        let isSection = false; 
+        let isSection = false;
         if($lastRow.find("input[name*='product_section']").length) {
             $input = $lastRow.find("input[name*='product_section']");
             isSection = true;

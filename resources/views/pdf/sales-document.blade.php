@@ -19,8 +19,12 @@
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
             <tr>
                 <!-- Organization Logo (Left) -->
-                <td style="vertical-align: top;">
-                    <img src="{{$orgLogo}}" height="50px" alt="">
+                 <td style="text-align: left; width: 33%;">
+                    @if (isset($orgLogo) && $orgLogo)
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
+                    @else
+                        <img src="{{ $imagePath }}" height="50px" alt="">
+                    @endif
                 </td>
 
                 <!--  {{$type}} Text (Center) -->

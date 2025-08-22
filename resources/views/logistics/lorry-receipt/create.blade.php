@@ -1487,6 +1487,7 @@ function applyFreightToRows($specificRow = null,$row, deletedRow = null) {
 }
 
 
+
 function handleLocationUpdate($input) {
     const $row = $input.closest('tr');
     const locationId = $row.find('input[name*="[location_id]"]').val();

@@ -132,6 +132,8 @@ class StoragePointHelper
                     // Try sub_category_id
                     if ($item->subcategory_id) {
                         $records = \DB::table('erp_wh_item_mappings')
+                            ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+                            ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
                             ->whereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string)$item->subcategory_id])
                             ->get();
                     }
@@ -139,6 +141,8 @@ class StoragePointHelper
                     // If still empty, try category_id
                     if ($records->isEmpty() && $item->category_id) {
                         $records = \DB::table('erp_wh_item_mappings')
+                        ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+                        ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
                         ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string)$item->category_id])
                         ->get();
                     }

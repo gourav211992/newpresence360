@@ -109,6 +109,7 @@ class PslipRequest extends FormRequest
     {
         $id = $this->input('id');
         $validator->after(function ($validator) use ($id) {
+
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
@@ -157,6 +158,7 @@ class PslipRequest extends FormRequest
         });
     }
 
+
     public function messages(): array
     {
         return [
@@ -175,6 +177,7 @@ class PslipRequest extends FormRequest
             'item_accepted_qty.*.numeric'  => 'Accepted quantity must be a number.',
             'item_accepted_qty.*.min'      => 'Accepted quantity must be at least 1.',
         ];
+
     }
 
     protected function failedValidation(Validator $validator)

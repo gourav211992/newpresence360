@@ -284,12 +284,12 @@ class DocumentApprovalController extends Controller
             $bookTypeServiceAlias = $saleInvoice -> document_type;
             $approvalStatus = $saleInvoice -> document_status;
 
-            if ($actionType == 'approve' && in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::POSTED]) && 
+            if ($actionType == 'approve' && in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::POSTED]) &&
             in_array($bookTypeServiceAlias, [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])) {
                 $fy = Helper::getFinancialYear($saleInvoice -> document_date);
                 $fyYear = ErpFinancialYear::find($fy['id']);
                 if ((int)$revisionNumber > 0) {
-                    $oldSaleInvoice = ErpSaleInvoiceHistory::where('source_id', $saleInvoice -> id) 
+                    $oldSaleInvoice = ErpSaleInvoiceHistory::where('source_id', $saleInvoice -> id)
                         -> where('revision_number', $saleInvoice -> revision_number - 1) -> first();
                     if ($oldSaleInvoice) {
                         SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear, $oldSaleInvoice);
@@ -645,37 +645,37 @@ class DocumentApprovalController extends Controller
 
             if ($request->action_type === 'deviation-closed') {
                 $mrnItemIds = $mrn->items->pluck('id')->toArray();
-            
+
                 if (!empty($mrnItemIds)) {
                     $mrnItems = MrnDetail::whereIn('id', $mrnItemIds)->get();
                     $jobData = ErpWhmJob::find($request->closing_job_id);
-            
+
                     if ($jobData) {
                         foreach ($mrnItems as $item) {
                             $pendingCodes = $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->get();
-            
+
                             $pendingQty = $pendingCodes->sum('qty');
-            
+
                             // If no pending codes for this item, skip to next
                             if ($pendingCodes->isEmpty()) {
                                 continue;
                             }
-            
+
                             // Delete all pending codes for this job
                             $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->delete();
-            
+
                             // Check if any pending still exists for this job in this item
                             $hasPending = $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->exists();
-            
+
                             if (!$hasPending) {
                                 // Adjust accepted qty only once per item
                                 $orderQty =  ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $pendingQty ?? 0);
@@ -692,12 +692,12 @@ class DocumentApprovalController extends Controller
                                 }
                             }
                         }
-            
+
                         // Final check for pending status across all items
                         $jobHasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
                             ->where('status', 'pending')
                             ->exists();
-                        
+
                         $jobData->status = $jobHasPending ? 'deviation' : 'closed';
                         $jobData->save();
                     }
@@ -709,7 +709,7 @@ class DocumentApprovalController extends Controller
                 $fy = Helper::getFinancialYear($mrn -> document_date);
                 $fyYear = ErpFinancialYear::find($fy['id']);
                 if ((int)$revisionNumber > 0) {
-                    $oldMrn = MrnHeaderHistory::where('mrn_header_id', $mrn -> id) 
+                    $oldMrn = MrnHeaderHistory::where('mrn_header_id', $mrn -> id)
                         -> where('revision_number', $mrn -> revision_number - 1) -> first();
                     if ($oldMrn) {
                         MrnModuleHelper::buildVendorPurchaseSummary($mrn, $fyYear, $oldMrn);
@@ -749,7 +749,7 @@ class DocumentApprovalController extends Controller
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
                 ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
-                ->pluck('config_value', 'config_key'); 
+                ->pluck('config_value', 'config_key');
 
 
             $gateEntry = GateEntryHeader::find($request->id);
@@ -779,46 +779,46 @@ class DocumentApprovalController extends Controller
             $gateEntry->save();
 
             // Create Job
-            if(in_array($gateEntry->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
-                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+            if(in_array($gateEntry->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
                 (new WhmJob)->createJob($gateEntry->id,'App\Models\GateEntryHeader');
             }
-            
+
             if ($request->action_type === 'deviation-closed') {
                 $gateEntryItemIds = $gateEntry->items->pluck('id')->toArray();
-            
+
                 if (!empty($gateEntryItemIds)) {
                     $gateEntryItems = GateEntryDetail::whereIn('id', $gateEntryItemIds)->get();
                     $jobData = ErpWhmJob::find($request->closing_job_id);
-            
+
                     if ($jobData) {
                         foreach ($gateEntryItems as $item) {
                             $pendingCodes = $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->get();
-            
+
                             $pendingQty = $pendingCodes->sum('qty');
-            
+
                             // If no pending codes for this item, skip to next
                             if ($pendingCodes->isEmpty()) {
                                 continue;
                             }
-            
+
                             // Delete all pending codes for this job
                             $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->delete();
-            
+
                             // Check if any pending still exists for this job in this item
                             $hasPending = $item->uniqueCodes()
                                 ->where('status', 'pending')
                                 ->where('job_id', $jobData->id)
                                 ->exists();
-            
+
                             if (!$hasPending) {
                                 // Adjust accepted qty only once per item
                                 $item->decrement('accepted_qty', $pendingQty);
@@ -833,17 +833,17 @@ class DocumentApprovalController extends Controller
                                 }
                             }
                         }
-            
+
                         // Final check for pending status across all items
                         $jobHasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
                             ->where('status', 'pending')
                             ->exists();
-                        
+
                         $jobData->status = $jobHasPending ? 'deviation' : 'closed';
                         $jobData->save();
                     }
                 }
-            }            
+            }
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",
@@ -1221,7 +1221,7 @@ class DocumentApprovalController extends Controller
                 $fy = Helper::getFinancialYear($mrn -> document_date);
                 $fyYear = ErpFinancialYear::find($fy['id']);
                 if ((int)$revisionNumber > 0) {
-                    $oldMrn = PRHeaderHistory::where('header_id', $mrn -> id) 
+                    $oldMrn = PRHeaderHistory::where('header_id', $mrn -> id)
                         -> where('revision_number', $mrn -> revision_number - 1) -> first();
                     if ($oldMrn) {
                         MrnModuleHelper::buildVendorPurchaseReturnSummary($mrn, $fyYear, $oldMrn);
@@ -1370,7 +1370,7 @@ class DocumentApprovalController extends Controller
                     $hiddenLedgerVendorName = $request->input('hidden_ledger_vendor_name');
                     $hiddenLedgerVendorCode = $request->input('hidden_ledger_vendor_code');
                     $ledgerGroupId = $request->input('ledger_group_id');
-              
+
                     if ($createVendorLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode) && !empty($ledgerGroupId)) {
                         try {
                             $result = Helper::createPartyLedger(
@@ -1379,13 +1379,13 @@ class DocumentApprovalController extends Controller
                                 $hiddenLedgerVendorCode,
                                 $ledgerGroupId
                             );
-                        
+
                             if (!$result['success']) {
                                 Log::error('Error creating party ledger: ' . $result['message']);
                                 DB::rollBack();
                                 return response()->json([
                                     'status' => false,
-                                    'message' => $result['message'], 
+                                    'message' => $result['message'],
                                     'data' => $vendor,
                                 ], 500);
                             }
@@ -1402,11 +1402,11 @@ class DocumentApprovalController extends Controller
                             DB::rollBack();
                             return response()->json([
                                 'status' => false,
-                                'message' =>  $e->getMessage(), 
+                                'message' =>  $e->getMessage(),
                                 'data' => $vendor,
                             ], 500);
                         }
-                    } 
+                    }
                 // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $vendor->status = $approvalStatus;
@@ -1462,7 +1462,7 @@ class DocumentApprovalController extends Controller
                     $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
                     $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
                     $ledgerGroupId = $request->input('ledger_group_id');
-              
+
                     if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
                         try {
                             $result = Helper::createPartyLedger(
@@ -1471,13 +1471,13 @@ class DocumentApprovalController extends Controller
                                 $hiddenLedgerCustomerCode,
                                 $ledgerGroupId
                             );
-                        
+
                             if (!$result['success']) {
                                 Log::error('Error creating party ledger: ' . $result['message']);
                                 DB::rollBack();
                                 return response()->json([
                                     'status' => false,
-                                    'message' => $result['message'], 
+                                    'message' => $result['message'],
                                     'data' => $customer,
                                 ], 500);
                             }
@@ -1494,16 +1494,16 @@ class DocumentApprovalController extends Controller
                             DB::rollBack();
                             return response()->json([
                                 'status' => false,
-                                'message' =>  $e->getMessage(), 
+                                'message' =>  $e->getMessage(),
                                 'data' => $customer,
                             ], 500);
                         }
-                    } 
+                    }
                 // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $customer->status = $approvalStatus;
             }
-            
+
             $customer->save();
 
             DB::commit();
@@ -1538,14 +1538,14 @@ class DocumentApprovalController extends Controller
             $currentLevel = $lr->approval_level ?? 1;
             $revisionNumber = $lr->revision_number ?? 0;
             $actionType = $request->action_type;
-           
+
             $modelName = get_class($lr);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $lr->approval_level = $approveDocument['nextLevel'] ?? 1;
-            $approvalStatus = $approveDocument['approvalStatus']; 
+            $approvalStatus = $approveDocument['approvalStatus'];
             $lr->document_status = $approvalStatus;
 
-         
+
             $lr->save();
 
             DB::commit();

@@ -636,7 +636,7 @@ class AutocompleteController extends Controller
                     ->with(['uom:id,name'])
                     ->withCount('itemAttributes')
                     ->limit(10)
-                    ->get(['id', 'item_name', 'item_code', 'uom_id']);
+                    ->get(['id', 'item_name', 'minimum_order_qty' ,'item_code', 'uom_id']);
             } elseif ($type === 'work_order_items') {
 
                 // $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];

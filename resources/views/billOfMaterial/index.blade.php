@@ -2,7 +2,7 @@
 @section('content')
 @php
 $routeAlias = $servicesBooks['services'][0]?->alias ?? null;
-if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS) 
+if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
 {
    $routeAlias = 'bill-of-material';
 } else {
@@ -17,21 +17,21 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
       <div class="content-header row">
          @include('layouts.partials.breadcrumb-list', [
          'title' => $routeAlias == 'quotation-bom' ? 'Quotation BOM' : 'Production BOM',
-         'menu' => 'Home', 
+         'menu' => 'Home',
          'menu_url' => url('home'),
          'sub_menu' => 'BOM List'
          ])
          <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
             <div class="form-group breadcrumb-right">
-               <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
+               <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                @if(count($servicesBooks['services']))
                <a href="{{url($routeAlias)}}/import" class="btn btn-warning btn-sm mb-50 mb-sm-0">
                   <i data-feather="upload"></i>Import
-              </a> 
-            
-               <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{url($routeAlias)}}/create"><i data-feather="plus-circle"></i> Add New</a> 
+              </a>
+
+               <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{url($routeAlias)}}/create"><i data-feather="plus-circle"></i> Add New</a>
                @endif
-               
+
                <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'bom']) }}"><i data-feather="bar-chart-2"></i>Report</a>
             </div>
          </div>
@@ -57,14 +57,15 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                  <th>Production Type</th>
                                  <th>Components</th>
                                  @if($canView)
-                                 <th>Item Cost</th>
-                                 <th>Overheads</th>
-                                 <th>Total Cost</th>
+                                    <th>Item Cost</th>
+                                    <th>Overheads</th>
+                                    <th>Total Cost</th>
                                  @endif
+                                 <th>Created By</th>
                                  <th>Status</th>
                               </tr>
                            </thead>
-                           
+
                         </table>
                      </div>
                   </div>
@@ -143,7 +144,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
 
 $(document).ready(function() {
    function renderData(data) {
-        return data ? data : ''; 
+        return data ? data : '';
     }
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -154,8 +155,8 @@ $(document).ready(function() {
          },
         { data: 'document_number', name: 'document_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
-            } 
-         },        
+            }
+         },
         // { data: 'revision_number', name: 'revision_number', render: renderData },
         { data: 'item_code', name: 'item_code', render: renderData },
         { data: 'item_name', name: 'item_name', render: renderData },
@@ -163,24 +164,29 @@ $(document).ready(function() {
         { data: 'uom_name', name: 'uom_name', render: renderData },
         { data: 'production_type', name: 'production_type', render: renderData },
         { data: 'components', name: 'components', render: renderData },
-        @if($canView) 
+        @if($canView)
         { data: 'total_item_value', name: 'total_item_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             },
-          
-         }, 
+
+         },
         { data: 'overhead', name: 'overhead', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             },
-           
+
          },
         { data: 'total_cost', name: 'total_cost', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             },
-           
+
          },
          @endif
-         { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'created_by', name: 'created_by', render: renderData, createdCell: function(td, cellData, rowData, row, col)
+            {
+               $(td).addClass('text-end');
+            }
+        },
+        { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
@@ -192,8 +198,8 @@ $(document).ready(function() {
         item_code: '#filter-item-code'    // Item code filter (input text field)
     };
     var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Columns to export
-    initializeDataTable('.datatables-basic', 
-        "{{ route('bill.of.material.index') }}"+'?type='+'{{@$servicesBooks['services'][0]?->alias}}', 
+    initializeDataTable('.datatables-basic',
+        "{{ route('bill.of.material.index') }}"+'?type='+'{{@$servicesBooks['services'][0]?->alias}}',
         columns,
         filters,  // Apply filters
         'Bill Of Material',  // Export title

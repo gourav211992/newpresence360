@@ -1,21 +1,19 @@
-<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
+        <form class="ajax-input-form" method="POST" action="{{ route('document.approval.bom') }}" data-redirect="{{ url(request()->segments()[0]) }}" enctype='multipart/form-data'>
           @csrf
-          {{-- <input type="hidden" name="action_type" id="action_type"> --}}
+          <input type="hidden" name="action_type" value="reject">
           <input type="hidden" name="id" value="{{$id ?? ''}}">
          <div class="modal-header">
             <div>
-               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="popupTitle">Approve Application</h4>
+               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="popupTitle">Reject Application</h4>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
          </div>
          <div class="modal-body pb-2">
             <div class="row mt-1">
-               <div class="col-md-12" id="clone-approval">
-                  @if(@$buttons['approve'])
-                     <input type="hidden" name="is_approved" value="approve">
-                  @endif
+               <div class="col-md-12">
                   <div class="mb-2">
                      <label class="form-label">Remarks <span class="text-danger">*</span></label>
                      <textarea maxlength="250" name="approval_remarks" class="form-control"></textarea>
@@ -34,9 +32,9 @@
          </div>
          <div class="modal-footer justify-content-center">
             <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-            <button type="button" class="btn btn-primary" id="approval-clone-btn">Submit</button>
+            <button type="submit" class="btn btn-primary">Reject</button>
          </div>
-       {{-- </form> --}}
+       </form>
       </div>
    </div>
 </div>
