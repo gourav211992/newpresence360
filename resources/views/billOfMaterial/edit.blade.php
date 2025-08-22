@@ -16,454 +16,461 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
     <input type="hidden" name="consumption_method" id="consumption_method" value=""/>
     <input type="hidden" name="quote_bom_id" id="quote_bom_id" value=""/>
     <input type="hidden" name="type" value="{{$serviceAlias}}">
-<div class="app-content content ">
-   <div class="content-overlay"></div>
-   <div class="header-navbar-shadow"></div>
-   <div class="content-wrapper container-xxl p-0">
-      <div class="content-header pocreate-sticky">
-         <div class="row">
-            @include('layouts.partials.breadcrumb-add-edit', [
-             'title' => $routeAlias == 'quotation-bom' ? 'Quotation BOM' : 'Production BOM',
-             'menu' => 'Home',
-             'menu_url' => url('home'),
-             'sub_menu' => 'Edit'
-             ])
-            <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-               <div class="form-group breadcrumb-right">
-                  <input type="hidden" name="document_status" value="{{$bom->document_status}}" id="document_status">
-                  <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+    <div class="app-content content ">
+    <div class="content-overlay"></div>
+    <div class="header-navbar-shadow"></div>
+    <div class="content-wrapper container-xxl p-0">
+        <div class="content-header pocreate-sticky">
+            <div class="row">
+                @include('layouts.partials.breadcrumb-add-edit', [
+                    'title' => $routeAlias == 'quotation-bom' ? 'Quotation BOM' : 'Production BOM',
+                    'menu' => 'Home',
+                    'menu_url' => url('home'),
+                    'sub_menu' => 'Edit'
+                ])
+                <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+                <div class="form-group breadcrumb-right">
+                    <input type="hidden" name="document_status" value="{{$bom->document_status}}" id="document_status">
+                    <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
 
-                  @if($buttons['draft'] || $buttons['amend'] && intval(request('amendment') ?? 0))
-                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                        data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] ? $buttons['amend'] : 0 }}"
-                        data-redirect="{{ url($routeAlias) }}"
-                        data-message="Are you sure you want to delete this record?">
-                    <i data-feather="trash-2" class="me-50"></i> Delete
-                    </button>
-                    <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
-                  @endif
-                  @if(!intval(request('amendment') ?? 0) && $bom->document_status != ConstantHelper::DRAFT && $bom->document_status != ConstantHelper::REJECTED)
-                  @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
-                    <a href="{{ route('bill.of.material.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                        <i data-feather="file-text"></i> Export
-                    </a>
-                  @else
-                    <a href="{{ route('quotation-bom.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                        <i data-feather="file-text"></i> Export
-                    </a>
-                  @endif
-                    <a href="{{ route('bill.of.material.generate-pdf', $bom->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                        <i data-feather="printer"></i> Print
-                    </a>
-                        @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
-                            <a target="_blank" href="{{ route('bill.of.material.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
-                        @else
-                            <a target="_blank" href="{{ route('quotation-bom.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                    @if($buttons['draft'] || $buttons['amend'] && intval(request('amendment') ?? 0))
+                        <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                            data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] ? $buttons['amend'] : 0 }}"
+                            data-redirect="{{ url($routeAlias) }}"
+                            data-message="Are you sure you want to delete this record?">
+                        <i data-feather="trash-2" class="me-50"></i> Delete
+                        </button>
+                        <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                    @endif
+                    @if(!intval(request('amendment') ?? 0) && $bom->document_status != ConstantHelper::DRAFT && $bom->document_status != ConstantHelper::REJECTED)
+                    @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
+                        <a href="{{ route('bill.of.material.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <i data-feather="file-text"></i> Export
+                        </a>
+                    @else
+                        <a href="{{ route('quotation-bom.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <i data-feather="file-text"></i> Export
+                        </a>
+                    @endif
+
+                        <a href="{{ route('bill.of.material.generate-pdf', $bom->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <i data-feather="printer"></i> Print
+                        </a>
+                            @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
+                                <a target="_blank" href="{{ route('bill.of.material.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                            @else
+                                <a target="_blank" href="{{ route('quotation-bom.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                            @endif
+                        @endif
+                    @if($buttons['submit'])
+                        <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                    @endif
+                    @if($buttons['approve'])
+                        <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg> Reject
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved">
+                            <i data-feather="check-circle"></i> Approve
+                        </button>
+                    @endif
+                    @if($buttons['amend'] && intval(request('amendment') ?? 0))
+                        <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
+                    @else
+                        @if($buttons['amend'])
+                            <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                         @endif
                     @endif
-                  @if($buttons['submit'])
-                     <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
-                  @endif
-                  @if($buttons['approve'])
-                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                  @endif
-                  @if($buttons['amend'] && intval(request('amendment') ?? 0))
-                       <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
-                   @else
-                       @if($buttons['amend'])
-                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-                       @endif
-                   @endif
-                    @if($buttons['revoke'])
-                        <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
-                    @endif
-               </div>
+                        @if($buttons['revoke'])
+                            <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
+                        @endif
+                </div>
+                </div>
             </div>
-         </div>
-      </div>
-      <div class="content-body">
-         <section id="basic-datatable">
-            <div class="row">
-               <div class="col-12">
-                  <div class="card">
-                     <div class="card-body customernewsection-form">
-                        <div class="border-bottom mb-2 pb-25">
-                           <div class="row">
-                                <div class="col-md-6">
-                                    <div class="newheader ">
-                                        <h4 class="card-title text-theme">Basic Information</h4>
-                                        <p class="card-text">Fill the details</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 text-sm-end">
-                                    <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-
-                                        Status : <span class="{{$docStatusClass}}">{{$bom->display_status}}</span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                           <div class="col-md-8">
-                              <div class="basic-information">
-                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3">
-                                        <label class="form-label">Series <span class="text-danger">*</span></label>
-                                    </div>
-
-                                    <div class="col-md-5">
-                                       <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$bom->book_id}}" readonly>
-                                       <input readonly type="text" name="book_code" class="form-control" value="{{$bom->book_code}}" id="book_code">
-                                    </div>
-                                 </div>
-
-                                <div class="row align-items-center mb-1">
-                                    <div class="col-md-3">
-                                        <label class="form-label">BOM No <span class="text-danger">*</span></label>
-                                    </div>
-
-                                    <div class="col-md-5">
-                                        <input readonly type="text" name="document_number" class="form-control" id="document_number" value="{{$bom->document_number}}">
-                                    </div>
-                                 </div>
-
-                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3">
-                                        <label class="form-label">BOM Date <span class="text-danger">*</span></label>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <input type="date" class="form-control" value="{{ $bom->document_date }}" name="document_date">
-                                    </div>
-                                </div>
-                                <div class="row align-items-center mb-1 d-none" id="reference_from">
-                                    <div class="col-md-3">
-                                        <label class="form-label">Reference from</label>
-                                    </div>
-                                    <div class="col-md-5 action-button">
-                                        <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect" {{$bom->bomItems->count() ? 'disabled' : ''}}><i data-feather="plus-square"></i> Quotation Bom</button>
-                                    </div>
-                                </div>
-                              </div>
-                           </div>
-                           {{-- Approval History Section --}}
-                           @include('partials.approval-history', ['document_status' => $bom->document_status, 'revision_number' => $revision_number])
-
-                        </div>
-                     </div>
-                  </div>
-
-                  {{-- Product Detail --}}
-               </div>
-
-                    <div class="col-md-12" id="vendor_section">
-                        <div class="card quation-card">
-                            <div class="card-header newheader">
-                                <div>
-                                    <h4 class="card-title">Product Details</h4>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Product Code <span class="text-danger">*</span></label>
-                                            <input type="text" value="{{$bom->item?->item_code}}" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" data-name="{{$bom->item?->item_name ?? ''}}" data-code="{{$bom->item?->item_code ?? ''}}" {{ $bom->document_status != 'draft' ? 'readonly' : ' ' }}/>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Product Name <span class="text-danger">*</span></label>
-                                            <input type="hidden" value="{{$bom->item?->id}}" name="item_id" id="head_item_id">
-                                            <input type="text" value="{{$bom->item?->item_name}}" id="head_item_name" placeholder="Select" class="form-control mw-100 ledgerselecct" name="item_name" readonly />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">UOM <span class="text-danger">*</span></label>
-                                            <input type="hidden" id="head_uom_id" class="form-control" name="uom_id" value="{{$bom->uom?->id}}" readonly  />
-                                            <input type="text" id="head_uom_name" class="form-control" name="uom_name" value="{{$bom->uom?->name}}" readonly  />
-                                        </div>
-                                    </div>
-                                    @include('billOfMaterial.partials.header-attribute-edit')
-
-                                    @if($servicesBooks['services'][0]?->alias != ConstantHelper::BOM_SERVICE_ALIAS)
-                                    <div class="col-md-3 customer_div">
-                                        <div class="mb-1">
-                                            <label class="form-label">Customer <span class="text-danger">*</span></label>
-                                            <input type="hidden" name="customer_id" id="customer_id" value="{{$bom?->customer?->id}}">
-                                            <input type="text" id="customer" placeholder="Select" value="{{$bom?->customer?->customer_code}}" class="form-control mw-100 ledgerselecct" name="customer" readonly/>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                            <input type="text" id="customer_name" value="{{$bom?->customer?->company_name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="customer_name" readonly />
-                                        </div>
-                                    </div>
-                                    @endif
-                                    @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
-                                    <div class="col-md-3 production_type_div">
-                                        <div class="mb-1">
-                                            <label class="form-label">Production Type <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="production_type" name="production_type" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
-                                                @foreach($productionTypes as $productionType)
-                                                <option value="{{$productionType}}" {{$bom->production_type == $productionType ? 'selected' : ''}}>{{ucfirst($productionType)}}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                    @endif
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Production Route <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="production_route_id" name="production_route_id" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
-                                                @foreach($productionRoutes as $productionRoute)
-                                                    @if($bom->production_route_id)
-                                                        <option value="{{$productionRoute->id}}" {{$bom->production_route_id == $productionRoute->id ? 'selected' :  ''}} data-perc="{{$productionRoute->safety_buffer_perc}}">{{ucfirst($productionRoute->name)}}</option>
-                                                    @endif
-                                                @endforeach
-                                             </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Safety Buffer (%)</label>
-                                            <input type="text" id="safety_buffer_perc" value="{{$bom->safety_buffer_perc}}" class="form-control mw-100 ledgerselecct" name="safety_buffer_perc"/>
-                                        </div>
-                                    </div>
-                                    @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
-                                    <div class="col-md-3">
-                                        <div class="mb-1">
-                                            <label class="form-label">Customizable <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="customizable" name="customizable">
-                                                {{-- <option value="">Select</option> --}}
-                                                @foreach($customizables as $customizable)
-                                                    <option value="{{$customizable}}" {{$customizable == $bom->customizable ? 'selected' : ''}}>{{ucfirst($customizable)}}</option>
-                                                @endforeach
-                                             </select>
-                                        </div>
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-body customernewsection-form px-0">
-                                <div class="border-bottom mb-2 pb-25 pocreate-sticky" id="componentSection">
-                                <div class="row">
+        </div>
+        <div class="content-body">
+            <section id="basic-datatable">
+                <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body customernewsection-form">
+                            <div class="border-bottom mb-2 pb-25">
+                            <div class="row">
                                     <div class="col-md-6">
                                         <div class="newheader ">
-                                            <ul class="nav nav-tabs" id="productTabs" role="tablist">
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link active fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="true">
-                                                        Consumption
-                                                    </button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link fs-5" id="instruction-items-tab" data-bs-toggle="tab" data-bs-target="#instruction-items" type="button" role="tab" aria-controls="instruction-items" aria-selected="false">
-                                                        Instruction
-                                                    </button>
-                                                </li>
-                                            </ul>
+                                            <h4 class="card-title text-theme">Basic Information</h4>
+                                            <p class="card-text">Fill the details</p>
                                         </div>
                                     </div>
                                     <div class="col-md-6 text-sm-end">
-                                        @if(($buttons['draft'] || $buttons['submit']) || ($buttons['amend'] && intval(request('amendment') ?? 0)) || $buttons['approve'])
-                                        <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteBtn" data-tab="raw-materials">
-                                        <i data-feather="x-circle"></i> Delete</a>
-                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="raw-materials">
-                                        <i data-feather="plus"></i> Add Component</a>
-                                        <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteInstructionBtn" data-tab="instruction-items">
-                                            <i data-feather="x-circle"></i> Delete</a>
-                                            <a href="javascript:;" id="addNewInstructionBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="instruction-items">
-                                            <i data-feather="plus"></i> Add Instruction</a>
+                                        <span class="badge rounded-pill badge-light-secondary forminnerstatus">
+
+                                            Status : <span class="{{$docStatusClass}}">{{$bom->display_status}}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                            <div class="col-md-8">
+                                <div class="basic-information">
+                                    <div class="row align-items-center mb-1">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Series <span class="text-danger">*</span></label>
+                                        </div>
+
+                                        <div class="col-md-5">
+                                        <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$bom->book_id}}" readonly>
+                                        <input readonly type="text" name="book_code" class="form-control" value="{{$bom->book_code}}" id="book_code">
+                                        </div>
+                                    </div>
+
+                                    <div class="row align-items-center mb-1">
+                                        <div class="col-md-3">
+                                            <label class="form-label">BOM No <span class="text-danger">*</span></label>
+                                        </div>
+
+                                        <div class="col-md-5">
+                                            <input readonly type="text" name="document_number" class="form-control" id="document_number" value="{{$bom->document_number}}">
+                                        </div>
+                                    </div>
+
+                                    <div class="row align-items-center mb-1">
+                                        <div class="col-md-3">
+                                            <label class="form-label">BOM Date <span class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <input type="date" class="form-control" value="{{ $bom->document_date }}" name="document_date">
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-center mb-1 d-none" id="reference_from">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Reference from</label>
+                                        </div>
+                                        <div class="col-md-5 action-button">
+                                            <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect" {{$bom->bomItems->count() ? 'disabled' : ''}}><i data-feather="plus-square"></i> Quotation Bom</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- Approval History Section --}}
+                            @include('partials.approval-history', ['document_status' => $bom->document_status, 'revision_number' => $revision_number])
+
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Product Detail --}}
+                </div>
+
+                        <div class="col-md-12" id="vendor_section">
+                            <div class="card quation-card">
+                                <div class="card-header newheader">
+                                    <div>
+                                        <h4 class="card-title">Product Details</h4>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Product Code <span class="text-danger">*</span></label>
+                                                <input type="text" value="{{$bom->item?->item_code}}" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" data-name="{{$bom->item?->item_name ?? ''}}" data-code="{{$bom->item?->item_code ?? ''}}" {{ $bom->document_status != 'draft' ? 'readonly' : ' ' }}/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Product Name <span class="text-danger">*</span></label>
+                                                <input type="hidden" value="{{$bom->item?->id}}" name="item_id" id="head_item_id">
+                                                <input type="text" value="{{$bom->item?->item_name}}" id="head_item_name" placeholder="Select" class="form-control mw-100 ledgerselecct" name="item_name" readonly />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">UOM <span class="text-danger">*</span></label>
+                                                <input type="hidden" id="head_uom_id" class="form-control" name="uom_id" value="{{$bom->uom?->id}}" readonly  />
+                                                <input type="text" id="head_uom_name" class="form-control" name="uom_name" value="{{$bom->uom?->name}}" readonly  />
+                                            </div>
+                                        </div>
+
+                                        @include('billOfMaterial.partials.header-attribute-edit')
+
+                                        @if($servicesBooks['services'][0]?->alias != ConstantHelper::BOM_SERVICE_ALIAS)
+                                        <div class="col-md-3 customer_div">
+                                            <div class="mb-1">
+                                                <label class="form-label">Customer <span class="text-danger">*</span></label>
+                                                <input type="hidden" name="customer_id" id="customer_id" value="{{$bom?->customer?->id}}">
+                                                <input type="text" id="customer" placeholder="Select" value="{{$bom?->customer?->customer_code}}" class="form-control mw-100 ledgerselecct" name="customer" readonly/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                                <input type="text" id="customer_name" value="{{$bom?->customer?->company_name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="customer_name" readonly />
+                                            </div>
+                                        </div>
+                                        @endif
+                                        @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
+                                        <div class="col-md-3 production_type_div">
+                                            <div class="mb-1">
+                                                <label class="form-label">Production Type <span class="text-danger">*</span></label>
+                                                <select class="form-select" id="production_type" name="production_type" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
+                                                    @foreach($productionTypes as $productionType)
+                                                    <option value="{{$productionType}}" {{$bom->production_type == $productionType ? 'selected' : ''}}>{{ucfirst($productionType)}}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        @endif
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Production Route <span class="text-danger">*</span></label>
+                                                <select class="form-select" id="production_route_id" name="production_route_id" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
+                                                    @foreach($productionRoutes as $productionRoute)
+                                                        @if($bom->production_route_id)
+                                                            <option value="{{$productionRoute->id}}" {{$bom->production_route_id == $productionRoute->id ? 'selected' :  ''}} data-perc="{{$productionRoute->safety_buffer_perc}}">{{ucfirst($productionRoute->name)}}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Safety Buffer (%)</label>
+                                                <input type="text" id="safety_buffer_perc" value="{{$bom->safety_buffer_perc}}" class="form-control mw-100 ledgerselecct" name="safety_buffer_perc"/>
+                                            </div>
+                                        </div>
+                                        @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Customizable <span class="text-danger">*</span></label>
+                                                <select class="form-select" id="customizable" name="customizable">
+                                                    {{-- <option value="">Select</option> --}}
+                                                    @foreach($customizables as $customizable)
+                                                        <option value="{{$customizable}}" {{$customizable == $bom->customizable ? 'selected' : ''}}>{{ucfirst($customizable)}}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
                                         @endif
                                     </div>
                                 </div>
-                                </div>
+                            </div>
+                        </div>
 
-                                <div class="tab-content mt-1" id="productTabsContent">
-                                    <div class="tab-pane fade show active" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
-                                        <div class="table-responsive pomrnheadtffotsticky">
-                                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                            data-json-key="components_json"
-                                            data-row-selector="tr[id^='row_']">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body customernewsection-form px-0">
+                                    <div class="border-bottom mb-2 pb-25 pocreate-sticky" id="componentSection">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="newheader ">
+                                                <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link active fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="true">
+                                                            Consumption
+                                                        </button>
+                                                    </li>
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link fs-5" id="instruction-items-tab" data-bs-toggle="tab" data-bs-target="#instruction-items" type="button" role="tab" aria-controls="instruction-items" aria-selected="false">
+                                                            Instruction
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 text-sm-end">
+                                            @if(($buttons['draft'] || $buttons['submit']) || ($buttons['amend'] && intval(request('amendment') ?? 0)) || $buttons['approve'])
+                                            <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteBtn" data-tab="raw-materials">
+                                            <i data-feather="x-circle"></i> Delete</a>
+                                            <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="raw-materials">
+                                            <i data-feather="plus"></i> Add Component</a>
+                                            <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteInstructionBtn" data-tab="instruction-items">
+                                                <i data-feather="x-circle"></i> Delete</a>
+                                                <a href="javascript:;" id="addNewInstructionBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="instruction-items">
+                                                <i data-feather="plus"></i> Add Instruction</a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    </div>
+
+                                    <div class="tab-content mt-1" id="productTabsContent">
+                                        <div class="tab-pane fade show active" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
+                                            <div class="table-responsive pomrnheadtffotsticky">
+                                                <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                data-json-key="components_json"
+                                                data-row-selector="tr[id^='row_']">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>
+                                                            <div class="form-check form-check-primary custom-checkbox">
+                                                                <input type="checkbox" class="form-check-input" id="Email">
+                                                                <label class="form-check-label" for="Email"></label>
+                                                            </div>
+                                                            </th>
+                                                            <th style="width: 100px;" id="section_required">Section</th>
+                                                            <th style="width: 100px;" id="sub_section_required">Sub Section</th>
+                                                            <th style="min-width: 110px;">Item Code</th>
+                                                            <th style="min-width: 150px;">Item Name</th>
+                                                            <th>Attributes</th>
+                                                            <th style="width: 30px;">UOM</th>
+                                                            <th>Consumption</th>
+                                                            <th class="{{$canView ? '' : 'd-none'}}">Cost</th>
+                                                            <th class="{{$canView ? '' : 'd-none'}}">Item Value</th>
+                                                            <th class="{{$canView ? '' : 'd-none'}}" id="component_overhead_required">Overheads</th>
+                                                            <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
+                                                            <th style="min-width: 100px;" id="station_required">Station</th>
+                                                            <th style="min-width: 100px;">Vendor</th>
+                                                            <th style="min-width: 100px;" id="th_bacth_inherit_requird">Inherit <br/>Batch</th>
+                                                            <th style="width: 20px;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="mrntableselectexcel">
+                                                        @include('billOfMaterial.partials.item-row-edit')
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
+                                                            <td colspan="9"></td>
+                                                            <td class="text-end" id="totalItemValue">{{number_format($bom->total_item_value,6)}}</td>
+                                                            <td class="text-end" id="totalOverheadAmountValue">{{number_format($bom->item_overhead_amount,2)}}</td>
+                                                            <td class="text-end" id="totalCostValue">{{number_format(($bom->total_item_value +  $bom->item_overhead_amount),2)}}</td>
+                                                            <td></td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr valign="top">
+                                                            <td @if($canView) colspan="11" @else colspan="15" @endif rowspan="10">
+                                                            <table class="table border" id="itemDetailTable">
+                                                                <tr>
+                                                                    <td class="p-0">
+                                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                </tr>
+                                                                <tr>
+                                                                </tr>
+                                                            </table>
+                                                            </td>
+                                                            @if($canView)
+                                                            <td colspan="4">
+                                                            <table class="table border mrnsummarynewsty">
+                                                                <tr>
+                                                                    <td colspan="2" class="p-0">
+                                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
+                                                                        <strong>BOM Summary</strong>
+                                                                        @if($canView)
+                                                                        <div class="addmendisexpbtn">
+                                                                            <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button>
+                                                                        </div>
+                                                                        @endif
+                                                                        </h6>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr class="voucher-tab-foot">
+                                                                    <td class="text-primary"><strong>Item Total</strong></td>
+                                                                    <td>
+                                                                        <div class="justify-content-end text-end">
+                                                                        <h5 id="footerTotalCost" amount="{{$bom->total_item_value  + $bom->item_overhead_amount + $bom->header_overhead_amount}}">{{number_format(($bom->total_item_value + $bom->item_overhead_amount + $bom->header_overhead_amount),2)}}</h5>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><strong>Header Overheads</strong></td>
+                                                                    <td class="text-end" id="footerOverheadHeader">0.00</td>
+                                                                </tr>
+                                                                <tr class="voucher-tab-foot">
+                                                                    <td class="text-primary"><strong>Grand Total</strong></td>
+                                                                    <td>
+                                                                        <div class="quottotal-bg justify-content-end">
+                                                                        <h5 id="footerGrandTotal">0.00</h5>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                            </td>
+                                                            @endif
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                                </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="instruction-items" role="tabpanel" aria-labelledby="product-details-tab">
+                                            <div class="table-responsive pomrnheadtffotsticky">
+                                            <table id="itemTable3" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                 <thead>
                                                     <tr>
-                                                        <th>
-                                                        <div class="form-check form-check-primary custom-checkbox">
-                                                            <input type="checkbox" class="form-check-input" id="Email">
-                                                            <label class="form-check-label" for="Email"></label>
-                                                        </div>
+                                                        <th width="20px">
+                                                            <div class="form-check form-check-primary custom-checkbox">
+                                                                <input type="checkbox" class="form-check-input" id="Email">
+                                                                <label class="form-check-label" for="Email"></label>
+                                                            </div>
                                                         </th>
-                                                        <th style="width: 100px;" id="section_required">Section</th>
-                                                        <th style="width: 100px;" id="sub_section_required">Sub Section</th>
-                                                        <th style="min-width: 110px;">Item Code</th>
-                                                        <th style="min-width: 150px;">Item Name</th>
-                                                        <th>Attributes</th>
-                                                        <th style="width: 30px;">UOM</th>
-                                                        <th>Consumption</th>
-                                                        <th class="{{$canView ? '' : 'd-none'}}">Cost</th>
-                                                        <th class="{{$canView ? '' : 'd-none'}}">Item Value</th>
-                                                        <th class="{{$canView ? '' : 'd-none'}}" id="component_overhead_required">Overheads</th>
-                                                        <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
-                                                        <th style="min-width: 100px;" id="station_required">Station</th>
-                                                        <th style="min-width: 100px;">Vendor</th>
-                                                        <th style="min-width: 100px;" id="th_bacth_inherit_requird">Inherit <br/>Batch</th>
-                                                        <th style="width: 20px;"></th>
+                                                        <th width="160px">Station</th>
+                                                        @if(isset($sectionRequired) && $sectionRequired)
+                                                            <th width="160px" id="section_required2">Section</th>
+                                                        @endif
+                                                        @if(isset($subSectionRequired) && $subSectionRequired)
+                                                            <th width="160px" id="sub_section_required2">Sub Section</th>
+                                                        @endif
+                                                        <th>Instructions</th>
+                                                        <th class="text-center align-middle" width="100px">Attachment</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="mrntableselectexcel">
-                                                    @include('billOfMaterial.partials.item-row-edit')
+                                                    @include('billOfMaterial.partials.instruction-row-edit')
                                                 </tbody>
-                                                <tfoot>
-                                                    <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
-                                                        <td colspan="9"></td>
-                                                        <td class="text-end" id="totalItemValue">{{number_format($bom->total_item_value,6)}}</td>
-                                                        <td class="text-end" id="totalOverheadAmountValue">{{number_format($bom->item_overhead_amount,2)}}</td>
-                                                        <td class="text-end" id="totalCostValue">{{number_format(($bom->total_item_value +  $bom->item_overhead_amount),2)}}</td>
-                                                        <td></td>
-                                                        <td></td>
-                                                    </tr>
-                                                    <tr valign="top">
-                                                        <td @if($canView) colspan="11" @else colspan="15" @endif rowspan="10">
-                                                        <table class="table border" id="itemDetailTable">
-                                                            <tr>
-                                                                <td class="p-0">
-                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                            </tr>
-                                                            <tr>
-                                                            </tr>
-                                                        </table>
-                                                        </td>
-                                                        @if($canView)
-                                                        <td colspan="4">
-                                                        <table class="table border mrnsummarynewsty">
-                                                            <tr>
-                                                                <td colspan="2" class="p-0">
-                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                    <strong>BOM Summary</strong>
-                                                                    @if($canView)
-                                                                    <div class="addmendisexpbtn">
-                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button>
-                                                                    </div>
-                                                                    @endif
-                                                                    </h6>
-                                                                </td>
-                                                            </tr>
-                                                            <tr class="voucher-tab-foot">
-                                                                <td class="text-primary"><strong>Item Total</strong></td>
-                                                                <td>
-                                                                    <div class="justify-content-end text-end">
-                                                                    <h5 id="footerTotalCost" amount="{{$bom->total_item_value  + $bom->item_overhead_amount + $bom->header_overhead_amount}}">{{number_format(($bom->total_item_value + $bom->item_overhead_amount + $bom->header_overhead_amount),2)}}</h5>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td><strong>Header Overheads</strong></td>
-                                                                <td class="text-end" id="footerOverheadHeader">0.00</td>
-                                                            </tr>
-                                                            <tr class="voucher-tab-foot">
-                                                                <td class="text-primary"><strong>Grand Total</strong></td>
-                                                                <td>
-                                                                    <div class="quottotal-bg justify-content-end">
-                                                                    <h5 id="footerGrandTotal">0.00</h5>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        </table>
-                                                        </td>
-                                                        @endif
-                                                    </tr>
-                                                </tfoot>
                                             </table>
                                             </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="instruction-items" role="tabpanel" aria-labelledby="product-details-tab">
-                                        <div class="table-responsive pomrnheadtffotsticky">
-                                        <table id="itemTable3" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                            <thead>
-                                                <tr>
-                                                    <th width="20px">
-                                                        <div class="form-check form-check-primary custom-checkbox">
-                                                            <input type="checkbox" class="form-check-input" id="Email">
-                                                            <label class="form-check-label" for="Email"></label>
-                                                        </div>
-                                                    </th>
-                                                    <th width="160px">Station</th>
-                                                    @if(isset($sectionRequired) && $sectionRequired)
-                                                        <th width="160px" id="section_required2">Section</th>
-                                                    @endif
-                                                    @if(isset($subSectionRequired) && $subSectionRequired)
-                                                        <th width="160px" id="sub_section_required2">Sub Section</th>
-                                                    @endif
-                                                    <th>Instructions</th>
-                                                    <th class="text-center align-middle" width="100px">Attachment</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="mrntableselectexcel">
-                                                @include('billOfMaterial.partials.instruction-row-edit')
-                                            </tbody>
-                                        </table>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-body customernewsection-form">
-                                <div class="border-bottom mb-2 pb-25" id="componentSection">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="newheader ">
-                                            <h4 class="card-title text-theme">Remarks</h4>
-                                            {{-- <p class="card-text">Fill the details</p> --}}
+                            <div class="card">
+                                <div class="card-body customernewsection-form">
+                                    <div class="border-bottom mb-2 pb-25" id="componentSection">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="newheader ">
+                                                <h4 class="card-title text-theme">Remarks</h4>
+                                                {{-- <p class="card-text">Fill the details</p> --}}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-md-12">
-                                            <div class="row">
-                                            <div class="col-md-4">
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-12">
+                                                <div class="row">
+                                                <div class="col-md-4">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Upload Document</label>
+                                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_preview')" multiple>
+                                                    <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                                </div>
+                                            </div>
+                                            @include('partials.document-preview',['documents' => $bom->getDocuments(), 'document_status' => $bom->document_status,'elementKey' => 'main_bom_preview'])
+                                                </div>
+                                        </div>
+                                        <div class="col-md-12">
                                             <div class="mb-1">
-                                                <label class="form-label">Upload Document</label>
-                                                <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_preview')" multiple>
-                                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                                <label class="form-label">Final Remarks</label>
+                                                <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here...">{!! $bom->remarks !!}</textarea>
                                             </div>
-                                        </div>
-                                        @include('partials.document-preview',['documents' => $bom->getDocuments(), 'document_status' => $bom->document_status,'elementKey' => 'main_bom_preview'])
-                                            </div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <div class="mb-1">
-                                            <label class="form-label">Final Remarks</label>
-                                            <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here...">{!! $bom->remarks !!}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div id="approval-data">
+                                <!-- Clone Approval Modal Form Data Here -->
+                            </div>
                         </div>
-                        <div id="approval-data">
-                            <!-- Clone Approval Modal Form Data Here -->
-                        </div>
-                    </div>
-            </div>
-            <!-- Modal to add new record -->
-         </section>
-      </div>
-   </div>
-</div>
-{{-- Overhead summary popup --}}
-@include('billOfMaterial.partials.overhead-modal')
-@include('procurement.po.partials.amendment-modal', ['id' => $bom->id])
+                </div>
+                <!-- Modal to add new record -->
+            </section>
+        </div>
+    </div>
+    </div>
+    {{-- Overhead summary popup --}}
+    @include('billOfMaterial.partials.overhead-modal')
+    @include('procurement.po.partials.amendment-modal', ['id' => $bom->id])
 </form>
 
 {{-- Attribute popup --}}
@@ -485,6 +492,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                      </tr>
                   </thead>
                   <tbody>
+
                   </tbody>
                </table>
             </div>
@@ -551,8 +559,12 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
       </div>
    </div>
 </div>
+
 {{-- Approval Modal --}}
 @include('billOfMaterial.partials.approve-modal', ['id' => $bom->id])
+
+{{-- Reject Modal --}}
+@include('billOfMaterial.partials.reject-modal', ['id' => $bom->id])
 
 {{-- Item Remark Modal --}}
 <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
@@ -632,6 +644,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
       </div>
    </div>
 </div>
+
 @include('billOfMaterial.partials.consumption-modal')
 @include('billOfMaterial.partials.q-bom-modal')
 @endsection
@@ -1228,6 +1241,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
           lastTrObj.attr_require = false;
         }
     }
+
     let componentAttr = [];
     if($("tr input[type='hidden'][name*='[attr_group_id]']").length) {
         $("tr input[type='hidden'][name*='[attr_group_id]']").each(function () {
@@ -1503,6 +1517,7 @@ $(document).on('click', '.addOverHeadItemBtn', (e) => {
             <td colspan="2"></td>
             <td class="text-center"></td>
         </tr>`;
+
         $("#itemOverheadTbl tbody").empty().append(tr);
         $(".item_display_overhead_row").find(".addOverheadItemRow").addClass('d-none');
         $(".item_display_overhead_row:last").find(".addOverheadItemRow").removeClass('d-none');
@@ -1604,6 +1619,7 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       let sectionName = $(currentTr).find("[name*='[section_name]']").val() || '';
       let subSectionName = $(currentTr).find("[name*='[sub_section_name]']").val() || '';
       let stationName = $(currentTr).find("[name*='[station_name]']").val() || '';
+
       let remark = '';
       if($(currentTr).find("[name*='remark']")) {
        remark = $(currentTr).find("[name*='remark']").val() || '';
@@ -2691,6 +2707,7 @@ $(document).on('click', '.addOverheadItemRow', (e) => {
             if (data.status == 200) {
                 let indexCount = data.data.indexCount;
                 let rowCount = data.data.rowCount;
+
                 let $tbody = $("#itemOverheadTbl tbody");
                 if ($tbody.find("tr.item_display_overhead_row").length > 0) {
                     $tbody.find("tr.item_display_overhead_row:last").after(data.data.html);

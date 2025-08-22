@@ -46,7 +46,6 @@ class GenericImportController extends Controller
             Excel::import($importer, $file);
 
             $parsedData = method_exists($importer, 'getParsedRows') ? $importer->getParsedRows() : [];
-
             return response()->json([
                 'data' => $parsedData,
                 'headers' => GenericImportHelper::getHeaderMap($alias),

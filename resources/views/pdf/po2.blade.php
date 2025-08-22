@@ -315,8 +315,10 @@
                             $taxableValue = $ted -> assessment_amount;
                             $taxTypeAmount = ($taxableValue * $ted->ted_perc) / 100;
 
-                            if (!isset($hsnGroups[$hsnCode])) {
-                                $hsnGroups[$hsnCode] = [
+                            $key = (string) $hsnCode;
+
+                            if (!isset($hsnGroups[$key])) {
+                                $hsnGroups[$key] = [
                                     'hsn_code' => $hsnCode,
                                     'taxable_rate' => $taxPercentage,
                                     'taxable_value' => 0.00,

@@ -178,6 +178,7 @@ class PoRequest extends FormRequest
                 $items[] = $currentItem;
             }
         });
+
         $validator->after(function ($validator) {
             foreach ($this->input('components', []) as $key => $component) {
                 $itemId = $component['item_id'] ?? null;

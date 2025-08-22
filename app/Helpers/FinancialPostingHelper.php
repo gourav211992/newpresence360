@@ -658,7 +658,9 @@ class FinancialPostingHelper
     }
     public static function getPaymentDocumentPostedVouchers(int $documentId, string $serviceAlias)
 {
-    $vouchers = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->with(['ledger_items', 'series'])->where('reference_service', $serviceAlias)
+    $vouchers = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+    ->withoutGlobalScope('defaultLocation')
+    ->with(['ledger_items', 'series'])->where('reference_service', $serviceAlias)
         ->where('reference_doc_id', $documentId)->get();
 
     if ($vouchers->isEmpty()) {
@@ -1105,6 +1107,7 @@ class FinancialPostingHelper
     {
         //Post Voucher
         $exitingVoucher = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+            ->withoutGlobalScope('defaultLocation')
             ->where('voucher_no', $details['voucher_header']['voucher_no'])
             ->where('book_id', $details['voucher_header']['book_id'])
             ->when(!empty($details['voucher_header']['organization_id']), function ($query) use ($details) {
@@ -5668,7 +5671,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-           
+           $totalCR = 0;
             $discountSeperatePosting = false;
             foreach ($document->items as $docItemKey => $docItem) {
                 //Assign Item values
@@ -5766,7 +5769,7 @@ class FinancialPostingHelper
                 //Ledger found
                 if (count($existingcustomerLedger) > 0) 
                 {
-                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $salesCreditAmount;
+                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $customerAccountDebit;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::CUSTOMER_ACCOUNT], [
                         'ledger_id' => $customerLedgerId,
@@ -5774,7 +5777,7 @@ class FinancialPostingHelper
                         'ledger_code' => $customerLedger?->code,
                         'ledger_name' => $customerLedger?->name,
                         'ledger_group_code' => $customerLedgerGroup?->name,
-                        'debit_amount' => $salesCreditAmount,
+                        'debit_amount' =>$customerAccountDebit,
                         'credit_amount' => 0,
                     ]);
                 }
@@ -8080,6 +8083,8 @@ unset($detail); // reference clear
             ->with([
                 'voucher' => function ($query) {
                     $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                    $query->withoutGlobalScope('defaultLocation');
+
                 }
             ])
             ->get();
@@ -8090,12 +8095,11 @@ unset($detail); // reference clear
 
 
 
-
         $ledgerErrorStatus = null;
         $vouchersArray = [];
         foreach ($vendors as $vendor) {
-
             $partyOrg = $vendor->voucher->organization;
+            
             if ($partyOrg->id != $organization->id) {
                 $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
                 if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)

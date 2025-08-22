@@ -2649,6 +2649,7 @@
                                     label: `${item.item_name} (${item.item_code})`,
                                     code: item.item_code || '',
                                     item_id: item.id,
+                                    item_moq: item.minimum_order_qty,
                                     uom : item.uom,
                                     alternateUoms : item.alternate_u_o_ms,
                                     specifications : item.specifications
@@ -2666,7 +2667,8 @@
                     var itemCode = ui.item.code;
                     var itemName = ui.item.value;
                     var itemId = ui.item.item_id;
-
+                    var itemMoq = ui.item.item_moq;
+                    console.log('Selected Item:', itemName, itemCode, itemId, itemMoq);
                     $input.attr('data-name', itemName);
                     $input.attr('data-code', itemCode);
                     $input.attr('data-id', itemId);
@@ -2692,6 +2694,7 @@
                         });
                     }
                     uomDropdown.innerHTML = uomInnerHTML;
+                    $("#MOQ_" + index).val(itemMoq);
                     itemOnChange(selector, index, '/item/attributes/');
                     return false;
                 },

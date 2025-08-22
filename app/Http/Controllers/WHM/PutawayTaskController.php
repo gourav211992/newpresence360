@@ -90,7 +90,7 @@ class PutawayTaskController extends Controller
         $items = ErpItemUniqueCode::with(['item' => function($q){
                     $q->select('id','is_serial_no','is_asset');
                 }])
-                ->select('job_id','group_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes','batch_number','manufacturing_year','expiry_date','serial_no', \DB::raw('COUNT(*) as quantity'))
+                ->select('job_id','sub_store_id','group_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes','batch_number','manufacturing_year','expiry_date','serial_no', \DB::raw('COUNT(*) as quantity'))
                 ->where('store_id', $request->store_id)
                 ->where('job_id',$request->job_id)
                 ->where('job_type', CommonHelper::PUTAWAY)
@@ -118,11 +118,12 @@ class PutawayTaskController extends Controller
 
             $item->storage_points = [];
             if ($item->item_id) {
+                $subStoreId = $item->sub_store_id;
                 $response = StoragePointHelper::getStoragePoints(
                     $item->item_id,
                     null,
                     $request->store_id,
-                    null
+                    $subStoreId
                 );
 
                 if (!empty($response['status']) && $response['status'] === 'success') {
@@ -164,7 +165,7 @@ class PutawayTaskController extends Controller
             throw new ValidationException($validator);
         }
 
-        $item = ErpItemUniqueCode::select('job_id','group_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes', \DB::raw('COUNT(*) as quantity'))
+        $item = ErpItemUniqueCode::select('job_id','group_id','sub_store_id','morphable_id as putaway_item_id','company_id','organization_id','book_code','doc_no','doc_date','item_id','item_name','item_code','item_attributes', \DB::raw('COUNT(*) as quantity'))
                 ->where('store_id', $request->store_id)
                 ->where('job_id',$request->job_id)
                 ->where('morphable_id',$request->putaway_item_id)
@@ -176,13 +177,14 @@ class PutawayTaskController extends Controller
         if($item){
 
             $item->storage_points = [];
+            $subStoreId = $item->sub_store_id;
 
             // Get storage points
             $response = StoragePointHelper::getStoragePoints(
                 $item->item_id,
                 null,
                 $request->store_id,
-                null
+                $subStoreId
             );
 
             if (!empty($response['status']) && $response['status'] === 'success') {

@@ -31,11 +31,11 @@ class ErpDriver extends Model
         'updated_by',
     ];
 
-       public function auth_user()
+    public function auth_user()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
-    
+
     public function employee(){
 
         return $this->belongsTo(Employee::class,'user_id');

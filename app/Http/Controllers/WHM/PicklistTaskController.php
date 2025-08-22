@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
 use App\Lib\Services\WHM\WhmJob;
+use App\Models\ErpPlHeader;
 use App\Models\ErpPlItem;
 use App\Models\StockLedgerReservation;
 use App\Models\WHM\ErpItemUniqueCode;
@@ -449,6 +450,16 @@ class PicklistTaskController extends Controller
             $modelName = $job->morphable_type;
             $remarks = NULL;
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
+
+            $pickList = ErpPlHeader::find($job->morphable_id);
+            if($pickList){
+                foreach ($pickList->inv_items as $plItem) {
+                    $status = StockReservation::settlementOfReservedStocks(ConstantHelper::PL_SERVICE_ALIAS, $pickList->id, $plItem->id, $plItem->inventory_uom_qty, true);
+                    if ($status['status'] == 'error') {
+                        throw new ApiGenericException($status['message']);
+                    }
+                }
+            }
 
             \DB::commit();
             return [

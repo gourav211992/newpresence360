@@ -162,8 +162,4 @@ class ErpTransportInvoice extends Model
     {
         return $this -> belongsTo(TermsAndCondition::class, 'customer_terms_id');
     }
-    public function payment_term_schedules()
-    {
-        return [];
-    }
 }

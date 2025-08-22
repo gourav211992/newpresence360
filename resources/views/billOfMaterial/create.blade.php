@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 @section('content')
 @php
@@ -262,6 +261,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             </thead>
                                             {{-- <tbody class="mrntableselectexcel" style="display: block; overflow-x: auto; white-space: nowrap;"> --}}
                                             <tbody class="mrntableselectexcel">
+
                                             </tbody>
                                             <tfoot>
                                                 <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
@@ -422,6 +422,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                      </tr>
                   </thead>
                   <tbody>
+
                   </tbody>
                </table>
             </div>
@@ -787,6 +788,7 @@ $(function(){
             //     // location.href = "{{url($routeAlias)}}";
             // },1500);
         }
+
    }
 
     function itemCodeChange(itemId, customerId = null) {
@@ -808,6 +810,7 @@ $(function(){
                   $("#head_uom_id").val(uom_id);
                   $("#head_uom_name").val(uom_name);
                   $(".heaer_item").remove();
+
                   if($(".customer_div").length) {
                       $(".customer_div").before(data.data.html);
                     } else {
@@ -841,6 +844,7 @@ $(function(){
            itemCodeChange(null)
        }
    });
+
 });
 
 // for component item code
@@ -952,6 +956,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
     if(!$(".heaer_item").length) {
       selectedAttrRequired = true;
     }
+
     let head_item_id = $("#head_item_id").val();
     let itemObj = {
       item_code : itemCode,
@@ -1010,6 +1015,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
             });
         });
     }
+
     let componentAttr = [];
     if($("tr input[type='hidden'][name*='[attr_group_id]']").length) {
         $("tr input[type='hidden'][name*='[attr_group_id]']").each(function () {
@@ -1221,6 +1227,7 @@ $(document).on('click', '.addOverHeadItemBtn', (e) => {
             <td colspan="2"></td>
             <td class="text-center"></td>
         </tr>`;
+
         $("#itemOverheadTbl tbody").empty().append(tr);
         $(".item_display_overhead_row").find(".addOverheadItemRow").addClass('d-none');
         $(".item_display_overhead_row:last").find(".addOverheadItemRow").removeClass('d-none');
@@ -2267,6 +2274,7 @@ $(document).on('click', '.addOverheadItemRow', (e) => {
             if (data.status == 200) {
                 let indexCount = data.data.indexCount;
                 let rowCount = data.data.rowCount;
+
                 let $tbody = $("#itemOverheadTbl tbody");
                 if ($tbody.find("tr.item_display_overhead_row").length > 0) {
                     $tbody.find("tr.item_display_overhead_row:last").after(data.data.html);

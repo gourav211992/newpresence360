@@ -1613,6 +1613,7 @@
         {
             const docType = $("#service_id_input").val();
             const invoiceToFollow = $("#invoice_to_follow_input").val() == "yes";
+
             var inputNumValue = parseFloat(element.value ? element.value  : 0);
             if (element.hasAttribute('max'))
             {
@@ -1640,6 +1641,7 @@
             //         // return;
             //     }
             // }
+
             assignDefaultBundleInfoArray(index);
             updateQty(element,index);
         }
@@ -4466,5 +4468,6 @@ function validateWipAgainstQty($wipInput) {
     // }
 }
 </script>
+
 @endsection
 @endsection

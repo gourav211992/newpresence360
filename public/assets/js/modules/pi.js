@@ -82,6 +82,7 @@ $(document).on('click', '.itemRemarkSubmit', (e) => {
     if(!remarkValue.length) {
         rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
         $("#itemTable #row_"+rowCount).find('.addRemarkBtn').after(rowHidden);
+
     } else{
         $("#itemTable #row_"+rowCount).find("[name*='remark']").val(textValue);
     }

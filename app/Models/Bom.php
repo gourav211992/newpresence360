@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Model;
 class Bom extends Model
 {
     use HasFactory,DateFormatTrait,DynamicFieldsTrait,FileUploadTrait,DefaultGroupCompanyOrg;
-    
+
     protected $table = 'erp_boms';
-    
+
     protected $fillable = [
         'organization_id',
         'group_id',
@@ -81,6 +81,7 @@ class Bom extends Model
         });
     }
 
+
     public function media()
     {
         return $this->morphMany(BomMedia::class, 'model');
@@ -91,7 +92,7 @@ class Bom extends Model
         $status = str_replace('_', ' ', $this->document_status);
         return ucwords($status);
     }
-    
+
     public function source()
     {
         return $this->hasOne(BomHistory::class, 'source_id');
@@ -148,7 +149,7 @@ class Bom extends Model
         return $this->hasMany(BomDetail::class, 'bom_id')
         ->orderBy('sequence_no')
         ->orderBy('id');
-    }   
+    }
 
     public function bomOverheadAllItems()
     {
@@ -188,7 +189,7 @@ class Bom extends Model
     {
         return $this->hasMany(BomAttribute::class, 'bom_id')->where('type','D');
     }
-    
+
     public function bomInstructions()
     {
         return $this->hasMany(BomInstruction::class, 'bom_id');
@@ -203,7 +204,7 @@ class Bom extends Model
     {
         return $this->hasOne(ErpSoItem::class, 'item_id', 'item_id');
     }
-    
+
     public function dynamic_fields()
     {
         return $this->hasMany(ErpBomDynamicField::class, 'header_id');

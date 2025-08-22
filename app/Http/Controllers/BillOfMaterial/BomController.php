@@ -135,6 +135,9 @@ class BomController extends Controller
                     }
                     return "";
                 })
+                ->addColumn('created_by', function ($row){
+                    return $row->createdBy?->name;
+                })
                 ->rawColumns(['document_status', 'attributes'])
                 ->filter(function ($query) use ($request) {
                     if ($search = $request->get('search')['value']) {
@@ -163,7 +166,7 @@ class BomController extends Controller
 
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
+        }
 
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
@@ -1639,7 +1642,7 @@ class BomController extends Controller
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
         $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
         $bacthInheritRequird = isset($parameters['bacth_inherit_requird']) && is_array($parameters['bacth_inherit_requird']) && in_array('yes', array_map('strtolower', $parameters['bacth_inherit_requird']));
-        
+
         $html = view('billOfMaterial.partials.item-row-edit', [
             'bom' => $bom,
             'is_pull' => true,
