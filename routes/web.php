@@ -79,6 +79,7 @@ use App\Http\Controllers\ErpMaterialReturnController;
 use App\Http\Controllers\ErpMultiPointFixedController;
 use App\Http\Controllers\ErpMultiPointPricingController;
 use App\Http\Controllers\ErpProductionSlipController;
+use App\Http\Controllers\ProductionSlip\ProductionSlipController;
 use App\Http\Controllers\ErpPublicOutreachAndCommunicationController;
 use App\Http\Controllers\ErpRackController;
 use App\Http\Controllers\ErpRouteMasterController;
@@ -1368,12 +1369,12 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('download-sample', 'downloadSample')->name('download.sample');
         });
 
-        Route::get('/test-zip', function () {
-    return class_exists('ZipArchive') ? '✅ ZipArchive is enabled' : '❌ ZipArchive NOT found';
-});
-        Route::get('/test-zip', function () {
-    return class_exists('ZipArchive') ? '✅ ZipArchive is enabled' : '❌ ZipArchive NOT found';
-});
+    Route::get('/test-zip', function () {
+        return class_exists('ZipArchive') ? '✅ ZipArchive is enabled' : '❌ ZipArchive NOT found';
+    });
+    Route::get('/test-zip', function () {
+        return class_exists('ZipArchive') ? '✅ ZipArchive is enabled' : '❌ ZipArchive NOT found';
+    });
     # All type documents approval
     Route::prefix('document-approval')
         ->name('document.approval.')
@@ -2235,6 +2236,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/transporter-invoices/process/items', [TransporterInvoiceController::class, 'processPulledItems'])->name('sale.transporterInvoice.process.items');
     Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
     Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
+
     Route::post('/transporter-invoices/e-invoice-mail', [TransportInvoiceController::class, 'InvoiceMail'])
     ->name('tranport.invoice.eInvoiceMail');
     Route::post('/transporter-invoices/confirm', [TransportInvoiceController::class, 'confirm'])
@@ -2411,6 +2413,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
     Route::get('/production-slip/create', [ErpProductionSlipController::class, 'create'])->name('production.slip.create');
     Route::post('/production-slip/store', [ErpProductionSlipController::class, 'store'])->name('production.slip.store');
+    // Route::post('/production-slip/store', [ProductionSlipController::class, 'store'])->name('production.slip.store');
     Route::get('/production-slip/edit/{id}', [ErpProductionSlipController::class, 'edit'])->name('production.slip.edit');
     Route::post('/production-slip/revoke', [ErpProductionSlipController::class, 'revoke'])->name('production.slip.revoke');
     Route::get('/production-slip/pwo/process/pwo', [ErpProductionSlipController::class, 'processPulledItems'])->name('production.slip.process.items');
@@ -2766,7 +2769,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('plant/bom/get-item-attribute', [MaintBomController::class, 'getItemAttribute'])->name('maint-bom.attr');
     Route::get('plant/search', [MaintBomController::class, 'search'])->name('plant.search');
     Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
-    
+
 
     Route::resource('plant/maint-bom', MaintBomController::class)->names([
         'index' => 'maint-bom.index',
@@ -2776,14 +2779,14 @@ Route::middleware(['user.auth'])->group(function () {
         'show' => 'maint-bom.show',
         'edit' => 'maint-bom.edit',
     ]);
-    
-    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
-    Route::get('/', 'index')->name('maintenance-types.index');
-    Route::post('/', 'store')->name('maintenance-types.store');
-    Route::delete('/', 'delete')->name('maintenance-types.delete');
-});
 
-Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+    Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
         Route::get('/', 'index')->name('defect-types.index');
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
@@ -2798,18 +2801,18 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
     ]);
     Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
     Route::get('plant/populate-modal', [MaintWoController::class, 'populateModal'])->name('maint-wo.populateModal');
-   
+
     Route::resource('plant/defect-noti', DefectNotificationController::class)
-    ->names([
-        'index' => 'defect-notification.index',
-        'create' => 'defect-notification.create',
-        'store' => 'defect-notification.store',
-        'update' => 'defect-notification.update',
-        'show' => 'defect-notification.show',
-        'edit' => 'defect-notification.edit',
-    ]);
-   
-    
+        ->names([
+            'index' => 'defect-notification.index',
+            'create' => 'defect-notification.create',
+            'store' => 'defect-notification.store',
+            'update' => 'defect-notification.update',
+            'show' => 'defect-notification.show',
+            'edit' => 'defect-notification.edit',
+        ]);
+
+
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
     Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
@@ -2978,7 +2981,6 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/get-item', 'getPiItemForPulling')->name('get.items');
         Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::get('/report', 'report')->name('report');
-
     });
 
     Route::prefix('purchase-quotation')->controller(ErpPqController::class)->name('pq.')->group(function () {
@@ -2993,7 +2995,6 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
         Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::get('/vendors/address/{id}', 'getVendorAddresses')->name('vendor.addresses');
-
     });
     Route::prefix('purchase-quotation-comparison')->controller(ErpPqcController::class)->name('pqc.')->group(function () {
         Route::get('/', 'index')->name('index');
@@ -3005,7 +3006,6 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::get('/process-item', 'processItems')->name('process.items');
         Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
-
     });
 
     Route::prefix('pickup-dropoff-schedule')->controller(ErpPdsController::class)->name('pds.')->group(function () {
@@ -3019,7 +3019,6 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/revoke', 'revoke')->name('revoke');
         Route::get('/search-items', 'searchItems')->name('search.items');
         Route::post('/generate-pdf', 'generatePdf')->name('generate-pdf');
-
     });
 
     Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {
@@ -3079,8 +3078,3 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
     //     }
     // });
 });
-
-
-    
-    
-

@@ -256,8 +256,8 @@ class FinancialPostingHelper
         $serviceAlias = $service->alias;
         if ($type === "view") {
             if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS || $serviceAlias === ConstantHelper::RECEIPTS_SERVICE_ALIAS)
-            return self::getPaymentDocumentPostedVouchers($documentId, $service->alias);
-        else
+                return self::getPaymentDocumentPostedVouchers($documentId, $service->alias);
+            else
                 return self::getDocumentPostedVoucher($documentId, $service->alias);
 
         }
@@ -272,7 +272,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        }
+        } 
         else if ($serviceAlias === ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
             $entries = self::invoiceCumDnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
@@ -282,7 +282,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        }
+        } 
         // else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
         //     $entries = self::dnVoucherDetails($documentId, $type);
         //     if (!$entries['status']) {
@@ -292,7 +292,7 @@ class FinancialPostingHelper
         //             'data' => []
         //         );
         //     }
-        // }
+        // } 
         else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
             $entries = self::dnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
@@ -384,7 +384,7 @@ class FinancialPostingHelper
                 );
             }
             $env[] = $pay;
-            $entries = $env;
+            $entries = $env; 
         } else if ($serviceAlias === ConstantHelper::PSV_SERVICE_ALIAS) {
             $entries = self::PsvVoucherDetails($documentId, "");
             if (!$entries['status']) {
@@ -583,6 +583,10 @@ class FinancialPostingHelper
                 DB::beginTransaction();
 
                 foreach ($entries as $entry) {
+                    if (!$entry['status']) {
+                         DB::rollBack();
+                        return ['status' => false, 'message' => $entry['message']];
+                    }
                     if (!isset($entry['data'])) {
                         DB::rollBack();
                         return ['status' => false, 'message' => 'Invalid entry data'];
@@ -662,7 +666,7 @@ class FinancialPostingHelper
         $ledgersGrouped = [];
 
         // Calculate totals and prepare voucher details array
-
+        
 
         // Group ledgers by entry_type for detailed ledger info
         $grouped = $voucher->items->groupBy('entry_type');
@@ -1088,19 +1092,19 @@ class FinancialPostingHelper
     public static function postVoucherPayment(array $details)
     {
         //Post Voucher
-       $exitingVoucher = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-        ->where('voucher_no', $details['voucher_header']['voucher_no'])
-        ->where('book_id', $details['voucher_header']['book_id'])
-        ->when(!empty($details['voucher_header']['organization_id']), function ($query) use ($details) {
-            $query->where('organization_id', $details['voucher_header']['organization_id']);
-        })
-        ->when(!empty($details['voucher_header']['group_id']), function ($query) use ($details) {
-            $query->where('group_id', $details['voucher_header']['group_id']);
-        })
-        ->when(!empty($details['voucher_header']['company_id']), function ($query) use ($details) {
-            $query->where('company_id', $details['voucher_header']['company_id']);
-        })
-        ->first();
+        $exitingVoucher = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+            ->where('voucher_no', $details['voucher_header']['voucher_no'])
+            ->where('book_id', $details['voucher_header']['book_id'])
+            ->when(!empty($details['voucher_header']['organization_id']), function ($query) use ($details) {
+                $query->where('organization_id', $details['voucher_header']['organization_id']);
+            })
+            ->when(!empty($details['voucher_header']['group_id']), function ($query) use ($details) {
+                $query->where('group_id', $details['voucher_header']['group_id']);
+            })
+            ->when(!empty($details['voucher_header']['company_id']), function ($query) use ($details) {
+                $query->where('company_id', $details['voucher_header']['company_id']);
+            })
+            ->first();
         if ($exitingVoucher) {
             return array(
                 'message' => $exitingVoucher->voucher_no . ' Voucher already posted',
@@ -1460,16 +1464,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function invoiceCumDnVoucherDetails(int $documentId, string $type)
@@ -5208,9 +5212,7 @@ class FinancialPostingHelper
         foreach ($document->items as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $dnDetailId = $docItem ?-> dnote_item_id;
-            $deliveryNote = ErpInvoiceItem::find($dnDetailId);
-            $stockLedger = StockLedger::whereIn('book_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])->where('document_header_id', $deliveryNote ?-> sale_invoice_id)->where('document_detail_id', $docItem->dnote_item_id)->first();
+            $stockLedger = StockLedger::whereIn('book_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])->where('document_header_id', $document->id)->where('document_detail_id', $docItem->id)->first();
             if (isset($stockLedger)) {
                 $orgCurrencyCost = StockLedger::where('utilized_id', $stockLedger->id)->get()->sum('org_currency_cost');
                 $itemValue = $orgCurrencyCost / $document->org_currency_exg_rate;
@@ -5630,7 +5632,6 @@ class FinancialPostingHelper
         //Assign Credit and Debit amount for tally check
         $totalCreditAmount = 0;
         $totalDebitAmount = 0;
-        $supplierAccountCredit = 0;
 
         // Vendor Detail
         $vendor = Vendor::find($document->vendor_id);
@@ -5732,7 +5733,6 @@ class FinancialPostingHelper
                     ]);
                 }
             }
-
             if ($invoiceToFollow) {
                 $grirCreditAmount = ($itemValueAfterDiscount + $rejectedValue);
                 $grirLedgerDetails = AccountHelper::getGrLedgerGroupAndLedgerId($document->organization_id, $docItem->item_id, $document->book_id);
@@ -5766,24 +5766,23 @@ class FinancialPostingHelper
             } else {
                 //Stock for SUPPLIER ACCOUNT
                 $supplierCreditAmount = ($itemValueAfterDiscount + $rejectedValue);
-                // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-                // });
-                // //Ledger found
-                // if (count($existingVendorLedger) > 0) {
-                //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $supplierCreditAmount;
-                // } else { //Assign new ledger
-                //     array_push($postingArray[self::SUPPLIER_ACCOUNT], [
-                //         'ledger_id' => $vendorLedgerId,
-                //         'ledger_group_id' => $vendorLedgerGroupId,
-                //         'ledger_code' => $vendorLedger?->code,
-                //         'ledger_name' => $vendorLedger?->name,
-                //         'ledger_group_code' => $vendorLedgerGroup?->name,
-                //         'credit_amount' => $supplierCreditAmount,
-                //         'debit_amount' => 0
-                //     ]);
-                // }
-                $supplierAccountCredit += $supplierCreditAmount;
+                $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+                    return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingVendorLedger) > 0) {
+                    $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $supplierCreditAmount;
+                } else { //Assign new ledger
+                    array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+                        'ledger_id' => $vendorLedgerId,
+                        'ledger_group_id' => $vendorLedgerGroupId,
+                        'ledger_code' => $vendorLedger?->code,
+                        'ledger_name' => $vendorLedger?->name,
+                        'ledger_group_code' => $vendorLedgerGroup?->name,
+                        'credit_amount' => $supplierCreditAmount,
+                        'debit_amount' => 0
+                    ]);
+                }
             }
         }
 
@@ -5818,24 +5817,23 @@ class FinancialPostingHelper
                     ]);
                 }
                 //Tax for SUPPLIER ACCOUNT
-                // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-                // });
-                // //Ledger found
-                // if (count($existingVendorLedger) > 0) {
-                //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
-                // } else { //Assign new ledger
-                //     array_push($postingArray[self::SUPPLIER_ACCOUNT], [
-                //         'ledger_id' => $vendorLedgerId,
-                //         'ledger_group_id' => $vendorLedgerGroupId,
-                //         'ledger_code' => $vendorLedger?->code,
-                //         'ledger_name' => $vendorLedger?->name,
-                //         'ledger_group_code' => $vendorLedgerGroup?->name,
-                //         'credit_amount' => $tax->ted_amount,
-                //         'debit_amount' => 0,
-                //     ]);
-                // }
-                $supplierAccountCredit += $tax->ted_amount;
+                $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+                    return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingVendorLedger) > 0) {
+                    $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
+                } else { //Assign new ledger
+                    array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+                        'ledger_id' => $vendorLedgerId,
+                        'ledger_group_id' => $vendorLedgerGroupId,
+                        'ledger_code' => $vendorLedger?->code,
+                        'ledger_name' => $vendorLedger?->name,
+                        'ledger_group_code' => $vendorLedgerGroup?->name,
+                        'credit_amount' => $tax->ted_amount,
+                        'debit_amount' => 0,
+                    ]);
+                }
             }
 
             //EXPENSES
@@ -5868,24 +5866,53 @@ class FinancialPostingHelper
                     ]);
                 }
                 //Expense for SUPPLIER ACCOUNT
-                // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-                // });
-                // //Ledger found
-                // if (count($existingVendorLedger) > 0) {
-                //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $expense->ted_amount;
-                // } else { //Assign new ledger
-                //     array_push($postingArray[self::EXPENSE_ACCOUNT], [
-                //         'ledger_id' => $vendorLedgerId,
-                //         'ledger_group_id' => $vendorLedgerGroupId,
-                //         'ledger_code' => $vendorLedger?->code,
-                //         'ledger_name' => $vendorLedger?->name,
-                //         'ledger_group_code' => $vendorLedgerGroup?->name,
-                //         'credit_amount' => $expense->ted_amount,
-                //         'debit_amount' => 0,
-                //     ]);
-                // }
-                $supplierAccountCredit += $expense->ted_amount;
+                $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+                    return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+                });
+                //Ledger found
+                if (count($existingVendorLedger) > 0) {
+                    $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $expense->ted_amount;
+                } else { //Assign new ledger
+                    array_push($postingArray[self::EXPENSE_ACCOUNT], [
+                        'ledger_id' => $vendorLedgerId,
+                        'ledger_group_id' => $vendorLedgerGroupId,
+                        'ledger_code' => $vendorLedger?->code,
+                        'ledger_name' => $vendorLedger?->name,
+                        'ledger_group_code' => $vendorLedgerGroup?->name,
+                        'credit_amount' => $expense->ted_amount,
+                        'debit_amount' => 0,
+                    ]);
+                }
+            }
+
+            //Break Supplier Account according to payment terms schedule - due date wise
+            $invoicePaymentTerms = $document->payment_term_schedules()
+                ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
+            $totalPaymentTermsAmount = 0;
+            if ($invoicePaymentTerms && count($invoicePaymentTerms)) {
+                foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
+                    $currentAmount = $supplierAccountCredit * ($invoicePaymentTerm->total_percentage / 100);
+                    $totalPaymentTermsAmount += $currentAmount;
+                    //Check for same ledger and group in SUPPLIER ACCOUNT
+                    $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId, $invoicePaymentTerm) {
+                        return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm->due_date;
+                    });
+                    //Ledger found
+                    if (count($existingVendorLedger) > 0) {
+                        $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $currentAmount;
+                    } else { //Assign a new ledger
+                        array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+                            'ledger_id' => $vendorLedgerId,
+                            'ledger_group_id' => $vendorLedgerGroupId,
+                            'ledger_code' => $vendorLedger?->code,
+                            'ledger_name' => $vendorLedger?->name,
+                            'ledger_group_code' => $vendorLedgerGroup?->name,
+                            'debit_amount' => 0,
+                            'credit_amount' => $currentAmount,
+                            'due_date' => $invoicePaymentTerm->due_date,
+                        ]);
+                    }
+                }
             }
         }
         //Seperate posting of Discount
@@ -5916,36 +5943,6 @@ class FinancialPostingHelper
                         'ledger_group_code' => $discountLedgerGroup?->name,
                         'debit_amount' => 0,
                         'credit_amount' => $discount->ted_amount,
-                    ]);
-                }
-            }
-        }
-        //Break Supplier Account according to payment terms schedule - due date wise
-        $invoicePaymentTerms = $document->payment_term_schedules()
-            ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
-        dd($supplierAccountCredit, $invoicePaymentTerms);
-        $totalPaymentTermsAmount = 0;
-        if ($invoicePaymentTerms && count($invoicePaymentTerms)) {
-            foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
-                $currentAmount = $supplierAccountCredit * ($invoicePaymentTerm->total_percentage / 100);
-                $totalPaymentTermsAmount += $currentAmount;
-                //Check for same ledger and group in SUPPLIER ACCOUNT
-                $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId, $invoicePaymentTerm) {
-                    return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm->due_date;
-                });
-                //Ledger found
-                if (count($existingVendorLedger) > 0) {
-                    $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $currentAmount;
-                } else { //Assign a new ledger
-                    array_push($postingArray[self::SUPPLIER_ACCOUNT], [
-                        'ledger_id' => $vendorLedgerId,
-                        'ledger_group_id' => $vendorLedgerGroupId,
-                        'ledger_code' => $vendorLedger?->code,
-                        'ledger_name' => $vendorLedger?->name,
-                        'ledger_group_code' => $vendorLedgerGroup?->name,
-                        'debit_amount' => 0,
-                        'credit_amount' => $currentAmount,
-                        'due_date' => $invoicePaymentTerm->due_date,
                     ]);
                 }
             }
@@ -7589,7 +7586,8 @@ class FinancialPostingHelper
         foreach ($vendors as $vendor) {
             if (!empty($vendor)) {
                 if ($vendor->reference == "Invoice") {
-                    $invoices = VoucherReference::where('voucher_details_id', $vendor->id)->where('party_id', $vendor->ledger_id)->get();
+                    $invoices = VoucherReference::where('voucher_details_id', $vendor->id)
+                    ->where('party_id', $vendor->ledger_id)->get();
                     $VendorLedgerId = $vendor->ledger_id;
                     $VendorLedgerGroupId = $vendor->ledger_group_id;
                     $VendorLedger = Ledger::find($VendorLedgerId);
@@ -7808,13 +7806,23 @@ class FinancialPostingHelper
             );
         }
         $document = PaymentVoucher::find($documentId);
-        $vendors = $document->details;
         if (!isset($document)) {
             return array(
                 'status' => false,
                 'message' => 'Document not found',
                 'data' => []
             );
+        }
+        $vendors = $document->payments()
+            ->with([
+                'voucher' => function ($query) {
+                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                }
+            ])
+            ->get();
+        
+        if ($vendors->isEmpty()) {
+            return [];
         }
 
 
@@ -7824,7 +7832,7 @@ class FinancialPostingHelper
         $vouchersArray = [];
         foreach ($vendors as $vendor) {
 
-            $partyOrg = $vendor->party->organization;
+            $partyOrg = $vendor->voucher->organization;
             if ($partyOrg->id != $organization->id) {
                 $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
                 if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)
@@ -8481,7 +8489,6 @@ class FinancialPostingHelper
                     'debit_amt_group' => $debitAmtGroup,
                     'credit_amt_group' => $creditAmtGroup,
                     'entry_type' => $entryType,
-                    'due_date' => isset($post['due_date']) ? $post['due_date'] : $document->{$documentDateKey}
                 ]);
             }
         }
@@ -8531,18 +8538,35 @@ class FinancialPostingHelper
             'ledger_code' => $contraLedger?->code,
             'ledger_name' => $contraLedger?->name,
             'ledger_group_code' => $contraLedgerGroup?->name,
-            'debit_amount' => $vendor->orgAmount,
+            'debit_amount' => $vendor->amount,
             'credit_amount' => 0,
         ]);
 
-        $vendorLedger = Ledger::find($vendor->ledger_id);
-        $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
-        if (!isset($vendorLedger) || !isset($vendorLedgerGroup))
+
+        $vendorLedgerId = $vendor->party_id;
+        if (empty($vendorLedgerId))
             return array(
                 'status' => false,
                 'message' => 'Vendor Ledger not setup',
                 'data' => []
             );
+        $vendorLedgerGroupId = $vendor->ledger->group() ?? null;
+        if ($vendorLedgerGroupId->isEmpty())
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger Group not setup',
+                'data' => []
+            );
+        $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
+        
+        $vendorLedger = Ledger::find($vendorLedgerId);
+        $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger not setup',
+                'data' => []
+            );}
         array_push($postingArray[self::VENDOR_ACCOUNT], [
             'ledger_id' => $vendorLedger->id,
             'ledger_group_id' => $vendorLedgerGroup->id,
@@ -8550,7 +8574,7 @@ class FinancialPostingHelper
             'ledger_name' => $vendorLedger?->name,
             'ledger_group_code' => $vendorLedgerGroup?->name,
             'debit_amount' => 0,
-            'credit_amount' => $vendor->orgAmount,
+            'credit_amount' => $vendor->amount,
         ]);
         return $postingArray;
     }
@@ -8602,24 +8626,42 @@ class FinancialPostingHelper
             'ledger_name' => $contraLedger?->name,
             'ledger_group_code' => $contraLedgerGroup?->name,
             'debit_amount' => 0,
-            'credit_amount' => $vendor->orgAmount,
+            'credit_amount' => $vendor->amount,
         ]);
 
-        $vendorLedger = Ledger::find($vendor->ledger_id);
-        $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
-        if (!isset($vendorLedger) || !isset($vendorLedgerGroup))
+        $vendorLedgerId = $vendor->party_id;
+        if (empty($vendorLedgerId))
             return array(
                 'status' => false,
                 'message' => 'Vendor Ledger not setup',
                 'data' => []
             );
+        $vendorLedgerGroupId = $vendor->ledger->group() ?? null;
+        if ($vendorLedgerGroupId->isEmpty())
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger Group not setup',
+                'data' => []
+            );
+        $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
+        
+        $vendorLedger = Ledger::find($vendorLedgerId);
+        $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger not setup',
+                'data' => []
+            );
+        }
+        
         array_push($postingArray[self::VENDOR_ACCOUNT], [
             'ledger_id' => $vendorLedger->id,
             'ledger_group_id' => $vendorLedgerGroup->id,
             'ledger_code' => $vendorLedger?->code,
             'ledger_name' => $vendorLedger?->name,
             'ledger_group_code' => $vendorLedgerGroup?->name,
-            'debit_amount' => $vendor->orgAmount,
+            'debit_amount' => $vendor->amount,
             'credit_amount' => 0,
         ]);
         return $postingArray;

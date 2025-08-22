@@ -31,6 +31,11 @@ class VoucherReference extends Model
     
 
     } 
+    public function ledger(){
+        return $this->belongsTo(Ledger::class, 'party_id');
+    
+
+    } 
 
 
     

@@ -118,4 +118,8 @@ protected static function booted()
     {
         return $this->belongsTo(ErpStore::class, 'location', 'id');
     }
+    public function payments()
+    {
+        return $this->hasMany(VoucherReference::class,'payment_voucher_id');
+    }
 }
