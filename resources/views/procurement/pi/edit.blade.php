@@ -829,7 +829,6 @@ $(document).on('click','#deleteBtn', (e) => {
             }
         }
     });
-
     if (itemIds.length) {
         itemIds.forEach(function(item,index) {
             $(`#row_${item}`).remove();
@@ -1411,7 +1410,6 @@ $(document).on('click', '.soSubmitProcess', (e) => {
                 }
             });
         }
-
     } else {
         // $("#soSubmitModal").modal('hide');
         Swal.fire({

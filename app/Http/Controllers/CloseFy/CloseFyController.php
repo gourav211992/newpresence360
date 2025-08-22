@@ -19,7 +19,7 @@ class CloseFyController extends Controller
         $fyearId = $request->fyear;
         $user = Helper::getAuthenticatedUser();
         $organizationId = $request->organization_id;
-        $companies = $user->access_rights_org;
+        $companies = Helper::access_org();
         $past_fyears = Helper::getAllPastFinancialYear($organizationId);
         $financialYear = $fyearId ? ErpFinancialYear::where('organization_id',$organizationId)->find($fyearId) : null;
         // $financialYearAuthUsers = $fyearId ? null : Helper::getFyAuthorizedUsers(date('Y-m-d'));
@@ -63,7 +63,7 @@ class CloseFyController extends Controller
     $group_id = $organization->group_id;
     $company_id = $organization->company_id;
     $organizationId = $request->organization_id;
-    $companies = $user->access_rights_org;
+    $companies =Helper::access_org();
 
     $current_fyear = Helper::getFinancialYear(date('Y-m-d'));
     $months = $this->showMonths($current_fyear['start_date'], $current_fyear['end_date']);

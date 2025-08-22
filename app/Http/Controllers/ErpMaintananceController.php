@@ -164,7 +164,10 @@ class ErpMaintananceController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
-        $userOrganizations = Helper::getAuthenticatedUser()->access_rights_org;
+        $user = Helper::getAuthenticatedUser();
+        
+
+        $userOrganizations = Helper::access_org();
 
         $userOrganizations = $userOrganizations->unique(function ($item) {
             return $item->organization->id;

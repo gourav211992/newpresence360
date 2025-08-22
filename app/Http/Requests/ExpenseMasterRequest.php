@@ -89,7 +89,6 @@ class ExpenseMasterRequest extends FormRequest
                 'nullable',
                 'exists:erp_groups,id',
             ],
-
             'service_provider_ledger_id' => [
                 'nullable',
                 'exists:erp_ledgers,id',
@@ -102,7 +101,6 @@ class ExpenseMasterRequest extends FormRequest
                     }
                 },
             ],
-
             'service_provider_ledger_group_id' => [
                 'nullable',
                 'exists:erp_groups,id',

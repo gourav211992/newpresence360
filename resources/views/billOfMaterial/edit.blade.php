@@ -52,7 +52,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                         <i data-feather="file-text"></i> Export
                     </a>
                   @endif
-
                     <a href="{{ route('bill.of.material.generate-pdf', $bom->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                         <i data-feather="printer"></i> Print
                     </a>
@@ -186,7 +185,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                             <input type="text" id="head_uom_name" class="form-control" name="uom_name" value="{{$bom->uom?->name}}" readonly  />
                                         </div>
                                     </div>
-
                                     @include('billOfMaterial.partials.header-attribute-edit')
 
                                     @if($servicesBooks['services'][0]?->alias != ConstantHelper::BOM_SERVICE_ALIAS)
@@ -487,7 +485,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                      </tr>
                   </thead>
                   <tbody>
-
                   </tbody>
                </table>
             </div>
@@ -1231,7 +1228,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
           lastTrObj.attr_require = false;
         }
     }
-
     let componentAttr = [];
     if($("tr input[type='hidden'][name*='[attr_group_id]']").length) {
         $("tr input[type='hidden'][name*='[attr_group_id]']").each(function () {
@@ -1507,7 +1503,6 @@ $(document).on('click', '.addOverHeadItemBtn', (e) => {
             <td colspan="2"></td>
             <td class="text-center"></td>
         </tr>`;
-
         $("#itemOverheadTbl tbody").empty().append(tr);
         $(".item_display_overhead_row").find(".addOverheadItemRow").addClass('d-none');
         $(".item_display_overhead_row:last").find(".addOverheadItemRow").removeClass('d-none');
@@ -1609,7 +1604,6 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       let sectionName = $(currentTr).find("[name*='[section_name]']").val() || '';
       let subSectionName = $(currentTr).find("[name*='[sub_section_name]']").val() || '';
       let stationName = $(currentTr).find("[name*='[station_name]']").val() || '';
-
       let remark = '';
       if($(currentTr).find("[name*='remark']")) {
        remark = $(currentTr).find("[name*='remark']").val() || '';
@@ -2697,7 +2691,6 @@ $(document).on('click', '.addOverheadItemRow', (e) => {
             if (data.status == 200) {
                 let indexCount = data.data.indexCount;
                 let rowCount = data.data.rowCount;
-
                 let $tbody = $("#itemOverheadTbl tbody");
                 if ($tbody.find("tr.item_display_overhead_row").length > 0) {
                     $tbody.find("tr.item_display_overhead_row:last").after(data.data.html);

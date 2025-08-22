@@ -99,13 +99,11 @@ class PurchaseOrderHistory extends Model
     {
         return $this->morphMany(PurchaseOrderMedia::class, 'model');
     }
-
     public function getDisplayStatusAttribute()
     {
         $status = str_replace('_', ' ', $this->document_status);
         return ucwords($status);
     }
-
     public function book()
     {
         return $this->belongsTo(Book::class, 'book_id');
@@ -180,7 +178,6 @@ class PurchaseOrderHistory extends Model
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'billing');
     }
-
     public function ship_address_details()
     {
         return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'shipping')->with(['city', 'state', 'country']);
@@ -210,7 +207,6 @@ class PurchaseOrderHistory extends Model
     {
         return $this->belongsTo(Currency::class,'comp_currency_id');
     }
-
     public function paymentTerm()
     {
         return $this->belongsTo(PaymentTerm::class,'payment_term_id');
@@ -277,10 +273,8 @@ class PurchaseOrderHistory extends Model
     {
         return $this->belongsTo(Department::class);
     }
-
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpPoDynamicField::class, 'header_id');
     }
-
 }

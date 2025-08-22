@@ -810,7 +810,6 @@
         setTimeout(() => {
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
-
         }, 0);
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -352,7 +351,6 @@ class Item extends Model implements Exportable
         $columns['Company'] = 'company.name';
         $columns['Organization'] = 'organization.name';
 
-
         // 2. Table columns
        $skipColumns = [
             'unit_id','hsn_id','category_id','subcategory_id','uom_id','storage_uom_id',
@@ -365,7 +363,6 @@ class Item extends Model implements Exportable
             'storage_uom_count','storage_weight','storage_volume','item_initial','item_code_type','item_remark',
             'service_type','document_status','storage_type',
        ];
-
 
         foreach ($this->getFillable() as $column) {
             if (in_array($column, $skipColumns)) continue;
@@ -424,7 +421,6 @@ class Item extends Model implements Exportable
     {
         $assetCode = Helper::generateAssetCode($this->asset_category_id);
         return $assetCode;
-
     }
 
 

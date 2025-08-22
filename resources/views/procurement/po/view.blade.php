@@ -6,12 +6,10 @@
         max-height: 300px; /* Set the height of the scrollable body */
         position: relative;
     }
-
     #prModal .po-order-detail {
         width: 100%;
         border-collapse: collapse;
     }
-
     #prModal .po-order-detail thead {
         position: sticky;
         top: 0; /* Stick the header to the top of the table container */
@@ -651,7 +649,6 @@ function getDocNumberByBookId(bookId) {
          }
          const parameters = data.data.parameters;
         setServiceParameters(parameters);
-
         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
             $("#tax_required").val(parameters?.tax_required[0]);
         } else {

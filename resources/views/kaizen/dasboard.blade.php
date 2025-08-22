@@ -6,7 +6,6 @@
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-
             <div class="content-header row">
                 <div class="content-header-left col-md-4 mb-2">
                     <div class="row breadcrumbs-top">

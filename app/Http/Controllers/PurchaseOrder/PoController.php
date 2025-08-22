@@ -286,7 +286,6 @@ class PoController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $location = ErpStore::find($request->location_id ?? null);
-
         $organization = $user->organization;
         $firstAddress = $location?->address ?? null;
         if(!$firstAddress) {
@@ -1128,7 +1127,6 @@ class PoController extends Controller
                 $po->gate_entry_required = 'no';
             }
             $po->partial_delivery = $parameters['partial_delivery_allowed'][0] ?? 'no';
-
             if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
                 if($po?->vendor?->supplier_books?->count()) {
                     $po->supp_invoice_required = 'yes';
@@ -1137,7 +1135,6 @@ class PoController extends Controller
             } else {
                 $po->supp_invoice_required = 'no';
             }
-
             $po->save();
             $vendorBillingAddress = $po->bill_address ?? null;
             $vendorShippingAddress = $po->ship_address ?? null;
@@ -1476,7 +1473,6 @@ class PoController extends Controller
                             break;
                         }
                     }
-
                     #Save Componet Delivery
                     if(isset($component['delivery'])) {
                         foreach($component['delivery'] as $delivery) {
@@ -1582,7 +1578,6 @@ class PoController extends Controller
                         }
                     }
                 }
-
                 /*Update total in main header PO*/
                 if($itemTotalValue < ($itemTotalHeaderDiscount + $itemTotalDiscount)) {
                     DB::rollBack();
@@ -2347,7 +2342,6 @@ class PoController extends Controller
             ]);
         }
     }
-
     # Po Bulk create
     public function bulkCreate()
     {
@@ -2746,7 +2740,6 @@ class PoController extends Controller
                                     }
                                 }
                             }
-
                             $poDetail->tax_amount = abs($itemTax);
                             $poDetail->save();
                             $totalTax += $itemTax;
@@ -2825,7 +2818,6 @@ class PoController extends Controller
                 $po->total_item_value = $totalValue;
                 $po->total_tax_value = abs($totalTax) ?? 0.00;
                 $po->save();
-
             }
             DB::commit();
             return response()->json([
@@ -2902,7 +2894,6 @@ class PoController extends Controller
             'status' => 'success',
             'message' => 'Email request sent succesfully',
         ],200);
-
     }
 
     public function poReport(Request $request)
@@ -3105,7 +3096,6 @@ class PoController extends Controller
 
     private function savePoPaymentTerm($paymentTermId, $poId, $creditDays){
         $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
-
         if ($paymentTermDetails->isEmpty()) {
             return;
         }

@@ -212,8 +212,11 @@ class CashflowReportController extends Controller
         }
 
         else{
-            $mappings = Helper::getAuthenticatedUser()->access_rights_org;
+        
+            $mappings = Helper::access_org();
+            $user = Helper::getAuthenticatedUser();
 
+          
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
@@ -412,7 +415,11 @@ class CashflowReportController extends Controller
         else
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
 
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $user = Helper::getAuthenticatedUser();
+        $companies = Helper::access_org();
+        
+       
+        
         $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $orgLogo = Helper::getOrganizationLogo($organization_id);

@@ -14,7 +14,6 @@ return new class extends Migration
     {
         Schema::create('erp_equipment', function (Blueprint $table) {
             $table->id();
-
             $table->unsignedBigInteger('organization_id')->nullable();
             $table->unsignedBigInteger('group_id')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();

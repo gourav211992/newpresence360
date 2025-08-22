@@ -294,7 +294,6 @@ class PiController extends Controller
 
                             $showAttribute = intval($request->show_attribute) ?? 0;
                             $so_item_ids = $request->so_item_ids ? explode(',',$request->so_item_ids) : [];
-
                             if(!$showAttribute) {
                                 $itemIds = $request->item_ids ? explode(',',$request->item_ids) : [];
                                 $so_item_ids = ErpSoItem::whereIn('sale_order_id', $so_item_ids)
@@ -334,7 +333,6 @@ class PiController extends Controller
                                         'pi_so_mapping_id' => $data->id,
                                         'pi_item_id' => $piDetail->id
                                     ]);
-
                                     $piSoMappingItem->qty += $allocatedQty;
                                     $piSoMappingItem->save();
                                     if ($indent_qty <= 0) {
@@ -575,7 +573,6 @@ class PiController extends Controller
 
                     $showAttribute = intval($request->show_attribute) ?? 0;
                     $so_item_ids = $request->so_item_ids ? explode(',',$request->so_item_ids) : [];
-
                     if(!$showAttribute) {
                         $itemIds = $request->item_ids ? explode(',',$request->item_ids) : [];
                         $so_item_ids = ErpSoItem::whereIn('sale_order_id', $so_item_ids)
@@ -618,7 +615,6 @@ class PiController extends Controller
                                     'pi_so_mapping_id' => $data->id,
                                     'pi_item_id' => $piDetail->id
                                 ]);
-
                                 $piSoMappingItem->qty += $allocatedQty;
                                 $piSoMappingItem->save();
                                 if ($indent_qty <= 0) {
@@ -1235,7 +1231,6 @@ class PiController extends Controller
        if($checkBomExist['bom_id']) {
             $bom = Bom::find($checkBomExist['bom_id']);
             $bufferPerc = ItemHelper::getBomSafetyBufferPerc($bom->id);
-
             $bomDetails = (strtolower($bom->customizable) === 'no')
                 ? BomDetail::where('bom_id', $checkBomExist['bom_id'])->get()
                 : ErpSoItemBom::where('bom_id', $checkBomExist['bom_id'])
@@ -1316,7 +1311,6 @@ class PiController extends Controller
                                PiSoMapping::create($mappingData);
                            }
                        }
-
                    }
             } else {
                 $attributes = $bom->bomAttributes->map(fn($attribute) => [
@@ -1329,7 +1323,6 @@ class PiController extends Controller
                     $requiredQty += $requiredQty*$bufferPerc/100;
                 }
                 $requiredQty = ceil($requiredQty);
-
                 $mappingData = [
                     'so_id' => $soId,
                     'so_item_id' => $soItemId,
@@ -1389,7 +1382,6 @@ class PiController extends Controller
                 $attributes = array_map(function($item) {
                     return ['attribute_id' => $item['id'], 'attribute_value' => $item['values_data'][0]['id'] ?? null];
                 },$piSoItemMapping['attributes'] ?? []);
-
                 $datas = PiSoMapping::where('item_id', $piSoItemMapping['item_id'])
                                         ->when(count($attributes),function($query) use($attributes) {
                                             $query->whereJsonContains('attributes', $attributes);
