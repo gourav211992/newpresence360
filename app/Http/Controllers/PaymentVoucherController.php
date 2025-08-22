@@ -310,7 +310,7 @@ class PaymentVoucherController extends Controller
 
         // return response()->json($data);
 
-        $mappings = $user->access_rights_org;
+        $mappings =Helper::access_org();
 
         $book_type = $request->book_type;
         $date = $request->date;

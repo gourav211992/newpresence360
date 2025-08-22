@@ -375,7 +375,7 @@ class ProfitLossController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organizationId = Helper::getAuthenticatedUser()->organization_id;
         $companies = $user -> access_rights_org;
-        $organizations = Helper::getAuthenticatedUser()->access_rights_org;
+        $organizations = Helper::access_org();
         $organization=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
         if ($request->date) {
             $dates = explode(' to ', $request->date);

@@ -95,8 +95,8 @@ class CrDrReportController extends Controller
 
         $user = Helper::getAuthenticatedUser();
         $organizationId = $user->organization_id;
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
-
+        $companies = Helper::access_org();
+        
         $cost_centers = Helper::getActiveCostCenters();
 
         $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
@@ -190,8 +190,7 @@ class CrDrReportController extends Controller
         }
         $user = Helper::getAuthenticatedUser();
         $organizationId = $user->organization_id;
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
-
+        $companies = Helper::access_org();    
         $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
@@ -1260,8 +1259,8 @@ class CrDrReportController extends Controller
         ;
         $user = Helper::getAuthenticatedUser();
         $organizationId = $user->organization_id;
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
-
+        
+        $companies = Helper::access_org();
         $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
@@ -1774,7 +1773,14 @@ class CrDrReportController extends Controller
         ;
         $type = 'credit';
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
-        $mappings = $user->access_rights_org;
+        $user = Helper::getAuthenticatedUser();
+       
+        
+        
+        $mappings = Helper::access_org();
+        
+        
+        
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
         $cost_centers = Helper::getActiveCostCenters();
@@ -1851,7 +1857,9 @@ class CrDrReportController extends Controller
         $type = 'debit';
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
         $user = Helper::getAuthenticatedUser();
-        $mappings = $user->access_rights_org;
+        $user = Helper::getAuthenticatedUser();
+        
+        $mappings = Helper::access_org();
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
         $cost_centers = Helper::getActiveCostCenters();
@@ -2530,10 +2538,12 @@ class CrDrReportController extends Controller
     }
 
     $user = Helper::getAuthenticatedUser()->id;
-            if ($type == ConstantHelper::PAYMENTS_SERVICE_ALIAS)
-            $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
-            else 
+           if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+                $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
+                $orgs = $orgs->isEmpty() ? [Helper::getAuthenticatedUser()->organization_id] : $orgs->toArray();
+            } else {
                 $orgs = [Helper::getAuthenticatedUser()->organization_id];
+            }
     $data = UploadPendingPaymentMaster::where('user_id', $user)
         ->where('import_status', 'Success')
         ->where('doc_type', $type)
@@ -2543,15 +2553,18 @@ class CrDrReportController extends Controller
 
     $validationErrors = [];
     $reportedLedgers = [];
+    $group_id = $user->organization->group_id;
+    
 
-    $flattened = collect($data)->flatMap(function ($voucher) use ($orgs,$type, &$validationErrors, &$reportedLedgers) {
-        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers,$orgs) {
-            $ledger = Ledger::with([ 'vendor' => function ($query) use ($orgs,$type) {
+    $flattened = collect($data)->flatMap(function ($voucher) use ($orgs,$type, &$validationErrors, &$reportedLedgers,$group_id) {
+        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers,$orgs,$group_id) {
+    $ledger = Ledger::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+    ->where('group_id',$group_id)
+    ->with([ 'vendor' => function ($query) use ($orgs,$type) {
         $query->when(function () use ($type) {
             return $type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
             $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
-            $q->withoutGlobalScope('defaultLocation');
         })->whereIn('organization_id', $orgs);
     }])->with('customer')->find($item['ledger_id']);
             $group = Group::find($item['ledger_group_id']);

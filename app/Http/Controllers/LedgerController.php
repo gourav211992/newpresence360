@@ -176,7 +176,9 @@ class LedgerController extends Controller
 
             $groups = Helper::getGroupsQuery()->whereNotNull('parent_group_id')->select('id', 'name')->get();
             $ledgers = Ledger::select('id', 'name')->orderBy('id', 'desc')->get();
-            $mappings = $user->access_rights_org;
+            $user = Helper::getAuthenticatedUser();
+       
+            $mappings = Helper::access_org();
 
             return view('ledgers.view_ledgers', compact('groups', 'ledgers', 'mappings', "organizationId"));
         } catch (\Exception $e) {

@@ -499,7 +499,7 @@ class TrialBalanceController extends Controller
         $user = Helper::getAuthenticatedUser();
         $userId = $user->id;
         $organizationId = $user->organization_id;
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $companies = Helper::access_org();
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
@@ -703,7 +703,7 @@ class TrialBalanceController extends Controller
             $org = $r->organization_id;
 
         // Fetch companies based on the user's organization group
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $companies = Helper::access_org();
 
         $organization = DB::table('organizations')->where('id', Helper::getAuthenticatedUser()->organization_id)->value('name');
         $ledger = Ledger::where('id', $id)->where('status', 1)->value('name');

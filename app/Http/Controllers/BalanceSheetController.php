@@ -203,7 +203,8 @@ class BalanceSheetController extends Controller
         $organizationId = $user->organization_id;
         $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
         array_push($orgIds, $user?->organization_id);
-        $companies = $user->access_rights_org;
+        $companies = Helper::access_org();
+        
         $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('name');
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
 

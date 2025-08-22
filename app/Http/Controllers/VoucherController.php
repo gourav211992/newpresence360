@@ -55,24 +55,27 @@ class VoucherController extends Controller
             $accessibleLocations = InventoryHelper::getAccessibleLocations();
             $locationIds = $accessibleLocations->pluck('id')->toArray();
             $ledger_group = (int)$request->ledgerGroup;
-            if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS)
-            $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
-            else 
+         if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+                $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
+                $orgs = $orgs->isEmpty() ? [Helper::getAuthenticatedUser()->organization_id] : $orgs->toArray();
+            } else {
                 $orgs = [Helper::getAuthenticatedUser()->organization_id];
+            }
+
 
             $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');;
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })->whereIn("organization_id",$orgs)
-        ->with([ 'ErpLocation' => function ($query) use ($request, $orgs) {
-        $query->when(function () use ($request) {
+                ->with([ 'ErpLocation' => function ($query) use ($request, $orgs) {
+                 $query->when(function () use ($request) {
             return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
-            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');;
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
         })->whereIn('organization_id', $orgs);
-    }])
+            }])
             ->with('organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-                ->whereIn('location', $locationIds)
+                //->whereIn('location', $locationIds)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);
@@ -735,7 +738,7 @@ class VoucherController extends Controller
 
         $bookTypes = $serviceAlias['services'];
 
-        $mappings = $user->access_rights_org;
+        $mappings =Helper::access_org();
 
         $book_type = $request->book_type;
         $date = $request->date ?? \Carbon\Carbon::parse($fyear['start_date'])->format('d-m-Y') . " to " . \Carbon\Carbon::parse($fyear['end_date'])->format('d-m-Y');

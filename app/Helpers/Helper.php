@@ -2215,7 +2215,7 @@ class Helper
                         $voucher = ItemDetail::where('ledger_id', $ledger->id)->with('vouchers');
                         Log::info('Zero-sum ledger detected', [
                             'ledger_id' => $ledger->id,
-                            'vouchers' => $voucher->toArray(),
+                            'vouchers' => $voucher,
                             'ledger_name' => $ledger->name,
                             'group_id' => $group_id ?? 'N/A',
                         ]);
@@ -4267,5 +4267,14 @@ class Helper
                 'error' => $e->getMessage()
             ];
         }
+    }
+    public static function access_org(){
+        $user = Helper::getAuthenticatedUser();
+        $companies = $user?->access_rights_org;
+        
+        $companies = ($companies && $companies->isNotEmpty())
+    ? $companies
+    : collect([$user]);
+        return $companies;
     }
 }

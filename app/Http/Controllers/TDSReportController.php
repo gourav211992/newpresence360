@@ -51,7 +51,7 @@ class TDSReportController extends Controller
             $vendor_id = $request->vendor_filter;
 
 
-        $mappings = Helper::getAuthenticatedUser()->access_rights_org;
+        $mappings = Helper::access_org();
 
         $cost_center_ids = null;
         if (!empty($request->cost_center_id)) {
