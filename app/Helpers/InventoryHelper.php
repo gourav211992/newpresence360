@@ -484,7 +484,7 @@ class InventoryHelper
             $query -> where('wip_station_id', $itemWipStationId);
         }
 
-        $query -> orderBy('expiry_date') 
+        $query -> orderBy('expiry_date')
         -> orderBy('original_receipt_date');
 
         // Select Records with Grouping and Summing
@@ -493,7 +493,7 @@ class InventoryHelper
             DB::raw('SUM(receipt_qty - reserved_qty) as total_receipt_qty'),
             DB::raw('SUM(org_currency_cost) as total_org_currency_cost')
         ])
-        ->orderBy('expiry_date') 
+        ->orderBy('expiry_date')
         ->orderBy('original_receipt_date')
         ->orderBy('id')
         ->groupBy([
@@ -875,7 +875,28 @@ class InventoryHelper
                     // Item Location Data
                     $stockLedger->store_id = $documentHeader->store_id ?? null;
                     $stockLedger->store = $documentHeader?->store?->store_code;
-                    $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+
+                    //Lot & Mfg & Exp Date
+                    $stockLedger->expiry_date = $documentHeader->expiry_date ?? null;
+                    $stockLedger->manufacturing_year = $documentHeader->manufacturing_year ?? null;
+
+                    // Determine the lot number
+                    if (!empty($documentDetail->lot_number)) {
+                        $lotNumber = $documentDetail->lot_number;   // Highest priority: from document detail
+                    } elseif (!empty($documentHeader->lot_number)) {
+                        $lotNumber = $documentHeader->lot_number;   // Fallback: from document header
+                    } else {
+                        // Last option: generate new lot number
+                        $lotNumber = InventoryHelper::generateLotNumber(
+                            $documentHeader->document_date,
+                            $documentHeader->book_code,
+                            $documentHeader->document_number
+                        );
+                    }
+
+                    // Assign to stock ledger
+                    $stockLedger->lot_number = $lotNumber;
+
                     $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
                 }
             }
@@ -2213,7 +2234,7 @@ class InventoryHelper
     public static function updateIssueStock($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
 
-        $user = Helper::getAuthenticatedUser();
+        // $user = Helper::getAuthenticatedUser();
         $message = '';
         $transactionType = 'issue';
         $checkInvoiceLedger = self::updateIssueStockLedger($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);

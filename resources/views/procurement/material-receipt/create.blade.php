@@ -1108,6 +1108,7 @@
                         let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
                         $('[name="payment_term_id"]').empty().append(termOption);
+                        $('[name="credit_days"]').val(data?.data?.vendor?.credit_days);
                         $("#billing_id").val(data.data.vendor_address.id);
                         $(".billing_detail").text(data.data.vendor_address.display_address);
                         $(".delivery_address").text(data.delivery_address.display_address);

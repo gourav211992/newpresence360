@@ -49,6 +49,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use App\Helpers\BookHelper;
+use App\Models\BomDetail;
 use PHPUnit\TextUI\Help;
 use Yajra\DataTables\DataTables;
 
@@ -184,6 +185,7 @@ class ErpProductionSlipController extends Controller
         $stationLines = collect();
         $groupAlias = $user?->auth_user?->group_alias ?? '';
         $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
+
         $data = [
             'user' => $user,
             'services' => $servicesBooks['services'],
@@ -321,6 +323,7 @@ class ErpProductionSlipController extends Controller
     public function store(PslipRequest $request)
     {
         // dd($request->all());
+        $assignedLotNumber = null;
         $consuptions = $request->cons;
         if(!$consuptions)
         {
@@ -332,7 +335,6 @@ class ErpProductionSlipController extends Controller
         try {
 
             // Handle Inspection Check
-
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -400,7 +402,7 @@ class ErpProductionSlipController extends Controller
                     }
             }
             $productionSlip = null;
-            $store = ErpStore::find($request -> store_id);
+            // $store = ErpStore::find($request -> store_id);
             $productionSlip = ErpProductionSlip::find($request -> pslip_id);
             if ($productionSlip) {
 
@@ -424,14 +426,17 @@ class ErpProductionSlipController extends Controller
                     ]);
                 }
 
-                $productionSlip -> document_date = $request -> document_date;
-                // $productionSlip -> reference_number = $request -> reference_no;
+                $productionSlip->document_date = $request->document_date;
+                $productionSlip->lot_number = $request->lot_number;
+                $productionSlip->manufacturing_year = $request->manufacturing_year;
+                $productionSlip->expiry_date = $request->expiry_date ? $request->expiry_date : null;
+                // $productionSlip->reference_number = $request->reference_no;
                 //Store and department keys
-                $productionSlip -> store_id = $request -> store_id ?? null;
-                $productionSlip -> fg_sub_store_id = $request -> fg_sub_store_id ?? null;
-                $productionSlip -> rg_sub_store_id = $request -> rg_sub_store_id ?? null;
-                // $productionSlip -> store_code = $store ?-> store_code ?? null;
-                $productionSlip -> remarks = $request -> final_remarks;
+                $productionSlip->store_id = $request->store_id ?? null;
+                $productionSlip->fg_sub_store_id = $request->fg_sub_store_id ?? null;
+                $productionSlip->rg_sub_store_id = $request->rg_sub_store_id ?? null;
+                // $productionSlip->store_code = $store ?-> store_code ?? null;
+                $productionSlip->remarks = $request -> final_remarks;
                 $actionType = $request -> action_type ?? '';
                 $productionSlip->mo_id = $request->mo_id ? $request->mo_id[0] : $request->mo_id;
                 $productionSlip->is_last_station = $request->is_last_station ?? 0;
@@ -472,10 +477,14 @@ class ErpProductionSlipController extends Controller
                     'group_id' => $groupId,
                     'company_id' => $companyId,
                     'mo_id' => $request->mo_id ? $request->mo_id[0] : $request->mo_id,
+                    'bom_id' => $request->bom_id,
                     'is_last_station' => $request->is_last_station ?? 0,
                     'station_id' => $request->mo_station_id,
                     'book_id' => $request -> book_id,
                     'book_code' => $request -> book_code,
+                    'lot_number' => $request -> lot_number,
+                    'manufacturing_year' => $request -> manufacturing_year,
+                    'expiry_date' => $request->expiry_date ? $request->expiry_date : null,
                     'document_number' => $document_number,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
@@ -627,15 +636,16 @@ class ErpProductionSlipController extends Controller
                                     'error' => 'Inspection001'
                                 ], 422);
                             }
+
+                            //ErpInspChecklistService class storing inspection checklist data into the `erp_insp_checklists` table.
+                            $inspChecklistService = (new ErpInspChecklistService(
+                                ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS,
+                                $productionSlip->id,
+                                $psItem->id,
+                                $psItem->item_id
+                            ))->sync($inspectionData);
                         }
 
-                        //ErpInspChecklistService class storing inspection checklist data into the `erp_insp_checklists` table.
-                        $inspChecklistService = (new ErpInspChecklistService(
-                            ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS,
-                            $productionSlip->id,
-                            $psItem->id,
-                            $psItem->item_id
-                        ))->sync($inspectionData);
 
                         // $stationId = $psItem->station_id ?? null;
                         // $bomDetails = PwoBomMapping::where('pwo_mapping_id', $psItem?->mo_product?->pwo_mapping_id)
@@ -989,6 +999,11 @@ class ErpProductionSlipController extends Controller
                             'error' => ''
                         ], 422);
                     }
+
+                    // Call static method to assign inherited Lot Numbers to items in $productionSlip.
+                    // Returns ['status' => bool, 'message' => string]
+                    self::assignInheritedLotNumber($productionSlip);
+
                 }
 
                 # Update rate in  Pslip Item & insert in Pslip Item Location
@@ -1195,11 +1210,14 @@ class ErpProductionSlipController extends Controller
                     ->get();
             $mo = [];
             if($order?->count()) {
+                $bomId = $order[0]->mo?->production_bom_id ?? null;
                 $mo['mo_id'] = $order[0]->mo?->id ?? '';
+                $mo['mo_bom_id'] = $bomId;
                 $mo['mo_no'] = $order[0]->mo->book_code. " - ". $order[0]->mo->document_number;
                 $mo['mo_date'] = $order[0]->mo->getFormattedDate('document_date') ?? '';
                 $mo['mo_product_id'] = $order[0]->mo->item_id ?? '';
                 $mo['mo_product_name'] = $order[0]->mo->item->item_name ?? '';
+                $mo['is_batch_no'] = $order[0]->mo->item->is_batch_no ?? 0;
                 $mo['is_last_station'] = $order[0]->mo->is_last_station ?? false;
                 $mo['mo_type'] = $order[0]->mo->is_last_station == true ? 'Final' : 'WIP';
                 $mo['mo_station_id'] = $order[0]->mo->station_id ?? '';
@@ -1265,7 +1283,7 @@ class ErpProductionSlipController extends Controller
     private static function maintainStockLedger(ErpProductionSlip $pslip)
     {
         $pslipStatus = $pslip->document_status;
-        $user = Helper::getAuthenticatedUser();
+        // $user = Helper::getAuthenticatedUser();
         $detailIds = $pslip->fresh()->consumptions->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($pslip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $pslipStatus, 'issue');
         // dd('issue', $issueRecords);
@@ -1300,8 +1318,10 @@ class ErpProductionSlipController extends Controller
                                 ->groupBy('document_detail_id')
                                 ->get();
 
+            // dd($stockLedgers->toArray());
+
             foreach($stockLedgers as $stockLedger) {
-                $a = PslipBomConsumption::where('id',$stockLedger?->document_detail_id)->first();
+                // $a = PslipBomConsumption::where('id',$stockLedger?->document_detail_id)->first();
                 $psConsumption = PslipBomConsumption::find($stockLedger->document_detail_id);
                 $psConsumption->rate = floatval($stockLedger->cost) / floatval($psConsumption->consumption_qty);
                 $psConsumption->save();
@@ -1310,6 +1330,73 @@ class ErpProductionSlipController extends Controller
         }
         return $issueRecords;
     }
+
+    /**
+     * Assigns inherited Lot Numbers to Production Slip Items based on BOM inheritance rules.
+     *
+     * @param  object $erpProductionSlip   The ERP Production Slip object (with items relation loaded).
+     * @return array                       Status and message about assignment result.
+     */
+    private static function assignInheritedLotNumber($erpProductionSlip)
+    {
+        // 🔹 Step 1: Fetch BOM Detail that allows batch inheritance
+        $bomDetail = BomDetail::select('id')
+            ->where('is_inherit_batch_item', 1) // Only BOM details with batch inheritance enabled
+            ->where('bom_id', $erpProductionSlip->bom_id) // Belongs to current BOM
+            ->first();
+
+        // If no such BOM detail exists, return failure response
+        if (!$bomDetail) {
+            return [
+                'status' => false,
+                'message' => 'No BOM Detail found for Inherited Lot Number.'
+            ];
+        }
+
+        // 🔹 Step 2: Loop through each Production Slip Item
+        foreach ($erpProductionSlip->items as $item) {
+
+            // 🔹 Step 2.1: Find BOM consumption record for this item
+            $pslipBomConsumption = PslipBomConsumption::select('id')
+                ->where('pslip_item_id', $item->id)
+                ->where('bom_detail_id', $bomDetail->id)
+                ->first();
+
+            // Skip if no consumption record found for this item
+            if (!$pslipBomConsumption) {
+                continue;
+            }
+
+            // 🔹 Step 2.2: Find corresponding Stock Ledger entry (issued transaction only)
+            $stockLedger = StockLedger::select('id', 'lot_number')
+                ->where([
+                    'book_type'          => ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS,
+                    'document_header_id' => $erpProductionSlip->id,
+                    'document_detail_id' => $pslipBomConsumption->id,
+                    'organization_id'    => $erpProductionSlip->organization_id,
+                    'transaction_type'   => 'issue'
+                ])
+                ->first();
+
+            // Skip if no stock ledger entry exists
+            if (!$stockLedger) {
+                continue;
+            }
+
+            // 🔹 Step 2.3: Assign lot number from stock ledger to the production slip item
+            if (!empty($stockLedger->lot_number)) {
+                $item->lot_number = $stockLedger->lot_number;
+                $item->save();
+            }
+        }
+
+        // 🔹 Step 3: Return success response after processing all items
+        return [
+            'status' => true,
+            'message' => 'Success'
+        ];
+    }
+
 
     public function getItemDetail(Request $request)
     {

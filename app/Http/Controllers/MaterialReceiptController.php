@@ -1037,15 +1037,13 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
-            if($mrn->reference_type)
-            {
                 $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
                 foreach ($mrnData as $detail) {
-                    $refId = $detail->po_id ?? $detail->jo_id ?? null;
+                    $refId = $detail->po_id ?? $detail->jo_id ?? $mrn->id;
+                    $refType = $mrn->reference_type ?? 'direct';
                     // Save MRN Payment Terms
-                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $mrn->reference_type, $mrn->document_date);
+                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $refType, $mrn->document_date);
                 }
-            }
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
@@ -2141,15 +2139,13 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
-            if($mrn->reference_type)
-            {
                 $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
                 foreach ($mrnData as $detail) {
-                    $refId = $detail->po_id ?? $detail->jo_id ?? null;
+                    $refId = $detail->po_id ?? $detail->jo_id ?? $mrn->id;
+                    $refType = $mrn->reference_type ?? 'direct';
                     // Save MRN Payment Terms
-                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $mrn->reference_type, $mrn->document_date);
+                    self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $mrn->credit_days, $refId, $refType, $mrn->document_date);
                 }
-            }
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 

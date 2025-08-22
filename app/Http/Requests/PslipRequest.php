@@ -23,14 +23,23 @@ class PslipRequest extends FormRequest
     {
         $rules = [
             'book_id' => 'required',
-            // 'fg_sub_store_id' => 'required',
+            'expiry_date' => 'nullable|date',
+            'lot_number' => 'nullable|string|max:40',
+            'manufacturing_year' => 'nullable|integer|nullable|digits:4|min:2000|max:' . date('Y'),
             'cons.*.item_qty' => 'required|numeric|min:0.01',
             'item_qty.*' => 'required|numeric|min:1',
             'item_accepted_qty.*' => 'required|numeric|min:1',
         ];
 
         if(!$this->input('id')) {
-            $rules['fg_sub_store_id'] = 'required|numeric';
+            $rules['fg_sub_store_id'] = 'required';
+        }
+
+        // If Item is_batch_no == 1
+        if($this->input('is_batch_no') ==1) {
+            $rules['expiry_date'] = 'required|date';
+            $rules['manufacturing_year'] = 'required|integer|nullable|digits:4|min:2000|max:' . date('Y');
+            $rules['lot_number'] = 'required|string|max:40';
         }
 
         $today = now()->toDateString();

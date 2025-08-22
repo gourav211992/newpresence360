@@ -37,8 +37,8 @@
 @endsection
 @section('content')
 
-    <!-- BEGIN: Content-->
-    <form method="POST" data-module="pslip" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form production_slip" action = "{{route('production.slip.store')}}" data-redirect="{{ $redirect_url }}" id = "sale_invoice_form" enctype='multipart/form-data'>
+<!-- BEGIN: Content-->
+<form method="POST" data-module="pslip" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form production_slip" action = "{{route('production.slip.store')}}" data-redirect="{{ $redirect_url }}" id = "sale_invoice_form" enctype='multipart/form-data'>
     <input type="hidden" name="station_wise_consumption" value="" id="station_wise_consumption">
     <input type="hidden" name="inspection_required_key" value="" id="inspection_required_key">
     @if(isset($slip))
@@ -358,10 +358,33 @@
                                                 </div>
                                             </div>
 
+
                                             <input type="hidden" id="mo_id" name="mo_id" @if(isset($slip)) value="{{$slip?->mo_id}}" @endif>
+                                            <input type="hidden" id="mo_bom_id" name="bom_id" @if(isset($slip)) value="{{$slip?->bom_id}}" @endif>
                                             <input type="hidden" id="mo_product_id" name="mo_product_id" @if(isset($slip)) value="{{$slip?->mo?->item_id}}" @endif>
                                             <input type="hidden" id="is_last_station" name="is_last_station" @if(isset($slip)) value="{{$slip?->is_last_station}}" @endif>
+                                            <input type="hidden" id="is_batch_no" name="is_batch_no" @if(isset($slip)) value="{{$slip?->is_batch_no}}" @endif>
                                             <input type="hidden" id="mo_station_id" name="mo_station_id" @if(isset($slip)) value="{{$slip?->station_id}}" @endif>
+                                        </div>
+                                        <div class="row">
+                                             <div class="col">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Lot No. <span class="text-danger show_required_field_for_batch" style="display: none;">*</span></label>
+                                                    <input type="text" @if(isset($slip)) value="{{ $slip?->lot_number }}" @endif placeholder="Enter lot number" class="form-control mw-100" id="lot_number" name="lot_number" />
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Mfg. Year <span class="text-danger show_required_field_for_batch" style="display: none;">*</span></label>
+                                                    <input type="number" @if(isset($slip)) value="{{ $slip?->manufacturing_year }}" @else value="{{ date('Y') }}" @endif pattern="\d{4}"  placeholder="YYYY" class="form-control mw-100" id="manufacturing_year" name="manufacturing_year" />
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Expiry Date <span class="text-danger show_required_field_for_batch" style="display: none;">*</span> </label>
+                                                    <input type="date" @if(isset($slip)) value="{{$slip?->expiry_date}}" @endif placeholder="Select" class="form-control mw-100" id="expiry_date" name="expiry_date" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -999,48 +1022,48 @@
 		</div>
 	</div>
     <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-   <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-         <div class="modal-header">
-            <div>
-               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend
-               Invoice
-               </h4>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            <input type="hidden" name="action_type" id="action_type_main">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend
+                    Invoice
+                    </h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <input type="hidden" name="action_type" id="action_type_main">
 
-         </div>
-         <div class="modal-body pb-2">
-            <div class="row mt-1">
-               <div class="col-md-12">
-                  <div class="mb-1">
-                     <label class="form-label">Remarks</label>
-                     <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
-                  </div>
-                  <div class = "row">
-                    <div class = "col-md-8">
+                </div>
+                <div class="modal-body pb-2">
+                    <div class="row mt-1">
+                    <div class="col-md-12">
                         <div class="mb-1">
-                            <label class="form-label">Upload Document</label>
-                            <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                            <label class="form-label">Remarks</label>
+                            <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
                         </div>
-                    </div>
-                    <div class = "col-md-4" style = "margin-top:19px;">
-                        <div class="row" id = "amend_files_preview">
+                        <div class = "row">
+                            <div class = "col-md-8">
+                                <div class="mb-1">
+                                    <label class="form-label">Upload Document</label>
+                                    <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                                </div>
+                            </div>
+                            <div class = "col-md-4" style = "margin-top:19px;">
+                                <div class="row" id = "amend_files_preview">
+                                </div>
+                            </div>
                         </div>
+                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                     </div>
-                  </div>
-                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-               </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+                </div>
             </div>
-         </div>
-         <div class="modal-footer justify-content-center">
-            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
-         </div>
-      </div>
-   </div>
-</div>
+        </div>
+    </div>
 </form>
 
 {{-- Approve & Reject Modal --}}
@@ -2210,6 +2233,7 @@
                   }
                   if (reset) {
                     $("#order_no_input").val(data.data.doc.document_number);
+                    $("#lot_number").val(data.data.lot_number);
                   }
                   if(data.data.doc.type == 'Manually') {
                      $("#order_no_input").attr('readonly', false);
@@ -3616,7 +3640,16 @@ function openHeaderPullModal(type = null)
                     $("#station_name").val(currentOrders.mo.mo_station_name);
                     $("#mo_product_id").val(currentOrders.mo.mo_product_id);
                     $("#mo_id").val(currentOrders.mo.mo_id);
+                    $("#mo_bom_id").val(currentOrders.mo.mo_bom_id);
                     $("#is_last_station").val(currentOrders.mo.is_last_station);
+                    $("#is_batch_no").val(currentOrders.mo.is_batch_no);
+
+                    if(currentOrders.mo.is_batch_no)
+                    {
+                        $('.show_required_field_for_batch').show();
+                    }else{
+                        $('.show_required_field_for_batch').hide();
+                    }
                     $("#mo_station_id").val(currentOrders.mo.mo_station_id);
                     // const mainTableItem = document.getElementById('item_header');
                     // let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;

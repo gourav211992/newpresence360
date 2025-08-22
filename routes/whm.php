@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 //     Route::get('/dashboard', 'userDashboard')->name('whm.user-dashboard');
 // });
 
+
+Route::controller(PrintQrController::class)->group(function () {
+    Route::get('/get-qrcodes', 'getQrcodes')->name('whm.download-qrs')->middleware('sso-api');
+});
+
 Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
     Route::controller(IndexController::class)->group(function () {
         Route::get('/stores', 'stores')->name('whm.stores');

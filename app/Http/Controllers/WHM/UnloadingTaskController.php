@@ -114,7 +114,7 @@ class UnloadingTaskController extends Controller
             }])
             ->where('job_id',$request->id)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','item_uid','status','vendor_id','storage_point_id')
             ->get();
 
             \DB::commit();
