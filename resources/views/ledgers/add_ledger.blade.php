@@ -268,18 +268,6 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
-                                                        <div class="col-md-2">
-                                                            <label class="form-label"> TDS Capping <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-
-                                                        <div class="col-md-3">
-                                                            <input type="number" class="form-control"
-                                                                id="tds_capping" name="tds_capping" step="any" />
-                                                        </div>
-                                                    </div>
-
                                                     <div class="row align-items-center mb-1" id="tds_percentage_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label"> % TDS Without PAN <span
@@ -290,6 +278,18 @@
                                                             <input type="number" class="form-control"
                                                                 id="tds_without_pan" name="tds_without_pan" step="0.01"
                                                             pattern="^\d+(\.\d{1,2})?$" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TDS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_capping" name="tds_capping" step="any" />
                                                         </div>
                                                     </div>
 
@@ -312,15 +312,28 @@
                                                             </select>
                                                         </div>
                                                     </div>
+
                                                     <div class="row align-items-center mb-1" id="tcs_percentage_label">
                                                         <div class="col-md-2">
-                                                            <label class="form-label"> % TCS Calculation <span
+                                                            <label class="form-label"> % TCS With PAN <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tcs_percentage" name="tcs_percentage" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$"/>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1" id="tcs_percentage_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> % TCS Without PAN <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tcs_without_pan" name="tcs_without_pan" step="0.01"
                                                             pattern="^\d+(\.\d{1,2})?$"/>
                                                         </div>
                                                     </div>
@@ -360,6 +373,7 @@
             
             const Existingledgers = @json($Existingledgers); // Pass from controller
             const ExistingTdsSections = @json($ExistingTdsSections); // Pass existing TDS sections from controller
+            const ExistingTcsSections = @json($ExistingTcsSections); // Pass existing TDS sections from controller
             const redirectUrl =
                 "{{ route('ledgers.index') }}"; // Fix: was incorrectly routing to 'cost-center.index'
 
@@ -388,6 +402,7 @@
                 // Check if TDS section already exists in selected TDS groups
                 let selectedGroups = $('#ledger_group_id').val() || [];
                 let selectedTdsSection = $('#tds_section').val();
+                let selectedTcsSection = $('#tcs_section').val();
                 
                 if (selectedTdsSection && selectedGroups.length > 0) {
                     // Check if any of the selected groups have TDS in their name (indicating TDS group)
@@ -411,6 +426,34 @@
                         if (duplicateTdsSection) {
                             $('.preloader').hide();
                             showToast('error', 'This TDS section type already exists in the selected TDS group.', 'Duplicate TDS Section');
+                            return;
+                        }
+                    }
+                }
+
+
+                if (selectedTcsSection && selectedGroups.length > 0) {
+                    // Check if any of the selected groups have TDS in their name (indicating TDS group)
+                    let hasTdsGroup = false;
+                    selectedGroups.forEach(groupId => {
+                        let groupOption = $('#ledger_group_id option[value="' + groupId + '"]');
+                        if (groupOption.text().toLowerCase().includes('tcs')) {
+                            hasTdsGroup = true;
+                        }
+                    });
+                    
+                    if (hasTdsGroup) {
+                        // Check if TCS section already exists in any of the selected groups
+                        let duplicateTcsSection = ExistingTcsSections.some(existing => {
+                            return existing.tcs_section === selectedTcsSection && 
+                                   existing.ledger_group_ids.some(existingGroupId => 
+                                       selectedGroups.includes(existingGroupId.toString())
+                                   );
+                        });
+                        
+                        if (duplicateTcsSection) {
+                            $('.preloader').hide();
+                            showToast('error', 'This TCS section type already exists in the selected TCS group.', 'Duplicate TCS Section');
                             return;
                         }
                     }
