@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 class ErpItemUniqueCode extends Model
 {
     use HasFactory;
-
+    protected $connection = 'mysql';
+    protected $table = 'erp_item_unique_codes';
     protected $fillable = [
         'uid',
         'job_id',

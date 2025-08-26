@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\ASN\Constants as ASNConstant;
+use App\Helpers\RGR\Constants as RGRConstant;
 use App\Models\Legal;
 
 class ConstantHelper
@@ -56,6 +57,8 @@ class ConstantHelper
     const CLOSED = 'closed';
     const APPROVAL_NOT_REQUIRED = 'approval_not_required';
     const APPROVAL = 'approval';
+    const ACCEPTED = 'accepted';
+    const ALL = 'all';
     const PARTIALLY_APPROVED = 'partially_approved';
     // const REVOKE = 'revoke';
 
@@ -474,29 +477,29 @@ class ConstantHelper
         self::SR_SERVICE_ALIAS => "Sales Return",
         self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note",
         self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => "Delivery Note CUM Invoice",
-        self::BOM_SERVICE_ALIAS => "Bill Of Material", 
-        self::PO_SERVICE_ALIAS => "Purchase Order" , 
-        self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , 
-        self::PI_SERVICE_ALIAS => "Purchase Indent" , 
-        self:: MRN_SERVICE_ALIAS => "MRN" , 
-        self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , 
-        self::EXPENSE_SERVICE_ALIAS => "Expense" , 
-        self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', 
-        self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", 
-        self::PB_SERVICE_ALIAS => "Purchase Bill", 
-        self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", 
-        self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", 
+        self::BOM_SERVICE_ALIAS => "Bill Of Material",
+        self::PO_SERVICE_ALIAS => "Purchase Order" ,
+        self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" ,
+        self::PI_SERVICE_ALIAS => "Purchase Indent" ,
+        self:: MRN_SERVICE_ALIAS => "MRN" ,
+        self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" ,
+        self::EXPENSE_SERVICE_ALIAS => "Expense" ,
+        self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise',
+        self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return",
+        self::PB_SERVICE_ALIAS => "Purchase Bill",
+        self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue",
+        self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return",
         self::JO_SERVICE_ALIAS => "Job Order",
         self::VOUCHERS => "Vouchers",
         self::PAYMENTS_SERVICE_ALIAS => 'Payment Voucher',
         self::RECEIPTS_SERVICE_ALIAS => 'Receipt Voucher',
         self::PL_SERVICE_ALIAS => "Pick List",
         self::PSV_SERVICE_ALIAS => "Physical Stock Verification",
-        self::TR_SERVICE_ALIAS => "Transporter Request", 
-        self::PWO_SERVICE_ALIAS => "Production Work Order", 
-        self::MO_SERVICE_ALIAS => "Manufacturing Order", 
-        self::INSPECTION_SERVICE_ALIAS => "Inspection", 
-        self::MATERIAL_ISSUE_SERVICE_NAME => "Material Issue", 
+        self::TR_SERVICE_ALIAS => "Transporter Request",
+        self::PWO_SERVICE_ALIAS => "Production Work Order",
+        self::MO_SERVICE_ALIAS => "Manufacturing Order",
+        self::INSPECTION_SERVICE_ALIAS => "Inspection",
+        self::MATERIAL_ISSUE_SERVICE_NAME => "Material Issue",
         self::MATERIAL_RETURN_SERVICE_NAME => "Material Return",
         self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",
         self::JOURNAL_VOUCHER => "Journal Voucher",
@@ -505,7 +508,8 @@ class ConstantHelper
         self::PQ_SERVICE_ALIAS => "Purchase Quotation",
         self::PQC_SERVICE_ALIAS => "Purchase Quotation Comparison",
         self::PDS_SERVICE_ALIAS => "Pickup Dropoff Schedule",
-        PackingListConstants::SERVICE_ALIAS => "Packing List"];
+        PackingListConstants::SERVICE_ALIAS => "Packing List",
+        RgrConstant::SERVICE_ALIAS => "Return Goods Receipt"];
 
     //Service Alias
     const MO_SERVICE_ALIAS = 'mo'; # Manufacturing Order
@@ -580,6 +584,7 @@ class ConstantHelper
     const TECHNICAL_FILES = 'technical-files';
     const RESEARCH_FILES = 'research-files';
 
+    const ITEM_BUNDLE_SERVICE_ALIAS = 'item-bundles';
     const ITEM_SERVICE_ALIAS = 'items';
     const LEDGERS_SERVICE_ALIAS = 'ledgers';
     const LEDGER_GROUP_SERVICE_ALIAS = 'ledger-groups';
@@ -703,7 +708,7 @@ class ConstantHelper
         self::FIXEDASSET=>self::FIXEDASSET,
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
         self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
-        self::TI_SERVICE_ALIAS => self::TI_SERVICE_ALIAS,
+        self::PRODUCTION_SLIP_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
     ];
 
     //Service Alias Models Mapping
@@ -782,9 +787,10 @@ class ConstantHelper
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
         self::MAINT_BOM=>'PlantMaintBom',
 
-        self::MAINT_WO=>'PlantMaintWo',  
+        self::MAINT_WO=>'PlantMaintWo',
         self::DEFECT_NOTIFICATION=>'DefectNotification',
 
+        self::ITEM_BUNDLE_SERVICE_ALIAS => 'ErpItemBundle',
         self::ITEM_SERVICE_ALIAS => 'Item',
         self::LEDGERS_SERVICE_ALIAS => 'Ledger',
         self::HSN_SERVICE_ALIAS => 'Hsn',
@@ -827,6 +833,7 @@ class ConstantHelper
         self::PDS_SERVICE_ALIAS => 'ErpPickupSchedule',
         PackingListConstants::SERVICE_ALIAS => 'PackingList',
         ASNConstant::SERVICE_ALIAS => 'VendorAsn',
+        RgrConstant::SERVICE_ALIAS => 'ErpRgr',
     ];
     const CV_ALLOWED_GROUPS=['Cash-in-Hand', 'Bank Accounts', 'Bank OD A/c', 'Bank OCC A/c'];
     const JV_EXCLUDE_GROUPS=[
@@ -1005,7 +1012,7 @@ class ConstantHelper
         self::VENDOR_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::LEDGERS_SERVICE_ALIAS => ConstantHelper::ERP_MASTER_SERVICE_TYPE,
         self::EQPT=>ConstantHelper::ERP_MASTER_SERVICE_TYPE
-    
+
     ];
     const DOC_APPROVAL_STATUS_MAPPING = [
         ConstantHelper::SUBMITTED => 'submit',
@@ -1127,4 +1134,28 @@ class ConstantHelper
 
     const EXCEL_COLUMN_WIDTH_DEFAULT = 15;
     const POST_DELIVERY = 'post delivery';
+
+    const DEFECT_SEVERITY_MINOR = 'minor';
+    const DEFECT_SEVERITY_MAJOR = 'major';
+    const DEFECT_SEVERITY_SCRAP = 'scrap';
+
+    const DEFECT_SEVERITY_LEVELS = [
+        ['label' => 'Minor', 'value' => self::DEFECT_SEVERITY_MINOR],
+        ['label' => 'Major', 'value' => self::DEFECT_SEVERITY_MAJOR],
+        ['label' => 'Scrap', 'value' => self::DEFECT_SEVERITY_SCRAP],
+    ];
+
+
+    const DAMAGE_NATURE_NO_DAMAGE = 'no_damage';
+    const DAMAGE_NATURE_CUSTOMER_DAMAGE = 'customer_damage';
+    const DAMAGE_NATURE_TRANSIT_HANDLE_DAMAGE = 'transit_handling_damage';
+    const DAMAGE_NATURE_WEAR_AND_TEAR = 'wear_tear_damage';
+
+    const DAMAGE_NATURES = [
+        ['label' => 'No Damage', 'value' => self::DAMAGE_NATURE_NO_DAMAGE],
+        ['label' => 'Customer Damage', 'value' => self::DAMAGE_NATURE_CUSTOMER_DAMAGE],
+        ['label' => 'Transit / Handling Damage', 'value' => self::DAMAGE_NATURE_TRANSIT_HANDLE_DAMAGE],
+        ['label' => 'Wear and Tear', 'value' => self::DAMAGE_NATURE_WEAR_AND_TEAR],
+    ];
+
 }

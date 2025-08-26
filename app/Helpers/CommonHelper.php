@@ -6,6 +6,7 @@ use App\Models\Book;
 use App\Models\DocumentApproval;
 use App\Models\Recruitment\ErpRecruitmentJobReferral;
 use App\Models\Recruitment\ErpRecruitmentJobRequestLog;
+use App\Helpers\RGR\Constants as RgrConstant;
 
 class CommonHelper
 {
@@ -198,7 +199,9 @@ class CommonHelper
             $type = 'putaway';
         }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
             $type = 'dispatch';
-        }else{
+        }elseif ($morphableType == 'App\Models\ErpRgr') {
+            $type = 'rgr';   
+        } else{
             $type = '';
         }
     
@@ -216,10 +219,13 @@ class CommonHelper
             $type = ConstantHelper::INSPECTION_SERVICE_ALIAS;
         }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
             $type = ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS;
+        }
+        elseif($morphableType == 'App\Models\ErpRgr'){
+            $type = RgrConstant::SERVICE_ALIAS;
         }else{
             $type = '';
         }
-    
+     
         return $type;
     }
 

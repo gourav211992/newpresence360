@@ -17,6 +17,8 @@ use App\Models\VendorAsnItem;
 use App\Models\ErpSoJobWorkItem;
 use App\Models\JobOrder\JoProduct;
 
+use App\Models\Organization;
+
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\ItemHelper;
@@ -53,10 +55,22 @@ class TransactionCalculationService
 
         // Company/vendor geo
         $user         = Helper::getAuthenticatedUser();
-        $organization = $user->organization ?? null;
-        $companyAddr  = $organization?->addresses?->first();
-        $companyCountryId = $companyAddr->country_id ?? null;
-        $companyStateId   = $companyAddr->state_id ?? null;
+        // $organization = $user->organization ?? null;
+        // $companyAddr  = $organization?->addresses?->first();
+        // $companyCountryId = $companyAddr->country_id ?? null;
+        // $companyStateId   = $companyAddr->state_id ?? null;
+
+
+        $organization = Organization::where('id', $user->organization_id)->first();
+        //Tax Country and State
+        $firstAddress = $organization->addresses->first();
+        $companyCountryId = null;
+        $companyStateId = null;
+        if ($firstAddress) {
+            $companyCountryId = $firstAddress->country_id;
+            $companyStateId = $firstAddress->state_id;
+        }
+
 
         $vendorCountryId = $geHeader->billingAddress->country_id ?? $geHeader->shippingAddress->country_id ?? null;
         $vendorStateId   = $geHeader->billingAddress->state_id   ?? $geHeader->shippingAddress->state_id   ?? null;

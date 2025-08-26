@@ -2496,7 +2496,7 @@
 
                     const {
                         vendor,
-                        poExpenseTeds,
+                        finalExpenses,
                         pos,
                         moduleType,
                         vendorAsn
@@ -2564,9 +2564,9 @@
                     const $expBody = $("#summaryExpTable tbody");
                     $expBody.find('.display_summary_exp_row').remove();
 
-                    if (poExpenseTeds.length) {
+                    if (finalExpenses.length) {
                         let rows = '';
-                        poExpenseTeds.forEach((item, i) => {
+                        finalExpenses.forEach((item, i) => {
                             const index = i + 1;
                             rows += `
                                 <tr class="display_summary_exp_row">
@@ -2578,17 +2578,25 @@
                                         <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
                                         <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
                                     </td>
-                                    <td class="text-right">
-                                        ${parseFloat(item.ted_amount ?? 0).toFixed(2)}
-                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="${item.ted_amount ?? 0}">
+                                    <td class="text-end">
+                                        ${parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][e_amnt]"
+                                            value="${(item.ted_amount ?? "0").toString().replace(/,/g, '')}">
                                     </td>
-                                    <td class="text-right">
-                                        ${parseFloat(item.tax_amount ?? 0).toFixed(2)}
-                                        <input type="hidden" name="exp_summary[${index}][tax_amount]" value="${item.tax_amount ?? 0}">
+                                    <td class="text-end">
+                                        ${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][tax_amount]"
+                                            value="${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}">
                                     </td>
-                                    <td class="text-right">
-                                        ${(parseFloat(item.ted_amount ?? 0) + parseFloat(item.tax_amount ?? 0)).toFixed(2)}
-                                        <input type="hidden" name="exp_summary[${index}][total]" value="${(parseFloat(item.ted_amount ?? 0) + parseFloat(item.tax_amount ?? 0)).toFixed(2)}">
+                                    <td class="text-end">
+                                        ${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][total]"
+                                            value="${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}">
                                     </td>
                                     <td>
                                         ${item.tax_breakup ? formatTaxBreakup(item.tax_breakup) : ''}
@@ -2624,6 +2632,25 @@
                         text: 'An unexpected error occurred while processing ASN.',
                         icon: 'error'
                     });
+                // .catch((error) => {
+                //     console.error("ASN Process Error:", error);
+
+                //     let message = error.message || 'Unknown error';
+                //     let lineInfo = '';
+
+                //     if (error.stack) {
+                //         // Extract first line with file/line info
+                //         const stackLines = error.stack.split("\n");
+                //         if (stackLines.length > 1) {
+                //             lineInfo = stackLines[1].trim();
+                //         }
+                //     }
+
+                //     Swal.fire({
+                //         title: 'Error!',
+                //         html: `<b>${message}</b><br><small>${lineInfo}</small>`,
+                //         icon: 'error'
+                //     });
                 });
         }
 

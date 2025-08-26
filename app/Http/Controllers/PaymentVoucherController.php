@@ -899,7 +899,6 @@ class PaymentVoucherController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
-            dd($e->getTraceAsString());
             return back()->withErrors('Something went wrong: ' . $e->getMessage());
         }
     }

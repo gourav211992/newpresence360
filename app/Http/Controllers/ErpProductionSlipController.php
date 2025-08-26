@@ -6,6 +6,7 @@ use App\Exceptions\ApiGenericException;
 use App\Helpers\Configuration\Constants;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
@@ -19,11 +20,8 @@ use App\Models\ErpPslipItem;
 use App\Models\ErpPslipItemAttribute;
 use App\Models\ErpPslipItemDetail;
 use App\Models\ErpPslipItemLocation;
-use App\Models\StockLedgerItemAttribute;
 use App\Models\ErpSoItem;
-use App\Models\ErpStore;
 use App\Models\Item;
-use App\Models\MfgOrder;
 use App\Models\MoBomMapping;
 use App\Models\ItemAttribute;
 use App\Models\ErpAttribute;
@@ -33,12 +31,10 @@ use App\Models\MoProduct;
 use App\Models\Organization;
 use App\Models\PslipBomConsumption;
 use App\Models\PslipConsumptionLocation;
-use App\Models\PwoBomMapping;
-use App\Models\PwoSoMapping;
+
 use App\Models\PwoStationConsumption;
 use App\Models\Shift;
 use App\Models\StockLedger;
-use App\Models\StockLedgerReservation;
 use App\Models\Unit;
 use App\Lib\Services\ErpInspChecklistService;
 
@@ -1580,9 +1576,8 @@ class ErpProductionSlipController extends Controller
             $rm_type = 'W';
             $itemWipStationId = $request->station_id;
         }
-        $soItemId = $request?->so_item_id;
+        $soItemId = null;
         $stocks = InventoryHelper::totalInventoryAndStock($request->item_id, $itemAttributes, $request->uom_id, $storeId,$subStoreId,$soItemId,$stationId, $rm_type, $itemWipStationId);
-
         $stockBalanceQty = 0;
         if (isset($stocks)) {
             $stockBalanceQty = $stocks['confirmedStocks'] - $stocks['reservedStocks'];
@@ -1591,35 +1586,6 @@ class ErpProductionSlipController extends Controller
         return $stockBalanceQty;
     }
 
-    public function removeAlternateItem(Request $request)
-    {
-        // $pslipConsumption = PslipBomConsumption::find($request->pslip_bom_cons_id);
-
-        // if (!$pslipConsumption) {
-        //     return response()->json([
-        //         'status'  => 404,
-        //         'message' => 'Alternate Item not found.'
-        //     ]);
-        // }
-
-        // // Find related stock ledger entry
-        // $stockLedger = StockLedger::where('document_header_id', $pslipConsumption->pslip_id)
-        //     ->where('document_detail_id', $pslipConsumption->id)
-        //     ->first();
-
-        // if ($stockLedger) {
-        //     StockLedgerItemAttribute::where('stock_ledger_id', $stockLedger->id)->delete();
-
-        //     $stockLedger->delete();
-        // }
-
-        // $pslipConsumption->delete();
-
-        // return response()->json([
-        //     'status'  => 200,
-        //     'message' => 'Alternate Item removed successfully.'
-        // ]);
-    }
-
+ 
 
 }

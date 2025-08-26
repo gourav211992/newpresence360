@@ -59,10 +59,7 @@ class ErpProductionSlip extends Model
         'station_id'
     ];
 
-    public function items()
-    {
-        return $this -> hasMany(ErpPslipItem::class, 'pslip_id');
-    }
+
     protected $hidden = ['deleted_at'];
 
     public $referencingRelationships = [
@@ -85,6 +82,10 @@ class ErpProductionSlip extends Model
     public function mo()
     {
         return $this -> belongsTo(MfgOrder::class, 'mo_id');
+    }
+    public function items()
+    {
+        return $this -> hasMany(ErpPslipItem::class, 'pslip_id');
     }
     public function pslip_items()
     {

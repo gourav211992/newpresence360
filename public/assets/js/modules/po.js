@@ -1629,7 +1629,6 @@ function hasDuplicateObjects(arr) {
 }
 // UOM on change bind rate
 function handleRowChange(tr) {
-    console.log(tr, "tr");
     getItemCostPrice(tr);
     setTableCalculation();
 }
@@ -1652,7 +1651,6 @@ $(".submitAttributeBtn").on("click", function (e) {
     let row = $("#attribute tbody tr");
     let rowCount = row.find('input[name^="row_count"]').val();
     let tr = $("#row_" + rowCount);
-    console.log(tr);
     handleRowChange(tr);
 });
 $(document).on("change", "select[name='store_id']", (e) => {
@@ -2110,24 +2108,26 @@ function cloneRow($row, newIndex) {
 $(document).on("click", "#add_new_head_exp", (e) => {
     e.preventDefault();
 
-    let new_exp_id = $("#new_exp_id").val() || "";
-    let new_exp_name = $("#new_exp_name").val() || "";
-    let new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
-    let hsn_id = $("#new_exp_id").attr("data-hsn-id") || 0;
+    // Delay execution to ensure input values are up-to-date
+    setTimeout(() => {
+        let new_exp_id = $("#new_exp_id").val() || "";
+        let new_exp_name = $("#new_exp_name").val() || "";
+        let new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
+        let hsn_id = $("#new_exp_id").attr("data-hsn-id") || 0;
 
-    let new_exp_tax_amount = (
-        Number($("#new_exp_tax_amount").val()) || 0
-    ).toFixed(2);
-    let total_amount_after_tax = (
-        Number($("#total_amount_after_tax").val()) || 0
-    ).toFixed(2);
+        let new_exp_tax_amount = (
+            Number($("#new_exp_tax_amount").val()) || 0
+        ).toFixed(2);
+        let total_amount_after_tax = (
+            Number($("#total_amount_after_tax").val()) || 0
+        ).toFixed(2);
 
-    let tax_breakup = $("#new_exp_tax_breakup").val();
-    if (!new_exp_name || !new_exp_tax_amount) return;
+        let tax_breakup = $("#new_exp_tax_breakup").val();
+        if (!new_exp_name || !new_exp_tax_amount) return;
 
-    let tbl_row_count =
-        $("#summaryExpTable .display_summary_exp_row").length + 1;
-    let tr = `
+        let tbl_row_count =
+            $("#summaryExpTable .display_summary_exp_row").length + 1;
+        let tr = `
         <tr class="display_summary_exp_row">
             <td>${tbl_row_count}</td>
             <td>${new_exp_name}
@@ -2157,25 +2157,26 @@ $(document).on("click", "#add_new_head_exp", (e) => {
         </tr>
     `;
 
-    if (!$(".display_summary_exp_row").length) {
-        $("#summaryExpTable #expSummaryFooter").before(tr);
-    } else {
-        $(".display_summary_exp_row:last").after(tr);
-    }
-    $("#new_exp_name_select").val("");
-    $("#new_exp_id").val("");
-    $("#new_exp_name").val("");
-    $("#new_exp_perc").val("").prop("readonly", false);
-    $("#new_exp_value").val("").prop("readonly", false);
-    let total_head_exp = 0;
-    $("[name*='[e_amnt]']").each(function (index, item) {
-        total_head_exp += Number($(item).val());
-    });
+        if (!$(".display_summary_exp_row").length) {
+            $("#summaryExpTable #expSummaryFooter").before(tr);
+        } else {
+            $(".display_summary_exp_row:last").after(tr);
+        }
+        $("#new_exp_name_select").val("");
+        $("#new_exp_id").val("");
+        $("#new_exp_name").val("");
+        $("#new_exp_perc").val("").prop("readonly", false);
+        $("#new_exp_value").val("").prop("readonly", false);
+        let total_head_exp = 0;
+        $("[name*='[e_amnt]']").each(function (index, item) {
+            total_head_exp += Number($(item).val());
+        });
 
-    $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
+        $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
 
-    summaryExpTotal();
-    setTableCalculation();
+        summaryExpTotal();
+        setTableCalculation();
+    }, 5000);
 });
 
 function renderBreakupHtml(breakup) {
@@ -2200,16 +2201,16 @@ function getTaxParams(el = null) {
     let hsn_id = $row.find("[id='new_exp_id']").attr("data-hsn-id") || 0;
     let transactionDate = $("input[name='document_date']").val();
 
-    console.log({
-        hsn_id: hsn_id || 0,
-        price: parseFloat(price) || 0,
-        from_country: Number($("#country_id").val()) || 0,
-        from_state: Number($("#state_id").val()) || 0,
-        party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
-        party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
-        transaction_type: $("#transaction_type").val() || "purchase",
-        date: "",
-    });
+    // console.log({
+    //     hsn_id: hsn_id || 0,
+    //     price: parseFloat(price) || 0,
+    //     from_country: Number($("#country_id").val()) || 0,
+    //     from_state: Number($("#state_id").val()) || 0,
+    //     party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
+    //     party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
+    //     transaction_type: $("#transaction_type").val() || "purchase",
+    //     date: "",
+    // });
 
     return {
         hsn_id: hsn_id || 0,
@@ -2234,7 +2235,6 @@ function calculateTaxAndApply(el = null) {
         method: "GET",
         data: params,
         success: function (response) {
-            console.log("Tax Data:", response);
             applyTaxDetails(response, params);
         },
         error: function (xhr) {

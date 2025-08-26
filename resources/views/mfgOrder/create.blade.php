@@ -11,15 +11,15 @@
       <div class="content-header pocreate-sticky">
          <div class="row">
             @include('layouts.partials.breadcrumb-add-edit', [
-             'title' => 'Manufacturing order',
-             'menu' => 'Home', 
-             'menu_url' => url('home'),
-             'sub_menu' => 'Add New'
+                'title' => 'Manufacturing order',
+                'menu' => 'Home',
+                'menu_url' => url('home'),
+                'sub_menu' => 'Add New'
              ])
             <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                <div class="form-group breadcrumb-right">
                   <input type="hidden" name="document_status" id="document_status">
-                  <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button> 
+                  <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                   <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                </div>
@@ -46,100 +46,100 @@
                            <div class="col-md-8">
                               <div class="">
                                  <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                    </div>
                                     <div class="col-md-5">
                                        <select class="form-select" id="book_id" name="book_id">
                                           @foreach($books as $book)
                                              <option value="{{$book->id}}">{{ucfirst($book->book_code)}}</option>
-                                          @endforeach 
-                                       </select>  
+                                          @endforeach
+                                       </select>
                                        <input type="hidden" name="book_code" id="book_code">
                                     </div>
                                  </div>
 
                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Document No. <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                                    </div>
 
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-5">
                                         <input type="text" name="document_number" class="form-control" id="document_number">
-                                    </div> 
+                                    </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
-                                     <div class="col-md-3"> 
-                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>  
-                                     </div>  
-                                     <div class="col-md-5"> 
+                                     <div class="col-md-3">
+                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                     </div>
+                                     <div class="col-md-5">
                                          <input type="date" class="form-control" value="{{date('Y-m-d')}}"  min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}" name="document_date">
-                                     </div> 
+                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Location <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select class="form-select" id="store_id" name="store_id">
                                             @foreach($locations as $location)
                                                 <option value="{{$location->id}}">{{ $location?->store_name }}</option>
-                                            @endforeach 
-                                        </select> 
-                                    </div> 
-                                </div> 
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="row align-items-center mb-1" id="sub_store_div">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Sub Location <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Sub Location <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select class="form-select" id="sub_store_id" name="sub_store_id">
                                             @foreach($locations as $location)
                                                 <option value="{{$location->id}}">{{ $location?->store_name }}</option>
-                                            @endforeach 
-                                        </select> 
-                                    </div> 
-                                </div> 
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
                                 {{-- <div class="row align-items-center mb-1" id="station_div">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Station <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Station <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select class="form-select" id="station_id" name="station_id">
                                         <option value="" >Select</option>
                                         @foreach($stations as $station)
                                             <option value="{{$station->id}}">{{ $station?->name }}</option>
-                                        @endforeach 
-                                    </select> 
-                                    </div> 
+                                        @endforeach
+                                    </select>
+                                    </div>
                                 </div>  --}}
                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Product Name <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Product Name <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" />
                                         <input type="hidden" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_id" name="item_id" />
-                                    </div> 
+                                    </div>
                                 </div>
                                 <div class="row align-items-center mb-1 d-none" id="machineDiv">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Machine</label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Machine</label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select class="form-select" id="main_machine_id" name="main_machine_id">
 
-                                        </select> 
-                                    </div> 
+                                        </select>
+                                    </div>
                                 </div>
                               </div>
-                           </div> 
+                           </div>
                         </div>
                      </div>
                   </div>
                </div>
 
-                <div class="col-md-12">    
+                <div class="col-md-12">
                     {{-- Append Attribute here  --}}
                     <div class="card">
                         <div class="card-body customernewsection-form">
@@ -199,8 +199,8 @@
                                             <option value=""></option>
                                             @foreach($locations as $location)
                                                 <option value="{{$location->id}}">{{ $location?->store_name }}</option>
-                                            @endforeach 
-                                        </select> 
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div> --}}
                                 <div class="col mb-1">
@@ -210,60 +210,66 @@
                                 </div>
                             </div>
                             </div>
+
                             <div class="table-responsive pomrnheadtffotsticky">
-                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                            data-json-key="components_json"
-                            data-row-selector="tr[id^='row_']">
-                                <thead>
-                                    <tr>
-                                        <th>
-                                        <div class="form-check form-check-primary custom-checkbox">
-                                            <input type="checkbox" class="form-check-input" id="Email">
-                                            <label class="form-check-label" for="Email"></label>
-                                        </div>
-                                        </th>
-                                        <th width="200px">Series</th>
-                                        <th width="150px">Doc No.</th>
-                                        <th width="100px">Doc Date</th>
-                                        <th width="100px">Location</th>
-                                        <th width="150px">Product Code</th>
-                                        <th width="300px">Product Name</th>
-                                        <th max-width="180px">Attributes</th>
-                                        <th >UOM</th>
-                                        <th class="text-end">Qty</th>
-                                        <th width="200px">Customer</th>
-                                        <th width="150px">Order No.</th>
-                                        <th width="150px" id="machine_name" class="d-none">Machine</th>
-                                        <th width="150px" id="sheets" class="d-none">Sheets</th>
-                                        {{-- <th>Order Date</th> --}}
-                                        <th width="50px">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="mrntableselectexcel">
-                                </tbody>
-                                <tfoot>
-                                    <tr valign="top">
-                                        <td colspan="13" id="detailTableFooter">
-                                        <table class="table border" id="itemDetailTable">
-                                            <tr>
-                                                <td class="p-0">
-                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                </td>
-                                            </tr>
-                                            <tr class="item_detail_row">
-                                                
-                                            </tr>
-                                            <tr class="item_detail_row">
-                                                
-                                            </tr>
-                                        </table>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" data-json-key="components_json" data-row-selector="tr[id^='row_']">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                            <div class="form-check form-check-primary custom-checkbox">
+                                                <input type="checkbox" class="form-check-input" id="Email">
+                                                <label class="form-check-label" for="Email"></label>
+                                            </div>
+                                            </th>
+                                            <th width="200px">Series</th>
+                                            <th width="150px">Doc No.</th>
+                                            <th width="100px">Doc Date</th>
+                                            <th width="100px">Location</th>
+                                            <th width="150px">Product Code</th>
+                                            <th width="300px">Product Name</th>
+                                            <th max-width="180px">Attributes</th>
+                                            <th >UOM</th>
+                                            <th class="text-end">Qty</th>
+                                            <th width="200px">Customer</th>
+                                            <th width="150px">Order No.</th>
+                                            <th width="150px" id="machine_name" class="d-none">Machine</th>
+                                            <th width="150px" id="sheets" class="d-none">Sheets</th>
+                                            {{-- <th>Order Date</th> --}}
+                                            <th width="50px">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="mrntableselectexcel"></tbody>
+                                    <tfoot>
+                                        <tr valign="top">
+                                            <td colspan="13" id="detailTableFooter">
+                                            <table class="table border" id="itemDetailTable">
+                                                <tr>
+                                                    <td class="p-0">
+                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                    </td>
+                                                </tr>
+                                                <tr class="item_detail_row">
+
+                                                </tr>
+                                                <tr class="item_detail_row">
+
+                                                </tr>
+                                            </table>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
+
+
                         </div>
                     </div>
+
+                    {{-- Show MO Product Components --}}
+                    <div id="componentDetails" style="display: none;">
+                        {{-- ref: mo-product-components blade --}}
+                    </div>
+
                     <div class="card">
                         <div class="card-body customernewsection-form">
                             <div class="border-bottom mb-2 pb-25" id="componentSection">
@@ -289,13 +295,13 @@
                                 <div class = "col-md-6" style = "margin-top:19px;">
                                     <div class = "row" id = "main_bom_file_preview">
                                     </div>
-                                </div>  
+                                </div>
                                     </div>
                             </div>
                             <div class="col-md-12">
-                                <div class="mb-1">  
-                                    <label class="form-label">Final Remarks</label> 
-                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                <div class="mb-1">
+                                    <label class="form-label">Final Remarks</label>
+                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea>
                                 </div>
                             </div>
                             </div>
@@ -333,8 +339,8 @@
                </table>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submit_attribute">Select</button>
          </div>
       </div>
@@ -396,7 +402,7 @@ $(function(){
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
-                                    code: item.item_code || '', 
+                                    code: item.item_code || '',
                                     item_id: item.id
                                 };
                             }));
@@ -449,7 +455,7 @@ $(function(){
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
       if (bookId) {
-         getDocNumberByBookId(bookId); 
+         getDocNumberByBookId(bookId);
       } else {
          $("#document_number").val('');
          $("#book_id").val('');
@@ -485,7 +491,7 @@ $(function(){
                     docDateInput.val(new Date().toISOString().split('T')[0]);
                 }
             });
-        }); 
+        });
     }
 
     /*Set Service Parameter*/
@@ -520,7 +526,7 @@ $(function(){
            docDateInput.removeAttr('max');
        }
    }
-   
+
 });
 /*Check attrubute*/
 $(document).on('click', '.attributeBtn', (e) => {
@@ -565,6 +571,9 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
 function fetchItemDetails(currentTr) {
     let pName = $(currentTr).find("[name*='component_item_name']").val();
     let itemId = $(currentTr).find("[name*='item_id']").val();
+    let pwoMappingId = $(currentTr).find("[name*='pwo_mapping_id']").val();
+    let storeId = $("#store_id option:selected").val();
+    let subStoreId = $("#sub_store_id option:selected").val();
 
     if (itemId) {
         let selectedAttr = [];
@@ -584,7 +593,7 @@ function fetchItemDetails(currentTr) {
         let total_qty = $(currentTr).find("[name*='[total_qty]']").val() || '';
         let std_qty = $(currentTr).find("[name*='[std_qty]']").val() || '';
 
-        let actionUrl = `{{route("mo.get.itemdetail")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&remark=${remark}&section_name=${sectionName}&sub_section_name=${subSectionName}&station_name=${stationName}&qty_per_unit=${qty_per_unit}&total_qty=${total_qty}&std_qty=${std_qty}`;
+        let actionUrl = `{{route("mo.get.itemdetail")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&remark=${remark}&section_name=${sectionName}&sub_section_name=${subSectionName}&station_name=${stationName}&qty_per_unit=${qty_per_unit}&total_qty=${total_qty}&pwo_papping_id=${pwoMappingId}&store_id=${storeId}&sub_store_id=${subStoreId}&std_qty=${std_qty}`;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
@@ -593,6 +602,11 @@ function fetchItemDetails(currentTr) {
                         $("#itemDetailTable tbody tr").slice(-2).remove();
                     }
                     $("#itemDetailTable tbody tr:first").after(data.data.html);
+
+                    // Show Prodcut Component Details
+                    $("#componentDetails").html(data.data.mo_product_component_html);
+                    $("#componentDetails").show();
+
                 }
             });
         });
@@ -601,7 +615,7 @@ function fetchItemDetails(currentTr) {
 
 // Attach event listener
 $(document).on('input change focus', '#itemTable tr td input', function(e) {
-    let currentTr = e.target.closest('tr'); 
+    let currentTr = e.target.closest('tr');
     fetchItemDetails(currentTr);
 });
 
@@ -617,7 +631,7 @@ function openBomRequest()
 
 }
 openBomRequest();
-function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") 
+function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
 {
     let serviceAlias = '';
     if(typeVal == 'document_book') {
@@ -641,7 +655,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                         return {
                             id: item.id,
                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                            code: item[labelKey1] || '', 
+                            code: item[labelKey1] || '',
                         };
                     }));
                 },
@@ -669,17 +683,18 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                 getPwo();
             },0);
         }
-    }).focus(function() {
-        if (this.value === "") {
-            $(this).autocomplete("search", "");
-        }
-        setTimeout(() => {
-            getPwo();
-        },0);
-    });
+    })
+    // .focus(function() {
+    //     if (this.value === "") {
+    //         $(this).autocomplete("search", "");
+    //     }
+    //     setTimeout(() => {
+    //         getPwo();
+    //     },0);
+    // });
 }
 
-function getPwo() 
+function getPwo()
 {
     let itemId = $("#item_id").val() || '';
     // let storeId = $("#filter_store_id").val() || '';
@@ -707,6 +722,7 @@ function getPwo()
                 $("#item_id").val('');
                 return;
             }
+
             $("#itemTable .mrntableselectexcel").empty().append(data.data.pis);
             setTimeout(() => {
                 $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
@@ -734,6 +750,7 @@ function getPwo()
         });
     });
 }
+
 getPwo();
 
 $(document).on('change',"#store_id", (e) => {
@@ -800,9 +817,9 @@ function locationOnChange(storeId = '') {
         });
     });
 }
-function getStationWiseConsBySubStoreId() 
+function getStationWiseConsBySubStoreId()
 {
-    const swc = $('#sub_store_id').find('option:selected').attr('data-station-wise-consumption') || 'no'; 
+    const swc = $('#sub_store_id').find('option:selected').attr('data-station-wise-consumption') || 'no';
     $("#station_wise_consumption").val(swc);
     return swc;
 }

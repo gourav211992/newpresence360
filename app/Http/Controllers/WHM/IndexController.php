@@ -24,30 +24,48 @@ use Illuminate\Validation\ValidationException;
 
 class IndexController extends Controller
 {
-    public function userDashboard() {
+    public function userDashboard(Request $request) {
+        $location = $request->input('store_id');
         $employee = Helper::getAuthenticatedUser();
 
-        $pendingUnloadingCounts = ErpWhmJob::where('type', operator: CommonHelper::UNLOADING)
-                ->whereStatus(CommonHelper::PENDING)
+        $pendingUnloadingCounts = ErpWhmJob::where('type', CommonHelper::UNLOADING)
+                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
+                ->when($location, function ($query) use ($location) {
+                    $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
+                        $q->where('store_id', $location);
+                    });
+                })
                 ->count();
          
-        $pendingPutawayCounts = ErpWhmJob::where('type', operator: CommonHelper::PUTAWAY)
-                ->whereStatus(CommonHelper::PENDING)
+        $pendingPutawayCounts = ErpWhmJob::where('type', CommonHelper::PUTAWAY)
+                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->orderBy('id','desc')
+                ->when($location, function ($query) use ($location) {
+                    $query->whereHasMorph('morphable', ['App\Models\MrnHeader','App\Models\InspectionHeader'], function ($q) use ($location) {
+                        $q->where('store_id', $location);
+                    });
+                })
                 ->count();    
 
-        $pendingPickingCounts = ErpWhmJob::where('type', operator: CommonHelper::PICKING)
-                ->whereStatus(CommonHelper::PENDING)
+        $pendingPickingCounts = ErpWhmJob::where('type', CommonHelper::PICKING)
+                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->orderBy('id','desc')
+                ->when($location, function ($query) use ($location) {
+                    $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($location) {
+                        $q->where('store_id', $location);
+                    });
+                })
                 ->count();    
 
-        $pendingDispatchCounts = ErpWhmJob::where('type', operator: CommonHelper::DISPATCH)
-                ->whereStatus(CommonHelper::PENDING)
+        $pendingDispatchCounts = ErpWhmJob::where('type', CommonHelper::DISPATCH)
+                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->orderBy('id','desc')
+                ->when($location, function ($query) use ($location) {
+                    $query->whereHasMorph('morphable', ['App\Models\ErpSaleInvoice'], function ($q) use ($location) {
+                        $q->where('store_id', $location);
+                    });
+                })
                 ->count();        
 
         return [

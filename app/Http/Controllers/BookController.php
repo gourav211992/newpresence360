@@ -762,15 +762,25 @@ class BookController extends Controller
             }
             foreach ($book->gl_parameters as $bookParamKey => &$bookParam) {
                 if ($bookParam->parameter_name === ServiceParametersHelper::GL_POSTING_SERIES_PARAM) {
-                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
-                    if (isset($orgServiceParam)) {
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)
+                        ->where('parameter_name', $bookParam->parameter_name)
+                        ->latest()->first();
+                    // dd($orgServiceParam);
+
+                    if($orgServiceParam)
+                    // if(isset($orgServiceParam->parameter_value) && count($orgServiceParam->parameter_value))
+                    {
                         $selectOptions = "";
 
                         $financialServiceAlias = ServiceParametersHelper::getFinancialServiceAlias($serviceAlias);
 
-                        $financialService = Service::where('alias', $financialServiceAlias) -> first();
+                        $financialService = Service::where('alias', $financialServiceAlias)->first();
 
-                        $applicableSeries = Book::withDefaultGroupCompanyOrg() -> where('manual_entry', 0) -> where('service_id', $financialService -> id) -> get();
+                        $applicableSeries = Book::withDefaultGroupCompanyOrg()
+                            ->where('manual_entry', 0)
+                            ->where('service_id', $financialService -> id)
+                            ->get();
+
                         foreach ($applicableSeries as $singleSeries) {
                             $referencedBookIds = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
                                 -> whereJsonContains('parameter_value', $singleSeries -> id) -> where('book_id', "!=", $book -> id) -> first();

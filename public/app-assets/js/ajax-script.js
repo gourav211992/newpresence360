@@ -57,6 +57,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         'deletedPiItemIds',
         'deletedSoItemIds',
         'deletedSiItemIds',
+        'deletedConsItemIds',
         'deletedAttachmentIds',
         'deletedDelivery',
         'deletedMrnItemIds',

@@ -123,9 +123,11 @@ class PicklistTaskController extends Controller
         $validator = Validator::make($request->all(),[
             'store_id' => ['required'],
             'pl_item_id' => ['required'],
+            'job_id' => ['required'],
         ],[
             'store_id.required' => 'Store id is required',
             'pl_item_id.required' => 'Pl item id is required',
+            'job_id.required' => 'Pl item id is required',
         ]);
 
         if ($validator->fails()) {
@@ -139,7 +141,9 @@ class PicklistTaskController extends Controller
                         ->where('id', $request->pl_item_id)
                         ->select('id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
                         ->first();
-        
+
+        $plScannedItemUids = ErpItemUniqueCode::where('job_id',$request->job_id)->pluck('uid')->toArray(); 
+        // dd($plScannedItemUids);
         
         $plItemId = $plItem->id;
 
@@ -149,23 +153,28 @@ class PicklistTaskController extends Controller
                 ->where('issue_header_id',$plItem->pl_header_id);
 
             $transType = $reservedStock->pluck('receipt_book_type')
+                ->unique()
                 ->toArray();
 
             $mrnIds = $reservedStock->pluck('receipt_detail_id')
                 ->toArray();
 
             $itemId = $plItem->item_id;
-
+            
             // STEP 1: Fetch quantities grouped by storage_point_id
             $storageData = ErpItemUniqueCode::where('item_id', $itemId)
                 ->where('store_id', $storeId)
                 ->whereIn('trns_type', $transType)
                 ->where('doc_type', CommonHelper::RECEIPT)
-                ->whereNull('utilized_id')
+                ->where(function($q) use($plScannedItemUids){
+                    $q->whereIn('utilized_id',$plScannedItemUids)
+                    ->orWhereNull('utilized_id');
+                })
                 ->whereIn('morphable_id',$mrnIds)
                 ->select('storage_point_id', DB::raw('COUNT(*) as quantity'))
                 ->groupBy('storage_point_id')
                 ->get();
+            // dd($storageData,$plScannedItemUids,$itemId,$storeId,$mrnIds,$transType);
 
             // STEP 2: Map storage point detail with quantity
             $plItem->storage_points = $storageData->map(function ($record) use($storeId, $itemId, $plItemId){

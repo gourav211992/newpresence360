@@ -12,93 +12,6 @@ $(document).ready(function () {
 
     levelCounter = levelCounter2 + 1; // Start from the next index
 
-    /*Sub Store drop down*/
-    function getLevels(id) {
-        var store_id = id;
-        var url =
-            "/warehouse-multiple-mappings/levels?" + "store_id=" + store_id;
-        $.ajax({
-            type: "GET",
-            url: url,
-            data: {},
-            success: function (data) {
-                // console.log(data);
-                if (data.status == 200) {
-                    console.log(data.data);
-                    let options = '<option value="">Select Level</option>';
-                    data.data.forEach((level) => {
-                        options += `<option value="${level.id}">${level.name}</option>`;
-                    });
-                    $(".level_id").html(options);
-                    $(".level_id").prop("disabled", false);
-                } else {
-                    $(".level_id").html(data);
-                    $(".level_id").prop("disabled", true);
-                }
-            },
-        });
-    } // end of storeWiseLevels
-
-    /*Check filled all basic detail*/
-    function checkBasicFilledDetail() {
-        let filled = false;
-        let subStore = $("[name='sub_store_id']").val() || "";
-        let subStoreLevel = $("[name='level_id']").val() || "";
-        if (subStore && subStoreLevel) {
-            filled = true;
-        }
-        return filled;
-    }
-
-    /*Check filled component*/
-    function checkComponentRowExist() {
-        let filled = false;
-        let rowCount = $("#itemTable [id*='row_']").length;
-        if (rowCount) {
-            filled = true;
-        }
-        return filled;
-    }
-
-    // Get Store Wise Sub Stores
-    function getSubStores(storeLocationId) {
-        console.log("storeLocationId", storeLocationId);
-
-        const storeId = storeLocationId;
-        $.ajax({
-            url: "/sub-stores/store-wise",
-            method: "GET",
-            dataType: "json",
-            data: {
-                store_id: storeId,
-            },
-            success: function (data) {
-                if (data.status == 200 && data.data.length) {
-                    let options = '<option value="">Select Warehouse</option>';
-                    data.data.forEach(function (location) {
-                        options += `<option value="${location.id}">${location.name}</option>`;
-                    });
-                    $(".sub_store").empty();
-                    $(".sub_store").html(options);
-                } else {
-                    $(".sub_store").empty();
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Warehouse does not exist for location.",
-                        icon: "error",
-                    });
-                }
-            },
-            error: function (xhr) {
-                Swal.fire({
-                    title: "Error!",
-                    text: xhr?.responseJSON?.message,
-                    icon: "error",
-                });
-            },
-        });
-    }
-
     /*Add New Row*/
     $(document).on("click", ".addNewItemBtn", (e) => {
         levelCounter++;
@@ -111,21 +24,19 @@ $(document).ready(function () {
                 text: "Please fill header detail first",
                 icon: "error",
             });
+            e.preventDefault();
             return false;
         }
 
         let parentDetails = [];
-        // let parentHeirarchy = [];
         let is_last_level = 0;
         let is_first_level = 0;
 
-        var url =
-            "/warehouse-multiple-mappings/level-parents?" +
-            "level_id=" +
-            levelId;
         $.ajax({
             type: "GET",
-            url: url,
+            url:
+                "/warehouse-multiple-mappings/level-parents?level_id=" +
+                levelId,
             async: false,
             success: function (data) {
                 if (data.status == 200) {
@@ -140,70 +51,86 @@ $(document).ready(function () {
                         JSON.stringify(parentDetails)
                     );
 
-                    // parentHeirarchy = Array.isArray(data.parentHeirarchy)
-                    //     ? data.parentHeirarchy
-                    //     : [];
-
-                    // Generate options from the response data
-                    let parentOptions = ``;
-                    parentDetails.forEach((parent) => {
-                        parentOptions += `<option value="${parent.id}">${parent.name}</option>`;
-                    });
+                    // Generate parent <option>
+                    let parentOptions = parentDetails
+                        .map(
+                            (parent) =>
+                                `<option value="${parent.id}">${parent.name}</option>`
+                        )
+                        .join("");
 
                     let currentWV = "";
                     if (moduleType == "edit") {
-                        currentWV = `<td><input type="hidden" class="form-control max_weight mw-100 mb-25" placeholder="Enter" /></td>
-                        <td><input type="hidden" class="form-control max_volume mw-100 mb-25" placeholder="Enter" /></td>`;
-                    } else {
-                        currentWV = ``;
+                        currentWV = `
+                            <td>
+                                <input type="hidden"
+                                       class="form-control max_weight mw-100 mb-25"
+                                       name="details[${levelCounter}][max_weight]" />
+                            </td>
+                            <td>
+                                <input type="hidden"
+                                       class="form-control max_volume mw-100 mb-25"
+                                       name="details[${levelCounter}][max_volume]" />
+                            </td>`;
                     }
 
-                    // Now build rowHtml using the parentOptions
+                    // Build row HTML with correct names
                     let rowHtml = `
                     <tr>
                         <td class="customernewsection-form">
                             <div class="form-check form-check-primary custom-checkbox">
-                                <input type="checkbox" class="form-check-input" />
+                                <input type="checkbox" class="form-check-input"/>
                                 <label class="form-check-label"></label>
                             </div>
                         </td>
                         <td>
-                            <input type="text" placeholder="Enter" class="form-control name mw-100 mb-25" />
+                            <input type="text"
+                                   placeholder="Enter"
+                                   class="form-control name mw-100 mb-25"
+                                   name="details[${levelCounter}][name]" />
                         </td>
                         <td>
                             <div class="form-check form-check-primary custom-checkbox">
-                                <input class="form-check-input" type="checkbox" ${
-                                    is_last_level === 1 ? "checked" : "disabled"
-                                }>
+                                <input class="form-check-input" type="checkbox"
+                                    name="details[${levelCounter}][storage_point]"
+                                    ${is_last_level === 1 ? "checked" : ""} />
                                 <label class="form-check-label"></label>
                             </div>
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="hidden" class="is_first_level" value="${is_first_level}">
-                                <input type="hidden" class="is_last_level" value="${is_last_level}">
+                                <input type="hidden" class="is_first_level"
+                                       name="details[${levelCounter}][is_first_level]"
+                                       value="${is_first_level}">
+                                <input type="hidden" class="is_last_level"
+                                       name="details[${levelCounter}][is_last_level]"
+                                       value="${is_last_level}">
                                 <select class="form-select mw-100 mb-25 parent-dropdown select2 parent_id"
                                         multiple
-                                        name="parent_id[]"
-                                        style="min-width: 200px;">
+                                        name="details[${levelCounter}][parent_id][]"
+                                        style="min-width:200px;">
                                     ${parentOptions}
                                 </select>
                                 <input type="checkbox" class="form-check-input select-all-parents"/>
                             </div>
                         </td>
-                        <td><input type="text" class="form-control max_weight mw-100 mb-25" ${
-                            is_last_level === 1 ? "checked" : "disabled"
-                        }  placeholder="Enter" /></td>
-                        <td><input type="text" class="form-control max_volume mw-100 mb-25" ${
-                            is_last_level === 1 ? "checked" : "disabled"
-                        }  placeholder="Enter" /></td>
+                        <td>
+                            <input type="text" class="form-control max_weight mw-100 mb-25"
+                                   name="details[${levelCounter}][max_weight]"
+                                   placeholder="Enter"
+                                   ${is_last_level === 1 ? "" : "disabled"} />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control max_volume mw-100 mb-25"
+                                   name="details[${levelCounter}][max_volume]"
+                                   placeholder="Enter"
+                                   ${is_last_level === 1 ? "" : "disabled"} />
+                        </td>
                         ${currentWV}
                     </tr>`;
-                    $(".select2").select2();
-
-                    // <td class="parent-hierarchy"></td>
 
                     $(".mrntableselectexcel").append(rowHtml);
+                    $(".select2").select2();
                 } else {
                     Swal.fire({
                         title: "Error!",
@@ -220,7 +147,6 @@ $(document).ready(function () {
                 });
             },
         });
-        $(".select2").select2();
     });
 
     $(".mrntableselectexcel").on("change", ".select-all-parents", function () {
@@ -487,3 +413,87 @@ $(document).ready(function () {
 
     $(".select2").select2();
 });
+
+/*Sub Store drop down*/
+function getLevels(id) {
+    var store_id = id;
+    var url = "/warehouse-multiple-mappings/levels?" + "store_id=" + store_id;
+    $.ajax({
+        type: "GET",
+        url: url,
+        data: {},
+        success: function (data) {
+            // console.log(data);
+            if (data.status == 200) {
+                console.log(data.data);
+                let options = '<option value="">Select Level</option>';
+                data.data.forEach((level) => {
+                    options += `<option value="${level.id}">${level.name}</option>`;
+                });
+                $(".level_id").html(options);
+                $(".level_id").prop("disabled", false);
+            } else {
+                $(".level_id").html(data);
+                $(".level_id").prop("disabled", true);
+            }
+        },
+    });
+} // end of storeWiseLevels
+
+/*Check filled all basic detail*/
+function checkBasicFilledDetail() {
+    let filled = false;
+    let subStore = $("[name='sub_store_id']").val() || "";
+    let subStoreLevel = $("[name='level_id']").val() || "";
+    if (subStore && subStoreLevel) {
+        filled = true;
+    }
+    return filled;
+}
+
+/*Check filled component*/
+function checkComponentRowExist() {
+    let filled = false;
+    let rowCount = $("#itemTable [id*='row_']").length;
+    if (rowCount) {
+        filled = true;
+    }
+    return filled;
+}
+
+// Get Store Wise Sub Stores
+function getSubStores(storeLocationId) {
+    const storeId = storeLocationId;
+    $.ajax({
+        url: "/sub-stores/store-wise",
+        method: "GET",
+        dataType: "json",
+        data: {
+            store_id: storeId,
+        },
+        success: function (data) {
+            if (data.status == 200 && data.data.length) {
+                let options = '<option value="">Select Warehouse</option>';
+                data.data.forEach(function (location) {
+                    options += `<option value="${location.id}">${location.name}</option>`;
+                });
+                $(".sub_store").empty();
+                $(".sub_store").html(options);
+            } else {
+                $(".sub_store").empty();
+                Swal.fire({
+                    title: "Error!",
+                    text: "Warehouse does not exist for location.",
+                    icon: "error",
+                });
+            }
+        },
+        error: function (xhr) {
+            Swal.fire({
+                title: "Error!",
+                text: xhr?.responseJSON?.message,
+                icon: "error",
+            });
+        },
+    });
+}

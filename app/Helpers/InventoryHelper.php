@@ -199,7 +199,7 @@ class InventoryHelper
     // Total Draft And Confirmed Stock
     public static function totalInventoryAndStock($itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null, $stationId = null, $stockType = self::STOCK_TYPE_REGULAR, $itemWipStationId = null)
     {
-        $user = Helper::getAuthenticatedUser();
+        // $user = Helper::getAuthenticatedUser();
         $reservedStocks = 0.00;
         $reservedStockAltUom = 0.00;
         $attributeGroups = Attribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id');

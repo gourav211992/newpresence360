@@ -503,7 +503,7 @@ class MaterialReceiptController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
             if (isset($request->all()['components'])) {
                 $mrnItemArr = [];
@@ -851,6 +851,7 @@ class MaterialReceiptController extends Controller
                             $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
                             $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                            $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->save();
                         } else {
                             \DB::rollBack();
@@ -916,6 +917,9 @@ class MaterialReceiptController extends Controller
                             $ted = new MrnExtraAmount;
                             $ted->mrn_header_id = $mrn->id;
                             $ted->mrn_detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup  =  $dis['tax_breakup'] ?? null;
                             $ted->po_id = $dis['e_purch_id'] ?? null;
                             $ted->jo_id = $dis['e_job_id'] ?? null;
                             $ted->ted_type = 'Expense';
@@ -1061,7 +1065,6 @@ class MaterialReceiptController extends Controller
                 ->where('type_id', $user->organization_id)
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->first();
-
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
@@ -1278,6 +1281,7 @@ class MaterialReceiptController extends Controller
         $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
         $existPaymentTermId = $mrn->payment_term_id;
         $existCreditDays = $mrn->credit_days;
+        
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -1483,7 +1487,7 @@ class MaterialReceiptController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
             foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
             }
             if (isset($request->all()['components'])) {
 
@@ -1872,9 +1876,8 @@ class MaterialReceiptController extends Controller
                         $assetDetails = is_string($component['assetDetailData'])
                             ? json_decode($component['assetDetailData'], true)
                             : $component['assetDetailData'];
-
                         if (is_array($assetDetails)) {
-                            $assetDetail = new MrnAssetDetail();
+                            $assetDetail = MrnAssetDetail::find($assetDetails['asset_id']) ?? new MrnAssetDetail();
                             $assetDetail->header_id = $mrn->id;
                             $assetDetail->detail_id = $mrnDetail->id;
                             $assetDetail->item_id = $mrnDetail->item_id;
@@ -1887,6 +1890,7 @@ class MaterialReceiptController extends Controller
                             $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
                             $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                            $assetDetail->procurement_type = $assetDetails['procurement_type'] ?? null;
                             $assetDetail->save();
                         } else {
                             \DB::rollBack();
@@ -1903,7 +1907,7 @@ class MaterialReceiptController extends Controller
                         if (is_array($batchDetails)) {
                             foreach ($batchDetails as $i => $val) {
                                 $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
-                                $batchDetail = new MrnBatchDetail();
+                                $batchDetail = MrnBatchDetail::find($val['id'] ?? new MrnBatchDetail());
                                 $batchDetail->header_id = $mrn->id;
                                 $batchDetail->detail_id = $mrnDetail->id;
                                 $batchDetail->item_id = $mrnDetail->item_id;
@@ -1989,6 +1993,9 @@ class MaterialReceiptController extends Controller
                             $ted = MrnExtraAmount::find($mrnAmountId) ?? new MrnExtraAmount;
                             $ted->mrn_header_id = $mrn->id;
                             $ted->mrn_detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup = $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -3560,7 +3567,6 @@ class MaterialReceiptController extends Controller
             foreach ($po->headerExpenses as $expense) {
                 $perc = $poValue > 0 ? ($expense->ted_amount / $poValue) * 100 : 0;
                 $amount = number_format(($selectedPoItemValue * $perc / 100), 2);
-
                 $finalExpenses[] = [
                     'id' => $expense->id,
                     'ref_type' => 'po',
@@ -3569,6 +3575,9 @@ class MaterialReceiptController extends Controller
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
                     'ted_perc' => round($perc, 8),
+                    'hsn_id' => $expense->hsn_id,
+                    'tax_breakup' => $expense->tax_breakup,
+                    'tax_amount' => $expense->tax_amount
                 ];
             }
         }
@@ -6097,7 +6106,7 @@ class MaterialReceiptController extends Controller
     }
 
     // payment function
-    private function saveMrnPaymentTerm($paymentTermId, $mrnId, $creditDays, $refId, $refType, $headerDocumentDate){
+    private function saveMRNPaymentTerm($paymentTermId, $mrnId, $creditDays, $refId, $refType, $headerDocumentDate){
         $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
 
         if ($paymentTermDetails->isEmpty()) {

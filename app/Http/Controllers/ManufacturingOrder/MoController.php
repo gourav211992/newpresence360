@@ -146,7 +146,7 @@ class MoController extends Controller
         try {
             # Mo Header Save
             $user = Helper::getAuthenticatedUser();
-            $organization = Organization::where('id', $user->organization_id)->first(); 
+            $organization = Organization::where('id', $user->organization_id)->first();
 
             $bomExist = ItemHelper::checkItemBomExists($request->item_id, []);
             if(!$bomExist['bom_id']) {
@@ -171,7 +171,7 @@ class MoController extends Controller
                 ->whereNull('pr_parent_id')
                 ->get();
             }
-            
+
             foreach($productionDetails as $productionDetail) {
                 if(strpos($isConsumption,'yes') !== false) {
                     $isLastStation = $productionDetail?->pr_parent_id ? false : true;
@@ -191,7 +191,7 @@ class MoController extends Controller
                 $mo->item_id = $request->item_id;
                 $mo->machine_id = $request?->main_machine_id ?? null;
 
-                
+
                 $mo->station_id = $stationId;
                 $mo->is_last_station = $isLastStation;
                 $mo->production_bom_id = $bomExist['bom_id'] ?? null;
@@ -254,18 +254,18 @@ class MoController extends Controller
                             $selectedRow = true;
                             # MoProductDetail
                             $moProdDetail = new MoProduct;
-                            $moProdDetail->mo_id = $mo->id; 
-                            $moProdDetail->item_id = $component['item_id']; 
-                            $moProdDetail->item_code = $component['item_code']; 
-                            $moProdDetail->customer_id = $component['customer_id']; 
-                            $moProdDetail->uom_id = $component['uom_id']; 
-                            $moProdDetail->qty = $component['qty']; 
-                            $moProdDetail->so_id = $component['so_id'] ?? null; 
-                            $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
-                            $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
-                            $moProdDetail->remark = $component['remark'] ?? null; 
-                            $moProdDetail->machine_id = $component['machine_id'] ?? null; 
-                            $moProdDetail->number_of_sheet = $component['sheet'] ?? 0; 
+                            $moProdDetail->mo_id = $mo->id;
+                            $moProdDetail->item_id = $component['item_id'];
+                            $moProdDetail->item_code = $component['item_code'];
+                            $moProdDetail->customer_id = $component['customer_id'];
+                            $moProdDetail->uom_id = $component['uom_id'];
+                            $moProdDetail->qty = $component['qty'];
+                            $moProdDetail->so_id = $component['so_id'] ?? null;
+                            $moProdDetail->so_item_id = $component['so_item_id'] ?? null;
+                            $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null;
+                            $moProdDetail->remark = $component['remark'] ?? null;
+                            $moProdDetail->machine_id = $component['machine_id'] ?? null;
+                            $moProdDetail->number_of_sheet = $component['sheet'] ?? 0;
                             $moProdDetail->save();
                             #Save MoProductDetailAttr component Attr
                             $attributes = [];
@@ -282,7 +282,7 @@ class MoController extends Controller
                                     $moProdAttr->save();
                                     $attributes[] = ['attribute_id' => intval($itemAttribute?->id), 'attribute_value' => intval($moProdAttr->attribute_value)];
                                     $newAttributes[] = [
-                                        'attribute_id' => intval($moProdAttr->attribute_value), 
+                                        'attribute_id' => intval($moProdAttr->attribute_value),
                                         'attribute_name' => $moProdAttr?->headerAttribute?->name,
                                         'attribute_value' => $moProdAttr?->headerAttributeValue?->value,
                                         'item_attribute_id' => intval($moProdAttr->item_attribute_id),
@@ -301,9 +301,9 @@ class MoController extends Controller
                                     $pwoStation->mo_id = $mo->id;
                                     $pwoStation->save();
                                 } else {
-                                    $moProdDetail->pwoMapping->mo_id = $mo->id; 
-                                    $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
-                                    $moProdDetail->pwoMapping->save(); 
+                                    $moProdDetail->pwoMapping->mo_id = $mo->id;
+                                    $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty;
+                                    $moProdDetail->pwoMapping->save();
                                 }
                             }
 
@@ -313,7 +313,7 @@ class MoController extends Controller
                                             if($stationId) {
                                                 $query->where('station_id', $stationId);
                                             }
-                                        })      
+                                        })
                                         ->get();
 
                             foreach ($bomDetails as $bomDetail) {
@@ -333,9 +333,9 @@ class MoController extends Controller
                                 $moBomMapping->section_id = $bomDetail->section_id;
                                 $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
                                 $moBomMapping->save();
-                            } 
-                        } 
-                    }   
+                            }
+                        }
+                    }
                     if(!$selectedRow) {
                         DB::rollBack();
                         return response()->json([
@@ -346,14 +346,14 @@ class MoController extends Controller
 
                     if($mo->station_id) {
                         $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $productionDetail->station_id)->get();
-                        
+
                         if($prDetailParents?->count()) {
                             foreach($mo->moProducts as $moProduct) {
                                 foreach($prDetailParents as $prDetailParent) {
                                     $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $moProduct->pwo_mapping_id)
                                                     ->where('station_id', $prDetailParent->station_id)->first();
                                     $oldMo = MfgOrder::find($pwoStationConsumption->mo_id);
-                                    
+
                                     $moProductAttributes = $moProduct->attributes ?? [];
                                     if($oldMo) {
                                         $oldMoProduct = $oldMo->moProducts()
@@ -374,7 +374,7 @@ class MoController extends Controller
                                                             }, '=', count($moProductAttributes));
                                                         })
                                                         ->first();
-                                            
+
                                         $moBomAttributes = [];
                                         foreach($moProductAttributes as $moProdAttr) {
                                             $moBomAttributes[] = [
@@ -409,7 +409,7 @@ class MoController extends Controller
                         ->get();
 
                     foreach($groupedDatas as $groupedData) {
-                        # Mo Item Save                    
+                        # Mo Item Save
                         $moItem = new MoItem;
                         $moItem->mo_id = $mo->id;
                         $moItem->so_id = $groupedData->so_id ?? null;
@@ -443,7 +443,7 @@ class MoController extends Controller
                 $modelName = get_class($mo);
                 $totalValue = 0;
                 if ($request->document_status == ConstantHelper::SUBMITTED) {
-                    $bookId = $mo->book_id; 
+                    $bookId = $mo->book_id;
                     $docId = $mo->id;
                     $remarks = $mo->remarks;
                     $attachments = $request->file('attachment');
@@ -465,7 +465,7 @@ class MoController extends Controller
             return response()->json([
                 'message' => 'Record created successfully',
                 'data' => $mo,
-            ]);   
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -486,7 +486,7 @@ class MoController extends Controller
             $specifications = $item->specifications()->whereNotNull('value')->get();
         }
         $html = view('mfgOrder.partials.header-attribute', compact('item','attributeGroups','specifications'))->render();
-        $componentHtml = ''; 
+        $componentHtml = '';
         $bomChanged = false;
         $moId = $request->mo_id ?? null;
         if(!$item?->itemAttributes?->count()) {
@@ -573,7 +573,7 @@ class MoController extends Controller
                 return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
             }
         }
-        $compSelectedAttr = json_decode($request->comp_attr,true) ?? []; 
+        $compSelectedAttr = json_decode($request->comp_attr,true) ?? [];
         $attributes = [];
         if(count($compSelectedAttr)) {
                foreach($compSelectedAttr as $compAttr) {
@@ -604,11 +604,35 @@ class MoController extends Controller
     public function getItemDetail(Request $request)
     {
         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
+        $storeId = $request->store_id;
+        $subStoreId = $request->sub_store_id;
         $item = Item::find($request->item_id ?? null);
         $specifications = $item->specifications()->whereNotNull('value')->get();
         $remark = $request->remark ?? null;
         $html = view('mfgOrder.partials.comp-item-detail',compact('item','selectedAttr','specifications','remark'))->render();
-        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
+
+        // Fetch BOM (Bill of Materials) details with related item and UOM data
+        $bomDetails = PwoBomMapping::with([
+            // Eager load 'item' relationship, but only select required columns
+            'item' => function ($query) {
+                $query->select('id', 'item_code', 'item_name');
+            },
+            'uom' => function ($query) {
+                $query->select('id', 'name');
+            }
+        ])
+        ->where('pwo_mapping_id', $request->pwo_papping_id)
+        ->select('id', 'item_id', 'uom_id', 'attributes', 'bom_qty', 'qty','station_id')
+        ->get();
+
+        return response()->json([
+            'data' => [
+                'html' => $html,
+                'mo_product_component_html' => view('mfgOrder.partials.mo-product-components', compact('item', 'bomDetails', 'storeId', 'subStoreId'))->render(),
+            ],
+            'status' => 200,
+            'message' => 'fetched.'
+        ]);
     }
 
     # On select row get item detail
@@ -637,7 +661,7 @@ class MoController extends Controller
             return redirect()->back();
         }
         $bom = MfgOrder::find($id);
-        $createdBy = $bom->created_by; 
+        $createdBy = $bom->created_by;
         $revision_number = $bom->revision_number;
         $books = Helper::getBookSeriesNew($servicesAliasParam,$parentUrl, true)->get();
         $wasteTypes = ConstantHelper::DISCOUNT_TYPES;
@@ -676,17 +700,17 @@ class MoController extends Controller
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));
         $subSectionRequired = isset($parameters['sub_section_required']) && is_array($parameters['sub_section_required']) && in_array('yes', array_map('strtolower', $parameters['sub_section_required']));
-        
+
         $productionBomInstructions = optional($productionBom)
                                     ->bomInstructions()
                                     ->where('station_id', $bom->station_id)
                                     ->get() ?? collect();
-        
+
         $machines = collect();
         if($productionBom) {
             $machines = $productionBom?->productionRoute?->machines()
             ->where('status', ConstantHelper::ACTIVE)
-            ->get(); 
+            ->get();
         }
         return view($view, [
             'isEdit' => $isEdit,
@@ -707,7 +731,7 @@ class MoController extends Controller
             'sectionRequired' => $sectionRequired,
             'subSectionRequired' => $subSectionRequired,
             'machines' => $machines
-        ]); 
+        ]);
     }
 
     # Bom Update
@@ -765,9 +789,9 @@ class MoController extends Controller
                             $pwoStation->mo_id = null;
                             $pwoStation->save();
                         } else {
-                            $moProductItem->pwoMapping->mo_id = null; 
-                            $moProductItem->pwoMapping->mo_product_qty -= $moProductItem->qty; 
-                            $moProductItem->pwoMapping->save(); 
+                            $moProductItem->pwoMapping->mo_id = null;
+                            $moProductItem->pwoMapping->mo_product_qty -= $moProductItem->qty;
+                            $moProductItem->pwoMapping->save();
                         }
                     }
 
@@ -790,18 +814,18 @@ class MoController extends Controller
                     }
                     $ctr++;
                     $moProdDetail = new MoProduct;
-                    $moProdDetail->mo_id = $mo->id; 
-                    $moProdDetail->item_id = $component['item_id']; 
-                    $moProdDetail->item_code = $component['item_code']; 
-                    $moProdDetail->customer_id = $component['customer_id']; 
-                    $moProdDetail->uom_id = $component['uom_id']; 
-                    $moProdDetail->qty = $component['qty']; 
-                    $moProdDetail->so_id = $component['so_id'] ?? null; 
-                    $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
-                    $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
+                    $moProdDetail->mo_id = $mo->id;
+                    $moProdDetail->item_id = $component['item_id'];
+                    $moProdDetail->item_code = $component['item_code'];
+                    $moProdDetail->customer_id = $component['customer_id'];
+                    $moProdDetail->uom_id = $component['uom_id'];
+                    $moProdDetail->qty = $component['qty'];
+                    $moProdDetail->so_id = $component['so_id'] ?? null;
+                    $moProdDetail->so_item_id = $component['so_item_id'] ?? null;
+                    $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null;
                     $moProdDetail->remark = $component['remark'] ?? null;
-                    $moProdDetail->machine_id = $component['machine_id'] ?? null; 
-                    $moProdDetail->number_of_sheet = $component['sheet'] ?? 0;  
+                    $moProdDetail->machine_id = $component['machine_id'] ?? null;
+                    $moProdDetail->number_of_sheet = $component['sheet'] ?? 0;
                     $moProdDetail->save();
                     #Save MoProductDetailAttr component Attr
                     $attributes = [];
@@ -818,7 +842,7 @@ class MoController extends Controller
                             $moProdAttr->save();
                             $attributes[] = ['attribute_id' => intval($itemAttribute?->id), 'attribute_value' => intval($moProdAttr->attribute_value)];
                             $newAttributes[] = [
-                                'attribute_id' => intval($moProdAttr->attribute_value), 
+                                'attribute_id' => intval($moProdAttr->attribute_value),
                                 'attribute_name' => $moProdAttr?->headerAttribute?->name,
                                 'attribute_value' => $moProdAttr?->headerAttributeValue?->value,
                                 'item_attribute_id' => intval($moProdAttr->item_attribute_id),
@@ -826,7 +850,7 @@ class MoController extends Controller
                             ];
                         }
                     }
-                    
+
                     # Back update PWO station consumption
                     if(isset($moProdDetail->pwoMapping) && $moProdDetail->pwoMapping) {
                         $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$moProdDetail?->pwoMapping?->id)
@@ -837,16 +861,16 @@ class MoController extends Controller
                             $pwoStation->mo_id = $mo->id;
                             $pwoStation->save();
                         } else {
-                            $moProdDetail->pwoMapping->mo_id = $mo->id; 
-                            $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
-                            $moProdDetail->pwoMapping->save(); 
+                            $moProdDetail->pwoMapping->mo_id = $mo->id;
+                            $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty;
+                            $moProdDetail->pwoMapping->save();
                         }
                     }
                 }
 
                 if($ctr) {
                     MoItemAttribute::where('mo_id', $mo->id)->delete();
-                    MoItem::where('mo_id', $mo->id)->delete();      
+                    MoItem::where('mo_id', $mo->id)->delete();
                     MoBomMapping::where('mo_id', $mo->id)->delete();
                     $stationId = $mo->station_id ?? null;
                     foreach($mo->moProducts as $moProdDetail) {
@@ -855,7 +879,7 @@ class MoController extends Controller
                                         if($stationId) {
                                             $query->where('station_id', $stationId);
                                         }
-                                    })      
+                                    })
                                     ->get();
                         foreach ($bomDetails as $bomDetail) {
                             $moBomMapping = new MoBomMapping;
@@ -874,19 +898,19 @@ class MoController extends Controller
                             $moBomMapping->section_id = $bomDetail->section_id;
                             $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
                             $moBomMapping->save();
-                        }       
+                        }
                     }
 
                     if($mo->station_id) {
                         $prDetailParents = $mo->productionRoute->details()->where('pr_parent_id', $mo->station_id)->get();
-                        
+
                         if($prDetailParents?->count()) {
                             foreach($mo->moProducts as $moProduct) {
                                 foreach($prDetailParents as $prDetailParent) {
                                     $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $moProduct->pwo_mapping_id)
                                                     ->where('station_id', $prDetailParent->station_id)->first();
                                     $oldMo = MfgOrder::find($pwoStationConsumption->mo_id);
-                                    
+
                                     $moProductAttributes = $moProduct->attributes ?? [];
                                     if($oldMo) {
                                         $oldMoProduct = $oldMo->moProducts()
@@ -907,7 +931,7 @@ class MoController extends Controller
                                                             }, '=', count($moProductAttributes));
                                                         })
                                                         ->first();
-                                            
+
                                         $moBomAttributes = [];
                                         foreach($moProductAttributes as $moProdAttr) {
                                             $moBomAttributes[] = [
@@ -940,9 +964,9 @@ class MoController extends Controller
                         ->where('mo_id', $mo->id)
                         ->groupBy('mo_id', 'so_id', 'station_id', 'bom_detail_id', 'item_id', 'item_code', 'uom_id', 'rm_type', 'attributes')
                         ->get();
-                    
+
                         foreach($groupedDatas as $groupedData) {
-                            # Mo Item Save                    
+                            # Mo Item Save
                             $moItem = new MoItem;
                             $moItem->mo_id = $mo->id;
                             $moItem->so_id = $groupedData->so_id ?? null;
@@ -981,7 +1005,7 @@ class MoController extends Controller
                         ], 422);
                 }
             }
-    
+
             $mo->save();
 
             /*Bom Attachment*/
@@ -991,7 +1015,7 @@ class MoController extends Controller
             /*Update Bom header*/
             $mo->save();
             /*Create document submit log*/
-            $bookId = $mo->book_id; 
+            $bookId = $mo->book_id;
             $docId = $mo->id;
             $amendRemarks = $request->amend_remarks ?? null;
             $remarks = $mo->remarks;
@@ -1028,14 +1052,14 @@ class MoController extends Controller
             return response()->json([
                 'message' => 'Record updated successfully',
                 'data' => $mo,
-            ]);   
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while updating the record.',
                 'error' => $e->getMessage(),
             ], 500);
-        } 
+        }
     }
 
     // genrate pdf
@@ -1053,7 +1077,7 @@ class MoController extends Controller
         $items = collect();
         if(isset($mo->moProducts) && $mo->moProducts)
         {
-            $products = $mo -> moProducts;            
+            $products = $mo -> moProducts;
         }
 
         if(isset($mo->moItems) && $mo->moItems) {
@@ -1138,7 +1162,7 @@ class MoController extends Controller
                     $stockData = $moProdItem->getInventoryAndStock();
                     $toBeProduced = $moProdItem->required_qty - floatval($stockData['confirmedStocks'] ?? 0);
                     $inputProduced = floatval($component['produced_qty']) ?? 0;
-    
+
                     if($toBeProduced > $inputProduced) {
                         return response() -> json([
                             'status' => 'error',
@@ -1148,7 +1172,7 @@ class MoController extends Controller
                     $moProdItem->produced_qty = $inputProduced;
                     $moProdItem->save();
                     $stationId = $moProdItem?->mo?->station_id ?? null;
-    
+
                     if($moProdItem->required_qty != $inputProduced) {
                         $bomDetails = BomDetail::selectRaw('item_id, SUM(qty) as total_qty')
                         ->where('bom_id', $moProdItem->production_bom_id)
@@ -1156,10 +1180,10 @@ class MoController extends Controller
                             if($stationId) {
                                 $query->where('station_id', $stationId);
                             }
-                        })       
-                        ->groupBy('item_id') 
+                        })
+                        ->groupBy('item_id')
                         ->get();
-        
+
                         foreach ($bomDetails as $bomDetail) {
                             $moItem = MoItem::where('mo_id',$bom->id)
                                         ->where('item_id', $bomDetail->item_id)
@@ -1167,9 +1191,9 @@ class MoController extends Controller
                             $moItem->inventory_uom_qty = $bomDetail->total_qty * $inputProduced;
                             $moItem->qty = $bomDetail->total_qty * $inputProduced;
                             $moItem->save();
-                        } 
+                        }
                     }
-    
+
                 }
             }
             if (isset($bom)) {
@@ -1184,9 +1208,9 @@ class MoController extends Controller
                             'message' => "Stock not available.",
                         ];
                     }
-                    
+
                 }
-                
+
                 if (count($errorMoItemIds)) {
                     return response()->json([
                         'status' => 'error',
@@ -1211,7 +1235,7 @@ class MoController extends Controller
                 }
 
                 $maintainStockLedger = self::maintainStockLedger($bom);
-                
+
                 if(!$maintainStockLedger) {
                     DB::rollBack();
                     return response() -> json([
@@ -1219,7 +1243,7 @@ class MoController extends Controller
                         'message' => "Error while updating stock ledger for issue.",
                     ]);
                 }
-                
+
                 # Update rate in  Mo Prod Item & insert in Production Item Location
                 $moProdItems = MoProductionItem::where('mo_id', $bom->id)->get();
                 $moProdItemQty = MoProductionItem::where('mo_id', $bom->id)->sum('produced_qty');
@@ -1228,7 +1252,7 @@ class MoController extends Controller
                     $detailIds = [];
                     $moItemValue = MoItem::where('mo_id', $bom->id)->sum(DB::raw('qty * rate'));
                     $prodItemRate = $moItemValue / $moProdItemQty;
-                    
+
                     foreach($moProdItems as $moProdItem) {
                         $detailIds[] = $moProdItem->id;
                         $moProdItem->rate = $prodItemRate;
@@ -1245,9 +1269,9 @@ class MoController extends Controller
                         $moProdItemLocation->inventory_uom_qty = $moProdItem->produced_qty;
                         $moProdItemLocation->save();
                     }
-                    
+
                     $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($bom->id, $detailIds, ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::APPROVED, 'receipt');
-                    
+
                     if($moProdItemReceipt['messsage'] != 'Success') {
                         DB::rollBack();
                         return response() -> json([
@@ -1302,7 +1326,7 @@ class MoController extends Controller
                             $pwoStation->save();
                             $currentLevel = $moProdDetail?->pwoMapping?->current_level ?? 1;
                             $pwoQty = $moProdDetail?->pwoMapping?->inventory_uom_qty;
-            
+
                             $pwoStationExit = PwoStationConsumption::where('pwo_mapping_id',$moProdDetail?->pwoMapping?->id)
                                                     ->where('level', $currentLevel)
                                                     ->where('mo_product_qty', '<', $pwoQty)
@@ -1325,7 +1349,7 @@ class MoController extends Controller
                                         } else {
                                            $totalValue = PwoStationConsumption::where('pwo_mapping_id',$moProdDetail->pwo_mapping_id)
                                                                                 ->sum('mo_value');
-                                            $moProdDetail->pwoMapping->mo_product_qty = $moProdDetail->pwoMapping->inventory_uom_qty; 
+                                            $moProdDetail->pwoMapping->mo_product_qty = $moProdDetail->pwoMapping->inventory_uom_qty;
                                             $moProdDetail->pwoMapping->mo_value = $totalValue;
                                             $moProdDetail->pwoMapping->save();
                                         }
@@ -1333,12 +1357,12 @@ class MoController extends Controller
                                 }
                             }
                         } else {
-                            $moProdDetail->pwoMapping->mo_product_qty = $moProdDetail->qty; 
+                            $moProdDetail->pwoMapping->mo_product_qty = $moProdDetail->qty;
                             $moProdDetail->pwoMapping->mo_value = round(($moProdDetail->qty*$moProdDetail->rate),2);
                             $moProdDetail->pwoMapping->save();
                         }
                     }
-                } 
+                }
 
                 DB::commit();
 
@@ -1346,7 +1370,7 @@ class MoController extends Controller
                     'status' => 'success',
                     'message' => 'closed succesfully',
                 ]);
-                
+
             } else {
                 DB::rollBack();
                 throw new ApiGenericException("No Document found");
@@ -1356,7 +1380,7 @@ class MoController extends Controller
             throw new ApiGenericException($ex -> getMessage());
         }
     }
-    
+
     private static function maintainStockLedger(MfgOrder $mo)
     {
         $user = Helper::getAuthenticatedUser();
@@ -1481,7 +1505,7 @@ class MoController extends Controller
         }
         $pwoItems = $pwoItems->with(['pwo', 'item'])->get();
 
-        
+
         $html = view('mfgOrder.partials.pwo-item-list', ['pwoItems' => $pwoItems, 'station_id' => $stationId])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
@@ -1529,7 +1553,7 @@ class MoController extends Controller
        ->where(function ($query) use ($customerId, $itemId, $soSeriesId, $soSocNumber, $storeId) {
             if($itemId){
                 $query->where('item_id', $itemId);
-            } 
+            }
             $query->whereHas('bom', function ($subQuery) {
                 $subQuery->whereIn('production_type', ['In-house']);
             });
@@ -1566,7 +1590,7 @@ class MoController extends Controller
         if($bom) {
             $machines = $bom?->productionRoute?->machines()
             ->where('status', ConstantHelper::ACTIVE)
-            ->get(); 
+            ->get();
         }
         $rowCount = 1;
         $html = view('mfgOrder.partials.mo-item-pull', ['pwoItems' => $pwoItems, 'rowCount' => $rowCount, 'machines' => $machines])->render();
@@ -1578,7 +1602,7 @@ class MoController extends Controller
     {
         $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;
         $ids = json_decode($request->ids,true) ?? [];
-        $pwoItems = PwoSoMapping::whereIn('id', $ids)->get(); 
+        $pwoItems = PwoSoMapping::whereIn('id', $ids)->get();
         $itemId = $request->item_id ?? null;
         $bom = Bom::where('item_id', $itemId)
             ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
@@ -1588,7 +1612,7 @@ class MoController extends Controller
         if($bom) {
             $machines = $bom?->productionRoute?->machines()
             ->where('status', ConstantHelper::ACTIVE)
-            ->get(); 
+            ->get();
         }
 
         $html = view('mfgOrder.partials.mo-item-pull', [
@@ -1824,7 +1848,7 @@ class MoController extends Controller
         $machineId = $request->machine_id;
         $attrGroupIds = explode(',', $request->attr_ids ?? '');
         $attrValueIds = explode(',', $request->attr_value_ids ?? '');
-        
+
         $machineDetail = ErpMachineDetail::where('machine_id', $machineId)
                             ->whereIn('attribute_group_id', $attrGroupIds)
                             ->whereIn('attribute_id', $attrValueIds)

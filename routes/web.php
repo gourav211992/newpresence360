@@ -186,6 +186,11 @@ use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseMultiMappingController;
 use App\Http\Controllers\WarehouseStructureController;
+use App\Http\Controllers\ErpItemBundleController;
+use App\Http\Controllers\RgrController;
+use App\Http\Controllers\WHM\RgrJobController;
+
+
 use App\Models\DefectNotification;
 
 /*
@@ -414,6 +419,7 @@ Route::middleware(['user.auth'])->group(function () {
 
     Route::prefix('vendors')->controller(VendorController::class)->group(function () {
         Route::get('/', 'index')->name('vendor.index');
+        Route::get('/', 'index')->name('vendor.index');
         Route::get('/create', 'create')->name('vendor.create');
         Route::post('/', 'store')->name('vendor.store');
         Route::post('/revoke', 'revoke')->name('vendor.revoke');
@@ -437,6 +443,10 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/{vendorId}/compliance-by-country/{countryId}', 'getComplianceByCountry');
         Route::get('/compliance/{id}', 'getComplianceById');
         Route::post('/get-uoms', 'getUOM')->name('send.uom');
+    });
+
+    Route::prefix('vendor-new')->controller(VendorController::class)->group(function () {
+        Route::get('/', 'index')->name('vendor.index');
     });
 
     // Route::prefix('vendors')->controller(VendorController::class)->group(function () {
@@ -744,6 +754,46 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/{id}/edit', 'edit')->name('units.edit');
         Route::put('/{id}', 'update')->name('units.update');
         Route::delete('/{id}', 'destroy')->name('units.destroy');
+    });
+
+    Route::prefix('item-bundles')->controller(ErpItemBundleController::class)->group(function () {
+        Route::get('/', 'index')->name('item-bundles.index');
+        Route::get('/create', 'create')->name('item-bundles.create'); 
+        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+        Route::post('/', 'store')->name('item-bundles.store');  
+        Route::get('/{item_bundle}/edit', 'edit')->name('item-bundles.edit');  
+        Route::put('/{item_bundle}', 'update')->name('item-bundles.update');
+        Route::delete('/{item_bundle}', 'destroy')->name('item-bundles.destroy'); 
+    });
+
+    Route::prefix('rgr')->controller(RgrController::class)->group(function () {
+        Route::get('/', 'index')->name('rgr.index');              
+        Route::get('/create', 'create')->name('rgr.create');      
+        Route::post('/', 'store')->name('rgr.store');              
+        Route::get('/{id}/edit', 'edit')->name('rgr.edit');         
+        Route::put('/{id}', 'update')->name('rgr.update');       
+        Route::delete('/{id}', 'destroy')->name('rgr.destroy');    
+
+        // Extra custom routes
+        Route::get('get-doc-no', 'getDocNumber')->name('rgr.doc.no');      
+        Route::get('get-posting', 'getPostingDetails')->name('rgr.posting');
+        Route::get('get-pickup-item', 'getPickupScheduleItems')->name('rgr.get.pickup.item');
+        Route::post('process-rgr-item', 'processPickupItem')->name('rgr.process.pickup-schdule-list');
+        Route::get('revoke-document', 'revokeDocument')->name('rgr.revoke'); 
+    });
+
+
+    Route::controller(RgrJobController::class)->group(function () {
+        Route::get('get-rgr/{store_id}', 'getRgrDetails')->name('rgr.detail');
+        Route::get('get-rgr-by-job/{job_id}', 'getRgrByJob')->name('rgr.by.job');
+        Route::get('get-defect-severity', 'getDefectSeverity')->name('defect.severity');
+        Route::get('damage-nature-options', 'getDamageNatureOptions')->name('damage.nature.options');
+        Route::get('defect-types/{severity}/{itemId}', 'getDefectTypes')->name('defect.types');
+        Route::get('/get-items', 'getItems')->name('erp.items.list');
+        Route::get('/get-items/{itemId}/attributes', 'getAttributesByItemId')->name('erp.items.attributes');
+        Route::post('/scan-item/{item_id}', 'scanItem')->name('scan.item');
+        Route::post('/segregate-item/{item_id}', 'createSegregation')->name('segregation.create');
+        Route::get('jobs/{jobId}/item-status','getJobItemStatus')->name('jobs.item-status');
     });
 
     Route::prefix('erp-document')->controller(DocumentController::class)->group(function () {
@@ -1402,6 +1452,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('item', 'item')->name('item');
             Route::post('vendor', 'vendor')->name('vendor');
             Route::post('customer', 'customer')->name('customer');
+            Route::post('rgr', 'rgr')->name('rgr');
             Route::post('lorryReceipt', 'lorryReceipt')->name('lorryReceipt');
         });
 
@@ -2237,14 +2288,12 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
     Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
 
-    Route::post('/transporter-invoices/e-invoice-mail', [TransporterInvoiceController::class, 'InvoiceMail'])
+    Route::post('/transporter-invoices/e-invoice-mail', [TransportInvoiceController::class, 'InvoiceMail'])
     ->name('tranport.invoice.eInvoiceMail');
-    Route::post('/transporter-invoices/confirm', [TransporterInvoiceController::class, 'confirm'])
+    Route::post('/transporter-invoices/confirm', [TransportInvoiceController::class, 'confirm'])
     ->name('sale.transporterInvoice.confirm');
-    Route::get('/transporter-invoices/print/{id}', [TransporterInvoiceController::class, 'print'])
+    Route::get('/transporter-invoices/print', [TransportInvoiceController::class, 'print'])
     ->name('sale.transporterInvoice.print');
-    Route::get('/transporter-invoice/posting/get', [TransporterInvoiceController::class, 'getPostingDetails'])->name('transport.invoice.posting.get');
-    Route::post('/transporter-invoice/post', [TransporterInvoiceController::class, 'postInvoice'])->name('transport.invoice.post');
 
 
     # Production Work Order Route
@@ -2415,11 +2464,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
     Route::get('/production-slip/create', [ErpProductionSlipController::class, 'create'])->name('production.slip.create');
     Route::post('/production-slip/store', [ErpProductionSlipController::class, 'store'])->name('production.slip.store');
-    // Route::post('/production-slip/store', [ProductionSlipController::class, 'store'])->name('production.slip.store');
     Route::get('/production-slip/edit/{id}', [ErpProductionSlipController::class, 'edit'])->name('production.slip.edit');
     Route::post('/production-slip/revoke', [ErpProductionSlipController::class, 'revoke'])->name('production.slip.revoke');
     Route::get('/production-slip/pwo/process/pwo', [ErpProductionSlipController::class, 'processPulledItems'])->name('production.slip.process.items');
     Route::get('/production-slip/pwo/get/items', [ErpProductionSlipController::class, 'getPwoItemsForPulling'])->name('production.slip.pull.items');
+
+    // Production Slip
+    Route::get('/production-slip/posting/details', [ProductionSlipController::class, 'getPostingDetails'])->name('production.slip.get.posting.details');
+    Route::post('/production-slip/post/voucher', [ProductionSlipController::class, 'postPslipVoucher'])->name('production.slip.post.voucher');
+
     #get item detail for the consumption
     Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
     Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
@@ -2427,7 +2480,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/production-slip/get-item-alternate', [ErpProductionSlipController::class, 'getAlterItems'])->name('production.slip.clone_alterItems');
     Route::get('/production-slip/get-item-attribute', [ErpProductionSlipController::class, 'getItemAttribute'])->name('production.slip.getattributes');
     Route::get('/production-slip/get-avl-stock', [ErpProductionSlipController::class, 'getAvlStock'])->name('production.slip.avlStock');
-    Route::get('/production-slip/remove-alternate-item', [ErpProductionSlipController::class, 'removeAlternateItem'])->name('production.slip.remove_alternate_item');
+    Route::get('/bom-vs-actual', [ProductionSlipController::class, 'bomVsActualReport'])->name('bomVsActual.report');
+    Route::get('/bom-vs-actual/download', [ProductionSlipController::class, 'downloadBomVsActualWithOutfile'])->name('bomVsActual.download');
 
     Route::prefix('stores')->controller(StoreController::class)->group(function () {
         # Get Store Address Ajax

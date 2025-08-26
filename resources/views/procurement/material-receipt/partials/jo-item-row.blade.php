@@ -7,9 +7,8 @@
         $geId = null;
         $geItemId = null;
         $readOnly = '';
-        $hasAssetDetail = $item?->item?->is_asset;
         $acceptedReadOnly = 'readonly';
-       // $acceptedReadOnly = ($item?->item?->is_inspection == 1) ? 'readonly' : '';
+        // $acceptedReadOnly = ($item?->item?->is_inspection == 1) ? 'readonly' : '';
         $joQty = $item->avail_order_qty ?? 0.00;
         $availableQty = $item->available_qty ?? 0.00;
         if($moduleType === 'gate-entry') {
@@ -40,6 +39,23 @@
         $itemDiscPercentage = $grossItemValue > 0 ? ($itemDisc / $grossItemValue) * 100 : 0;
         $headerDiscPercentage = $grossItemValue > 0 ? ($headerDiscAmount / $grossItemValue) * 100 : 0;
         $headerExpPercentage = $grossItemValue > 0 ? ($headerExpAmount / $grossItemValue) * 100 : 0;
+
+        $hasAssetDetail = (int) ($item?->item?->is_asset ?? 0);
+        $asset = $item?->assetDetail;
+        $assetPayload = [
+            'asset_id'            => $asset->id ?? null,
+            'asset_name'          => $asset->asset_name ?? ($item?->item?->item_name ?? ''),
+            'asset_category_id'   => $item?->item?->asset_category_id,
+            'asset_category_name' => $item?->item?->assetCategory?->name,
+            'asset_code'          => null,
+            'brand_name'          => $asset->brand_name ?? ($item?->item?->brand_name ?? ''),
+            'model_no'            => $asset->model_no ?? ($item?->item?->model_no ?? ''),
+            'estimated_life'      => $asset->estimated_life ?? ($item?->item?->expected_life ?? ''),
+            'salvage_percentage'  => $item?->item?->getSalvagePercentage() ?? 0,
+            'salvage_value'       => $asset->salvage_value ?? null,
+            'procurement_type'    => $procurementType ?? null,
+            'capitalization_date' => now()->toDateString(),
+        ];
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
@@ -190,16 +206,7 @@
                     <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
                     <div class="cursor-pointer ms-50 text-success assetDetailBtn"
                         data-row-count="{{ $rowCount }}"
-                        data-asset-cat-id="{{ $item?->item?->asset_category_id }}"
-                        data-asset-cat-name="{{ $item?->item?->assetCategory?->name }}"
-                        data-asset-code="{{ $item?->item?->getAssetCode() }}"
-                        data-asset-name="{{ $item?->item?->item_name }}"
-                        data-asset-brand-name="{{ $item?->item?->brand_name }}"
-                        data-asset-model-number="{{ $item?->item?->model_no }}"
-                        data-asset-expected-life="{{ $item?->item?->expected_life }}"
-                        data-asset-salvage-perc="{{ $item?->item?->getSalvagePercentage() }}"
-                        data-asset-procurement-type="{{ $item?->jo?->procurement_type ?? null }}"
-                        data-asset='@json(["has_asset" => 1])'
+                        data-asset='@json($assetPayload)'
                         data-bs-toggle="modal"
                         data-bs-target="#assetDetailModal"
                         title="Asset Detail">
@@ -217,11 +224,11 @@
                 @endif
                 <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
                 <div class="me-50 cursor-pointer addBatchBtn"
-                data-bs-toggle="modal"
-                data-row-count="{{$rowCount}}"
-                data-is-batch-number="{{$item?->item?->is_batch_no}}"
-                data-is-expiry="{{$item?->item?->is_expiry}}"
-                data-bs-target="#item-batch-modal">
+                    data-bs-toggle="modal"
+                    data-row-count="{{$rowCount}}"
+                    data-is-batch-number="{{$item?->item?->is_batch_no}}"
+                    data-is-expiry="{{$item?->item?->is_expiry}}"
+                    data-bs-target="#item-batch-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                         data-bs-original-title="Item Batch" aria-label="Item Batch">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"

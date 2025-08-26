@@ -9,14 +9,16 @@ use App\Traits\Deletable;
 class ErpAttribute extends Model
 {
     protected $table = 'erp_attributes';
+
     use HasFactory, SoftDeletes,Deletable;
+
     protected $fillable = [
         'id',
         'value',
         'attribute_group_id',
     ];
 
-    
+
     protected $auditInclude = [
         'value',
         'attribute_group_id',
@@ -31,6 +33,6 @@ class ErpAttribute extends Model
     {
         return $this->belongsTo(AttributeGroup::class, 'attribute_group_id');
     }
-   
-    
+
+
 }

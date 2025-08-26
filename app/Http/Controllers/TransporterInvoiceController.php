@@ -2191,9 +2191,17 @@ class TransporterInvoiceController extends Controller
             $saleInvoice = ErpTransportInvoice::find($request->document_id);
             $enableEinvoice = $saleInvoice->gst_invoice_type === EInvoiceHelper::B2B_INVOICE_TYPE ? true : false;
             $eInvoice = $saleInvoice?->irnDetail()->first();
-              
+            // if (!$eInvoice && $enableEinvoice) {
+            //     $data = [
+            //         'message' => 'Please generate IRN First.',
+            //     ];
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'status' => 'error',
+            //         'data' => $data
+            //     ], 422);
+            // } //need to check
             $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
-          
             if ($data['status']) {
                 DB::commit();
             } else {
@@ -2208,9 +2216,7 @@ class TransporterInvoiceController extends Controller
             return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex->getMessage(),
-                'file' => $ex->getFile(),
-                'line' => $ex->getLine(),
+                'error' => $ex->getMessage()
             ], 500);
         }
     }

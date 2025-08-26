@@ -1,6 +1,7 @@
 <?php   
 namespace App\Models;
 
+use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -52,6 +53,11 @@ class MrnBatchDetail extends Model
     public function item()
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function uniqueCodes()
+    {
+        return $this->hasMany(ErpItemUniqueCode::class, 'batch_id');
     }
 
 }

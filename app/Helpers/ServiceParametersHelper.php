@@ -12,6 +12,7 @@ use App\Models\ServiceParameter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Helpers\PackingList\Constants as PackingListConstants;
+use App\Helpers\RGR\Constants as RGRConstants;
 use App\Helpers\ASN\Constants as ASNConstants;
 /**
  * Helper Class containing all logics related to Parameters Functionality in the project.
@@ -304,30 +305,6 @@ class ServiceParametersHelper
             "default_value" => ['yes'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ],
-        [
-            "name" => self::GL_POSTING_REQUIRED_PARAM,
-            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
-        ],
-        [
-            "name" => self::GL_POSTING_SERIES_PARAM,
-            "applicable_values" => [],
-            "default_value" => [],
-            'is_multiple' => true,
-            'service_level_visibility' => false,
-            'type' => self::GL_PARAMETERS
-        ],
-        [
-            "name" => self::POST_ON_ARROVE_PARAM,
-            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
         ]
     ];
     const MAINT_WO_SERVICE_PARAMETERS = [
@@ -367,7 +344,7 @@ class ServiceParametersHelper
             'service_level_visibility' => true
         ]
     ];
-    
+
     const FIXED_ASSET_SERVICE_PARAMETERS = [
         [
             "name" => self::BACK_DATE_ALLOW_PARAM,
@@ -1037,6 +1014,7 @@ class ServiceParametersHelper
         //     'service_level_visibility' => true
         // ]
     ];
+
     const LEASE_INV_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -2665,30 +2643,30 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        // [
-        //     "name" => self::GL_POSTING_REQUIRED_PARAM,
-        //     "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
-        //     "default_value" => ['no'],
-        //     'is_multiple' => false,
-        //     'service_level_visibility' => true,
-        //     'type' => self::GL_PARAMETERS
-        // ],
-        // [
-        //     "name" => self::GL_POSTING_SERIES_PARAM,
-        //     "applicable_values" => [],
-        //     "default_value" => [],
-        //     'is_multiple' => true,
-        //     'service_level_visibility' => false,
-        //     'type' => self::GL_PARAMETERS
-        // ],
-        // [
-        //     "name" => self::POST_ON_ARROVE_PARAM,
-        //     "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
-        //     "default_value" => ['no'],
-        //     'is_multiple' => false,
-        //     'service_level_visibility' => true,
-        //     'type' => self::GL_PARAMETERS
-        // ],
+        [
+            "name" => self::GL_POSTING_REQUIRED_PARAM,
+            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::GL_POSTING_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false,
+            'type' => self::GL_PARAMETERS
+        ],
+        [
+            "name" => self::POST_ON_ARROVE_PARAM,
+            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+            "default_value" => ['no'],
+            'is_multiple' => false,
+            'service_level_visibility' => true,
+            'type' => self::GL_PARAMETERS
+        ],
 
         //Deepak
         [
@@ -2770,7 +2748,8 @@ class ServiceParametersHelper
         ConstantHelper::CUSTOMER_SERVICE_ALIAS=>self::CUSTOMER_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME=>self::MR_SERVICE_PARAMETERS,
         PackingListConstants::SERVICE_ALIAS => PackingListConstants::PARAMETERS,
-        ASNConstants::SERVICE_ALIAS => ASNConstants::PARAMETERS
+        ASNConstants::SERVICE_ALIAS => ASNConstants::PARAMETERS,
+        RGRConstants::SERVICE_ALIAS => RGRConstants::PARAMETERS,
     ];
     /* Parameter Types*/
     const COMMON_PARAMETERS = 'co';

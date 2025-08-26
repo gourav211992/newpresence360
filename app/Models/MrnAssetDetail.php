@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use PhpParser\Node\Expr\Cast;
 
 class MrnAssetDetail extends Model
 {
@@ -25,6 +26,10 @@ class MrnAssetDetail extends Model
     ];
 
     protected $hidden = ['deleted_at'];
+
+    protected $casts = [
+        'capitalization_date' => 'date', // returns a Carbon instance
+    ];
 
     public function mrnHeader()
     {

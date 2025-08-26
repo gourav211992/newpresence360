@@ -548,6 +548,79 @@ class InventoryHelperV2
         }
     }
 
+    /**
+     * Update MRN receipt stock for a batch by a **delta** quantity.
+     * mode = 'putaway' → decrement putaway_pending_qty by $deltaInv
+     * else            → set/update receipt_qty (not used in deviation close)
+     */
+    public static function updateBatchWiseStockFast(
+        int    $headerId,
+        int    $detailId,
+        int    $itemId,
+        string $lotNumber,
+        ?int   $storeId,
+        ?int   $subStoreId,
+        float  $deltaInv,
+        string $mode = 'putaway'
+    ): array {
+        $q = StockLedger::withDefaultGroupCompanyOrg()
+            ->where('document_header_id', $headerId)
+            ->where('document_detail_id', $detailId)
+            ->where('item_id', $itemId)
+            ->where('lot_number', $lotNumber)
+            ->where('store_id', $storeId)
+            ->where('sub_store_id', $subStoreId)
+            ->where('transaction_type', 'receipt')
+            ->where('book_type', 'mrn')
+            ->whereNull('utilized_id');
+
+        if ($mode === 'putaway') {
+            // Only rows still pending putaway and not received
+            $stock = (clone $q)
+                ->where('putaway_pending_qty', '>', 0)
+                ->where(function ($s): void {
+                    $s->whereNull('receipt_qty')->orWhere('receipt_qty', '<=', 0);
+                })
+                ->first();
+            
+            if (!$stock) {
+                return self::errorResponse('No Putaway Stock Found.');
+            }
+
+            $dec = max(0.0, (float)$deltaInv);
+            if ($dec <= 0) {
+                return self::successResponse('Nothing to decrement.', $stock);
+            }
+
+            // Clamp to avoid negative
+            $dec = min($dec, (float)$stock->putaway_pending_qty);
+
+            if ($dec > 0) {
+                $stock->putaway_pending_qty = (float)$stock->putaway_pending_qty - $dec;
+                $stock->total_cost = (float)$stock->putaway_pending_qty * (float)$stock->cost_per_unit;
+                $stock->save();
+
+                self::updateStockCost($stock);
+            }
+
+            return self::successResponse('Putaway pending updated.', $stock);
+        }
+
+        // Fallback branch if ever needed: update receipt_qty to exact value
+        $stock = (clone $q)->where('receipt_qty', '>', 0)->first();
+        if (!$stock) {
+            return self::errorResponse('No Stock Found.');
+        }
+
+        $stock->receipt_qty = (float)$deltaInv; // here "deltaInv" is the new target qty
+        $stock->total_cost  = (float)$stock->receipt_qty * (float)$stock->cost_per_unit;
+        $stock->save();
+
+        self::updateStockCost($stock);
+
+        return self::successResponse('Receipt qty updated.', $stock);
+    }
+
     // Error Response
     private static function errorResponse($message)
     {
@@ -557,7 +630,6 @@ class InventoryHelperV2
             "message" => $message,
             "data" => null,
         ];
-
     }
 
     // Success Response
@@ -570,5 +642,4 @@ class InventoryHelperV2
             "data" => $data
         ];
     }
-
 }

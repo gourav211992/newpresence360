@@ -24,9 +24,39 @@ use Illuminate\Support\Collection;
 use App\Models\OrganizationCompany;
 use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Helpers\SubStore\Constants as SubStoreConstants;
+use App\Models\ErpAttribute;
 
 class ItemHelper
 {
+    /**
+     * Get item attributes with their group name and value.
+     *
+     * @param array $attributes  Input array containing 'attribute_value' IDs.
+     * @return array             List of ['attribute_name', 'attribute_value'].
+     */
+    public static function getItemAttributesWithValues(array $attributes)
+    {
+        $attributeDetails = [];
+
+        foreach ($attributes as $attribute) {
+            // Fetch ERP attribute with its group by ID
+            $erpAttribute = ErpAttribute::with('attributeGroup')
+                ->where('id', $attribute['attribute_value'])
+                ->select('id', 'value', 'attribute_group_id')
+                ->first();
+
+            if (!$erpAttribute) continue; // Skip if not found
+
+            // Store group name and attribute value
+            $attributeDetails[] = [
+                'attribute_name'  => $erpAttribute->attributeGroup?->name,
+                'attribute_value' => $erpAttribute->value
+            ];
+        }
+
+        return $attributeDetails;
+    }
+
     /* array : $itemAttributes should be in the form -> [['attribute_id' => 1, 'attribute_value' => 10]] */
     public static function checkItemBomExists(int $itemId, array $itemAttributes, $bomType = 'bom', $customerId = null): array|null
     {

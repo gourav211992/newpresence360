@@ -6,7 +6,6 @@
         $suppInvItemId = null;
         $geId = null;
         $geItemId = null;
-        $hasAssetDetail = $item?->item?->is_asset;
         $readOnly = '';
         $acceptedReadOnly = 'readonly';
         $poQty = $item->avail_order_qty ?? 0.00;
@@ -39,6 +38,23 @@
         $itemDiscPercentage = $grossItemValue > 0 ? ($itemDisc / $grossItemValue) * 100 : 0;
         $headerDiscPercentage = $grossItemValue > 0 ? ($headerDiscAmount / $grossItemValue) * 100 : 0;
         $headerExpPercentage = $grossItemValue > 0 ? ($headerExpAmount / $grossItemValue) * 100 : 0;
+
+        $hasAssetDetail = (int) ($item?->item?->is_asset ?? 0);
+        $asset = $item?->assetDetail;
+        $assetPayload = [
+            'asset_id'            => $asset->id ?? null,
+            'asset_name'          => $asset->asset_name ?? ($item?->item?->item_name ?? ''),
+            'asset_category_id'   => $item?->item?->asset_category_id,
+            'asset_category_name' => $item?->item?->assetCategory?->name,
+            'asset_code'          => null,
+            'brand_name'          => $asset->brand_name ?? ($item?->item?->brand_name ?? ''),
+            'model_no'            => $asset->model_no ?? ($item?->item?->model_no ?? ''),
+            'estimated_life'      => $asset->estimated_life ?? ($item?->item?->expected_life ?? ''),
+            'salvage_percentage'  => $item?->item?->getSalvagePercentage() ?? 0,
+            'salvage_value'       => $asset->salvage_value ?? null,
+            'procurement_type'    => $procurementType ?? null,
+            'capitalization_date' => now()->toDateString(),
+        ];
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
@@ -184,7 +200,7 @@
         </td>
         <td>
             <div class="d-flex">
-                @if($hasAssetDetail === 1)
+                <!-- @if($hasAssetDetail === 1)
                     <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
                     <div class="cursor-pointer ms-50 text-success assetDetailBtn"
                         data-row-count="{{ $rowCount }}"
@@ -212,14 +228,34 @@
                             </svg>
                         </span>
                     </div>
+                @endif -->
+                @if($hasAssetDetail === 1)
+                    <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
+                    <div class="cursor-pointer ms-50 text-success assetDetailBtn"
+                        data-row-count="{{ $rowCount }}"
+                        data-asset='@json($assetPayload)'
+                        data-bs-toggle="modal"
+                        data-bs-target="#assetDetailModal"
+                        title="Asset Detail">
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" class="text-primary"
+                            data-bs-original-title="Asset Detail" aria-label="Asset Detail">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-clipboard-check" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M10.854 6.146a.5.5 0 0 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708L12 8.707l1.146 1.147a.5.5 0 0 0 .708-.708L12.707 8l1.147-1.146a.5.5 0 0 0-.708-.708L12 7.293 10.854 6.146z"/>
+                                <path
+                                    d="M10 1.5v1h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1v-1a1 1 0 1 1 2 0v1h2v-1a1 1 0 1 1 2 0zM5 4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5z"/>
+                            </svg>
+                        </span>
+                    </div>
                 @endif
                 <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
                 <div class="me-50 cursor-pointer addBatchBtn"
-                data-bs-toggle="modal"
-                data-row-count="{{$rowCount}}"
-                data-is-batch-number="{{$item?->item?->is_batch_no}}"
-                data-is-expiry="{{$item?->item?->is_expiry}}"
-                data-bs-target="#item-batch-modal">
+                    data-bs-toggle="modal"
+                    data-row-count="{{$rowCount}}"
+                    data-is-batch-number="{{$item?->item?->is_batch_no}}"
+                    data-is-expiry="{{$item?->item?->is_expiry}}"
+                    data-bs-target="#item-batch-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                         data-bs-original-title="Item Batch" aria-label="Item Batch">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"

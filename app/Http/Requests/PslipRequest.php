@@ -42,49 +42,39 @@ class PslipRequest extends FormRequest
             $rules['lot_number'] = 'required|string|max:40';
         }
 
-        $today = now()->toDateString();
-        $isPast = false;
-        $isFeature = false;
-        $futureAllowed = isset($parameters['future_date_allowed']) && is_array($parameters['future_date_allowed']) && in_array('yes', array_map('strtolower', $parameters['future_date_allowed']));
-        $backAllowed = isset($parameters['back_date_allowed']) && is_array($parameters['back_date_allowed']) && in_array('yes', array_map('strtolower', $parameters['back_date_allowed']));
+        // Document date validation
 
-        if (!$futureAllowed && !$backAllowed) {
-            $rules['document_date'] = "required|date|in:$today";
-        } else {
-            if ($futureAllowed) {
-                $rules['document_date'] = "after_or_equal:$today";
-                $isFeature = true;
+        if($this->input('document_status') == ConstantHelper::SUBMITTED || $this->input('document_status') == ConstantHelper::DRAFT)
+        {
+            $today = now()->toDateString();
+            $isPast = false;
+            $isFeature = false;
+            $futureAllowed = isset($parameters['future_date_allowed']) && is_array($parameters['future_date_allowed']) && in_array('yes', array_map('strtolower', $parameters['future_date_allowed']));
+            $backAllowed = isset($parameters['back_date_allowed']) && is_array($parameters['back_date_allowed']) && in_array('yes', array_map('strtolower', $parameters['back_date_allowed']));
+
+            if (!$futureAllowed && !$backAllowed) {
+                $rules['document_date'] = "required|date|in:$today";
             } else {
-                $rules['document_date'] = "before_or_equal:$today";
-                $isFeature = false;
+                if ($futureAllowed) {
+                    $rules['document_date'] = "after_or_equal:$today";
+                    $isFeature = true;
+                } else {
+                    $rules['document_date'] = "before_or_equal:$today";
+                    $isFeature = false;
+                }
+                if ($backAllowed) {
+                    $rules['document_date'] = "before_or_equal:$today";
+                    $isPast = true;
+                } else {
+                    $rules['document_date'] = "after_or_equal:$today";
+                    $isPast = false;
+                }
             }
-            if ($backAllowed) {
-                $rules['document_date'] = "before_or_equal:$today";
-                $isPast = true;
-            } else {
-                $rules['document_date'] = "after_or_equal:$today";
-                $isPast = false;
+            if($isFeature && $isPast) {
+                $rules['document_date'] = "required|date";
             }
         }
-        if($isFeature && $isPast) {
-            $rules['document_date'] = "required|date";
-        }
-        // Check the condition only if book_id is present
-        // if ($this->filled('book_id')) {
-        //     $user = Helper::getAuthenticatedUser();
-        //     $numPattern = NumberPattern::where('organization_id', $user->organization_id)
-        //                 ->where('book_id', $this->book_id)
-        //                 ->orderBy('id', 'DESC')
-        //                 ->first();
-        //     // Update document_number rule based on the condition
-        //     if ($numPattern && $numPattern->series_numbering == 'Manually') {
-        //         if($poId) {
-        //             $rules['document_number'] = 'required|unique:erp_purchase_orders,document_number,' . $poId;
-        //         } else {
-        //             $rules['document_number'] = 'required|unique:erp_purchase_orders,document_number';
-        //         }
-        //     }
-        // }
+
         $moId = $this->mo_id ?? null;
         $machines = collect();
         $mo = MfgOrder::where('id', $moId)->first();
@@ -98,10 +88,8 @@ class PslipRequest extends FormRequest
             $rules['machine_id'] = 'array';
             $rules['machine_id.*'] = 'nullable|array';
             $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
-
-            // $rules['machine_id.*'] = 'required|array|min:1';
-            // $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
         }
+
         return $rules;
     }
 

@@ -113,19 +113,22 @@ class BinTransferController extends Controller
             ]);
         }
 
-        $itemIds = $items->pluck('item_id')->toArray();
+        $itemIds = $items->pluck('item_id')->unique()->toArray();
         foreach ($itemIds as $itemId) {
-            $isMapped = StoragePointHelper::isStoragePointMappedToItem(
+            $response = StoragePointHelper::getStoragePoints(
                 $itemId,
-                $toStoragePoint->id,
-                $toStoragePoint->store_id,
-                $toStoragePoint->sub_store_id
+                null,
+                $fromStoragePoint->store_id,
+                $fromStoragePoint->sub_store_id
             );
 
-            if (!$isMapped) {
+            $storageNumbers = $response['data']->pluck('storage_number')->toArray();
+            // dd($fromStoragePoint,$toStoragePoint, $items,$storageNumbers,$itemIds);
+            if(!in_array($request->to_storage_number,$storageNumbers)){
                 throw ValidationException::withMessages([
                     'to_storage_number' => "Storage point is not mapped to item ID: {$itemId}",
                 ]);
+
             }
         }
 
@@ -197,18 +200,33 @@ class BinTransferController extends Controller
 
         $itemIds = $items->pluck('item_uid', 'item_id')->toArray();
         foreach ($itemIds as $itemId => $packetId) {
-            $isMapped = StoragePointHelper::isStoragePointMappedToItem(
+            $response = StoragePointHelper::getStoragePoints(
                 $itemId,
-                $toStoragePoint->id,
-                $toStoragePoint->store_id,
-                $toStoragePoint->sub_store_id
+                null,
+                $fromStoragePoint->store_id,
+                $fromStoragePoint->sub_store_id
             );
 
-            if (!$isMapped) {
+            $storageNumbers = $response['data']->pluck('storage_number')->toArray();
+            if(!in_array($request->to_storage_number,$storageNumbers)){
                 throw ValidationException::withMessages([
                     'to_storage_number' => "Storage point is not mapped to packet ID: {$packetId}",
                 ]);
+
             }
+
+            // $isMapped = StoragePointHelper::isStoragePointMappedToItem(
+            //     $itemId,
+            //     $toStoragePoint->id,
+            //     $toStoragePoint->store_id,
+            //     $toStoragePoint->sub_store_id
+            // );
+
+            // if (!$isMapped) {
+            //     throw ValidationException::withMessages([
+            //         'to_storage_number' => "Storage point is not mapped to packet ID: {$packetId}",
+            //     ]);
+            // }
         }
 
         \DB::beginTransaction();

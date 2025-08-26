@@ -12,6 +12,23 @@
             $moduleType = 'w-order';
             $orderQty = ($item->qty  - $item->grn_qty);
         }
+
+        $hasAssetDetail = (int) ($item?->item?->is_asset ?? 0);
+        $asset = $item?->assetDetail;
+        $assetPayload = [
+            'asset_id'            => $asset->id ?? null,
+            'asset_name'          => $asset->asset_name ?? ($item?->item?->item_name ?? ''),
+            'asset_category_id'   => $item?->item?->asset_category_id,
+            'asset_category_name' => $item?->item?->assetCategory?->name,
+            'asset_code'          => null,
+            'brand_name'          => $asset->brand_name ?? ($item?->item?->brand_name ?? ''),
+            'model_no'            => $asset->model_no ?? ($item?->item?->model_no ?? ''),
+            'estimated_life'      => $asset->estimated_life ?? ($item?->item?->expected_life ?? ''),
+            'salvage_percentage'  => $item?->item?->getSalvagePercentage() ?? 0,
+            'salvage_value'       => $asset->salvage_value ?? null,
+            'procurement_type'    => $procurementType ?? null,
+            'capitalization_date' => now()->toDateString(),
+        ];
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
@@ -99,16 +116,7 @@
                     <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
                     <div class="cursor-pointer ms-50 text-success assetDetailBtn"
                         data-row-count="{{ $rowCount }}"
-                        data-asset-cat-id="{{ $item?->item?->asset_category_id }}"
-                        data-asset-cat-name="{{ $item?->item?->assetCategory?->name }}"
-                        data-asset-code="{{ $item?->item?->getAssetCode() }}"
-                        data-asset-name="{{ $item?->item?->item_name }}"
-                        data-asset-brand-name="{{ $item?->item?->brand_name }}"
-                        data-asset-model-number="{{ $item?->item?->model_no }}"
-                        data-asset-expected-life="{{ $item?->item?->expected_life }}"
-                        data-asset-salvage-perc="{{ $item?->item?->getSalvagePercentage() }}"
-                        data-asset-procurement-type="{{ $item?->so?->procurement_type ?? null }}"
-                        data-asset='@json(["has_asset" => 1])'
+                        data-asset='@json($assetPayload)'
                         data-bs-toggle="modal"
                         data-bs-target="#assetDetailModal"
                         title="Asset Detail">

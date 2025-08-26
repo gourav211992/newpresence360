@@ -200,7 +200,7 @@ class InventoryReportController extends Controller
             $query->whereBetween('created_at', [$startDate, $endDate]);
         }
         $query->select('stock_ledger.*')
-            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as confirmed_stock',
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN (receipt_qty - reserved_qty) ELSE 0 END) as confirmed_stock',
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as unconfirmed_stock',

@@ -2614,32 +2614,33 @@ class PurchaseBillController extends Controller
             ->where(function ($query) use ($seriesId, $applicableBookIds, $vendorId, $selected_mrn_ids, $itemSearch, $storeId, $soId, $mrnDocNumber) {
                 if (count($selected_mrn_ids)) {
                     $query->whereNotIn('id',$selected_mrn_ids);
+                }
+                $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$mrnDocNumber, $vendorId) {
+                    $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    ->where('is_inspection_completion', 1);
+                    if(count($applicableBookIds)) {
+                        $mrnHeader->whereIn('book_id',$applicableBookIds);
                     }
-                    $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$mrnDocNumber, $vendorId) {
-                        $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                        if(count($applicableBookIds)) {
-                            $mrnHeader->whereIn('book_id',$applicableBookIds);
-                        }
-                        if($storeId) {
-                            $mrnHeader->where('store_id', $storeId);
-                        }
-                        if($mrnDocNumber) {
-                            $mrnHeader->where('id', $mrnDocNumber);
-                        }
-                        if ($vendorId) {
-                            $mrnHeader->where('vendor_id', $vendorId);
-                        }
-                    });
-                    if($soId) {
-                        $query->where('so_id', $soId);
+                    if($storeId) {
+                        $mrnHeader->where('store_id', $storeId);
                     }
-                    if ($itemSearch) {
-                        $query->whereHas('item', function ($query) use ($itemSearch) {
-                            $query->searchByKeywords($itemSearch);
-                        });
+                    if($mrnDocNumber) {
+                        $mrnHeader->where('id', $mrnDocNumber);
                     }
-                    $query->whereRaw('accepted_qty > purchase_bill_qty');
+                    if ($vendorId) {
+                        $mrnHeader->where('vendor_id', $vendorId);
+                    }
                 });
+                if($soId) {
+                    $query->where('so_id', $soId);
+                }
+                if ($itemSearch) {
+                    $query->whereHas('item', function ($query) use ($itemSearch) {
+                        $query->searchByKeywords($itemSearch);
+                    });
+                }
+                $query->whereRaw('accepted_qty > purchase_bill_qty');
+            });
         if ($request->type === 'create' && count($selected_mrn_ids)) {
             $mrnItems->whereNotIn('erp_mrn_details.id', $selected_mrn_ids);
         } elseif ($request->type === 'edit') {

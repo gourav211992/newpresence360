@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class ErpPickupItemAttribute extends Model
 {
     use HasFactory;
+     protected $table = 'erp_pickup_item_attributes';
     protected $fillable = [
         'pickup_id',
         'pickup_item_id',

@@ -462,7 +462,7 @@
                                                         <select class="form-select select2" name="term_id[]" >
                                                             <option value="">Select</option>
                                                             @foreach($termsAndConditions as $termsAndCondition)
-                                                            <option value="{{$termsAndCondition->id}}" data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option> 
+                                                            <option value="{{$termsAndCondition->id}}" data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -811,7 +811,7 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/po.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
-        
+
         // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
         $(document).on('change', 'select[name="term_id[]"]', function () {
             let selectedText = $(this).find('option:selected').data('detail') || '';
@@ -2266,8 +2266,6 @@
                     var hsnId = ui?.item?.hsn_id;
                     var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
-
-                    console.log('Selected item:', ui.item);
 
                     $input.val(itemName);
 

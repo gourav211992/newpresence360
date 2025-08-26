@@ -91,6 +91,19 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         // Route::get('/stock/get-filtered-items', 'getFilteredItems')->name('whm.stock.get-filtered-items');
         Route::post('/stock/apply-filter', 'applyFilter')->name('whm.stock.apply-filter');
     });
+
+    Route::controller(RgrJobController::class)->group(function () {
+        Route::get('get-rgr/{store_id}', 'getRgrDetails')->name('rgr.detail');
+        Route::get('get-rgr-by-job/{job_id}', 'getRgrByJob')->name('rgr.by.job');
+        Route::get('get-defect-severity', 'getDefectSeverity')->name('defect.severity');
+        Route::get('damage-nature-options', 'getDamageNatureOptions')->name('damage.nature.options');
+        Route::get('defect-types/{severity}/{itemId}', 'getDefectTypes')->name('defect.types');
+        Route::get('/get-items', 'getItems')->name('erp.items.list');
+        Route::get('/get-items/{itemId}/attributes', 'getAttributesByItemId')->name('erp.items.attributes');
+        Route::post('/scan-item/{item_id}', 'scanItem')->name('scan.item');
+        Route::post('/segregate-item/{item_id}', 'createSegregation')->name('segregation.create');
+        Route::get('jobs/{jobId}/item-status','getJobItemStatus')->name('jobs.item-status');
+    });
     
     
 });

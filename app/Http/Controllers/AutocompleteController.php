@@ -2267,6 +2267,26 @@ class AutocompleteController extends Controller
                 ->limit(10)
                 ->selectRaw("CONCAT(book_code, ' - ', document_number) as document_number , book_id")
                 ->get(['document_number','book_id']);
+            }elseif ($type === 'item_bundle_module') {
+                $query = Item::with(['alternateUOMs.uom', 'specifications'])
+                    ->with(['itemAttributes'])
+                    ->with(['hsn:id,code'])
+                    ->with(['uom:id,name'])
+                    ->withCount('itemAttributes')
+                    ->whereIn('document_status', [
+                        ConstantHelper::APPROVED,
+                        ConstantHelper::APPROVAL_NOT_REQUIRED
+                    ])
+                    ->orderBy('item_name');
+
+                // Only apply keyword search if term is provided
+                if (!empty($term)) {
+                    $query->searchByKeywords($term);
+                }
+
+                $results = $query
+                    ->limit(10)
+                    ->get(['id', 'item_name', 'item_code', 'uom_id']);
             } else {
                 return response()->json(['error' => 'Invalid type specified'], 400);
             }

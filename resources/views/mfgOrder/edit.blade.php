@@ -12,14 +12,14 @@
          <div class="row">
             @include('layouts.partials.breadcrumb-add-edit', [
              'title' => 'Manufacturing order',
-             'menu' => 'Home', 
+             'menu' => 'Home',
              'menu_url' => url('home'),
              'sub_menu' => 'Edit'
              ])
             <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                <div class="form-group breadcrumb-right">
                   <input type="hidden" name="document_status" id="document_status">
-                  <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button> 
+                  <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                     @if($buttons['draft'])
                         <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                     @endif
@@ -51,7 +51,7 @@
                     @if($buttons['approve'])
                         <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                         <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                    @endif 
+                    @endif
                     @if($buttons['amend'] && intval(request('amendment') ?? 0))
                         <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
                     @else
@@ -61,19 +61,19 @@
                     @endif
                     @if($buttons['revoke'])
                         <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
-                    @endif  
+                    @endif
                     {{-- @if($buttons['close'])
                     <button id="closeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0">
                         <i data-feather="check-square"></i> Close
-                    </button>                    
+                    </button>
                     @endif   --}}
 
                     @if($buttons['post'])
-                        <button id="postButton" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>                   
+                        <button id="postButton" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                     @endif
 
                     @if($buttons['voucher'])
-                        <button id="postButton" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Voucher</button>                   
+                        <button id="postButton" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Voucher</button>
                     @endif
                </div>
             </div>
@@ -88,14 +88,14 @@
                         <div class="border-bottom mb-2 pb-25">
                             <div class="row">
                                  <div class="col-md-6">
-                                     <div class="newheader "> 
+                                     <div class="newheader ">
                                          <h4 class="card-title text-theme">Basic Information</h4>
-                                         <p class="card-text">Fill the details</p> 
+                                         <p class="card-text">Fill the details</p>
                                      </div>
                                  </div>
                                  <div class="col-md-6 text-sm-end">
                                      <span class="badge rounded-pill badge-light-secondary forminnerstatus">
- 
+
                                          Status : <span class="{{$docStatusClass}}">{{$bom->display_status}}</span>
                                      </span>
                                  </div>
@@ -105,114 +105,114 @@
                            <div class="col-md-8">
                               <div class="basic-information">
                                  <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                    </div>
                                     <div class="col-md-5">
                                        <select class="form-select" id="book_id" name="book_id" disabled>
                                           @foreach($books as $book)
                                              <option value="{{$book->id}}" {{$bom->book_id == $book->id ? 'selected' : ''}}>{{ucfirst($book->book_code)}}</option>
-                                          @endforeach 
-                                       </select>  
+                                          @endforeach
+                                       </select>
                                        <input type="hidden" name="book_code" value="{{$bom->book_code}}" id="book_code">
                                     </div>
                                  </div>
 
                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Document No. <span class="text-danger">*</span></label>  
-                                    </div>  
+                                    <div class="col-md-3">
+                                        <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                                    </div>
 
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-5">
                                         <input type="text" value="{{$bom->document_number}}" name="document_number" class="form-control" id="document_number">
-                                    </div> 
+                                    </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
-                                     <div class="col-md-3"> 
-                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>  
-                                     </div>  
-                                     <div class="col-md-5"> 
+                                     <div class="col-md-3">
+                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                     </div>
+                                     <div class="col-md-5">
                                          <input disabled type="date" class="form-control" value="{{$bom->document_date ?? date('Y-m-d')}}" name="document_date">
-                                     </div> 
+                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Location <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select disabled class="form-select" id="store_id" name="store_id">
                                         @foreach($locations as $location)
                                             <option value="{{$location->id}}" {{$bom->store_id == $location->id ? 'selected' : ''}}>{{ $location?->store_name }}</option>
-                                        @endforeach 
-                                    </select> 
-                                    </div> 
-                                </div> 
+                                        @endforeach
+                                    </select>
+                                    </div>
+                                </div>
                                 <div class="row align-items-center mb-1 {{$bom->sub_store_id ? '' : 'd-none'}}" id="sub_store_div">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Sub Location <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Sub Location <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select disabled class="form-select" id="sub_store_id" name="sub_store_id">
                                             <option value="{{$bom->sub_store_id}}">{{$bom?->sub_store?->name}}</option>
-                                        </select> 
-                                    </div> 
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="row align-items-center mb-1" id="station_div">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Station <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Station <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select disabled class="form-select" id="station_id" name="station_id">
                                         <option value="">Select</option>
                                         @foreach($stations as $station)
                                             <option value="{{$station->id}}" {{$bom->station_id == $station->id ? 'selected' : ''}}>{{ $station?->name }}</option>
-                                        @endforeach 
-                                    </select> 
-                                    </div> 
-                                </div> 
+                                        @endforeach
+                                    </select>
+                                    </div>
+                                </div>
                                 <div class="row align-items-center mb-1">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Product Name <span class="text-danger">*</span></label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Product Name <span class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <input disabled type="text" placeholder="Select" value="{{$bom?->item?->item_name}} ({{$bom->item->item_code}})" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" />
                                         <input type="hidden" value="{{$bom->item_id}}" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_id" name="item_id" />
-                                    </select> 
-                                    </div> 
+                                    </select>
+                                    </div>
                                 </div>
                                 <div class="row align-items-center mb-1 d-none" id="machineDiv">
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Machine</label>  
-                                    </div>  
-                                    <div class="col-md-5"> 
+                                    <div class="col-md-3">
+                                        <label class="form-label">Machine</label>
+                                    </div>
+                                    <div class="col-md-5">
                                         <select class="form-select" id="main_machine_id" name="main_machine_id">
                                             <option value="">Select Machine</option>
                                             @foreach($machines as $machine)
                                                 <option value="{{$machine->id}}" {{$bom->machine_id == $machine->id ? 'selected' : ''}}>{{ $machine?->name }}</option>
                                             @endforeach
-                                        </select> 
-                                    </div> 
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="row align-items-center mb-1 d-none" id="reference_from"> 
-                                    <div class="col-md-3"> 
-                                        <label class="form-label">Reference from</label>  
-                                    </div> 
-                                    <div class="col-md-5 action-button"> 
+                                <div class="row align-items-center mb-1 d-none" id="reference_from">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Reference from</label>
+                                    </div>
+                                    <div class="col-md-5 action-button">
                                         <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect"><i data-feather="plus-square"></i> Production Work Order</button>
                                     </div>
                                 </div>
                               </div>
-                           </div> 
+                           </div>
                            {{-- History Code --}}
-                           @include('partials.approval-history', ['document_status' => $bom->document_status, 'revision_number' => $revision_number]) 
+                           @include('partials.approval-history', ['document_status' => $bom->document_status, 'revision_number' => $revision_number])
                         </div>
                      </div>
                   </div>
                </div>
-                
-                <div class="col-md-12">                                
+
+                <div class="col-md-12">
                     {{-- Append Attribute here  --}}
-                    
+
                     <div class="card">
                         <div class="card-body customernewsection-form">
                             <div class="border-bottom mb-2 pb-25" id="componentSection">
@@ -294,10 +294,10 @@
                                                         </td>
                                                     </tr>
                                                     <tr class="item_detail_row">
-                                                        
+
                                                     </tr>
                                                     <tr class="item_detail_row">
-                                                        
+
                                                     </tr>
                                                 </table>
                                                 </td>
@@ -340,10 +340,10 @@
                                                             </td>
                                                         </tr>
                                                         <tr class="item_detail_row">
-                                                            
+
                                                         </tr>
                                                         <tr class="item_detail_row">
-                                                            
+
                                                         </tr>
                                                     </table>
                                                     </td>
@@ -374,7 +374,7 @@
                                                     <th width="160px" id="sub_section_required2">Sub Section</th>
                                                 @endif
                                                 <th>Instructions</th>
-                                                <th class="text-center align-middle" width="100px">Attachment</th>                                              
+                                                <th class="text-center align-middle" width="100px">Attachment</th>
                                             </tr>
                                         </thead>
                                         <tbody class="mrntableselectexcel">
@@ -386,6 +386,11 @@
                                 @endif
                             </div>
                         </div>
+                    </div>
+
+                    {{-- Show MO Product Components --}}
+                    <div id="componentDetails" style="display: none;">
+                        {{-- ref: mo-product-components blade --}}
                     </div>
 
                     <div class="card">
@@ -413,13 +418,13 @@
                                 <div class = "col-md-6" style = "margin-top:19px;">
                                     <div class = "row" id = "main_bom_file_preview">
                                     </div>
-                                </div>  
+                                </div>
                                     </div>
                             </div>
                             <div class="col-md-12">
-                                <div class="mb-1">  
-                                    <label class="form-label">Final Remarks</label> 
-                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here...">{!! $bom->remarks !!}</textarea> 
+                                <div class="mb-1">
+                                    <label class="form-label">Final Remarks</label>
+                                    <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here...">{!! $bom->remarks !!}</textarea>
                                 </div>
                             </div>
                             </div>
@@ -459,8 +464,8 @@
                </table>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submit_attribute">Select</button>
          </div>
       </div>
@@ -525,7 +530,7 @@
         $("#detailTableFooter").attr("colspan", "15");
         $("#machineDiv").removeClass('d-none');
         $
-    @else 
+    @else
         $("#detailTableFooter").attr("colspan", "13");
         $("#machine_name").addClass('d-none');
         $("#sheets").addClass('d-none');
@@ -568,7 +573,7 @@ setTimeout(() => {
            $(e.target).find(':input').prop('readonly', false);
            $(e.target).find('select').prop('readonly', false);
         }
-       
+
         $('.add-contactpeontxt').remove();
         let text = $(e.target).find('thead tr:first th:last').text();
         if(text.includes("Action")){
@@ -603,7 +608,7 @@ $(function(){
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
-                                    code: item.item_code || '', 
+                                    code: item.item_code || '',
                                     item_id: item.id
                                 };
                             }));
@@ -669,7 +674,7 @@ $(function(){
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
       if (bookId) {
-         getDocNumberByBookId(bookId); 
+         getDocNumberByBookId(bookId);
       } else {
          $("#document_number").val('');
          $("#book_id").val('');
@@ -707,7 +712,7 @@ $(function(){
                     alert(data.message);
                 }
             });
-        }); 
+        });
     }
 
     /*Set Service Parameter*/
@@ -776,10 +781,10 @@ $(function(){
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
-                  let item_name = data.data.item?.item_name || ''; 
-                  let item_id = data.data.item?.id || ''; 
-                  let uom_id = data.data.item?.uom_id || ''; 
-                  let uom_name = data.data.item?.uom?.name || ''; 
+                  let item_name = data.data.item?.item_name || '';
+                  let item_id = data.data.item?.id || '';
+                  let uom_id = data.data.item?.uom_id || '';
+                  let uom_name = data.data.item?.uom?.name || '';
                   $("#head_item_name").val(item_name);
                   $("#head_item_id").val(item_id);
                   $("#head_uom_id").val(uom_id);
@@ -815,7 +820,7 @@ $(function(){
 //            itemCodeChange(null)
 //        }
 //    });
-   
+
 });
 
 /*Add New Row*/
@@ -842,8 +847,8 @@ function initializeAutocomplete2(selector, type) {
                         return {
                             id: item.id,
                             label: `${item.item_name} (${item.item_code})`,
-                            code: item.item_code || '', 
-                            name: item.item_name || '', 
+                            code: item.item_code || '',
+                            name: item.item_name || '',
                             uom_name:item.uom?.name,
                             uom_id:item.uom_id,
                             is_attr:item.item_attributes_count,
@@ -940,7 +945,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
             });
         });
     }
-    let actionUrl = '{{route("mo.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+'&comp_attr='+JSON.stringify(componentAttr); 
+    let actionUrl = '{{route("mo.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+'&comp_attr='+JSON.stringify(componentAttr);
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
@@ -1060,6 +1065,10 @@ function fetchItemDetails(currentTr) {
     let pName = $(currentTr).find("[name*='component_item_name']").val();
     let itemId = $(currentTr).find("[name*='item_id']").val();
 
+    let pwoMappingId = $(currentTr).find("[name*='pwo_mapping_id']").val();
+    let storeId = $("#store_id option:selected").val();
+    let subStoreId = $("#sub_store_id option:selected").val();
+
     if (itemId) {
         let selectedAttr = [];
         $(currentTr).find("[name*='attr_name']").each(function(index, item) {
@@ -1078,7 +1087,7 @@ function fetchItemDetails(currentTr) {
         let total_qty = $(currentTr).find("[name*='[total_qty]']").val() || '';
         let std_qty = $(currentTr).find("[name*='[std_qty]']").val() || '';
 
-        let actionUrl = `{{route("mo.get.itemdetail")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&remark=${remark}&section_name=${sectionName}&sub_section_name=${subSectionName}&station_name=${stationName}&qty_per_unit=${qty_per_unit}&total_qty=${total_qty}&std_qty=${std_qty}`;
+        let actionUrl = `{{route("mo.get.itemdetail")}}?item_id=${itemId}&selectedAttr=${JSON.stringify(selectedAttr)}&remark=${remark}&section_name=${sectionName}&sub_section_name=${subSectionName}&station_name=${stationName}&qty_per_unit=${qty_per_unit}&total_qty=${total_qty}&pwo_papping_id=${pwoMappingId}&store_id=${storeId}&sub_store_id=${subStoreId}&std_qty=${std_qty}`;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
@@ -1087,6 +1096,11 @@ function fetchItemDetails(currentTr) {
                         $("#itemDetailTable tbody tr").slice(-2).remove();
                     }
                     $("#itemDetailTable tbody tr:first").after(data.data.html);
+
+
+                     // Show Prodcut Component Details
+                    $("#componentDetails").html(data.data.mo_product_component_html);
+                    $("#componentDetails").show();
                 }
             });
         });
@@ -1122,13 +1136,13 @@ fetchItemDetails2($("#itemTable2 tbody tr:first"));
 
 // Attach event listener
 $(document).on('input change focus', '#itemTable tr input', function(e) {
-    let currentTr = e.target.closest('tr'); 
+    let currentTr = e.target.closest('tr');
     fetchItemDetails(currentTr);
 });
 
 // Attach event listener
 $(document).on('click', '#itemTable2 tr, #itemTable2 td', function(e) {
-    let currentTr = e.target.closest('tr'); 
+    let currentTr = e.target.closest('tr');
     fetchItemDetails2(currentTr);
 });
 
@@ -1145,7 +1159,7 @@ window.onload = function () {
     $("#itemTable tbody tr[id*='row_']").each(function(index, item) {
         let so_item_id = $(item).find('[name*="[pwo_mapping_id]"]').val();
         if(so_item_id) {
-            ids.push(so_item_id); 
+            ids.push(so_item_id);
         }
     });
     if(ids.length) {
@@ -1169,7 +1183,7 @@ function openBomRequest()
     // initializeAutocompleteQt("department_po", "department_id_po", "department", "name", "");
 
 }
-function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") 
+function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
 {
     $("#" + selector).autocomplete({
         source: function(request, response) {
@@ -1188,7 +1202,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                         return {
                             id: item.id,
                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                            code: item[labelKey1] || '', 
+                            code: item[labelKey1] || '',
                         };
                     }));
                 },
@@ -1225,7 +1239,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
     });
 }
 
-// function getPwo() 
+// function getPwo()
 // {
 //     let itemId = $("#item_id").val() || '';
 //     let storeId = $("#filter_store_id").val() || '';
@@ -1251,7 +1265,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
 //     });
 // }
 
-function getPwo() 
+function getPwo()
 {
     let itemId = $("#item_id").val() || '';
     let selectedPiIds = localStorage.getItem('selectedMoProductIds') ?? '[]';
@@ -1445,7 +1459,7 @@ $(document).on('click', '#closeBtnSubmit', (e) => {
             setTimeout(() => {
                 location.href = '{{route("mo.index")}}';
             },1500);
-            
+
         }
     })
     .catch(error => console.error('Error:', error));
@@ -1563,7 +1577,7 @@ $(document).on('click', '#revokeButton', (e) => {
             }
             location.reload();
         });
-    }); 
+    });
 });
 </script>
 @endsection

@@ -81,8 +81,16 @@
                                 @if($buttons['amend'])
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                                 @endif
+                                @if($buttons['post'])
+                                    <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather='check-circle'></i> Post
+                                    </button>
+                                @endif
                                 @if($buttons['voucher'])
-                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
+                                    <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather='file-text'></i>
+                                        Voucher
+                                    </button>
                                 @endif
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
@@ -418,7 +426,7 @@
                                                                 <i data-feather="plus"></i> Add Product
                                                             </a>
                                                             @if(!isset($slip->document_status) || $slip->document_status == ConstantHelper::DRAFT)
-                                                                <a href="#" onclick="deleteAlterItemRows();" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" data-tab="raw-materials">
+                                                                <a href="#" onclick="deleteItemRows();" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" data-tab="raw-materials">
                                                                     <i data-feather="x-circle"></i> Delete
                                                                 </a>
 
@@ -1138,6 +1146,7 @@
 <!-- Inspection Checklist Modal  -->
 @include('procurement.inspection.partials.inspection-checklist-modal')
 
+<!-- Post Voucher Modal  -->
 <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
         <div class="modal-content">
@@ -1554,18 +1563,30 @@
 
         function deleteItemRows() {
             let deletedItemIds = JSON.parse(localStorage.getItem('deletedSiItemIds')) || [];
+            let deletedConsItemIds = JSON.parse(localStorage.getItem('deletedConsItemIds')) || [];
             const allRowsCheck = document.querySelectorAll('#production-items .item_row_checks');
+            const allConsCheck = document.querySelectorAll('#raw-materials .consumption_row_checks');
+          
             let deleteableElementsId = [];
+
             for (let index = allRowsCheck.length - 1; index >= 0; index--) {
-                if (allRowsCheck[index].checked) {
+            
+                if (allRowsCheck[index]) {
                     const currentRowIndex = allRowsCheck[index].getAttribute('del-index');
-                    const currentRow = document.getElementById('item_row_' + currentRowIndex);
-                    if (currentRow) {
-                        const dataId = currentRow.getAttribute('data-id');
-                        if (dataId) {
-                            deletedItemIds.push(dataId);
+                    var currentRowcheckbox = document.getElementById('item_row_check_' + currentRowIndex);
+                    if(!currentRowcheckbox){
+                        var currentRowcheckbox = document.getElementById('item_checkbox_' + currentRowIndex);
+                    }
+                  console.log(currentRowcheckbox);
+                    if(currentRowcheckbox.checked){
+                        const inputElement = document.getElementById('items_dropdown_' + currentRowIndex);
+                        if (inputElement) {
+                            const dataId = inputElement.getAttribute('data-id');
+                            if (dataId) {
+                                deletedItemIds.push(dataId);
+                            }
+                            deleteableElementsId.push('item_row_' + currentRowIndex);
                         }
-                        deleteableElementsId.push('item_row_' + currentRowIndex);
                     }
                 }
             }
@@ -1581,8 +1602,38 @@
                     }
                     row.remove();
                 }
+            }  
+            
+            // write code for consumption 
+            for (let Consindex = allConsCheck.length - 1; Consindex >= 0; Consindex--) {
+                if (allConsCheck[Consindex]) {
+                    const parentRow = allConsCheck[Consindex].closest('tr');
+                    const currentRowIndex = parentRow.getAttribute('data-index');
+                    const currentRow = document.querySelector('#raw-materials #item_row_' + currentRowIndex);
+                    const currentConcheckbox = document.getElementById('item_co_row_check_' + currentRowIndex);
+
+                    if (currentConcheckbox && currentConcheckbox.checked) {
+                        if (currentRow) {
+                            const dataId = currentRow.getAttribute('data-id');
+                            if (dataId) {
+                                deletedConsItemIds.push(dataId);
+                            }
+                            currentRow.remove();
+                        }
+                    }
+                }
             }
+
             localStorage.setItem('deletedSiItemIds', JSON.stringify(deletedItemIds));
+            let itemsIds=JSON.parse(localStorage.getItem('deletedSiItemIds')) || [];
+            const uniqueIds = [...new Set(deletedConsItemIds)];
+            if (itemsIds.length === 0) {
+                localStorage.setItem('deletedConsItemIds', JSON.stringify(uniqueIds));
+            } else {
+                localStorage.setItem('deletedConsItemIds', JSON.stringify([]));
+            }
+            console.log(JSON.parse(localStorage.getItem('deletedSiItemIds')) || [])
+            console.log(JSON.parse(localStorage.getItem('deletedConsItemIds')) || [])
             const allRowsNew = document.querySelectorAll('#production-items .item_row_checks');
             if (allRowsNew.length > 0) {
                 disableHeader();
@@ -2062,6 +2113,7 @@
         localStorage.setItem('deletedHeaderDiscTedIds', JSON.stringify([]));
         localStorage.setItem('deletedHeaderExpTedIds', JSON.stringify([]));
         localStorage.setItem('deletedSiItemIds', JSON.stringify([]));
+        localStorage.setItem('deletedConsItemIds', JSON.stringify([]));
         localStorage.setItem('deletedAttachmentIds', JSON.stringify([]));
         const order = @json(isset($slip) ? $slip : null);
         if (order) {
@@ -3368,108 +3420,111 @@ document.addEventListener('input', function (e) {
         if (totalBundleQtyDiv) {
             totalBundleQtyDiv.textContent = existingQty;
         }
-    }
+        }
 
     function onPostVoucherOpen(type = "not_posted")
-{
-    resetPostVoucher();
-    const apiURL = "{{route('sale.invoice.posting.get')}}";
-    $.ajax({
-        url: apiURL + "?book_id=" + $("#series_id_input").val() + "&document_id=" + "{{isset($slip) ? $slip -> id : ''}}" + "&type=" + (type == "not_posted" ? 'get' : 'view'),
-        type: "GET",
-        dataType: "json",
-        success: function(data) {
-            if (!data.data.status) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: data.data.message,
-                    icon: 'error',
-                });
-                return;
-            }
-            const voucherEntries = data.data.data;
-            var voucherEntriesHTML = ``;
-            Object.keys(voucherEntries.ledgers).forEach((voucher) => {
-                voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
-                    voucherEntriesHTML += `
-                    <tr>
-                    <td>${voucher}</td>
-                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
-                    <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
-                    <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
-                    <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                    <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
-					</tr>
-                    `
-                });
-            });
-            voucherEntriesHTML+= `
-            <tr>
-                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
-			</tr>
-            `;
-            document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
-            document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
-            document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
-            document.getElementById('voucher_book_code').value = voucherEntries.book_code;
-            document.getElementById('voucher_currency').value = voucherEntries.currency_code;
-            if (type === "posted") {
-                document.getElementById('posting_button').style.display = 'none';
-            } else {
-                document.getElementById('posting_button').style.removeProperty('display');
-            }
-            $('#postvoucher').modal('show');
-        }
-    });
+    {
+        console.log('onPostVoucherOpen');
 
-}
-
-function postVoucher(element)
-{
-    const bookId = "{{isset($slip) ? $slip -> book_id : ''}}";
-    const documentId = "{{isset($slip) ? $slip -> id : ''}}";
-    const postingApiUrl = "{{route('sale.invoice.post')}}"
-    if (bookId && documentId) {
+        resetPostVoucher();
+        const apiURL = "{{route('production.slip.get.posting.details')}}";
         $.ajax({
-            url: postingApiUrl,
-            type: "POST",
+            url: apiURL + "?book_id=" + $("#series_id_input").val() + "&document_id=" + "{{isset($slip) ? $slip -> id : ''}}" + "&type=" + (type == "not_posted" ? 'get' : 'view'),
+            type: "GET",
             dataType: "json",
-            contentType: "application/json", // Specifies the request payload type
-            data: JSON.stringify({
-                // Your JSON request data here
-                book_id: bookId,
-                document_id: documentId,
-            }),
             success: function(data) {
-                const response = data.data;
-                if (response.status) {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: response.message,
-                        icon: 'success',
-                    });
-                    location.reload();
-                } else {
+                if (!data.data.status) {
                     Swal.fire({
                         title: 'Error!',
-                        text: response.message,
+                        text: data.data.message,
                         icon: 'error',
                     });
+                    return;
                 }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Some internal error occured',
-                    icon: 'error',
+                const voucherEntries = data.data.data;
+                // console.log(voucherEntries)
+                var voucherEntriesHTML = ``;
+                Object.keys(voucherEntries.ledgers).forEach((voucher) => {
+                    voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
+                        voucherEntriesHTML += `
+                        <tr>
+                        <td>${voucher}</td>
+                        <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                        <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
+                        <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
+                        <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                        <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                        </tr>
+                        `
+                    });
                 });
+                voucherEntriesHTML+= `
+                <tr>
+                    <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                    <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
+                    <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                </tr>
+                `;
+                document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
+                document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
+                document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
+                document.getElementById('voucher_book_code').value = voucherEntries.book_code;
+                document.getElementById('voucher_currency').value = voucherEntries.currency_code;
+                if (type === "posted") {
+                    document.getElementById('posting_button').style.display = 'none';
+                } else {
+                    document.getElementById('posting_button').style.removeProperty('display');
+                }
+                $('#postvoucher').modal('show');
             }
         });
 
     }
-}
+
+    function postVoucher(element)
+    {
+        const bookId = "{{isset($slip) ? $slip -> book_id : ''}}";
+        const documentId = "{{isset($slip) ? $slip -> id : ''}}";
+        const postingApiUrl = "{{route('production.slip.post.voucher')}}"
+        if (bookId && documentId) {
+            $.ajax({
+                url: postingApiUrl,
+                type: "POST",
+                dataType: "json",
+                contentType: "application/json", // Specifies the request payload type
+                data: JSON.stringify({
+                    // Your JSON request data here
+                    book_id: bookId,
+                    document_id: documentId,
+                }),
+                success: function(data) {
+                    const response = data.data;
+                    if (response.status) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: response.message,
+                            icon: 'success',
+                        });
+                        location.reload();
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: response.message,
+                            icon: 'error',
+                        });
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Some internal error occured',
+                        icon: 'error',
+                    });
+                }
+            });
+
+        }
+    }
 
 function resetPostVoucher()
 {
@@ -4035,37 +4090,6 @@ $(document).on("click", "#raw-materials .item_header_rows", (e) => {
 });
 
 
-function deleteAlterItemRows(){
-    let checkedBox = $('.consumption_row_checks:checked').first();
-    let closestRow = checkedBox.closest('tr');
-    let alternate= closestRow.find('input[name*="[alternate_id]"]').val();
-    if(alternate){
-        closestRow.remove();
-        let pslip_bom_cons_id= closestRow.find('input[name*="[pslip_bom_cons_id]"]').val();
-         $.ajax({
-                url: "{{ route('production.slip.remove_alternate_item') }}",
-                type: "GET",
-                data: {
-                    pslip_bom_cons_id: pslip_bom_cons_id,
-                },
-                dataType: "json",
-                success: function(data) {
-                     Swal.fire({
-                        title: 'Success!',
-                        text: data.message,
-                        icon: 'success',
-                    });
-                },
-                error:function(error){
-                Swal.fire({
-                        title: 'Error!',
-                        text: error.responseJSON.message,
-                        icon: 'error',
-                    });
-                }
-            });
-    }
-}
  function addConsumtionAlternateItems(){
 
         let checkedBox = $('.consumption_row_checks:checked').first();
@@ -4271,6 +4295,8 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 if (data.data.attr) {
                     $("#attribute").modal('show');
                     $(".select2").select2();
+                }else{
+                    avlStock(rowCount)
                 }
                 qtyEnabledDisabled();
             }

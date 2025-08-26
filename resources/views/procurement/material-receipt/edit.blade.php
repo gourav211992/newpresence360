@@ -89,14 +89,16 @@
                                         class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                             <i data-feather='edit'></i> Amendment
                                         </button>
-                                        @if (@$mrn->deviationJob)
-                                            <button type="button" data-bs-toggle="modal" id="deviation-button"
-                                            class="btn btn-primary btn-sm mb-50 mb-sm-0">
-                                                <i data-feather='edit'></i> Deviation
-                                            </button>
-                                        @endif
                                     @endif
                                 @endif
+                                <!-- @if (@$mrn->deviationJob)
+                                    <input type="hidden" name="mrn_head_id" id="mrn_head_id" value="{{ $mrn?->id }}">
+                                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn?->deviationJob?->id }}">
+                                    <button type="button" data-bs-toggle="modal" id="deviation-button"
+                                    class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                        <i data-feather='edit'></i> Deviation
+                                    </button>
+                                @endif -->
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
                                 @endif
@@ -1021,6 +1023,8 @@
                                     <h5 class="mb-0 fw-bold {{ ($itemUniqueCodes['pending_unique_codes'] > 0) ? 'text-danger' : 'text-dark' }}">{{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
                                 </div>
                             </div>
+                            <!-- <div id="deviation-batch-table-wrap" class="mt-3"></div>
+                            <input type="hidden" name="deviation_breakup_json" id="deviation_breakup_json"> -->
                         </div>
                         <div class="mb-3">
                             <label for="remarks" class="form-label fw-semibold text-dark">Remarks</label>
@@ -1052,6 +1056,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/asset-registration.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/item-batch.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -1059,6 +1064,8 @@
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
         var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
+
         let currentIndex = '';
 
         if(currentProcessType == 'jo')
@@ -1079,8 +1086,6 @@
             $("#addNewItemBtn").hide();
             $("#importItem").hide();
         }
-
-
 
         let tableRowCount = 0;
         /*Clear local storage*/
@@ -1115,7 +1120,7 @@
         @else
             @if(($mrn->document_status != 'draft') && ($mrn->document_status != 'rejected'))
                 $(':input').prop('readonly', true);
-                $('textarea[name="amend_remark"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false).prop('disabled', false);
+                $('textarea[name="amend_remark"], textarea[name="closing_remarks"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false).prop('disabled', false);
                 $('select').not('.amendmentselect select').prop('disabled', true);
                 $("#deleteBtn").remove();
                 $("#addNewItemBtn").remove();
@@ -1126,9 +1131,12 @@
                 $(".deleteSummaryDiscountRow").remove();
                 $("#add_new_head_exp").remove();
                 $(".deleteExpRow").remove();
+                $('a.add-batch-row-header, button.add-batch-row-header').remove();
+                $('a.remove-batch-row, button.remove-batch-row, .delete-batch-row-header').remove();
+
                 $(document).on('show.bs.modal', function (e) {
                     if(e.target.id != 'approveModal') {
-                        if(e.target.id != 'shortCloseModal') {
+                        if(e.target.id != 'deviateModal') {
                             $(e.target).find('.modal-footer').remove();
                         }
                         $('select').not('.amendmentselect select').prop('disabled', true);
@@ -3963,6 +3971,13 @@
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
             $("#" + selector).autocomplete({
                 source: function(request, response) {
+                    let ids = [];
+                    $('.modal.show').find("tbody tr").each(function(index, item) {
+                        let tedId = $(item).find("input[name*='ted_']").val();
+                        if (tedId) {
+                            ids.push(tedId);
+                        }
+                    });
                     $.ajax({
                         url: '/search',
                         method: 'GET',
@@ -3970,11 +3985,13 @@
                         data: {
                             q: request.term,
                             type:type,
+                            ids: JSON.stringify(ids)
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
                                 return {
                                     id: item.id,
+                                    hsn_id: item.hsn_id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
                                 };
@@ -3988,12 +4005,13 @@
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
                     var itemId = ui.item.id;
+                    var hsnId = ui?.item?.hsn_id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
 
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -4001,7 +4019,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }
@@ -4175,36 +4193,68 @@
                     $expBody.find('.display_summary_exp_row').remove();
 
                     if (finalExpenses.length) {
-                        let rows = '';
+                        let tr = '';
                         finalExpenses.forEach((item, i) => {
                             const index = i + 1;
-                            rows += `
+                            tr += `
                                 <tr class="display_summary_exp_row">
                                     <td>${index}</td>
-                                    <td>${item.ted_name}
+                                    <td class="text-right">
+                                        ${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][hsn_id]" value="${item.hsn_id}">
                                         <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
                                         <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
                                         <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
                                     </td>
-                                    <td class="text-end">${item.ted_perc ?? 0}
-                                        <input type="hidden" name="exp_summary[${index}][e_perc]" value="${item.ted_perc ?? 0}">
-                                        <input type="hidden" name="exp_summary[${index}][hidden_e_perc]" value="${item.ted_perc}">
-                                        <input type="hidden" name="exp_summary[${index}][e_purch_id]" value="${item.purchase_order_id ?? null}">
-                                        <input type="hidden" name="exp_summary[${index}][e_job_id]" value="${item.job_order_id ?? null}">
-                                        <input type="hidden" name="exp_summary[${index}][e_ref_type]" value="${item.ref_type ?? null}">
+                                    <td class="text-end">
+                                        ${parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][e_amnt]"
+                                            value="${(item.ted_amount ?? "0").toString().replace(/,/g, '')}">
                                     </td>
                                     <td class="text-end">
-                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="">
+                                        ${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][tax_amount]"
+                                            value="${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}">
+                                    </td>
+                                    <td class="text-end">
+                                        ${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][total]"
+                                            value="${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}">
                                     </td>
                                     <td>
-                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                        ${item.tax_breakup ? formatTaxBreakup(item.tax_breakup) : ''}
+                                        <input type="hidden" name="exp_summary[${index}][tax_breakup]" value='${item.tax_breakup ?? ''}'>
+                                    </td>
+                                    <td>
+                                        <!-- <a href="javascript:;" class="text-danger deleteExpRow">
                                             <i class="fa fa-trash"></i>
-                                        </a>
+                                        </a> -->
                                     </td>
                                 </tr>`;
                         });
-                        $expBody.find('#expSummaryFooter').before(rows);
+                        if (!$(".display_summary_exp_row").length) {
+                            $("#summaryExpTable #expSummaryFooter").before(tr);
+                        } else {
+                            $(".display_summary_exp_row:last").after(tr);
+                        }
                         $("#f_header_expense_hidden").removeClass('d-none');
+                        $("#new_exp_name_select").val("");
+                        $("#new_exp_id").val("");
+                        $("#new_exp_name").val("");
+                        $("#new_exp_perc").val("").prop("readonly", false);
+                        $("#new_exp_value").val("").prop("readonly", false);
+                        let total_head_exp = 0;
+                        $("[name*='[total]']").each(function (index, item) {
+                            total_head_exp += Number($(item).val());
+                        });
+
+                        $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
+                        summaryExpTotal();
                     } else {
                         $("#f_header_expense_hidden").addClass('d-none');
                     }

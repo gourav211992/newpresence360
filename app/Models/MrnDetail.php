@@ -398,6 +398,11 @@ class MrnDetail extends Model
         return $this->hasOne(FixedAssetRegistration::class,'mrn_detail_id')->latest();
     }
 
+    public function assetDetail()
+    {
+        return $this->hasOne(MrnAssetDetail::class,'detail_id');
+    }
+
     public function item_attributes_array()
     {
         $itemId = $this->getAttribute('item_id');

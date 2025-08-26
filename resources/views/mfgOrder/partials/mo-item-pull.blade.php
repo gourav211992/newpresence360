@@ -22,7 +22,7 @@
    <td>
       <input type="text" name="components[{{$rowCount}}][location_id]" value="{{$pwoItem->pwo?->location?->store_name  ?? ''}}" class="form-control mw-100 mb-25" readonly/>
    </td>
-   <td class="poprod-decpt"> 
+   <td class="poprod-decpt">
       <input readonly type="text" name="component_item_name[{{$rowCount}}]" value="{{$pwoItem?->item?->item_code}}" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " />
       <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$pwoItem->item_id}}"/>
       <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$pwoItem?->item?->item_code}}"/>
@@ -48,7 +48,7 @@
       </select>
    </td>
    <td>
-      <input disabled type="number" value="{{$pwoItem->qty - $pwoItem->mo_product_qty}}" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][qty]"/>
+      <input disabled type="number" value="{{$pwoItem->qty - $pwoItem->mo_product_qty}}" step="any" class="form-control mw-100 text-end" id="components_bom_qty_{{$rowCount}}" name="components[{{$rowCount}}][qty]"/>
    </td>
    <td>
       <input type="hidden" name="components[{{$rowCount}}][customer_id]" value="{{$pwoItem?->so?->customer_id}}" />
@@ -76,7 +76,7 @@
          <div class="me-50 mx-1 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}"><span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span></div>
       </div>
    </td>
-   <input type="hidden" name="components[{{$rowCount}}][pwo_mapping_id]" value="{{$pwoItem->id}}">
+   <input type="hidden" name="components[{{$rowCount}}][pwo_mapping_id]" id="pwo_mapping_id_{{$rowCount}}" value="{{$pwoItem->id}}">
    <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$pwoItem->so_id}}">
    <input type="hidden" name="components[{{$rowCount}}][so_item_id]" value="{{$pwoItem->so_item_id}}">
 </tr>

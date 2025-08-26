@@ -139,13 +139,13 @@ class StoragePointHelper
                     }
                     
                     // If still empty, try category_id
-                    if ($records->isEmpty() && $item->category_id) {
-                        $records = \DB::table('erp_wh_item_mappings')
-                        ->when($locationId, fn($q) => $q->where('store_id', $locationId))
-                        ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
-                        ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string)$item->category_id])
-                        ->get();
-                    }
+                    // if ($records->isEmpty() && $item->category_id) {
+                    //     $records = \DB::table('erp_wh_item_mappings')
+                    //     ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+                    //     ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+                    //     ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string)$item->category_id])
+                    //     ->get();
+                    // }
                 }
             }
 
@@ -517,10 +517,6 @@ class StoragePointHelper
                 return self::errorResponse("Storage point not found.");
             }
 
-            // Fetch parent hierarchy
-            // $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
-            // $storagePoint->parents = implode(' → ', $parentHierarchy); // Optional formatting
-
             return self::successResponse("Storage point details fetched successfully.", $storagePoint);
 
         } catch (\Exception $e) {
@@ -545,10 +541,6 @@ class StoragePointHelper
                 return self::errorResponse("Storage point not found.");
             }
 
-            // Fetch parent hierarchy
-            // $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
-            // $storagePoint->parents = implode(' → ', $parentHierarchy);
-
             return self::successResponse("Storage point details fetched successfully.", $storagePoint);
 
         } catch (\Exception $e) {
@@ -556,97 +548,99 @@ class StoragePointHelper
         }
     }
 
-    public static function isStoragePointMappedToItem($itemId, $storagePointId, $locationId = null, $subLocationId = null)
-    {
-        // Step 1: Try item-level mapping
-        $records = \DB::table('erp_wh_item_mappings')
-            ->when($locationId, fn($q) => $q->where('store_id', $locationId))
-            ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
-            ->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string) $itemId])
-            ->get();
+    // public static function isStoragePointMappedToItem($itemId, $storagePointId, $locationId = null, $subLocationId = null)
+    // {
+    //     // Step 1: Try item-level mapping
+    //     $records = \DB::table('erp_wh_item_mappings')
+    //         ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+    //         ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+    //         ->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string) $itemId])
+    //         ->get();
 
-        // Step 2: If item-level mapping not found → check sub_category_id and category_id
-        if ($records->isEmpty()) {
-            $item = \DB::table('erp_items')->find($itemId);
+    //     // Step 2: If item-level mapping not found → check sub_category_id and category_id
+    //     if ($records->isEmpty()) {
+    //         $item = \DB::table('erp_items')->find($itemId);
 
-            if ($item) {
-                if ($item->subcategory_id) {
-                    $records = \DB::table('erp_wh_item_mappings')
-                        ->whereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string) $item->subcategory_id])
-                        ->get();
-                }
+    //         if ($item) {
+    //             if ($item->subcategory_id) {
+    //                 $records = \DB::table('erp_wh_item_mappings')
+    //                     ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+    //                     ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+    //                     ->whereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string) $item->subcategory_id])
+    //                     ->get();
+    //             }
 
-                if ($records->isEmpty() && $item->category_id) {
-                    $records = \DB::table('erp_wh_item_mappings')
-                        ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string) $item->category_id])
-                        ->get();
-                }
-            }
-        }
+    //             // if ($records->isEmpty() && $item->category_id) {
+    //             //     $records = \DB::table('erp_wh_item_mappings')
+    //             //         ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string) $item->category_id])
+    //             //         ->get();
+    //             // }
+    //         }
+    //     }
 
-        // Step 3: Parse structure_details and match storage_point_id
-        foreach ($records as $record) {
-            $structureDetails = json_decode($record->structure_details, true);
-            if (!$structureDetails) continue;
+    //     // Step 3: Parse structure_details and match storage_point_id
+    //     foreach ($records as $record) {
+    //         $structureDetails = json_decode($record->structure_details, true);
+    //         if (!$structureDetails) continue;
 
-            foreach ($structureDetails as $level) {
-                if (!empty($level['level-values']) && in_array((string) $storagePointId, $level['level-values'])) {
-                    return true; // ✅ Found
-                }
-            }
+    //         foreach ($structureDetails as $level) {
+    //             if (!empty($level['level-values']) && in_array((string) $storagePointId, $level['level-values'])) {
+    //                 return true; // ✅ Found
+    //             }
+    //         }
         
 
-            // Parent chain matching
-            $parentChain = [];
-            $currentId = $storagePointId;
+    //         // Parent chain matching
+    //         $parentChain = [];
+    //         $currentId = $storagePointId;
 
-            while ($currentId) {
-                $storage = \DB::table('erp_wh_details')->find($currentId);
-                if (!$storage) break;
+    //         while ($currentId) {
+    //             $storage = \DB::table('erp_wh_details')->find($currentId);
+    //             if (!$storage) break;
 
-                $parentChain[$storage->wh_level_id] = $currentId;
-                $currentId = $storage->parent_id;
-            }
+    //             $parentChain[$storage->wh_level_id] = $currentId;
+    //             $currentId = $storage->parent_id;
+    //         }
 
-            foreach ($structureDetails as $level) {
-                $levelId = $level['level-id'] ?? null;
-                $levelValues = $level['level-values'] ?? [];
+    //         foreach ($structureDetails as $level) {
+    //             $levelId = $level['level-id'] ?? null;
+    //             $levelValues = $level['level-values'] ?? [];
 
-                if ($levelId && isset($parentChain[$levelId])) {
-                    if (in_array((string) $parentChain[$levelId], $levelValues)) {
-                        return true; // ✅ Mapped via parent
-                    }
-                }
-            }
+    //             if ($levelId && isset($parentChain[$levelId])) {
+    //                 if (in_array((string) $parentChain[$levelId], $levelValues)) {
+    //                     return true; // ✅ Mapped via parent
+    //                 }
+    //             }
+    //         }
 
-            // Now: Check if the storagePointId is a **child** of mapped level-values
-            foreach ($structureDetails as $level) {
-                $levelValues = $level['level-values'] ?? [];
-                foreach ($levelValues as $mappedId) {
-                    $childIds = self::findChildStoragePoints($mappedId); // Same function as in getStoragePoints()
-                    if (in_array($storagePointId, $childIds)) {
-                        return true; // ✅ Found in children
-                    }
-                }
-            }
-        }
+    //         // Now: Check if the storagePointId is a **child** of mapped level-values
+    //         foreach ($structureDetails as $level) {
+    //             $levelValues = $level['level-values'] ?? [];
+    //             foreach ($levelValues as $mappedId) {
+    //                 $childIds = self::findChildStoragePoints($mappedId); // Same function as in getStoragePoints()
+    //                 if (in_array($storagePointId, $childIds)) {
+    //                     return true; // ✅ Found in children
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        // Step 4: Check fallback storage points (if you want)
-        if ($records->isEmpty() && $locationId) {
-            $fallbackStoragePoints = \DB::table('erp_wh_details')
-                ->where('store_id', $locationId)
-                ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
-                ->where('is_storage_point', 1)
-                ->pluck('id')
-                ->toArray();
+    //     // Step 4: Check fallback storage points (if you want)
+    //     if ($records->isEmpty() && $locationId) {
+    //         $fallbackStoragePoints = \DB::table('erp_wh_details')
+    //             ->where('store_id', $locationId)
+    //             ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+    //             ->where('is_storage_point', 1)
+    //             ->pluck('id')
+    //             ->toArray();
 
-            if (in_array((int) $storagePointId, $fallbackStoragePoints)) {
-                return true; // ✅ Found in fallback (no mapping)
-            }
-        }
+    //         if (in_array((int) $storagePointId, $fallbackStoragePoints)) {
+    //             return true; // ✅ Found in fallback (no mapping)
+    //         }
+    //     }
 
-        return false; // ❌ Not mapped
-    }
+    //     return false; // ❌ Not mapped
+    // }
 
 
 

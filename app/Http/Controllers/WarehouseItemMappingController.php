@@ -340,7 +340,7 @@ class WarehouseItemMappingController extends Controller
             ->get();
 
         // Fetch items that belong to any of the selected parent IDs
-        $items = Item::whereIn('category_id', $parentIds)
+        $items = Item::whereIn('subcategory_id', $parentIds)
             ->select('id', 'item_code')
             ->orderBy('item_code')
             ->get();
@@ -367,8 +367,7 @@ class WarehouseItemMappingController extends Controller
         }
 
         // Fetch items that belong to any of the selected parent IDs
-        $items = Item::whereIn('category_id', $categoryIds)
-            ->orWhereIn('subcategory_id', $subCategoryIds)
+        $items = Item::whereIn('subcategory_id', $subCategoryIds)
             ->select('id', 'item_code')
             ->orderBy('item_code')
             ->get();
@@ -433,12 +432,11 @@ class WarehouseItemMappingController extends Controller
         })->get(); // Main categories
         $allSubCategories = Category::whereNotNull('parent_id')->get(); // All subcategories
         $allItems = Item::select('id', 'item_code as name', 'category_id', 'subcategory_id')->get();
-
+        
         $mappingsData = [];
 
         foreach ($mappings as $mapping) {
             $categoryIds = $mapping->category_id ?? [];
-            $subCategoryIds = $mapping->sub_category_id ?? [];
             $itemIds = $mapping->item_id ?? [];
             $structureDetails = $mapping->structure_details ?? [];
 
@@ -451,19 +449,10 @@ class WarehouseItemMappingController extends Controller
                 ];
             });
 
-            // Filter subcategories by selected parent categories
-            $subCategories = Category::whereIn('parent_id', $categoryIds)->get()->map(function ($sub) use ($subCategoryIds) {
-                return [
-                    'id' => $sub->id,
-                    'name' => $sub->name,
-                    'selected' => in_array($sub->id, $subCategoryIds)
-                ];
-            });
-
             // Filter items by selected category + subcategory
             $items = $allItems
-                ->filter(function ($item) use ($categoryIds, $subCategoryIds) {
-                    return in_array($item->category_id, $categoryIds) || in_array($item->subcategory_id, $subCategoryIds);
+                ->filter(function ($item) use ($categoryIds) {
+                    return in_array($item->subcategory_id, $categoryIds);
                 })
                 ->map(function ($item) use ($itemIds) {
                     return [
@@ -502,12 +491,12 @@ class WarehouseItemMappingController extends Controller
             $mappingsData[] = [
                 'detail_id' => $mapping->id,
                 'categories' => $categories,
-                'sub_categories' => $subCategories,
                 'items' => $items,
                 'structures' => $structures
             ];
-        }
 
+        }
+        
         return response()->json([
             'status' => 200,
             'is_exist' => $isExist,

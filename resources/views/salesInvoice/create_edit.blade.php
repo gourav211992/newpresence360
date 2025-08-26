@@ -70,10 +70,10 @@
                                             $options = ['Tax Invoice'];
                                         }
                                          else if ($order->document_type == "ti"){
-                                         
+
                                             $options = ['Lorry Receipt'];
                                         }
-                                       
+
                                     @endphp
                                     @foreach ($options as $key)
                                         <li>
@@ -95,10 +95,16 @@
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                                 @endif
                                 @if($buttons['post'])
-                                <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
+                                    <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                        Post
+                                    </button>
                                 @endif
                                 @if($buttons['voucher'])
-                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
+                                    <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        Voucher
+                                    </button>
                                 @endif
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
@@ -177,7 +183,7 @@
 
                                                         <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($order) ? $order -> book_code : ''}}"></input>
                                                      </div>
-                                                     
+
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
                                                             <label class="form-label">Document No <span class="text-danger">*</span></label>
@@ -213,20 +219,20 @@
                                                     </div>
 
                                                     <div class="row align-items-center mb-1 {{ $showSubLocation ? '' : 'd-none' }}">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Store<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Store<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" name = "sub_store_id" id = "sub_store_id_input">
                                                                 @if (isset($order) && $order -> sub_store_id)
                                                                     <option value = "{{ $order -> sub_store_id }}">{{ $order -> subStore ?-> name }}</option>
                                                                 @endif
                                                             </select>
                                                         </div>
-                                                    </div>                                                    
-                                                    
-                                                    
+                                                    </div>
+
+
 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
@@ -299,7 +305,7 @@
                                                             </button>
 
                                                             </div>
-                                                        
+
                                             </div>
                                     </div>
 
@@ -684,7 +690,7 @@
 
                                                                         <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> lease_schedule_id}}" name = "quotation_item_ids[]"/>
                                                                         <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem -> land_lease_id}}" name = "quotation_item_ids_header[]"/>
-                         
+
                                                                         <input type = "hidden" id = "qt_type_id_{{$orderItemIndex}}" value = "land-lease" name = "quotation_item_type[]"/>
 
                                                                         <input type = "hidden" id = "qt_book_id_{{$orderItemIndex}}" value = "{{$orderItem -> lease ?-> book_id}}" />
@@ -709,7 +715,7 @@
                                                                         <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids[]"/>
                                                                         <input type = "hidden" id = "lr_id_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids[]"/>
                                                                         <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids_header[]"/>
-                         
+
                                                                         <input type = "hidden" id = "qt_type_id_{{$orderItemIndex}}" value = "lr" name = "quotation_item_type[]"/>
 
                                                                         <input type = "hidden" id = "qt_book_id_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> book_id}}" />
@@ -741,7 +747,7 @@
 
                                                                             </select>
                                                                         </td>
-                                                                        
+
                                                                         <input type = "hidden" value = "{{$orderItem -> store_id}}" name = "item_store[{{$orderItemIndex}}]" />
                                                                         <td><input {{$orderItem -> disable_qty ? 'readonly' : ''}} type="text" id = "item_qty_{{$orderItemIndex}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> order_qty}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{($orderItem -> max_attribute)}}" /></td>
                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" name = "item_rate[]" {{$docType == 'dnote' ? 'readonly' : ''}} oninput = "changeItemRate(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> rate}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
@@ -782,8 +788,8 @@
                                                              </tbody>
 
                                                              <tfoot>
-                                                                 
-                                                                 <tr class="totalsubheadpodetail"> 
+
+                                                                 <tr class="totalsubheadpodetail">
                                                                     <td colspan="7" id = "item_row_colspan"></td>
                                                                     <td class="text-end" id = "all_items_total_value">00.00</td>
                                                                     <td class="text-end" id = "all_items_total_discount">00.00</td>
@@ -1146,7 +1152,7 @@
                         <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder('lr');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>        
+                </div>
 				<div class="modal-body">
 					 <div class="row">
 
@@ -1165,8 +1171,8 @@
                                 <input type = "hidden" id = "book_id_lr_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1200,14 +1206,14 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="lorry_receipt_table">
-                                    <input type = "hidden" id = "lorry_receipt_table_value" value = "lr"> 
+                                    <input type = "hidden" id = "lorry_receipt_table_value" value = "lr">
 									<thead>
 										 <tr>
 											<th>
 												<!-- <div class="form-check form-check-inline me-0">
                                                     <input class="form-check-input" type="checkbox" id="checkAllSOElement" onchange="checkAllSO(this);">
                                                 </div> -->
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Doc No.</th>
 											<th>Doc Date</th>
@@ -1215,7 +1221,7 @@
                                             <th>Consignor Name</th>
 											<th>Source</th>
 											<th>Destination</th>
-				
+
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1287,7 +1293,7 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="dnote_invoice_table">
-                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote"> 
+                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote">
 									<thead>
 										 <tr>
 											<th>
@@ -2616,7 +2622,7 @@
                     height: 14
                 });
             }
-            
+
         })
 
         $(document).ready(function() {
@@ -3770,7 +3776,7 @@
                         $("#customer_email_input").val(currentOrder.customer_email);
                         $("#customer_gstin_input").val(currentOrder.customer_gstin);
                         //First add options also
-                     
+
                         $("#currency_dropdown").empty(); // Clear existing options
                         $("#currency_dropdown").append(new Option(
                             currentOrder.customer ? currentOrder.customer.currency?.name || 'Default Currency Name' : 'Default Currency Name',
@@ -3913,7 +3919,7 @@
                                 }
                                 var headerStoreId = $("#store_id_input").val();
                                 var headerStoreCode = $("#store_id_input").attr("data-name");
-                                
+
                                 var newProcessedRow = `
                                 <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');">
                                     <td class="customernewsection-form">
@@ -3958,7 +3964,7 @@
 
                                     </select>
                                         </td>
-                                        
+
                                         <td><input ${disableQty ? 'readonly' : ''} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
                                         <td><input readonly type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
@@ -5511,7 +5517,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             method: 'GET',
             dataType: 'json',
             data: {
-               
+
                 quantity: document.getElementById('item_qty_' + itemRowId).value,
                 item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
                 uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
@@ -5619,7 +5625,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
 
     document.addEventListener('DOMContentLoaded', function() {
         onHeaderLocationChange(document.getElementById('store_id_input'));
-    });    
+    });
 
     function getAndSetItemRate(itemIndex, type)
     {

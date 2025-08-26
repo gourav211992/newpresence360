@@ -8,7 +8,9 @@ use stdClass;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Arr;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Http\Request;
@@ -373,17 +375,45 @@ class InspectionController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     // Check Inspection CheckLists
-                    if($item && count($item->loadInspectionChecklists())) {
-                        $inspectionData = (isset($component['inspectionData']) && is_string($component['inspectionData']))
-                                ? json_decode($component['inspectionData'], true)
-                                : $component['inspectionData'];
-                        $inspectionValidator = InspectionHelper::validateInspectionCheckList((array) $inspectionData, $item);
-                        if(!$inspectionValidator['status']) {
-                            DB::rollBack();
-                            return response() -> json([
-                                'message' => $inspectionValidator['message'],
-                                'error' => 'Inspection001'
-                            ], 422);
+                    // if($item && count($item->loadInspectionChecklists())) {
+                    //     $inspectionData = (isset($component['inspectionData']) && is_string($component['inspectionData']))
+                    //             ? json_decode($component['inspectionData'], true)
+                    //             : $component['inspectionData'];
+                    //     $inspectionValidator = InspectionHelper::validateInspectionCheckList((array) $inspectionData, $item);
+                    //     if(!$inspectionValidator['status']) {
+                    //         DB::rollBack();
+                    //         return response() -> json([
+                    //             'message' => $inspectionValidator['message'],
+                    //             'error' => 'Inspection001'
+                    //         ], 422);
+                    //     }
+                    // }
+
+                    if ($item) {
+                        // Normalize to something countable
+                        $checklists = $item->loadInspectionChecklists();
+                    
+                        $hasChecklist = $checklists instanceof Collection
+                            ? $checklists->isNotEmpty()
+                            : (is_array($checklists) ? !empty($checklists) : false);
+                    
+                        if ($hasChecklist) {
+                            // inspectionData may be JSON string, array, or null
+                            $raw = $component['inspectionData'] ?? null;
+                            $inspectionData = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : []);
+                            if (json_last_error() !== JSON_ERROR_NONE) {
+                                $inspectionData = []; // or handle as error if you prefer
+                            }
+                    
+                            $inspectionValidator = InspectionHelper::validateInspectionCheckList((array)$inspectionData, $item);
+                    
+                            if (!$inspectionValidator['status']) {
+                                DB::rollBack(); // keep only if you're inside a transaction
+                                return response()->json([
+                                    'message' => $inspectionValidator['message'],
+                                    'error'   => 'Inspection001',
+                                ], 422);
+                            }
                         }
                     }
 

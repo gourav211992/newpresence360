@@ -6,7 +6,7 @@
         {{-- @dd($slip->consumptions) --}}
     @foreach ($slip->consumptions as $psBomConsIndex => $psBomCons)
 
-        <tr id = "item_row_{{$psBomConsIndex}}" class = "item_header_rows" data-detail-id = "{{$psBomCons -> id}}" data-id = "{{ $psBomCons -> id }}">
+        <tr id = "item_row_{{$psBomConsIndex}}" class = "item_header_rows" data-detail-id = "{{$psBomCons -> id}}" data-id = "{{ $psBomCons -> id }}" data-index="{{ $psBomConsIndex }}">
             <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][mo_bom_cons_id]" value = "{{$psBomCons -> mo_bom_mapping_id}}">
             <input type = 'hidden' name = "cons[{{$psBomConsIndex}}][pslip_bom_cons_id]" value = "{{$psBomCons -> id}}">
             @if($slip->document_status == ConstantHelper::DRAFT)
