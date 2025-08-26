@@ -4237,7 +4237,9 @@ class Helper
                     );
                     $mrn_asset->salvage_value = $salvageValue;
                     $mrn_asset->asset_code = $asset_code;
+                    $mrn_asset->asset_id = $asset->id;
                     $mrn_asset->save();
+                    $asset->updateUniqueCodes();
                 }
                 
 
