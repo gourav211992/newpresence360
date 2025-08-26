@@ -26,6 +26,100 @@ class DefectNotificationController extends Controller
     {
         return view('plant.defect-notification.index');
     }
+    public function filter(Request $request)
+    {
+        $query = DefectNotification::query();
+
+        // Apply filters only if values are provided
+        if ($request->filled('equipment_id')) {
+            $query->where('equipment_id', $request->equipment_id);
+        }
+
+        if ($request->filled('defect_type_id')) {
+            $query->where('defect_type_id', $request->defect_type_id);
+        }
+
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->priority);
+        }
+
+        if ($request->filled('series')) {
+            $query->whereHas('book', function($q) use ($request) {
+                $q->where('book_code', $request->series);
+            });
+        }
+
+        // Load related models for display
+        $defects = $query->with(['equipment', 'defectType', 'book'])->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $defects
+        ]);
+    }
+
+
+    public function getDefectNotification($id)
+    {
+        $defectNotification = DefectNotification::with([
+            'book', 
+            'equipment.maintenanceDetails.maintenanceType', 
+            'location', 
+            'category', 
+            'defectType',
+        ])->findOrFail($id);
+
+        // Get maintenance types using Eloquent relationships
+        $maintenanceTypes = [];
+        if ($defectNotification->equipment && $defectNotification->equipment->maintenanceDetails) {
+            $maintenanceTypes = $defectNotification->equipment->maintenanceDetails
+                ->map(function ($detail) {
+                    return $detail->maintenanceType;
+                })
+                ->filter() 
+                ->unique('id') 
+                ->map(function ($type) {
+                    return [
+                        'id' => $type->id,
+                        'name' => $type->name
+                    ];
+                })
+                ->values(); 
+        }
+
+        // Get all checklists for this equipment (grouped by maintenance type)
+        $checklistsByMaintenanceType = [];
+        if ($defectNotification->equipment && $defectNotification->equipment->maintenanceDetails) {
+            foreach ($defectNotification->equipment->maintenanceDetails as $detail) {
+                if ($detail->maintenanceType && $detail->checklists->count() > 0) {
+                    $checklistsByMaintenanceType[$detail->maintenance_type_id] = [
+                        'maintenance_type_name' => $detail->maintenanceType->name,
+                        'checklists' => $detail->checklists->map(function ($checklist) {
+                            return [
+                                'id' => $checklist->id,
+                                'name' => $checklist->name,
+                                'description' => $checklist->description,
+                                'type' => $checklist->type,
+                                'status' => $checklist->status
+                            ];
+                        })
+                    ];
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => array_merge(
+                $defectNotification->toArray(),
+                ['reported_by' => auth()->user()->name ?? 'N/A']
+            ),
+            'maintenance_types' => $maintenanceTypes,
+            'checklists_by_maintenance_type' => $checklistsByMaintenanceType
+        ]);
+    }
+
+
 
     /**
      * Get defect notifications data for DataTables Ajax

@@ -11,11 +11,14 @@ use App\Models\ErpAttribute;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Models\PlantMaintWo;
+use App\Models\PlantMaintBom;
 use App\Models\DefectNotification;
 use App\Models\ErpEquipMaintenanceDetail;
 use App\Models\ErpEquipment;
-
-
+use App\Models\ErpMaintenanceType;
+use App\Models\ErpDefectType;
+use App\Models\ErpItem;
+use App\Models\ErpEquipMaintenanceChecklist;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -30,22 +33,69 @@ class MaintWoController extends Controller
     public function show(Request $request, string $id)
     {
         $data = PlantMaintWo::find($id);
+        
+        // Enrich spare parts with complete attribute structure including values_data
+        if (!empty($data->spare_parts)) {
+            $sparePartsData = json_decode($data->spare_parts, true);
+            $enrichedSpareParts = [];
+            
+            foreach ($sparePartsData as $sparePart) {
+                $enrichedSparePart = $sparePart;
+                
+                // Enrich item_attributes with complete structure for attribute modal
+                if (isset($sparePart['item_id'])) {
+                    $item = Item::with(['itemAttributes'])->find($sparePart['item_id']);
+                    if ($item && $item->itemAttributes) {
+                        $processedAttributes = [];
+                        foreach ($item->itemAttributes as $attribute) {
+                            $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)
+                                ->select('id', 'value')
+                                ->where('status', 'active')
+                                ->get();
+
+                            $processedAttributes[] = [
+                                'id' => $attribute->id,
+                                'group_name' => $attribute->group?->name,
+                                'values_data' => $attributeValueData,
+                                'attribute_group_id' => $attribute->attribute_group_id,
+                            ];
+                        }
+                        $enrichedSparePart['item_attributes'] = json_encode($processedAttributes);
+                    }
+                }
+                
+                // Also enrich existing attribute data with value names for display
+                if (isset($sparePart['attribute']) && !empty($sparePart['attribute'])) {
+                    $attributeData = json_decode($sparePart['attribute'], true);
+                    
+                    if (is_array($attributeData)) {
+                        foreach ($attributeData as &$attr) {
+                            if (isset($attr['value_id']) && isset($attr['item_attribute_id'])) {
+                                // Get item attribute for group name
+                                $itemAttribute = \App\Models\ErpItemAttribute::with('group')->find($attr['item_attribute_id']);
+                                // Get attribute value for value name
+                                $attributeValue = \App\Models\ErpAttribute::find($attr['value_id']);
+                                
+                                if ($itemAttribute && $attributeValue) {
+                                    $attr['name'] = $itemAttribute->group->name ?? 'N/A';
+                                    $attr['value'] = $attributeValue->value ?? 'N/A';
+                                }
+                            }
+                        }
+                        
+                        // Update the attribute field with enriched data
+                        $enrichedSparePart['attribute'] = json_encode($attributeData);
+                    }
+                }
+                $enrichedSpareParts[] = $enrichedSparePart;
+            }
+            $data->spare_parts = json_encode($enrichedSpareParts);
+        }
+        
         $currNumber = $request->has('revisionNumber');
 
-        // // If revision number is provided and different from current
-        // if ($currNumber && $data->revision_number != $request->revisionNumber) {
-        //     $currNumber = $request->revisionNumber;
-        //     $data = PlantMaintWoHistory::where('source_id', $id)
-        //         ->where('revision_number', $currNumber)
-        //         ->first();
-        // } else {
-        //     $data = PlantMaintWo::findOrFail($id);
-        // }
-
         $parentURL = "plant_maint-wo";
-        $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
@@ -56,36 +106,29 @@ class MaintWoController extends Controller
         $userType = Helper::userCheck();
         $revision_number = $data->revision_number;
 
-        // Get action buttons based on document status and user permissions
         $buttons = Helper::actionButtonDisplay(
             $data->book_id,
             $data->document_status,
             $id,
-            0,  // For module ID, 0 if not applicable
+            0,
             $data->approval_level,
             $data->created_by ?? 0,
             $userType['type'],
             $revision_number
         );
 
-        // Determine which revision to show
-        $revNo = $request->has('revisionNumber')
-            ? intval($request->revisionNumber)
-            : $data->revision_number;
+        $revNo = $request->has('revisionNumber') ? intval($request->revisionNumber) : $data->revision_number;
 
-        // Get approval history
         $approvalHistory = Helper::getApprovalHistory(
             $data->book_id,
             $id,
             $revNo,
-            0,  // Module ID, 0 if not applicable
+            0,
             $data->created_by
         );
 
-        // Get document status CSS class
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
 
-        // Load items for the view
         $items = Item::where("type", "goods")
             ->with(["uom", "category", "itemAttributes"])
             ->get()
@@ -101,7 +144,7 @@ class MaintWoController extends Controller
                         'id' => $attribute->id,
                         'group_name' => $attribute->group?->name,
                         'values_data' => $attributeValueData,
-                        'attribute_group_id' => $attribute->attribute_group_id
+                        'attribute_group_id' => $attribute->attribute_group_id,
                     ];
                 });
 
@@ -115,8 +158,24 @@ class MaintWoController extends Controller
                 ];
             });
 
-        // Get locations for the view
-        $locations = \App\Helpers\InventoryHelper::getAccessibleLocations();
+        $locations = InventoryHelper::getAccessibleLocations();
+        $defectTypes = ErpDefectType::select('id', 'name')->get();
+        $equipments = ErpEquipment::select('id', 'name')->get();
+
+        $maintenanceTypesByEquipment = [];
+        $equipmentMaintenanceDetails = ErpEquipMaintenanceDetail::with(['equipment', 'maintenanceType'])
+            ->get()
+            ->groupBy('erp_equipment_id');
+
+        foreach ($equipmentMaintenanceDetails as $equipmentId => $details) {
+            $maintenanceTypes = $details->pluck('maintenanceType')
+                ->filter()
+                ->unique('id')
+                ->map(fn($type) => ['id' => $type->id, 'name' => $type->name])
+                ->values();
+
+            $maintenanceTypesByEquipment[$equipmentId] = $maintenanceTypes;
+        }
 
         return view('plant.maint_wo.show', compact(
             'series',
@@ -127,96 +186,155 @@ class MaintWoController extends Controller
             'revision_number',
             'currNumber',
             'approvalHistory',
-            'locations'
+            'locations',
+            'maintenanceTypesByEquipment',
+            'defectTypes',
+            'equipments'
         ));
     }
 
     public function create()
     {
         $parentURL = "plant_maint-wo";
-        $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
         $items = Item::where("type", "goods")
             ->with(["uom", "category", "itemAttributes"])
             ->get();
+
         foreach ($items as $item) {
-            $itemId = $item->id;
-
-            if (isset($itemId)) {
-                $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
-            } else {
-                $itemAttributes = [];
-            }
+            $itemAttributes = ItemAttribute::where('item_id', $item->id)->get();
             $processedData = [];
-            foreach ($itemAttributes as $key => $attribute) {
-                $attributesArray = array();
-                $attribute_group_id = $attribute->attribute_group_id;
+
+            foreach ($itemAttributes as $attribute) {
                 $attribute->group_name = $attribute->group?->name;
+                $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)
+                    ->select('id', 'value')
+                    ->where('status', 'active')
+                    ->get();
 
-                $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)->select('id', 'value')->where('status', 'active')->get();
-
-                $attribute->values_data = $attributeValueData;
-                $attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
-
-                array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributeValueData, 'attribute_group_id' => $attribute['attribute_group_id']]);
+                $processedData[] = [
+                    'id' => $attribute->id,
+                    'group_name' => $attribute->group_name,
+                    'values_data' => $attributeValueData,
+                    'attribute_group_id' => $attribute->attribute_group_id,
+                ];
             }
-            $processedData = collect($processedData);
 
-            $item->attributes = $processedData;
+            $item->attributes = collect($processedData);
         }
-        $items = $items->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'item_code' => $item->item_code,
-                'item_name' => $item->item_name,
-                'uom_name' => optional($item->uom)->name,
-                'uom_id' => optional($item->uom)->id,
-                'item_attributes' => $item->attributes,
-            ];
-        });
+
+        $items = $items->map(fn($item) => [
+            'id' => $item->id,
+            'item_code' => $item->item_code,
+            'item_name' => $item->item_name,
+            'uom_name' => optional($item->uom)->name,
+            'uom_id' => optional($item->uom)->id,
+            'item_attributes' => $item->attributes,
+        ]);
 
         $locations = InventoryHelper::getAccessibleLocations();
 
-        // Get defect notifications for the modal
         $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
             ->where('document_status', '!=', 'draft')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        if (count($servicesBooks['services']) > 0) {
-            $firstService = $servicesBooks['services'][0];
-            $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+        $defectTypes = ErpDefectType::select('id', 'name')->get();
+        $equipments = ErpEquipment::select('id', 'name')->get();
+
+        $maintenanceTypesByEquipment = [];
+        $equipmentMaintenanceDetails = ErpEquipMaintenanceDetail::with(['equipment', 'maintenanceType', 'bom'])
+            ->get()
+            ->groupBy('erp_equipment_id');
+
+        foreach ($equipmentMaintenanceDetails as $equipmentId => $details) {
+            $maintenanceTypes = $details->pluck('maintenanceType')
+                ->filter()
+                ->unique('id')
+                ->map(fn($type) => ['id' => $type->id, 'name' => $type->name])
+                ->values();
+
+            $maintenanceTypesByEquipment[$equipmentId] = $maintenanceTypes;
         }
-        return view('plant.maint_wo.create', compact('series', 'locations', 'items', 'defectNotifications'));
+
+        // Get only BOMs that are used in equipment maintenance details
+        $usedBomIds = ErpEquipMaintenanceDetail::whereNotNull('maintenance_bom_id')
+            ->pluck('maintenance_bom_id')
+            ->unique();
+
+        $maintenanceBoms = PlantMaintBom::with(['book'])
+            ->whereIn('id', $usedBomIds)
+            ->select('id', 'bom_name', 'document_number', 'book_id')
+            ->orderBy('bom_name')
+            ->get()
+            ->map(function($bom) {
+                return [
+                    'id' => $bom->id,
+                    'bom_name' => $bom->bom_name,
+                    'document_number' => $bom->document_number,
+                    'display_name' => $bom->bom_name ,
+                ];
+            });
+       
+
+        return view('plant.maint_wo.create', compact(
+            'series',
+            'locations',
+            'items',
+            'defectNotifications',
+            'defectTypes',
+            'equipments',
+            'maintenanceTypesByEquipment',
+            'maintenanceBoms'
+        ));
     }
 
     public function store(Request $request)
     {
-        // Base validation rules
+        // dd($request->all());
         $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
             'document_date' => 'required|date',
             'document_status' => 'required|string',
+            'location_id' => 'required|integer',
         ];
 
-        // Add reference type validation only if not saving as draft
         if ($request->document_status !== 'draft') {
             $rules['reference_type'] = 'required|string';
         }
 
-        // Add file validation if file is uploaded
         if ($request->hasFile('upload_file')) {
-            $rules['upload_file'] = 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'; // 10MB max
+            $rules['upload_file'] = 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240';
         }
 
-        $request->validate($rules);
+        $messages = [
+            'book_id.required' => 'The series field is required.',
+            'document_number.required' => 'The document number field is required.',
+            'document_date.required' => 'The document date field is required.',
+            'document_status.required' => 'The document status field is required.',
+            'location_id.required' => 'The location field is required.',
+            'location_id.integer' => 'The location field must be a valid selection.',
+        ];
+
+        $attributes = [
+            'book_id' => 'series',
+            'document_number' => 'document number',
+            'document_date' => 'document date',
+            'document_status' => 'document status',
+            'location_id' => 'location',
+            'reference_type' => 'reference type',
+            'upload_file' => 'uploaded file',
+        ];
+
+        $request->validate($rules, $messages, $attributes);
 
         $documentNumber = $request->document_number;
         $existingWo = PlantMaintWo::where('document_number', $documentNumber)->first();
@@ -238,23 +356,57 @@ class MaintWoController extends Controller
             'revision_number' => 0,
         ];
 
-
         $data = array_merge($request->all(), $additionalData);
+      
+
+        if (isset($data['spare_parts']) && is_array($data['spare_parts'])) {
+            $data['spare_parts'] = json_encode($data['spare_parts']);
+        }
+
+        if (isset($data['equipment_details']) && is_array($data['equipment_details'])) {
+            $data['equipment_details'] = json_encode($data['equipment_details']);
+        }
+
+        unset($data['checklist_data']);
 
         try {
             DB::transaction(function () use ($data, $request) {
                 $workOrder = PlantMaintWo::create($data);
 
-                // Handle file upload
                 if ($request->hasFile('upload_file')) {
                     $file = $request->file('upload_file');
-                    $originalName = $file->getClientOriginalName();
                     $extension = $file->getClientOriginalExtension();
                     $fileName = 'maint_wo_' . $workOrder->id . '_' . time() . '.' . $extension;
                     $path = $file->storeAs('maint_wo_documents', $fileName, 'public');
                     $workOrder->upload_file = $path;
-                    $workOrder->save();
                 }
+
+                if ($request->has('checklist_data') && !empty($request->checklist_data)) {
+                    try {
+                        $checklistData = null;
+
+                        if (is_string($request->checklist_data)) {
+                            $checklistData = json_decode($request->checklist_data, true);
+                            if (json_last_error() !== JSON_ERROR_NONE) {
+                                \Log::error('JSON decode error: ' . json_last_error_msg());
+                                $checklistData = null;
+                            }
+                        } elseif (is_array($request->checklist_data)) {
+                            $checklistData = $request->checklist_data;
+                        }
+
+                        if (is_array($checklistData) && !empty($checklistData)) {
+                            $processedChecklistData = $this->processChecklistData($checklistData);
+                            $workOrder->checklist_data = json_encode($processedChecklistData);
+                            $this->saveChecklistRecords($workOrder->id, $processedChecklistData);
+                            $workOrder->save();
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Error processing checklist data: ' . $e->getMessage());
+                    }
+                }
+
+                $workOrder->save();
 
                 if ($workOrder->document_status != ConstantHelper::DRAFT) {
                     $doc = Helper::approveDocument(
@@ -284,13 +436,71 @@ class MaintWoController extends Controller
                 ->with('error', $e->getMessage());
         }
     }
+
     public function edit(string $id)
     {
         $workOrder = PlantMaintWo::findOrFail($id);
-        $parentURL = "plant_maint-wo";
-        $series = [];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        
+        // Enrich spare parts with complete attribute structure including values_data for edit blade
+        if ($workOrder->spare_parts) {
+            $sparePartsData = json_decode($workOrder->spare_parts, true);
+            $enrichedSpareParts = [];
+            
+            foreach ($sparePartsData as $sparePart) {
+                $enrichedSparePart = $sparePart;
+                
+                // Enrich item_attributes with complete structure for attribute modal
+                if (isset($sparePart['item_id'])) {
+                    $item = Item::with(['itemAttributes'])->find($sparePart['item_id']);
+                    if ($item && $item->itemAttributes) {
+                        $processedAttributes = [];
+                        foreach ($item->itemAttributes as $attribute) {
+                            $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)
+                                ->select('id', 'value')
+                                ->where('status', 'active')
+                                ->get();
 
+                            $processedAttributes[] = [
+                                'id' => $attribute->id,
+                                'group_name' => $attribute->group?->name,
+                                'values_data' => $attributeValueData,
+                                'attribute_group_id' => $attribute->attribute_group_id,
+                            ];
+                        }
+                        $enrichedSparePart['item_attributes'] = json_encode($processedAttributes);
+                    }
+                }
+                
+                // Also enrich existing attribute data with value names for display
+                if (isset($sparePart['attribute']) && !empty($sparePart['attribute'])) {
+                    $attributeData = json_decode($sparePart['attribute'], true);
+                    
+                    if (is_array($attributeData)) {
+                        foreach ($attributeData as &$attr) {
+                            if (isset($attr['value_id']) && isset($attr['item_attribute_id'])) {
+                                // Get item attribute for group name
+                                $itemAttribute = \App\Models\ErpItemAttribute::with('group')->find($attr['item_attribute_id']);
+                                // Get attribute value for value name
+                                $attributeValue = \App\Models\ErpAttribute::find($attr['value_id']);
+                                
+                                if ($itemAttribute && $attributeValue) {
+                                    $attr['name'] = $itemAttribute->group->name ?? 'N/A';
+                                    $attr['value'] = $attributeValue->value ?? 'N/A';
+                                }
+                            }
+                        }
+                        
+                        // Update the attribute field with enriched data
+                        $enrichedSparePart['attribute'] = json_encode($attributeData);
+                    }
+                }
+                $enrichedSpareParts[] = $enrichedSparePart;
+            }
+            $workOrder->spare_parts = json_encode($enrichedSpareParts);
+        }
+
+        $parentURL = "plant_maint-wo";
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
@@ -298,16 +508,36 @@ class MaintWoController extends Controller
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
-        // Load items with attributes
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay(
+            $workOrder->book_id,
+            $workOrder->document_status,
+            $id,
+            0,
+            $workOrder->approval_level,
+            $workOrder->created_by ?? 0,
+            $userType['type'],
+            $workOrder->revision_number
+        );
+
+        if ($workOrder->document_status === ConstantHelper::DRAFT || $workOrder->document_status === ConstantHelper::SUBMITTED) {
+            $buttons['cancel'] = true;
+        } else {
+            $buttons['cancel'] = false;
+        }
+
+        if ($workOrder->document_status === ConstantHelper::POSTED) {
+            $buttons['amend'] = false;
+        }
+
         $items = Item::where("type", "goods")
             ->with(["uom", "category", "itemAttributes"])
             ->get();
 
         foreach ($items as $item) {
-            $itemId = $item->id;
-            $itemAttributes = $itemId ? ItemAttribute::where('item_id', $itemId)->get() : [];
-
+            $itemAttributes = $item->id ? ItemAttribute::where('item_id', $item->id)->get() : [];
             $processedData = [];
+
             foreach ($itemAttributes as $attribute) {
                 $attribute_group_id = $attribute->attribute_group_id;
                 $attribute->group_name = $attribute->group?->name;
@@ -317,18 +547,17 @@ class MaintWoController extends Controller
                     ->where('status', 'active')
                     ->get();
 
-                array_push($processedData, [
+                $processedData[] = [
                     'id' => $attribute->id,
                     'group_name' => $attribute->group_name,
                     'values_data' => $attributeValueData,
-                    'attribute_group_id' => $attribute_group_id
-                ]);
+                    'attribute_group_id' => $attribute_group_id,
+                ];
             }
 
             $item->attributes = collect($processedData);
         }
 
-        // Transform items for the view
         $items = $items->map(function ($item) {
             return [
                 'id' => $item->id,
@@ -340,40 +569,67 @@ class MaintWoController extends Controller
             ];
         });
 
-        // Get locations
         $locations = InventoryHelper::getAccessibleLocations();
 
-        // Get defect notifications for the modal
-        $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Get user type and set up action buttons
-        $userType = Helper::userCheck();
         $revision_number = $workOrder->revision_number;
 
-        $buttons = Helper::actionButtonDisplay(
-            $workOrder->book_id,
-            $workOrder->document_status,
-            $id,
-            0, // module_id
-            $workOrder->approval_level,
-            $workOrder->created_by ?? 0,
-            $userType['type'],
-            $revision_number
-        );
-
-        // Get approval history
         $approvalHistory = Helper::getApprovalHistory(
             $workOrder->book_id,
             $id,
             $revision_number,
-            0, // Module ID, 0 if not applicable
+            0,
             $workOrder->created_by
         );
 
-        // Get document status CSS class
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$workOrder->document_status] ?? '';
+
+        $defectTypes = ErpDefectType::select('id', 'name')->get();
+        $equipments = ErpEquipment::select('id', 'name')->get();
+
+        $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
+            ->where('document_status', '!=', 'draft')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $maintenanceTypesByEquipment = [];
+        $equipmentsWithMaintenance = ErpEquipment::with(['maintenanceDetails.maintenanceType'])
+            ->whereHas('maintenanceDetails')
+            ->get();
+
+        foreach ($equipmentsWithMaintenance as $equipment) {
+            $maintenanceTypes = [];
+            foreach ($equipment->maintenanceDetails as $detail) {
+                if ($detail->maintenanceType) {
+                    $maintenanceTypes[] = [
+                        'id' => $detail->maintenanceType->id,
+                        'name' => $detail->maintenanceType->name,
+                    ];
+                }
+            }
+            if (!empty($maintenanceTypes)) {
+                $maintenanceTypesByEquipment[$equipment->id] = array_unique($maintenanceTypes, SORT_REGULAR);
+            }
+        }
+
+        $usedBomIds = ErpEquipMaintenanceDetail::whereNotNull('maintenance_bom_id')
+            ->pluck('maintenance_bom_id')
+            ->unique();
+
+        $maintenanceBoms = PlantMaintBom::with(['book'])
+            ->whereIn('id', $usedBomIds)
+            ->select('id', 'bom_name', 'document_number', 'book_id')
+            ->orderBy('bom_name')
+            ->get()
+            ->map(function($bom) {
+                return [
+                    'id' => $bom->id,
+                    'bom_name' => $bom->bom_name,
+                    'document_number' => $bom->document_number,
+                    'display_name' => $bom->bom_name ,
+                ];
+            });
+
+          
 
         return view('plant.maint_wo.edit', compact(
             'workOrder',
@@ -384,13 +640,16 @@ class MaintWoController extends Controller
             'buttons',
             'approvalHistory',
             'docStatusClass',
-            'revision_number'
+            'revision_number',
+            'defectTypes',
+            'equipments',
+            'maintenanceTypesByEquipment',
+            'maintenanceBoms',
         ));
     }
 
     public function update(Request $request, string $id)
     {
-        // Validation rules
         $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
@@ -410,7 +669,6 @@ class MaintWoController extends Controller
 
         $workOrder = PlantMaintWo::findOrFail($id);
 
-        // Check for duplicate document number
         $documentNumber = $request->document_number;
         $existingWo = PlantMaintWo::where('document_number', $documentNumber)
             ->where('id', '!=', $id)
@@ -426,7 +684,6 @@ class MaintWoController extends Controller
         DB::beginTransaction();
 
         try {
-            // Handle amendment
             if ($request->action_type == "amendment") {
                 $revisionData = [
                     [
@@ -436,10 +693,8 @@ class MaintWoController extends Controller
                     ],
                 ];
 
-                // Create revision history
                 Helper::documentAmendment($revisionData, $id);
 
-                // Process the amendment
                 Helper::approveDocument(
                     $workOrder->book_id,
                     $workOrder->id,
@@ -452,20 +707,16 @@ class MaintWoController extends Controller
                     get_class($workOrder)
                 );
 
-                // Update revision number
                 $request->merge([
                     'revision_number' => $workOrder->revision_number + 1,
-                    'revision_date' => now()
+                    'revision_date' => now(),
                 ]);
             }
 
-            // Update the work order
             $workOrder->update($request->all());
 
-            // Handle file upload
             if ($request->hasFile('upload_file')) {
                 $file = $request->file('upload_file');
-                $originalName = $file->getClientOriginalName();
                 $extension = $file->getClientOriginalExtension();
                 $fileName = 'maint_wo_' . $workOrder->id . '_' . time() . '.' . $extension;
                 $path = $file->storeAs('maint_wo_documents', $fileName, 'public');
@@ -473,7 +724,6 @@ class MaintWoController extends Controller
                 $workOrder->save();
             }
 
-            // Handle submission for approval if not draft
             if ($workOrder->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument(
                     $workOrder->book_id,
@@ -492,12 +742,13 @@ class MaintWoController extends Controller
             }
 
             DB::commit();
+
             return redirect()
                 ->route("maint-wo.index")
                 ->with('success', 'Maintenance Work Order updated!');
-
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()
                 ->route("maint-wo.edit", $id)
                 ->withInput()
@@ -505,14 +756,11 @@ class MaintWoController extends Controller
         }
     }
 
-    /**
-     * Handle document approval actions
-     */
     public function documentApproval(Request $request)
     {
         $request->validate([
             'remarks' => 'nullable|string|max:255',
-            'attachment' => 'nullable'
+            'attachment' => 'nullable',
         ]);
 
         DB::beginTransaction();
@@ -526,10 +774,9 @@ class MaintWoController extends Controller
             $attachments = $request->file('attachment');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
-            $actionType = $request->action_type; // 'approve' or 'reject'
+            $actionType = $request->action_type;
             $modelName = get_class($doc);
 
-            // Process the approval
             $approveDocument = Helper::approveDocument(
                 $bookId,
                 $docId,
@@ -542,7 +789,6 @@ class MaintWoController extends Controller
                 $modelName
             );
 
-            // Update document status and approval level
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -553,51 +799,722 @@ class MaintWoController extends Controller
                 'message' => "Work Order {$actionType}d successfully!",
                 'data' => $doc,
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'message' => "Error occurred while processing {$request->action_type}",
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+
     public function populateModal(Request $r)
     {
         $type = $r->type;
         $data = [];
+
+
+
         if ($type == 'defect') {
-            $query = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
-                ->where('document_status', '!=', 'draft')
-                ->orderBy('created_at', 'desc');
+            $query = DefectNotification::with([
+                'book',
+                'equipment.maintenanceDetails.maintenanceType',
+                'location',
+                'category',
+                'defectType',
+            ])->where('document_status', '!=', 'draft')
+              ->orderBy('created_at', 'desc');
 
-            $query->whereHas('book', function ($q) use ($r) {
-                $q->whereIn('book_code', $r->book_code);
-            });
-            $data = $query->get();
+            $totalDefects = DefectNotification::where('document_status', '!=', 'draft')->count();
+            \Log::info('Total defects (no book filter):', ['count' => $totalDefects]);
 
-        } else if ($type == 'eqpt') {
-            $query = ErpEquipMaintenanceDetail::with(['bom.book','maintenanceType',
-                'equipment' => function ($q) use ($r) {
-                    $q->with(['book', 'location', 'category', 'spareParts'])
-                        ->where('document_status', '!=', 'draft')
-                        ->orderBy('created_at', 'desc')
-                        ->whereHas('book', function ($qu) use ($r) {
-                            $qu->whereIn('book_code', $r->book_code);
-                        });
+            if ($r->book_code && is_array($r->book_code) && count($r->book_code) > 0) {
+                $query->whereHas('book', function ($q) use ($r) {
+                    $q->whereIn('book_code', $r->book_code);
+                });
+                \Log::info('Applied book filter:', ['book_codes' => $r->book_code]);
+            } else {
+                \Log::info('No book filter applied - book_code empty or not provided');
+            }
+
+            $results = $query->get();
+            \Log::info('Query results count:', ['count' => $results->count()]);
+
+            $data = $results->map(function ($defectNotification) {
+                $maintenanceTypes = [];
+                if ($defectNotification->equipment && $defectNotification->equipment->maintenanceDetails) {
+                    $maintenanceTypes = $defectNotification->equipment->maintenanceDetails
+                        ->map(fn($detail) => $detail->maintenanceType)
+                        ->filter()
+                        ->unique('id')
+                        ->map(fn($type) => ['id' => $type->id, 'name' => $type->name])
+                        ->values();
                 }
-            ])->whereHas('bom');
 
-            $data = $query->get();
+                $checklistsByMaintenanceType = [];
+
+                $defectNotification->maintenance_types = $maintenanceTypes;
+                $defectNotification->checklists_by_maintenance_type = $checklistsByMaintenanceType;
+
+                return $defectNotification;
+            });
+        } elseif ($type == 'eqpt') {
+            $query = ErpEquipMaintenanceDetail::with([
+                'bom.book',
+                'maintenanceType',
+                'checklists',
+                'equipment.book',
+                'equipment.location',
+                'equipment.category',
+                'equipment.spareParts'
+            ])
+            ->whereHas('bom')
+            ->whereHas('equipment', function ($q) use ($r) {
+                $q->where('document_status', '!=', 'draft')
+                    ->whereHas('book', function ($qu) use ($r) {
+                        $qu->whereIn('book_code', $r->book_code);
+                    });
+            });
+
+            $equipmentData = $query->get();
+            // dd($equipmentData);
+
+           
+
+            foreach ($equipmentData as $eqpt) {
+                $maintenance_type_id = $eqpt->maintenance_type_id;
+
+                $maintenanceChecklists = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $eqpt->id)
+                    ->select('erp_equip_maintenance_id', 'name')
+                    ->get();
+                
+
+                
+
+                $checklistsData = [];
+
+                foreach ($maintenanceChecklists as $maintenanceChecklist) {
+                    $checklistName = $maintenanceChecklist->name;
+                    $inspectionChecklist = \App\Models\InspectionChecklist::where('name', $checklistName)->first();
+
+                    if ($inspectionChecklist) {
+                        $checklistDetails = \App\Models\InspectionChecklistDetail::where('header_id', $inspectionChecklist->id)
+                            ->select('id', 'name', 'data_type', 'description', 'mandatory')
+                            ->get();
+
+                        $detailsWithValues = [];
+
+                        foreach ($checklistDetails as $detail) {
+                            $detailData = [
+                                'name' => $detail->name,
+                                'data_type' => $detail->data_type,
+                                'description' => $detail->description,
+                                'mandatory' => $detail->mandatory,
+                                'value' => '',
+                            ];
+
+                            $detailValues = \App\Models\InspectionChecklistDetailValue::where('inspection_checklist_detail_id', $detail->id)
+                                ->pluck('value')
+                                ->toArray();
+
+                            if ($detail->data_type === 'list') {
+                                $detailData['values'] = $detailValues;
+                                $detailData['value'] = !empty($detailValues) ? $detailValues[0] : '';
+                            } else {
+                                $detailData['value'] = !empty($detailValues) ? $detailValues[0] : '';
+                            }
+
+                            $detailsWithValues[] = $detailData;
+                        }
+
+                        $checklistsData[] = [
+                            'main_name' => $checklistName,
+                            'checklist' => $detailsWithValues,
+                        ];
+                    }
+                }
+
+                $eqpt->checklistsData = $checklistsData;
+                $eqpt->checklistsIdsName = $maintenanceChecklists;
+            }
+         
+            
+
+            $data = [];
+            
+            foreach ($equipmentData as $detail) {
+                if ($detail->equipment) {
+                    $checklistsData = isset($detail->checklistsData) ? $detail->checklistsData : [];
+
+                    $equipment = $detail->equipment;
+                    $equipment->checklists_data = $checklistsData;
+
+                    $data[] = [
+                        'equipment' => $equipment,
+                        'maintenance_type' => $detail->maintenanceType,
+                        'bom' => $detail->bom,
+                        'maintenance_detail_id' => $detail->id,
+                    ];
+                }
+            }
         }
 
+        
+      
 
         return response()->json($data);
+    }
 
+    public function ajaxData(Request $request)
+    {
+        $query = PlantMaintWo::with(['book']);
+
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('document_date', [$request->start_date, $request->end_date]);
+        }
+
+        $totalRecords = $query->count();
+
+        if ($request->has('search') && !empty($request->search['value'])) {
+            $searchValue = $request->search['value'];
+            $query->where(function ($q) use ($searchValue) {
+                $q->where('document_number', 'like', "%{$searchValue}%")
+                    ->orWhere('maintenance_type', 'like', "%{$searchValue}%")
+                    ->orWhere('equipment_details', 'like', "%{$searchValue}%");
+            });
+        }
+
+        $filteredRecords = $query->count();
+
+        if ($request->has('order')) {
+            $orderColumn = $request->order[0]['column'];
+            $orderDir = $request->order[0]['dir'];
+
+            switch ($orderColumn) {
+                case 1:
+                    $query->orderBy('document_date', $orderDir);
+                    break;
+                case 2:
+                    $query->orderBy('book_id', $orderDir);
+                    break;
+                case 3:
+                    $query->orderBy('document_number', $orderDir);
+                    break;
+                case 4:
+                    $query->join('erp_equipments', 'erp_plant_maint_wo.equipment_id', '=', 'erp_equipments.id')
+                        ->orderBy('erp_equipments.name', $orderDir);
+                    break;
+                case 6:
+                    $query->orderBy('maintenance_type', $orderDir);
+                    break;
+                default:
+                    $query->orderBy('document_date', 'desc');
+            }
+        } else {
+            $query->orderBy('document_date', 'desc');
+        }
+
+        $start = $request->start ?? 0;
+        $length = $request->length ?? 10;
+        $workOrders = $query->skip($start)->take($length)->get();
+
+        $data = [];
+        foreach ($workOrders as $index => $wo) {
+            $formattedDate = $wo->document_date
+                ? \Carbon\Carbon::parse($wo->document_date)->format('d-m-Y')
+                : '-';
+
+            $series = $wo->book?->book_code ?? 'MAINT_WO';
+
+            $equipmentDetails = json_decode($wo->equipment_details, true);
+            $equipmentName = $equipmentDetails['equipment_name'] ?? 'Default Equipment';
+            $categoryName = $equipmentDetails['equipment_category'] ?? 'Machinery';
+
+            $maintenanceType = $wo->maintenance_type ?? 'Preventive';
+            $typeClass = $maintenanceType == "Preventive" ? "info" : ($maintenanceType == "Corrective" ? "warning" : "secondary");
+            $typeBadge = "<span class='badge rounded-pill badge-light-{$typeClass} badgeborder-radius'>{$maintenanceType}</span>";
+
+            $statusClass = 'badge-light-secondary';
+            if (isset(ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$wo->document_status ?? 'draft'])) {
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$wo->document_status ?? 'draft'];
+            }
+            $statusText = $wo->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED ? 'Approved' : ucfirst($wo->document_status ?? 'draft');
+
+            $actions = '<div class="d-flex align-items-center justify-content-end">';
+            $actions .= "<span class='badge rounded-pill {$statusClass} badgeborder-radius'>{$statusText}</span>";
+            $actions .= '<div class="dropdown ml-2">';
+            $actions .= '<button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">';
+            $actions .= '<i data-feather="more-vertical"></i>';
+            $actions .= '</button>';
+            $actions .= '<div class="dropdown-menu dropdown-menu-end">';
+
+            if ($wo->document_status == 'draft') {
+                $actions .= '<a class="dropdown-item" href="' . route('maint-wo.edit', $wo->id) . '">';
+                $actions .= '<i data-feather="edit" class="me-50"></i><span>Edit</span>';
+                $actions .= '</a>';
+            } else {
+                $actions .= '<a class="dropdown-item" href="' . route('maint-wo.show', $wo->id) . '">';
+                $actions .= '<i data-feather="eye" class="me-50"></i><span>View</span>';
+                $actions .= '</a>';
+            }
+
+            $actions .= '</div></div></div>';
+
+            $data[] = [
+                $start + $index + 1,
+                $formattedDate,
+                $series,
+                $wo->document_number ?? '-',
+                $equipmentName,
+                $categoryName,
+                $typeBadge,
+                $actions,
+            ];
+        }
+
+        return response()->json([
+            'draw' => intval($request->draw),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $data,
+        ]);
     }
 
     public function destroy(string $id)
     {
-        // Add your delete logic here
+        //
+    }
+
+    private function processChecklistData($checklistData)
+    {
+        $processedData = [];
+
+        foreach ($checklistData as $checklistGroup) {
+            $processedGroup = [
+                'main_name' => $checklistGroup['main_name'] ?? '',
+                'checklist' => [],
+            ];
+
+            if (isset($checklistGroup['checklist']) && is_array($checklistGroup['checklist'])) {
+                foreach ($checklistGroup['checklist'] as $checklistItem) {
+                    $processedItem = [
+                        'name' => $checklistItem['name'] ?? '',
+                        'data_type' => $checklistItem['data_type'] ?? 'text',
+                        'mandatory' => (bool)($checklistItem['mandatory'] ?? false),
+                        'value' => $this->sanitizeChecklistValue($checklistItem['value'] ?? '', $checklistItem['data_type'] ?? 'text'),
+                        'completed_at' => now()->toDateTimeString(),
+                        'completed_by' => auth()->id(),
+                    ];
+
+                    $processedGroup['checklist'][] = $processedItem;
+                }
+            }
+
+            $processedData[] = $processedGroup;
+        }
+
+        return $processedData;
+    }
+
+    private function sanitizeChecklistValue($value, $dataType)
+    {
+        switch ($dataType) {
+            case 'number':
+                return is_numeric($value) ? (float)$value : 0;
+            case 'boolean':
+            case 'checkbox':
+                return in_array($value, ['1', 'true', true, 1], true);
+            case 'date':
+                try {
+                    return \Carbon\Carbon::parse($value)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    return null;
+                }
+            default:
+                return (string)$value;
+        }
+    }
+
+    private function saveChecklistRecords($workOrderId, $checklistData)
+    {
+        try {
+            \Log::info('Checklist data saved for Work Order ID: ' . $workOrderId, [
+                'work_order_id' => $workOrderId,
+                'checklist_count' => count($checklistData),
+                'completed_at' => now()->toDateTimeString(),
+            ]);
+
+            /*
+            foreach ($checklistData as $group) {
+                foreach ($group['checklist'] as $item) {
+                    DB::table('maint_wo_checklist_responses')->insert([
+                        'work_order_id' => $workOrderId,
+                        'checklist_group'  => $group['main_name'],
+                        'checklist_name'   => $item['name'],
+                        'data_type'        => $item['data_type'],
+                        'value'            => $item['value'],
+                        'mandatory'        => $item['mandatory'],
+                        'completed_at'     => $item['completed_at'],
+                        'completed_by'     => $item['completed_by'],
+                        'created_at'       => now(),
+                        'updated_at'       => now(),
+                    ]);
+                }
+            }
+            */
+        } catch (\Exception $e) {
+            \Log::error('Error saving checklist records: ' . $e->getMessage());
+        }
+    }
+
+    public function getEquipmentSpareParts(Request $request)
+    {
+        try {
+            $equipmentId = $request->equipment_id;
+            $maintenanceTypeId = $request->maintenance_type_id;
+
+            $equipment = ErpEquipment::find($equipmentId);
+            
+            $maintenanceDetail = ErpEquipMaintenanceDetail::where('erp_equipment_id', $equipmentId)
+                ->where('maintenance_type_id', $maintenanceTypeId)
+                ->with('bom')
+                ->first();
+           
+            
+            if (!$maintenanceDetail || !$maintenanceDetail->bom) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maintenance BOM not found for this equipment and maintenance type'
+                ], 404);
+            }
+
+            $bomData = $maintenanceDetail->bom;
+            $sparePartsData = [];
+            
+            if ($bomData->spare_parts) {
+                $rawSparePartsData = json_decode($bomData->spare_parts, true);
+                
+                foreach ($rawSparePartsData as $sparePart) {
+                    $item = ErpItem::find($sparePart['item_id']);
+                    
+                    $sparePartData = [
+                        'item_id' => $sparePart['item_id'],
+                        'item_code' => $item ? $item->item_code : 'N/A',
+                        'item_name' => $item ? $item->item_name : 'N/A',
+                        'qty' => $sparePart['qty'] ?? 0,
+                        'uom' => $item && $item->uom ? $item->uom->name : 'N/A',
+                        'uom_id' => $item ? $item->uom_id : null,
+                        'attribute' => $sparePart['attribute'] ?? '[]',
+                        'attributes' => []
+                    ];
+
+                    // Process attributes if they exist
+                    if (isset($sparePart['attribute']) && !empty($sparePart['attribute'])) {
+                        $attributeData = json_decode($sparePart['attribute'], true);
+                        \Log::info('Processing attributes for item: ' . $sparePart['item_id'], [
+                            'raw_attribute' => $sparePart['attribute'],
+                            'decoded_attribute' => $attributeData
+                        ]);
+                        
+                        if (is_array($attributeData)) {
+                            foreach ($attributeData as $attr) {
+                                if (isset($attr['item_attribute_id']) && isset($attr['value_id'])) {
+                                    // Get item attribute details
+                                    $itemAttribute = \App\Models\ErpItemAttribute::with('group')->find($attr['item_attribute_id']);
+                                    
+                                    // Get selected attribute value
+                                    $selectedAttributeValue = \App\Models\ErpAttribute::find($attr['value_id']);
+                                    
+                                    \Log::info('Attribute lookup results:', [
+                                        'item_attribute_id' => $attr['item_attribute_id'],
+                                        'value_id' => $attr['value_id'],
+                                        'item_attribute_found' => $itemAttribute ? true : false,
+                                        'selected_value_found' => $selectedAttributeValue ? true : false,
+                                        'group_id' => $itemAttribute ? $itemAttribute->attribute_group_id : null
+                                    ]);
+
+                                    if ($itemAttribute && $selectedAttributeValue) {
+                                        // Get all possible attribute values for this group
+                                        $allAttributeValues = \App\Models\ErpAttribute::where('attribute_group_id', $itemAttribute->attribute_group_id)
+                                            ->orderBy('value')
+                                            ->get();
+
+                                        $sparePartData['attributes'][] = [
+                                            'item_attribute_id' => $attr['item_attribute_id'],
+                                            'group_id' => $itemAttribute->attribute_group_id,
+                                            'group_name' => $itemAttribute->group->name ?? 'N/A',
+                                            'group_short_name' => $itemAttribute->group->short_name ?? 'N/A',
+                                            'selected_value_id' => $attr['value_id'],
+                                            'selected_value_name' => $selectedAttributeValue->value ?? 'N/A',
+                                            'all_values' => $allAttributeValues->map(function($value) {
+                                                return [
+                                                    'id' => $value->id,
+                                                    'value' => $value->value
+                                                ];
+                                            })->toArray()
+                                        ];
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    $sparePartsData[] = $sparePartData;
+                }
+            }
+
+            // Debug: Log final spare parts data
+            \Log::info('Final spare parts data being returned:', [
+                'equipment_id' => $equipmentId,
+                'maintenance_type_id' => $maintenanceTypeId,
+                'bom_id' => $maintenanceDetail->maintenance_bom_id,
+                'spare_parts_count' => count($sparePartsData),
+                'spare_parts_sample' => $sparePartsData ? $sparePartsData[0] : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'equipment_id' => $equipmentId,
+                    'maintenance_type_id' => $maintenanceTypeId,
+                    'bom_id' => $maintenanceDetail->maintenance_bom_id,
+                    'equipment_name' => $equipment ? $equipment->name : '',
+                    'spare_parts' => $sparePartsData
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching equipment spare parts: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching spare parts data'
+            ], 500);
+        }
+    }
+
+    public function filter(Request $request)
+    {
+        try {
+            $type = $request->input('type');
+            
+            switch ($type) {
+                case 'equipment':
+                    return $this->filterByEquipment($request);
+                case 'defect':
+                    return $this->filterByDefectNotification($request);
+                default:
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid filter type'
+                    ], 400);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in filter method: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing filter request'
+            ], 500);
+        }
+    }
+
+    private function filterByEquipment(Request $request)
+    {
+        $equipmentId = $request->input('equipment_id');
+        $maintenanceTypeId = $request->input('maintenance_type_id');
+        $bomId = $request->input('bom_id');
+
+        $equipment = ErpEquipment::find($equipmentId);
+        
+        if (!$equipment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Equipment not found'
+            ], 404);
+        }
+
+        $query = ErpEquipMaintenanceDetail::where('erp_equipment_id', $equipmentId)
+            ->whereNotNull('maintenance_bom_id')
+            ->with(['bom.book', 'maintenanceType', 'equipment.category', 'checklists']);
+
+        if ($maintenanceTypeId) {
+            $query->where('maintenance_type_id', $maintenanceTypeId);
+        }
+        if ($bomId) {
+            $query->where('maintenance_bom_id', $bomId);
+        }
+
+        $maintenanceDetails = $query->get();
+
+        // If no data found, return empty array for modal
+        if ($maintenanceDetails->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Process data similar to populateModal method
+        $data = [];
+        $equipmentGroups = $maintenanceDetails->groupBy('erp_equipment_id');
+
+        foreach ($equipmentGroups as $equipmentId => $details) {
+            $firstDetail = $details->first();
+            if ($firstDetail->equipment) {
+                // Get maintenance types for this equipment
+                $maintenanceTypes = $details->map(function ($detail) {
+                    return [
+                        'id' => $detail->maintenanceType->id,
+                        'name' => $detail->maintenanceType->name,
+                    ];
+                })->unique('id')->values();
+
+                // Get checklists data for the first maintenance type
+                $maintenance_type_id = $firstDetail->maintenance_type_id;
+                $maintenanceChecklists = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $maintenance_type_id)
+                    ->select('erp_equip_maintenance_id', 'name')
+                    ->get();
+
+                $checklistsData = [];
+                foreach ($maintenanceChecklists as $maintenanceChecklist) {
+                    $checklistName = $maintenanceChecklist->name;
+                    $inspectionChecklist = \App\Models\InspectionChecklist::where('name', $checklistName)->first();
+
+                    if ($inspectionChecklist) {
+                        $checklistDetails = \App\Models\InspectionChecklistDetail::where('header_id', $inspectionChecklist->id)
+                            ->select('id', 'name', 'data_type', 'description', 'mandatory')
+                            ->get();
+
+                        $detailsWithValues = [];
+                        foreach ($checklistDetails as $detail) {
+                            $detailData = [
+                                'name' => $detail->name,
+                                'data_type' => $detail->data_type,
+                                'description' => $detail->description,
+                                'mandatory' => $detail->mandatory,
+                                'value' => '',
+                            ];
+
+                            $detailValues = \App\Models\InspectionChecklistDetailValue::where('inspection_checklist_detail_id', $detail->id)
+                                ->pluck('value')
+                                ->toArray();
+
+                            if ($detail->data_type === 'list') {
+                                $detailData['values'] = $detailValues;
+                                $detailData['value'] = !empty($detailValues) ? $detailValues[0] : '';
+                            } else {
+                                $detailData['value'] = !empty($detailValues) ? $detailValues[0] : '';
+                            }
+
+                            $detailsWithValues[] = $detailData;
+                        }
+
+                        $checklistsData[] = [
+                            'main_name' => $checklistName,
+                            'checklist' => $detailsWithValues,
+                        ];
+                    }
+                }
+
+                $equipment = $firstDetail->equipment;
+                $equipment->checklists_data = $checklistsData;
+
+                $data[] = [
+                    'equipment' => $equipment,
+                    'maintenance_type' => $maintenanceTypes->first(),
+                    'maintenance_types' => $maintenanceTypes,
+                    'bom' => $firstDetail->bom,
+                ];
+            }
+        }
+
+        return response()->json($data);
+    }
+
+    private function filterByDefectNotification(Request $request)
+    {
+        $equipmentId = $request->input('equipment_id');
+        $defectTypeId = $request->input('defect_type_id');
+        $priority = $request->input('priority');
+        $seriesCode = $request->input('series_code');
+
+        // Use exact same query as populateModal defect case
+        $query = DefectNotification::with([
+            'book',
+            'equipment.maintenanceDetails.maintenanceType',
+            'location',
+            'category',
+            'defectType',
+        ])->where('document_status', '!=', 'draft')
+          ->orderBy('created_at', 'desc');
+
+        // Apply filters based on provided parameters
+        if ($equipmentId) {
+            $query->where('equipment_id', $equipmentId);
+        }
+
+        if ($defectTypeId) {
+            $query->where('defect_type_id', $defectTypeId);
+        }
+
+        if ($priority) {
+            $query->where('priority', $priority);
+        }
+
+        if ($seriesCode) {
+            $query->whereHas('book', function ($q) use ($seriesCode) {
+                $q->where('book_code', 'LIKE', "%{$seriesCode}%");
+            });
+        }
+
+        $results = $query->get();
+
+        // If no data found, return empty array for modal
+        if ($results->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Use exact same data processing as populateModal method
+        $data = $results->map(function ($defectNotification) {
+            $maintenanceTypes = [];
+            if ($defectNotification->equipment && $defectNotification->equipment->maintenanceDetails) {
+                $maintenanceTypes = $defectNotification->equipment->maintenanceDetails
+                    ->map(fn($detail) => $detail->maintenanceType)
+                    ->filter()
+                    ->unique('id')
+                    ->map(fn($type) => ['id' => $type->id, 'name' => $type->name])
+                    ->values();
+            }
+
+            $checklistsByMaintenanceType = [];
+
+            $defectNotification->maintenance_types = $maintenanceTypes;
+            $defectNotification->checklists_by_maintenance_type = $checklistsByMaintenanceType;
+
+            return $defectNotification;
+        });
+
+        return response()->json($data);
+    }
+
+    private function formatAttributesForDisplay($attributes)
+    {
+        if (empty($attributes)) {
+            return 'No attributes';
+        }
+
+        $formatted = [];
+        foreach ($attributes as $attr) {
+            $groupName = $attr['group_short_name'] ?? $attr['group_name'] ?? 'Attribute';
+            $selectedValue = $attr['selected_value'] ?? 'N/A';
+            $totalValues = $attr['values_count'] ?? 0;
+
+            if ($totalValues > 1) {
+                $allValuesText = collect($attr['all_values'] ?? [])->pluck('value')->implode(', ');
+                $formatted[] = "{$groupName}: {$selectedValue} (Available: {$allValuesText})";
+            } else {
+                $formatted[] = "{$groupName}: {$selectedValue}";
+            }
+        }
+
+        return implode(' | ', $formatted);
     }
 }
