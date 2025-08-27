@@ -281,7 +281,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
                 'code' => $code,
                 'book_id'=> $this->book_id,
                 'name' => $uploadedItem->name,
-                'ledger_group_id' => json_encode($groupIds),
+                'ledger_group_id' => json_encode(array_map('strval', $groupIds)),
                 'status' => $this->service->mapStatus($uploadedItem['status'] ?? 1),
                 'tds_section' => $uploadedItem->tdssection,
                 'tds_percentage' => $uploadedItem->tds_percentage ?? null,
