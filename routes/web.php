@@ -2288,12 +2288,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
     Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
 
-    Route::post('/transporter-invoices/e-invoice-mail', [TransporterInvoiceController::class, 'InvoiceMail'])
+   Route::post('/transporter-invoices/e-invoice-mail', [TransporterInvoiceController::class, 'InvoiceMail'])
     ->name('tranport.invoice.eInvoiceMail');
     Route::post('/transporter-invoices/confirm', [TransporterInvoiceController::class, 'confirm'])
     ->name('sale.transporterInvoice.confirm');
-    Route::get('/transporter-invoices/print', [TransporterInvoiceController::class, 'print'])
+    Route::get('/transporter-invoices/print/{id}', [TransporterInvoiceController::class, 'print'])
     ->name('sale.transporterInvoice.print');
+    Route::get('/transporter-invoice/posting/get', [TransporterInvoiceController::class, 'getPostingDetails'])->name('transport.invoice.posting.get');
+    Route::post('/transporter-invoice/post', [TransporterInvoiceController::class, 'postInvoice'])->name('transport.invoice.post');
+
 
 
     # Production Work Order Route

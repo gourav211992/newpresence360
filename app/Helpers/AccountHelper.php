@@ -266,6 +266,7 @@ class AccountHelper
     
     public static function getLedgerGroupAndLedgerIdForSalesAccount($organizationId = null, $customerId = null, $itemId = null, $bookId = null)
     {
+        
         $query = SalesAccount::query();
     
         if ($organizationId) {
@@ -296,7 +297,7 @@ class AccountHelper
         }
 
         if ($bookId) {
-            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(book_id, '$[*]')) LIKE ?", ['%' . $bookId . '%']);
+            $query->where('book_id', $bookId);
                 $bookQuery = clone $query;
                 $salesAccounts = $bookQuery->get();
                 if ($salesAccounts->isEmpty()) {
@@ -329,7 +330,7 @@ class AccountHelper
                     }
                 }
 
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(customer_id, '$[*]')) LIKE ?", ['%' . $customerId . '%']);
+               $query->where('customer_id', $customerId);
                 $customerQuery = clone $query;
                 $salesAccounts = $customerQuery->get();
                 if ($salesAccounts->isEmpty()) {
@@ -366,7 +367,7 @@ class AccountHelper
                     $query->orWhereNull('item_sub_category_id');
                 }
             }
-            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(item_id, '$[*]')) LIKE ?", ['%' . $itemId . '%']);
+            $query->where('item_id', $itemId);
                $itemQuery = clone $query;
                 $salesAccounts = $itemQuery->get(); 
                 if ($salesAccounts->isEmpty()) {
