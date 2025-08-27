@@ -19,6 +19,7 @@ window.pageData = {
         bookDetails : "{{route('book.service-series.get')}}",
         getSeries : "{{ url('get-series') }}/",
         ApiURL: "{{ route('maint-wo.populateModal') }}",
+        amend: "{{ isset($data) ? route('maint-wo.edit', $data->id) : '#' }}",
     };
 </script>
 

@@ -2565,6 +2565,7 @@ class CrDrReportController extends Controller
             return $type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
             $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            $q->withoutGlobalScope('defaultLocation');
         })->whereIn('organization_id', $orgs);
     }])->with('customer')->find($item['ledger_id']);
             $group = Group::find($item['ledger_group_id']);

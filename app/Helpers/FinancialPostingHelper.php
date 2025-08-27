@@ -394,7 +394,8 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        } else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+        } 
+        else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
             $pay = self::paymentInvoiceVoucherDetails($documentId, '');
             $entries = self::contraVoucherDetails($documentId, '');
             $env = [];
@@ -7659,22 +7660,23 @@ class FinancialPostingHelper
             ->with([
                 'voucher' => function ($query) {
                     $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                    $query->withoutGlobalScope('defaultLocation');
+
                 }
             ])
             ->get();
-
+        
         if ($vendors->isEmpty()) {
             return [];
         }
 
 
 
-
         $ledgerErrorStatus = null;
         $vouchersArray = [];
         foreach ($vendors as $vendor) {
-
             $partyOrg = $vendor->voucher->organization;
+            
             if ($partyOrg->id != $organization->id) {
                 $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
                 if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)
@@ -8290,7 +8292,7 @@ class FinancialPostingHelper
         }
         return $voucherDetails;
     }
-    public static function generateInvoiceDetailsArray(array $postingArray, array $voucherHeader, mixed $document, string $currencyIdKey = 'currency_id', string $documentDateKey = 'document_date', bool $stockCogDnCheck = false)
+   public static function generateInvoiceDetailsArray(array $postingArray, array $voucherHeader, mixed $document, string $currencyIdKey = 'currency_id', string $documentDateKey = 'document_date', bool $stockCogDnCheck = false)
     {
         $voucherDetails = [];
         foreach ($postingArray as $entryType => $postDetails) {
@@ -8401,7 +8403,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
-
+        
         $vendorLedger = Ledger::find($vendorLedgerId);
         $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
         if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
@@ -8487,7 +8489,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
-
+        
         $vendorLedger = Ledger::find($vendorLedgerId);
         $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
         if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
@@ -8497,7 +8499,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-
+        
         array_push($postingArray[self::VENDOR_ACCOUNT], [
             'ledger_id' => $vendorLedger->id,
             'ledger_group_id' => $vendorLedgerGroup->id,

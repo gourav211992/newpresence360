@@ -113,9 +113,9 @@ class="ajax-input-form sales_module_form transport_invoice"
                                 @if($buttons['amend'])
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                                 @endif
-                                @if($buttons['post'])
+                                <!-- @if($buttons['post'])
                                 <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
-                                @endif
+                                @endif -->
                                 @if($buttons['voucher'])
                                 <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
                                 @endif
@@ -969,6 +969,80 @@ class="ajax-input-form sales_module_form transport_invoice"
       </div>
       </div>
    </div>
+
+  <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+
+                         <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input id = "voucher_book_code" class="form-control" disabled="" >
+                            </div>
+                        </div>
+
+                         <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
+                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                         <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                <input id = "voucher_date" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+                         <div class="col-md-3">
+                            <div class="mb-1">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <input id = "voucher_currency" class="form-control" disabled="" value="">
+                            </div>
+                        </div>
+
+						 <div class="col-md-12">
+
+
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+									<thead>
+										 <tr>
+											<th>Type</th>
+											<th>Group</th>
+											<th>Leadger Code</th>
+											<th>Leadger Name</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Credit</th>
+                                            <th>Due Date</th>
+										  </tr>
+										</thead>
+										<tbody id = "posting-table">
+
+
+									   </tbody>
+
+
+								</table>
+							</div>
+						</div>
+
+
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button onclick = "postVoucher(this);" id = "posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
 @include('transport-invoice.partials.modals')
 @section('scripts')
 <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
@@ -3789,7 +3863,7 @@ function resetPostVoucher() {
 
 function onPostVoucherOpen(type = "not_posted") {
   resetPostVoucher();
-  const apiURL = "{{ route('sale.invoice.posting.get') }}";
+  const apiURL = "{{ route('transport.invoice.posting.get') }}";
   $.ajax({
     url: apiURL + "?book_id=" + $("#series_id_input").val() + "&document_id="
       + "{{ isset($order) ? $order->id : '' }}" + "&type=" + (type == "not_posted" ? "get" : "view"),
@@ -3853,7 +3927,7 @@ function onPostVoucherOpen(type = "not_posted") {
 function postVoucher(element) {
   const bookId = "{{ isset($order) ? $order->book_id : '' }}";
   const documentId = "{{ isset($order) ? $order->id : '' }}";
-  const postingApiUrl = "{{ route('sale.invoice.post') }}";
+  const postingApiUrl = "{{ route('transport.invoice.post') }}";
   if (bookId && documentId) {
     $.ajax({
       url: postingApiUrl,
