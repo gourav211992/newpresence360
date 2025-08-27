@@ -493,6 +493,14 @@ class TransporterInvoiceController extends Controller
             $customerGSTIN = $request->customer_gstin ?? null;
             // $customerName = $request->consignee_name ?? null;
             //If Customer is Regular, pick from Customer Master
+            if(empty($customer))
+            {
+                 return response()->json([
+                        'message' => 'Choose lorry receipt customer is not exist on database',
+                        'error' => ''
+                    ], 422);
+            }
+
             if ($customer->customer_type === ConstantHelper::REGULAR) {
                 $customerPhoneNo = $customer->mobile ?? null;
                 $customerEmail = $customer->email ?? null;
