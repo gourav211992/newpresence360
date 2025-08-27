@@ -25,6 +25,7 @@
             }
         }
     @endphp
+    
     <script>
         const locationCostCentersMap = @json($cost_centers);
         const unauthorizedMonths = @json($unauthorizedMonths);
@@ -628,16 +629,39 @@
         //     $('.preloader').show();
         // });
         $('.voucher_details').hide();
+
+        function getMonthName(ym) {
+            const [y, m] = ym.split('-').map(Number);
+            return new Intl.DateTimeFormat('en', {month:'long', year:'numeric'}).format(new Date(y, m-1, 1));
+        }
+
         function isDateAuthorized(dateValue) {
             if (!dateValue) return true;
             var selectedMonth = dateValue.substring(0, 7);
             if (unauthorizedMonths.includes(selectedMonth)) {
                 var monthLabel = getMonthName(selectedMonth);
-                showToast('error', 'You are not authorized to select dates from ' + monthLabel + '. Please select another month.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Not allowed',
+                    text: `You are not authorized to select dates from ${monthLabel}. Please pick another month.`,
+                    confirmButtonText: 'OK'
+                    });
                 return false;
             }
             return true;
         }
+       
+        const dateEl = document.getElementById('date');
+        let lastValid = dateEl.value;  // keep previous value
+
+        dateEl.addEventListener('change', function () {
+            if (!isDateAuthorized(this.value)) {
+                this.value = lastValid; // revert if unauthorized
+            } else {
+                lastValid = this.value; // update last valid
+            }
+        });
+        
         var currencies = {!! json_encode($currencies) !!};
         var orgCurrency = {{ $orgCurrency }};
         var orgCurrencyName = '';
@@ -1792,7 +1816,6 @@
             let futureDateAllowed = false;
 
             if (data != null) {
-                console.log(data.parameters.back_date_allowed);
                 if (Array.isArray(data?.parameters?.back_date_allowed)) {
                     for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
                         if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
@@ -1824,17 +1847,17 @@
             if (backDateAllowed && futureDateAllowed) {
                 // dateInput.removeAttribute("min");
                 // dateInput.removeAttribute("max");
-                // console.log('here',1,fyearStartDate, fyearEndDate);
+                 console.log('here',1,fyearStartDate, fyearEndDate);
                 dateInput.setAttribute("min", fyearStartDate);
                 dateInput.setAttribute("max", fyearEndDate);
             } else if (backDateAllowed) {
                 dateInput.setAttribute("max", today);
                 dateInput.setAttribute("min", fyearStartDate);
-                // console.log('here',2);
+                console.log('here',2);
             } else if (futureDateAllowed) {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", fyearEndDate);
-                // console.log('here',3);
+                console.log('here',3);
             } else {
                 dateInput.setAttribute("min", today);
                 dateInput.setAttribute("max", today);
