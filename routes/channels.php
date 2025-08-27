@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Log;
 |
 */
 
-Broadcast::channel('user.{id}', function ($user, $id) {
-    Log::info('Broadcast auth attempted pp', ['user' => $user]);
-    return (int) $user->id === (int) $id;
-}); // or 'auth:api' if using API tokens
+// Broadcast::channel('user.{id}', function ($user, $id) {
+//     Log::info('Broadcast auth attempted pp', ['user' => $user]);
+//     return (int) $user->id === (int) $id;
+// }); // or 'auth:api' if using API tokens
 
