@@ -19,16 +19,13 @@
 @section('content')
       @php
         $unauthorizedMonths = [];
-        $usersList = [];
         foreach ($fy_months as $month) {
             if (!$month['authorized']) {
                 $unauthorizedMonths[] = $month['fy_month'];
             }
-            $usersList[] = array_column($month['access_by'], 'user_id');
         }
-       
-        $usersList = array_unique(array_merge(...$usersList));
     @endphp
+    
     <script>
         const locationCostCentersMap = @json($cost_centers);
         const unauthorizedMonths = @json($unauthorizedMonths);
