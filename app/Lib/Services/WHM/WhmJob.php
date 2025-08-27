@@ -26,6 +26,9 @@ class WhmJob
         }
 
         $subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
+        if ($namespace == \App\Models\ErpPlHeader::class) {
+            $subStoreId = isset($header->main_sub_store_id) ? $header->main_sub_store_id : null;
+        }
 
         if ($namespace === \App\Models\InspectionHeader::class) {
             if($subStoreType === 'rejected_store'){
@@ -276,7 +279,7 @@ class WhmJob
                 'item_uid' => $code->item_uid, 
                 'batch_id' => $batch ? $batch->id : NULL,
                 'batch_number' => $batch ? $batch->batch_number : NULL,
-                'manufacturing_year' => $batch ? $batch->manufacturing_year : NULL,
+                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
                 'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
                 'type' => 'qr',
                 'qty' => 1,

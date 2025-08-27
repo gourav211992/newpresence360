@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('content')
+
    <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -12,7 +13,7 @@
                             <h2 class="content-header-title float-start mb-0">Maintenance Work Orders</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{route('/')}}">Home</a></li>  
+                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
                                     <li class="breadcrumb-item active">Work Order List</li>
                                 </ol>
                             </div>
@@ -27,34 +28,113 @@
                 </div>
             </div>
             <div class="content-body">
+                 
+                
+				
 				<section id="basic-datatable">
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
+								
+								   
                                 <div class="table-responsive">
-									<table id="maint-wo-table" class="datatables-basic table myrequesttablecbox "> 
+									<table class="datatables-basic table myrequesttablecbox "> 
                                         <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Date</th>
-                                                <th>Series</th>
-                                                <th>Doc No.</th>
-                                                <th>Equipment</th>
-                                                <th>Category</th>
-                                                <th>Type</th>
-                                                <th class="text-end">Status</th>
-                                            </tr>
+                                             <tr>
+												<th>#</th>
+												<th>Date</th>
+												<th>Series</th>
+												<th>Doc No.</th>
+												<th>Equipment</th>
+												<th>Category</th>
+												<th>Type</th>
+												<th class="text-end">Status</th>
+										  </tr>
 											</thead>
 											<tbody>
-												<!-- Data will be loaded via Ajax -->
-											</tbody>
+												@isset($data)
+                                                @foreach($data as $d)
+                                                    <tr>
+                                                        <td class="text-nowrap">{{ $loop->iteration }}</td>
+                                                        <td class="fw-bolder text-dark text-nowrap">
+                                                            {{ $d->document_date ? \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') : '-' }}
+                                                        </td>
+                                                        <td class="text-nowrap">{{ $d?->book?->book_code ?? 'MAINT_WO' }}</td>
+                                                        <td class="text-nowrap">{{ $d->document_number ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $d->equipment?->name ?? 'Default Equipment' }}</td>
+                                                        <td class="text-nowrap">{{ $d->category?->name ?? 'Machinery' }}</td>
+                                                        <td class="text-nowrap">
+                                                            <span class='badge rounded-pill badge-light-{{ 
+                                                                $d->maintenance_type == "Preventive" ? "info" : 
+                                                                ($d->maintenance_type == "Corrective" ? "warning" : "secondary") 
+                                                            }} badgeborder-radius'>
+                                                                {{ $d->maintenance_type ?? 'Preventive' }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="tableactionnew">
+                                                            <div class="d-flex align-items-center justify-content-end">
+                                                                @php 
+                                                                    $statusClass = 'badge-light-secondary';
+                                                                    if(isset(App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status ?? 'draft'])) {
+                                                                        $statusClass = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status ?? 'draft'];
+                                                                    }
+                                                                @endphp
+                                                                <span class='badge rounded-pill {{ $statusClass }} badgeborder-radius'>
+                                                                    @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($d->document_status ?? 'draft') }}
+                                                                    @endif
+                                                                </span>
+
+                                                                <div class="dropdown">
+                                                                    <button type="button"
+                                                                        class="btn btn-sm dropdown-toggle hide-arrow p-0"
+                                                                        data-bs-toggle="dropdown">
+                                                                        <i data-feather="more-vertical"></i>
+                                                                    </button>
+                                                                    <div class="dropdown-menu dropdown-menu-end">
+                                                                        @if ($d->document_status == 'draft')
+                                                                            <a class="dropdown-item"
+                                                                                href="{{ route('maint-wo.edit', $d->id) }}">
+                                                                                <i data-feather="edit" class="me-50"></i>
+                                                                                <span>Edit</span>
+                                                                            </a>
+                                                                        @else
+                                                                        <a class="dropdown-item"
+                                                                            href="{{ route('maint-wo.edit', $d->id) }}">
+                                                                                <i data-feather="eye" class="me-50"></i>
+                                                                                <span>Edit</span>
+                                                                            </a>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+											        </tr>
+                                              @endforeach
+                                              @else
+                                                <tr>
+                                                    <td colspan="8" class="text-center">No work orders found</td>
+                                                </tr>
+                                              @endisset
+												 </tbody>
+
+
 									</table>
 								</div>
+								
+								
+								
+								
+								
                             </div>
                         </div>
                     </div>
                      
                 </section>
+                 
+
             </div>
         </div>
     </div>
@@ -63,8 +143,11 @@
 
     <div class="sidenav-overlay"></div>
     <div class="drag-target"></div>
+
     <!-- BEGIN: Footer-->
     <!-- END: Footer-->
+	
+	 
      <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
 			<form class="add-new-record modal-content pt-0"> 
@@ -157,83 +240,7 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-
-        $(document).ready(function() {
-            // Check if DataTable is already initialized and destroy it
-            if ($.fn.DataTable.isDataTable('#maint-wo-table')) {
-                $('#maint-wo-table').DataTable().destroy();
-            }
-
-            // Initialize Flatpickr for date range filter
-            $('#fp-range').flatpickr({
-                mode: 'range',
-                dateFormat: 'Y-m-d',
-                onChange: function(selectedDates, dateStr, instance) {
-                    if (typeof maintWoTable !== 'undefined') {
-                        maintWoTable.ajax.reload();
-                    }
-                }
-            });
-
-            // Initialize DataTable
-            var maintWoTable = $('#maint-wo-table').DataTable({
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                ajax: {
-                    url: '{{ route("maint-wo.ajax-data") }}',
-                    data: function(d) {
-                        // Add date range filter
-                        var dateRange = $('#fp-range').val();
-                        if (dateRange) {
-                            var dates = dateRange.split(' to ');
-                            if (dates.length === 2) {
-                                d.start_date = dates[0];
-                                d.end_date = dates[1];
-                            }
-                        }
-                    }
-                },
-                columns: [
-                    { data: 0, name: 'id', orderable: false, searchable: false }, // Row number
-                    { data: 1, name: 'document_date' }, // Date
-                    { data: 2, name: 'book.book_code', defaultContent: 'MAINT_WO' }, // Series
-                    { data: 3, name: 'document_number' }, // Doc No.
-                    { data: 4, name: 'equipment.name', defaultContent: '-' }, // Equipment
-                    { data: 5, name: 'category.name', defaultContent: 'Machinery' }, // Category
-                    { data: 6, name: 'maintenance_type', defaultContent: 'Preventive' }, // Type
-                    { data: 7, name: 'document_status', orderable: false, searchable: false } // Status
-                ],
-                order: [[1, 'desc']], // Order by date column
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                language: {
-                    processing: '<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading...</span></div>',
-                    emptyTable: 'No maintenance work orders found',
-                    zeroRecords: 'No matching maintenance work orders found'
-                },
-                drawCallback: function(settings) {
-                    // Re-initialize Feather icons after table draw
-                    if (typeof feather !== 'undefined') {
-                        feather.replace();
-                    }
-                }
-            });
-
-            // Apply filter when modal is closed with date range
-            $('#filter').on('hidden.bs.modal', function() {
-                var dateRange = $('#fp-range').val();
-                if (dateRange) {
-                    maintWoTable.ajax.reload();
-                }
-            });
-
-            // Clear filter functionality
-            window.clearDateFilter = function() {
-                $('#fp-range').val('');
-                maintWoTable.ajax.reload();
-            };
-        });
+        handleRowSelection('.datatables-basic');
     </script>
  
 @endsection

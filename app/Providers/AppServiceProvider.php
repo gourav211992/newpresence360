@@ -30,10 +30,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // DB::listen(function ($query) {
-        //     Log::debug('SQL: ' . $query->sql);
-        //     Log::debug('Bindings: ' . json_encode($query->bindings));
-        //     Log::debug('Time: ' . $query->time . ' ms');
+        // \DB::listen(function ($query) {
+        //     \Log::debug('SQL: ' . $query->sql);
+        //     \Log::debug('Bindings: ' . json_encode($query->bindings));
+        //     \Log::debug('Time: ' . $query->time . ' ms');
         // });
 
         View::composer('*', function ($view) {

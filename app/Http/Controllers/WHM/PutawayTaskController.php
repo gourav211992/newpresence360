@@ -15,12 +15,14 @@ use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use DB;
 
 class PutawayTaskController extends Controller
 {
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
+        $subLocation = $request->input('sub_store_id');
         $jobs = ErpWhmJob::with(['morphable.book' => function($q){
                         $q->select('id','book_code');
                     }, 'morphable.erpStore' => function($q){
@@ -42,9 +44,10 @@ class PutawayTaskController extends Controller
                         });
                     })
                     ->when($location, function ($query) use ($location) {
-                        $query->whereHasMorph('morphable', ['App\Models\MrnHeader','App\Models\InspectionHeader'], function ($q) use ($location) {
-                            $q->where('store_id', $location);
-                        });
+                        $query->where('store_id', $location);
+                    })
+                    ->when($subLocation, function ($query) use ($subLocation) {
+                        $query->where('sub_store_id', $subLocation);
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
                     ->orderBy('id','desc')
@@ -177,34 +180,68 @@ class PutawayTaskController extends Controller
         if($item){
 
             $item->storage_points = [];
-            $subStoreId = $item->sub_store_id;
+            $itemId = $item->item_id;
 
-            // Get storage points
-            $response = StoragePointHelper::getStoragePoints(
-                $item->item_id,
-                null,
-                $request->store_id,
-                $subStoreId
-            );
+            $storageData = ErpItemUniqueCode::where('store_id', $request->store_id)
+                ->where('job_id',$request->job_id)
+                ->where('morphable_id',$request->putaway_item_id)
+                ->where('job_type', CommonHelper::PUTAWAY)
+                ->where('doc_type', CommonHelper::RECEIPT)
+                ->where('status', CommonHelper::SCANNED)
+                ->select('storage_point_id', DB::raw('COUNT(*) as quantity'))
+                ->whereNotNull('storage_point_id')
+                ->groupBy('storage_point_id')
+                ->get();
 
-            if (!empty($response['status']) && $response['status'] === 'success') {
-                $item->storage_points = $response['data'];
-
-                $item->storage_points = collect($item->storage_points)->map(function($storageData) use($request, $item) {
-                    $scannedPackets = self::scannedPackets(
+             // STEP 2: Map storage point detail with quantity
+            $item->storage_points = $storageData->map(function ($record) use($request, $itemId){
+                $detailsResponse = StoragePointHelper::getStoragePointDetailById($record->storage_point_id);
+                $scannedPackets = self::scannedPackets(
                         $request->store_id,
-                        $item->item_id,
-                        $storageData->id,
+                        $itemId,
+                        $record->storage_point_id,
                         $request->job_id,
                         $request->putaway_item_id
-                    );
-                    $storageData->scannedPacketCount = count($scannedPackets);
-                    $storageData->scannedPackets = $scannedPackets;
+                );
 
-                    return $storageData;
-                });
-            }
+                return [
+                    'quantity' => $record->quantity,
+                    'details' => $detailsResponse['data'] ?? null,
+                    'scannedPacketCount' => $scannedPackets ? $scannedPackets->count() : null,
+                    'scannedPackets' => $scannedPackets ?? null,
+                ];
+            });
 
+            // Get storage points
+            // $response = StoragePointHelper::getStoragePoints(
+            //     $item->item_id,
+            //     null,
+            //     $request->store_id,
+            //     $subStoreId
+            // );
+
+            // if (!empty($response['status']) && $response['status'] === 'success') {
+            //     $item->storage_points = $response['data'];
+
+            //     $item->storage_points = collect($item->storage_points)->map(function($storageData) use($request, $item) {
+            //         $scannedPackets = self::scannedPackets(
+            //             $request->store_id,
+            //             $item->item_id,
+            //             $storageData->id,
+            //             $request->job_id,
+            //             $request->putaway_item_id
+            //         );
+            //         $storageData->scannedPacketCount = count($scannedPackets);
+            //         $storageData->scannedPackets = $scannedPackets;
+
+            //         return $storageData;
+            //     });
+            // }
+
+        }else {
+            $item->storage_points = null;
+            $item->scannedPacketCount = 0;
+            $item->scannedPackets = null;
         }
 
         return [

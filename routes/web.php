@@ -2777,12 +2777,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('fixed-asset/it-dep', ITDepreciationController::class)->names([
         'index' => 'finance.fixed-asset.it.dep.index',
     ]);
-    Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
-    Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
-    Route::get('fixed-asset/split/posting/get', [SplitController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
-    Route::post('fixed-asset/split/post', [SplitController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
-    Route::get('fixed-asset/depreciation/amendment/{id}', [SplitController::class, 'amendment'])->name('finance.fixed-asset.split.amendment');
-
     Route::resource('fixed-asset/split', SplitController::class)->names([
         'index' => 'finance.fixed-asset.split.index',
         'create' => 'finance.fixed-asset.split.create',
@@ -2791,13 +2785,12 @@ Route::middleware(['user.auth'])->group(function () {
         'edit' => 'finance.fixed-asset.split.edit',
         'update' => 'finance.fixed-asset.split.update',
     ]);
+    Route::post('fixed-asset/split/approval', [SplitController::class, 'documentApproval'])->name('finance.fixed-asset.split.approval');
+    Route::post('fixed-asset/split/filter', [SplitController::class, 'index'])->name('finance.fixed-asset.split.filter');
+    Route::get('fixed-asset/split/posting/get', [SplitController::class, 'getPostingDetails'])->name('finance.fixed-asset.split.posting.get');
+    Route::post('fixed-asset/split/post', [SplitController::class, 'postInvoice'])->name('finance.fixed-asset.split.post');
+    Route::get('fixed-asset/depreciation/amendment/{id}', [SplitController::class, 'amendment'])->name('finance.fixed-asset.split.amendment');
 
-
-     Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
-    Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
-    Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
-    Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
-    Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
 
     Route::resource('fixed-asset/merger', MergerController::class)->names([
         'index' => 'finance.fixed-asset.merger.index',
@@ -2807,12 +2800,12 @@ Route::middleware(['user.auth'])->group(function () {
         'edit' => 'finance.fixed-asset.merger.edit',
         'update' => 'finance.fixed-asset.merger.update',
     ]);
-    Route::post('fixed-asset/rev/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
-    Route::post('fixed-asset/rev/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
-    Route::get('fixed-asset/rev/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
-    Route::post('fixed-asset/rev/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
-    Route::get('fixed-asset/rev/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
-   
+    Route::post('fixed-asset/merger/approval', [MergerController::class, 'documentApproval'])->name('finance.fixed-asset.merger.approval');
+    Route::post('fixed-asset/merger/filter', [MergerController::class, 'index'])->name('finance.fixed-asset.merger.filter');
+    Route::get('fixed-asset/merger/posting/get', [MergerController::class, 'getPostingDetails'])->name('finance.fixed-asset.merger.posting.get');
+    Route::post('fixed-asset/merger/post', [MergerController::class, 'postInvoice'])->name('finance.fixed-asset.merger.post');
+    Route::get('fixed-asset/merger/amendment/{id}', [MergerController::class, 'amendment'])->name('finance.fixed-asset.merger.amendment');
+
     Route::resource('fixed-asset/rev', RevImpController::class)->names([
         'index' => 'finance.fixed-asset.revaluation-impairement.index',
         'create' => 'finance.fixed-asset.revaluation-impairement.create',
@@ -2821,6 +2814,11 @@ Route::middleware(['user.auth'])->group(function () {
         'edit' => 'finance.fixed-asset.revaluation-impairement.edit',
         'update' => 'finance.fixed-asset.revaluation-impairement.update',
     ]);
+    Route::post('fixed-asset/rev/approval', [RevImpController::class, 'documentApproval'])->name('finance.fixed-asset.revaluation-impairement.approval');
+    Route::post('fixed-asset/rev/filter', [RevImpController::class, 'index'])->name('finance.fixed-asset.revaluation-impairement.filter');
+    Route::get('fixed-asset/rev/posting/get', [RevImpController::class, 'getPostingDetails'])->name('finance.fixed-asset.revaluation-impairement.posting.get');
+    Route::post('fixed-asset/rev/post', [RevImpController::class, 'postInvoice'])->name('finance.fixed-asset.revaluation-impairement.post');
+    Route::get('fixed-asset/rev/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
 
 
     Route::resource('asset-category', AssetCategoryController::class);
@@ -2849,28 +2847,17 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
     });
-Route::get('plant/maint-wo/get-ajax-data', [MaintWoController::class, 'ajaxData'])->name('maint-wo.ajax-data');
-    Route::get('plant/maint-wo/get-equipment-spare-parts', [MaintWoController::class, 'getEquipmentSpareParts'])->name('maint-wo.get-equipment-spare-parts');
-    Route::post('plant/maint-wo/approve', [MaintWoController::class, 'documentApproval'])->name('maint-wo.approval');
-    Route::post('plant/maint-wo/filter', [MaintWoController::class, 'filter'])->name('maint-wo.filter');
-    
+
     Route::resource('plant/maint-wo', MaintWoController::class)->names([
-        'index' => 'maint-wo.index',
         'create' => 'maint-wo.create',
         'store' => 'maint-wo.store',
         'update' => 'maint-wo.update',
         'show' => 'maint-wo.show',
         'edit' => 'maint-wo.edit',
     ]);
-
-    
     Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
     Route::get('plant/populate-modal', [MaintWoController::class, 'populateModal'])->name('maint-wo.populateModal');
 
-    Route::get('plant/defect-noti/filter', [DefectNotificationController::class, 'filter'])->name('defect-notification.filter');
-    Route::get('plant/defect-noti/{id}/get', [DefectNotificationController::class, 'getDefectNotification'])->name('defect-notification.get');
-    Route::post('plant/defect-noti/get-checklists', [DefectNotificationController::class, 'getChecklistsByMaintenanceType'])->name('defect-notification.get-checklists');
-    
     Route::resource('plant/defect-noti', DefectNotificationController::class)
         ->names([
             'index' => 'defect-notification.index',
@@ -2881,7 +2868,8 @@ Route::get('plant/maint-wo/get-ajax-data', [MaintWoController::class, 'ajaxData'
             'edit' => 'defect-notification.edit',
         ]);
 
-    
+
+
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
     Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
 

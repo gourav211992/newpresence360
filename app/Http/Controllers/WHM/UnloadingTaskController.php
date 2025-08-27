@@ -42,9 +42,7 @@ class UnloadingTaskController extends Controller
                         });
                     })
                     ->when($location, function ($query) use ($location) {
-                        $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
-                            $q->where('store_id', $location);
-                        });
+                        $query->where('store_id', $location);
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
                     ->orderBy('id','desc')

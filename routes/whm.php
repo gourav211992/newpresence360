@@ -68,6 +68,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/picklist/save-as-draft', 'saveAsDraft')->name('whm.picklist.save-as-draft');
         Route::post('/picklist/update-status', 'updateStatus')->name('whm.picklist.update-status');
         Route::post('/picklist/close-job', 'closeJob')->name('whm.picklist.close-job');
+        Route::post('/picklist/san-storage', 'scanStorage')->name('whm.picklist.san-storage');
     });
 
     Route::controller(DispatchController::class)->group(function () {

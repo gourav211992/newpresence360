@@ -27,6 +27,7 @@ class PicklistTaskController extends Controller
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
+        $subLocation = $request->input('sub_store_id');
         $jobs = ErpWhmJob::with(['morphable.store' => function($q){
                         $q->select('id','store_name');
                     }, 'morphable.items' => function($q){
@@ -42,9 +43,10 @@ class PicklistTaskController extends Controller
                         });
                     })
                     ->when($location, function ($query) use ($location) {
-                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($location) {
-                            $q->where('store_id', $location);
-                        });
+                        $query->where('store_id', $location);
+                    })
+                    ->when($subLocation, function ($query) use ($subLocation) {
+                        $query->where('sub_store_id', $subLocation);
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
                     ->orderBy('id','desc')
@@ -360,7 +362,7 @@ class PicklistTaskController extends Controller
 
         $uniqueCode = ErpItemUniqueCode::where('item_uid', $request->packet_id)
                         ->where('job_id',$request->job_id)
-                        ->where('storage_point_id',$request->storage_point_id)
+                        // ->where('storage_point_id',$request->storage_point_id)
                         ->where('morphable_type', 'App\Models\ErpPlItem')
                         ->where('status',CommonHelper::SCANNED)
                         ->first();
@@ -528,6 +530,90 @@ class PicklistTaskController extends Controller
         return [
             'message' => 'Records fetched successfully',
             "data" => $pendingTasks,
+        ];
+
+    }
+
+    public function scanStorage(Request $request){
+        $validator = Validator::make($request->all(),[
+            'storage_number' => ['required'],
+            'job_id' => ['required'],
+            'pl_item_id' => ['required'],
+        ],[
+            'storage_number.required' => 'Storage number is required',
+            'job_id.required' => 'Job id is required',
+            'pl_item_id.required' => 'Picklist item id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+
+        $job = ErpWhmJob::where('id',$request->job_id)
+            ->where('type',CommonHelper::PICKING)
+            ->first();
+
+        if(!$job){
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $detail = ErpPlItem::find($request->pl_item_id);
+        if(!$detail){
+            throw ValidationException::withMessages([
+                'pl_item_id' => ['Item not found.'],
+            ]);
+        }
+
+        $storageNumber = $request->input('storage_number');
+        $response = StoragePointHelper::getStoragePointDetail($storageNumber);
+
+        if($response['code'] == 500){
+            throw ValidationException::withMessages([
+                'storage_number' => [$response['message']],
+            ]);
+        }
+
+        if (empty($response['data'])) {
+            throw ValidationException::withMessages([
+                'storage_number' => ['Storage point data not found.'],
+            ]);
+        }
+
+        $storagePoint = $response['data'];
+        $storagePointId = $storagePoint->id;
+
+        $plHeaderId = $job->morphable_id;
+        $reservedStock = $detail->stockReservation()
+            ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+            ->where('issue_header_id',$plHeaderId)
+            ->where('issue_detail_id',$request->pl_item_id);
+
+        $transType = $reservedStock->pluck('receipt_book_type')
+            ->toArray();
+
+        $mrnIds = $reservedStock->pluck('receipt_detail_id')
+            ->toArray();
+
+        $packets = ErpItemUniqueCode::where('storage_point_id',$storagePointId)
+            ->where('item_id',$detail->item_id)
+            ->whereNull('utilized_id')
+            ->whereIn('morphable_id',$mrnIds)
+            ->whereIn('trns_type', $transType)
+            ->pluck('item_uid')
+            ->toArray();
+
+        if (empty($packets)) {
+            throw ValidationException::withMessages([
+                'packet_ids' => ['No packets found in storage point: ' . $request->storage_number],
+            ]);
+        }
+
+        return [
+            'data' => $response['data'],
+            'message' => $response['message'],
         ];
 
     }

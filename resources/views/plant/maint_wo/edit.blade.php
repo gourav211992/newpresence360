@@ -1,1044 +1,1034 @@
 @extends('layouts.app')
 @section('content')
-<style>
-		.poitemtxt {
-			white-space: normal;
-		}
-	</style>
-<div class="app-content content">
-  <div class="content-overlay"></div>
-  <div class="header-navbar-shadow"></div>
 
-  <div class="content-wrapper container-xxl p-0">
-    {{-- Header --}}
-    <div class="content-header pocreate-sticky">
-      <div class="row">
-        <div class="content-header-left col-md-6 mb-2">
-          <div class="row breadcrumbs-top">
-            <div class="col-12">
-              <h2 class="content-header-title float-start mb-0">Maintenance Order</h2>
-              <div class="breadcrumb-wrapper">
-                <ol class="breadcrumb">
-                  <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
-                  <li class="breadcrumb-item active">Add New</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-          <div class="form-group breadcrumb-right">
-            <a href="{{ route('maint-wo.index') }}">
-              <button class="btn btn-secondary btn-sm mb-50 mb-sm-0">
-                <i data-feather="arrow-left-circle"></i> Back
-              </button>
-            </a>
+     <!-- BEGIN: Content-->
+     <div class="app-content content ">
+        <div class="content-overlay"></div>
+        <div class="header-navbar-shadow"></div>
+        <div class="content-wrapper container-xxl p-0">
+            <div class="content-header pocreate-sticky">
+				<div class="row">
+					<div class="content-header-left col-md-6 mb-2">
+						<div class="row breadcrumbs-top">
+							<div class="col-12">
+								<h2 class="content-header-title float-start mb-0">Maintenance Order</h2>
+								<div class="breadcrumb-wrapper">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item"><a href="index.html">Home</a>
+										</li>  
+										<li class="breadcrumb-item active">Add New</li> 
+									</ol>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+						<div class="form-group breadcrumb-right">
+							<a href="{{ route('maint-wo.index') }}"> 
+								<button class="btn btn-secondary btn-sm">
+									<i data-feather="arrow-left-circle"></i> Back
+								</button>
+							</a>
+							@if ($workOrder->document_status == 'draft' || ($buttons['amend'] && request('amendment') == 1))
+								<button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
+									<i data-feather="save"></i> Save as Draft
+								</button>
+								<button type="submit" form="maint-wo-form" class="btn btn-primary btn-sm" id="submit-btn">
+									<i data-feather="check-circle"></i> Submit
+								</button>
+							@endif
 
-            @if ($workOrder->document_status == 'draft' || ($buttons['amend'] && request('amendment') == 1))
-                <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
-                    <i data-feather="save"></i> Save as Draft
-                </button>
-                <button type="submit" form="defect-notification-form" class="btn btn-primary btn-sm" id="submit-btn">
-                    <i data-feather="check-circle"></i> Submit
-                </button>
-            @endif
-          </div>
-        </div>
-      </div>
-    </div>
+							@if($buttons['approve'])
+								<button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved">
+									<i data-feather="check-circle"></i> Approve
+								</button>
+								<button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+										<circle cx="12" cy="12" r="10"></circle>
+										<line x1="15" y1="9" x2="9" y2="15"></line>
+										<line x1="9" y1="9" x2="15" y2="15"></line>
+									</svg> Reject
+								</button>
+							@endif
 
-    {{-- Body --}}
-    <div class="content-body">
-      <form id="maint-wo-form" method="POST" action="{{ route('maint-wo.update', $workOrder->id) }}" enctype="multipart/form-data">
-        @method('PUT')
-        @csrf
+							@if($buttons['amend'])
+								<button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+									<i data-feather='edit'></i> Amendment
+								</button>
+							@endif
+						</div>
+					</div>
 
-        @php
-          // Extract data from the work order for edit view
-          $equipmentDetailsArr = $workOrder && $workOrder->equipment_details ? json_decode($workOrder->equipment_details) : (object)[];
-          $refType = $equipmentDetailsArr->equipment_reference_type ?? $workOrder->reference_type ?? '';
-          $sparePartsData = $workOrder && $workOrder->spare_parts ? json_decode($workOrder->spare_parts, true) : [];
-          $checklistData = $workOrder && $workOrder->checklist_data ? json_decode($workOrder->checklist_data, true) : [];
+				</div>
+			</div>
+            <div class="content-body">
+                <form id="maint-wo-form" method="POST"  enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="book_code" id="book_code_input">
+                    <input type="hidden" name="doc_number_type" id="doc_number_type">
+                    <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+                    <input type="hidden" name="doc_prefix" id="doc_prefix">
+                    <input type="hidden" name="doc_suffix" id="doc_suffix">
+                    <input type="hidden" name="doc_no" id="doc_no">
+                    <input type="hidden" name="document_status" id="document_status" value="">
+                    <input type="hidden" name="spare_parts" id="spare_parts">
+                    <input type="hidden" name="checklist_data" id="checklist_data">
+                    <input type="hidden" name="equipment_details" id="equipment_details">
+                    
+                    <!-- Hidden inputs for readonly data -->
+                    <input type="hidden" name="equipment_category" id="equipment_category_hidden" value="Machinery">
+                    <input type="hidden" name="equipment_name" id="equipment_name_hidden" value="">
+                    <input type="hidden" name="defect_type" id="defect_type_hidden" value="">
+                    <input type="hidden" name="problem" id="problem_hidden" value="">
+                    <input type="hidden" name="report_date_time" id="report_date_time_hidden" value="">
+                    <input type="hidden" name="reported_by" id="reported_by_hidden" value="">
 
-          // Extract defect notification details if reference type is defect_notification
-          $selectedDefectName = $equipmentDetailsArr->equipment_defect_type ?? '';
-          $selectedPriority = $equipmentDetailsArr->equipment_priority ?? '';
-          $reportedById = $equipmentDetailsArr->equipment_reported_by ?? null;
-          $reportDateRaw = $equipmentDetailsArr->equipment_report_date ?? null;
-          $reportDate = $reportDateRaw;
-
-          // Amendment mode
-          $isAmendmentMode = intval(request('amendment') ?? 0) === 1;
-
-          // Disabled logic
-          $commonFieldsDisabled = $isAmendmentMode;
-          $editableFieldsDisabled = !$isAmendmentMode && ($workOrder->document_status !== 'draft');
-        @endphp
-
-        {{-- Hidden fields --}}
-        <input type="hidden" name="book_code" id="book_code_input" value="{{ $workOrder->book_code ?? '' }}">
-        <input type="hidden" name="doc_number_type" id="doc_number_type" value="{{ $workOrder->doc_number_type ?? '' }}">
-        <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern" value="{{ $workOrder->doc_reset_pattern ?? '' }}">
-        <input type="hidden" name="doc_prefix" id="doc_prefix" value="{{ $workOrder->doc_prefix ?? '' }}">
-        <input type="hidden" name="doc_suffix" id="doc_suffix" value="{{ $workOrder->doc_suffix ?? '' }}">
-        <input type="hidden" name="document_number" id="document_number" value="{{ $workOrder->document_number ?? '' }}">
-        <input type="hidden" name="book_id" id="book_id" value="{{ $workOrder->book_id ?? '' }}">
-        <input type="hidden" name="document_date" id="document_date" value="{{ $workOrder->document_date ?? '' }}">
-        <input type="hidden" name="document_status" id="document_status" value="{{ $workOrder->document_status ?? '' }}">
-        <input type="hidden" name="spare_parts" id="spare_parts" value="{{ $workOrder->spare_parts ?? '' }}">
-        <input type="hidden" name="checklist_data" id="checklist_data" value="{{ $workOrder->checklist_data ?? '' }}">
-        <input type="hidden" name="equipment_details" id="equipment_details" value="{{ $workOrder->equipment_details ?? '' }}">
-
-        {{-- readonly/selection data populated from work order --}}
-        <input type="hidden" name="defect_notification_id" id="defect_notification_id_hidden" value="{{ $workOrder->defect_notification_id ?? '' }}">
-        <input type="hidden" name="equipment_category" id="equipment_category_hidden" value="{{ $equipmentDetailsArr->equipment_category ?? '' }}">
-        <input type="hidden" name="equipment_name" id="equipment_name_hidden" value="{{ $equipmentDetailsArr->equipment_name ?? '' }}">
-        <input type="hidden" name="defect_type" id="defect_type_hidden" value="{{ $selectedDefectName }}">
-        {{-- Removed duplicate visible textarea here to avoid duplicate IDs/names. --}}
-        <input type="hidden" name="report_date_time" id="report_date_time_hidden" value="{{ $reportDateRaw ?? '' }}">
-        <input type="hidden" name="reported_by" id="reported_by_hidden" value="{{ $reportedById ?? '' }}">
-
-        <section id="basic-datatable">
-          <div class="row">
-
-            {{-- Basic Info --}}
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body customernewsection-form">
-                  <div class="row">
-                    <div class="col-md-12">
-                      <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
-                        <div>
-                          <h4 class="card-title text-theme">Basic Information</h4>
-                          <p class="card-text">Fill the details</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col-md-8">
-                      <div class="row align-items-center mb-1">
-                        <div class="col-md-3">
-                          <label class="form-label">Series <span class="text-danger">*</span></label>
-                        </div>
-                        <div class="col-md-5">
-                          <select class="form-select" name="book_id" id="book_id" {{ $commonFieldsDisabled ? 'disabled' : ($editableFieldsDisabled ? 'disabled' : '') }} required>
-                            @if(isset($series) && count($series) > 0)
-                              @foreach($series as $index => $book)
-                                <option value="{{ $book->id }}" @if($workOrder->book_id == $book->id) selected @endif>
-                                  {{ $book->book_code }}
-                                </option>
-                              @endforeach
-                            @else
-                              <option value="">No series available</option>
-                            @endif
-                          </select>
-                        </div>
-                      </div>
-
-                      <div class="row align-items-center mb-1">
-                        <div class="col-md-3">
-                          <label class="form-label">Doc No <span class="text-danger">*</span></label>
-                        </div>
-                        <div class="col-md-5">
-                          <input type="text" class="form-control" name="document_number" id="document_number" value="{{ $workOrder->document_number ?? '' }}" {{ $commonFieldsDisabled ? 'disabled' : ($editableFieldsDisabled ? 'disabled' : '') }}>
-                        </div>
-                      </div>
-
-                      <div class="row align-items-center mb-1">
-                        <div class="col-md-3">
-                          <label class="form-label">Doc Date <span class="text-danger">*</span></label>
-                        </div>
-                        <div class="col-md-5">
-                          <input type="date" value="{{ $workOrder->document_date }}" class="form-control" id="document_date" name="document_date" {{ $commonFieldsDisabled ? 'disabled' : ($editableFieldsDisabled ? 'disabled' : '') }} required>
-                        </div>
-                      </div>
-
-                      <div class="row align-items-center mb-1">
-                        <div class="col-md-3">
-                          <label class="form-label">Location <span class="text-danger">*</span></label>
-                        </div>
-                        <div class="col-md-5">
-                          <select class="form-select" name="location_id" id="location_id" {{ $commonFieldsDisabled ? 'disabled' : ($editableFieldsDisabled ? 'disabled' : '') }} required>
-                            <option value="">Select Location</option>
-                            @foreach($locations ?? [] as $location)
-                              <option value="{{ $location->id }}" @if($workOrder->location_id == $location->id) selected @endif>{{ $location->store_name }}</option>
-                            @endforeach
-                          </select>
-                        </div>
-                      </div>
-
-                      {{-- Reference From --}}
-                      <div class="row align-items-center mb-1 selection_section">
-                        <div class="col-md-3">
-                          <label class="form-label">Reference From</label>
-                        </div>
-                        <div class="col-md-5 action-button">
-                          <input type="hidden" name="reference_type" id="reference_type" value="{{ $refType }}">
-                          <button type="button" id="equipment_ref_btn" onclick="selectEquipmentReference()" data-bs-toggle="modal" data-bs-target="#reference" class="btn {{ $refType === 'equipment' ? 'btn-primary' : 'btn-outline-primary' }} btn-sm mb-0 reference-btn" {{ $editableFieldsDisabled ? 'disabled' : '' }}>
-                            <i data-feather="plus-square"></i> Equipment
-                          </button>
-                          <button type="button" id="defect_ref_btn" onclick="selectDefectNotificationReference()" data-bs-toggle="modal" data-bs-target="#defectlog" class="btn {{ $refType === 'defect_notification' ? 'btn-primary' : 'btn-outline-primary' }} btn-sm mb-0 reference-btn" {{ $editableFieldsDisabled ? 'disabled' : '' }}>
-                            <i data-feather="plus-square"></i> Defect Notification
-                          </button>
-                          <div id="reference_type_error" class="text-danger mt-1" style="display:none;">
-                            Please select at least one reference type (Equipment or Defect Notification)
-                          </div>
-                        </div>
-                      </div>
-
-                    </div> {{-- /col-md-8 --}}
-                  </div> {{-- /row --}}
-                </div>
-              </div>
-            </div>
-
-            {{-- Equipment Details --}}
-            <div class="col-12">
-  <div class="card quation-card">
-    <div class="card-header newheader">
-      <h4 class="card-title">Equipment Details</h4>
-    </div>
-
-    <div class="card-body">
-      <div class="row">
-
-        <div class="col-md-3 basic-equipment-field">
-          <div class="mb-1">
-            <label class="form-label">Category <span class="text-danger">*</span></label>
-            <input type="text" placeholder="Select" value="{{ $equipmentDetailsArr->equipment_category ?? '' }}" class="form-control ledgerselecct" id="equipment_category" readonly />
-          </div>
-        </div>
-
-        <div class="col-md-3 basic-equipment-field">
-          <div class="mb-1">
-            <label class="form-label">Equipment <span class="text-danger">*</span></label>
-            <input type="hidden" name="equipment_id" id="equipment_id" value="{{ $equipmentDetailsArr->equipment_id ?? '' }}">
-            <input type="text" placeholder="Select Equipment" value="{{ $equipmentDetailsArr->equipment_name ?? '' }}" class="form-control ledgerselecct" id="equipment_name" readonly required>
-          </div>
-        </div>
-
-        <div class="col-md-3 basic-equipment-field">
-          <div class="mb-1">
-            <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>
-            <select class="form-select" name="maintenance_type" id="maintenance_type" disabled required>
-              <option value="">Select Type</option>
-              @php
-                $allMaintenanceTypes = [];
-                foreach($maintenanceTypesByEquipment ?? [] as $equipmentId => $types) {
-                  foreach($types as $type) {
-                    $allMaintenanceTypes[$type['id']] = $type['name'];
-                  }
-                }
-              @endphp
-              @foreach($allMaintenanceTypes as $id => $name)
-                <option value="{{ $id }}" @if(($equipmentDetailsArr->equipment_maintenance_type ?? '') == $id) selected @endif>{{ $name }}</option>
-              @endforeach
-            </select>
-          </div>
-        </div>
-
-       
-
-      
-
-        @if($refType === 'defect_notification')
-          <div class="col-md-3 equipment-detail-field">
-            <div class="mb-1" id="defect_type_field">
-              <label class="form-label">Defect Type</label>
-              <select class="form-select" name="defect_type" id="defect_type_select" disabled>
-                <option value="">Select</option>
-                @foreach($defectTypes ?? [] as $defect)
-                  <option value="{{ $defect->name }}" @if($defect->name == $selectedDefectName) selected @endif>{{ $defect->name }}</option>
-                @endforeach
-              </select>
-            </div>
-          </div>
-
-          <div class="col-md-3 equipment-detail-field">
-            <div class="mb-1" id="problem_field">
-              <label class="form-label">Problem <span class="text-danger">*</span></label>
-              <textarea class="form-control" name="problem" id="problem" rows="2" readonly>{{ $equipmentDetailsArr->equipment_problem ?? '' }}</textarea>
-            </div>
-          </div>
-
-          <div class="col-md-3 equipment-detail-field" id="priority_field">
-            <div class="mb-1">
-              <label class="form-label">Priority</label>
-              <select class="form-select" name="priority" disabled required>
-                <option value="">Select Priority</option>
-                <option value="Low" @if($selectedPriority == 'Low') selected @endif>Low</option>
-                <option value="Medium" @if($selectedPriority == 'Medium') selected @endif>Medium</option>
-                <option value="High" @if($selectedPriority == 'High') selected @endif>High</option>
-                <option value="Critical" @if($selectedPriority == 'Critical') selected @endif>Critical</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="col-md-3 equipment-detail-field">
-            <div class="mb-1" id="report_date_field">
-              <label class="form-label">Report Date & Time</label>
-              <input type="datetime-local" name="report_date_time" id="report_date_time" value="{{ $reportDate }}" class="form-control" readonly />
-            </div>
-          </div>
-
-          <div class="col-md-3 equipment-detail-field">
-            <div class="mb-1" id="report_by_field">
-              <label class="form-label">Reported by</label>
-              <input type="text" value="{{ $equipmentDetailsArr->equipment_reported_by_name ?? '' }}" class="form-control" readonly />
-            </div>
-          </div>
-        
-
-        {{-- Keep these inside the same .row --}}
-        <div class="col-md-9 equipment-detail-field">
-          <div class="mb-1" id="detailed_observations_field">
-            <label class="form-label">Detailed observations</label>
-            <textarea name="detailed_observations" class="form-control" id="detailed_observations" rows="3" placeholder="Enter detailed observations"></textarea>
-          </div>
-        </div>
-
-        <div class="col-md-3 equipment-detail-field" id="supporting_documents_field">
-          <div class="mb-1">
-            <label class="form-label">Supporting Documents <span class="text-danger">*</span></label><br/>
-            <div class="mt-50">
-              <input type="file" name="supporting_documents[]" class="form-control" multiple>
-            </div>
-          </div>
-        </div>
-        @endif
-
-      </div> <!-- /.row -->
-    </div>   <!-- /.card-body -->
-  </div>     <!-- /.card -->
-</div>       <!-- /.col-12 -->
-
-
-            {{-- Checklist & Spare Parts Tabs --}}
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body customernewsection-form">
-                  <div class="border-bottom mb-2 pb-25">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="newheader">
-                          <h4 class="card-title text-theme">Checklist and Defect Detail</h4>
-                          <p class="card-text">Fill the details</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="step-custhomapp bg-light">
-                    <ul class="nav nav-tabs my-25 custapploannav" role="tablist" id="main-tabs">
-                      @if($refType === 'equipment')
-                        <li class="nav-item" id="checklist-tab">
-                          <a class="nav-link active" data-bs-toggle="tab" href="#payment">Checklist</a>
-                        </li>
-                        <li class="nav-item" id="spare-parts-tab">
-                          <a class="nav-link" data-bs-toggle="tab" href="#attachment">Spare Parts</a>
-                        </li>
-                      @else
-                        <li class="nav-item" id="spare-parts-tab">
-                          <a class="nav-link active" data-bs-toggle="tab" href="#attachment">Spare Parts</a>
-                        </li>
-                      @endif
-                    </ul>
-                  </div>
-
-                  <div class="tab-content pb-1">
-                    {{-- Checklist tab - only show for equipment reference type --}}
-                    @if($refType === 'equipment')
-                      <div class="tab-pane active" id="payment">
-                      <div class="row">
-                        <div class="col-md-12">
-                          <div class="table-responsive pomrnheadtffotsticky1">
-                            <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                              <thead>
-                                <tr>
-                                  <th style="width:30px">#</th>
-                                  <th width="250">Checklist</th>
-                                  <th>Maintenance</th>
-                                </tr>
-                              </thead>
-                              <tbody class="mrntableselectexcel1">
-                                @if(!empty($checklistData))
-                                  @php $counter = 1; @endphp
-                                  @foreach($checklistData as $mainCategory)
-                                    {{-- Main category header --}}
-                                    <tr>
-                                      <td>{{ $counter++ }}</td>
-                                      <td colspan="2" class="poprod-decpt p-50">
-                                        <strong class="font-small-4">{{ $mainCategory['main_name'] ?? 'Category' }}</strong>
-                                      </td>
-                                    </tr>
-
-                                    {{-- Individual checklist items --}}
-                                    @if(!empty($mainCategory['checklist']))
-                                      @foreach($mainCategory['checklist'] as $item)
-                                        <tr>
-                                          <td></td>
-                                          <td class="ps-1">
-                                            {{ $item['name'] ?? 'N/A' }}
-                                            @if($item['mandatory'] ?? false)
-                                              <span class="text-danger">*</span>
-                                            @endif
-                                          </td>
-                                          <td class="poprod-decpt">
-                                            @if(($item['data_type'] ?? 'text') === 'boolean')
-                                              <div class="form-check form-check-primary custom-checkbox ms-50">
-                                                <input type="checkbox" class="mt-25 form-check-input" 
-                                                       name="checklist[{{ $item['id'] ?? '' }}]"
-                                                       @if($item['value'] ?? false) checked @endif 
-                                                       {{ $editableFieldsDisabled ? 'disabled' : '' }}>
-                                                <label class="mb-50 mt-25 form-check-label">
-                                                  {{ ($item['value'] ?? false) ? 'Yes' : 'No' }}
-                                                </label>
-                                              </div>
-                                            @elseif(($item['data_type'] ?? 'text') === 'number')
-                                              <input type="number" class="form-control mw-100" 
-                                                     name="checklist[{{ $item['id'] ?? '' }}]"
-                                                     value="{{ $item['value'] ?? '' }}" 
-                                                     {{ $editableFieldsDisabled ? 'disabled readonly' : '' }}>
-                                            @elseif(($item['data_type'] ?? 'text') === 'list')
-                                              <select class="form-select mw-100" 
-                                                      name="checklist[{{ $item['id'] ?? '' }}]"
-                                                      {{ $editableFieldsDisabled ? 'disabled' : '' }}>
-                                                <option value="{{ $item['value'] ?? '' }}" selected>{{ $item['value'] ?? 'Select Option' }}</option>
-                                              </select>
-                                            @else
-                                              <input type="text" class="form-control mw-100" 
-                                                     name="checklist[{{ $item['id'] ?? '' }}]"
-                                                     value="{{ $item['value'] ?? '' }}" 
-                                                     placeholder="Enter Text"
-                                                     {{ $editableFieldsDisabled ? 'disabled readonly' : '' }}>
-                                            @endif
-                                          </td>
-                                        </tr>
-                                      @endforeach
-                                    @endif
-                                  @endforeach
-                                @else
-                                  <tr>
-                                    <td>1</td>
-                                    <td colspan="2" class="poprod-decpt p-50 text-center text-muted">
-                                      <strong class="font-small-4">No checklist data available</strong>
-                                    </td>
-                                  </tr>
-                                @endif
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    @endif
-
-                    {{-- Spare parts tab --}}
-                    <div class="tab-pane {{ $refType === 'equipment' ? '' : 'active' }}" id="attachment">
-                      <div class="border-bottom mb-2 pb-25">
+                    <section id="basic-datatable">
                         <div class="row">
-                          <div class="col-md-6">
-                            <div class="newheader">
-                              <h4 class="card-title text-theme">Spare Parts Detail</h4>
-                              <p class="card-text">Fill the details</p>
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body customernewsection-form">  
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                    <div>
+                                                        <h4 class="card-title text-theme">Basic Information</h4>
+                                                        <p class="card-text">Fill the details</p>
+                                                    </div> 
+                                                </div> 
+                                            </div> 
+
+                                            <div class="col-md-8"> 
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3"> 
+                                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                    </div>  
+                                                    <div class="col-md-5">  
+                                                        <select class="form-select" id="book_id" name="book_id" required>
+                                                            @if(isset($series) && count($series) > 0)
+                                                                @foreach($series as $book)
+                                                                    <option value="{{ $book->id }}" {{ $workOrder->book_id == $book->id ? 'selected' : '' }}>{{ $book->book_code }}</option>
+                                                                @endforeach
+                                                            @else
+                                                                <option value="">No series available</option>
+                                                            @endif
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3"> 
+                                                        <label class="form-label">Doc No <span class="text-danger">*</span></label>  
+                                                    </div>  
+                                                    <div class="col-md-5"> 
+                                                        <input type="text" class="form-control" id="document_number" name="document_number" value="{{ $workOrder->document_number }}" required>
+                                                    </div> 
+                                                </div>  
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3"> 
+                                                        <label class="form-label">Doc Date <span class="text-danger">*</span></label>  
+                                                    </div>  
+                                                    <div class="col-md-5"> 
+                                                        <input type="date" value="{{ $workOrder->document_date ? \Carbon\Carbon::parse($workOrder->document_date)->format('Y-m-d') : date('Y-m-d') }}" class="form-control" id="document_date" name="document_date" min="{{ date('Y-m-d') }}" required>
+                                                    </div> 
+                                                </div>
+												  
+												<div class="row align-items-center mb-1">
+													<div class="col-md-3"> 
+														<label class="form-label">Location <span class="text-danger">*</span></label>  
+													</div>  
+
+													<div class="col-md-5">  
+														<select class="form-select" name="location_id" id="location_id" required>
+															<option value="">Select Location</option>
+															@foreach($locations ?? [] as $location)
+																<option value="{{ $location->id }}" {{ $workOrder->location_id == $location->id ? 'selected' : '' }}>{{ $location->store_name }}</option>
+															@endforeach
+														</select>
+													</div>
+													</div>
+														
+														 
+												
+													<div class="row align-items-center mb-1"> 
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Reference From</label>  
+                                                        </div> 
+
+                                                        <div class="col-md-5 action-button"> 
+                                                            <input type="hidden" name="reference_type" id="reference_type" value="">
+                                                            <button type="button" id="equipment_ref_btn" onclick="selectEquipmentReference()" data-bs-toggle="modal" data-bs-target="#reference" class="btn btn-outline-primary btn-sm mb-0 reference-btn"><i data-feather="plus-square"></i> Equipment</button>
+                                                            <button type="button" id="defect_ref_btn" onclick="selectDefectNotificationReference()" data-bs-toggle="modal" data-bs-target="#defectlog" class="btn btn-outline-primary btn-sm mb-0 reference-btn"><i data-feather="plus-square"></i> Defect Notification</button>
+                                                            <div id="reference_type_error" class="text-danger mt-1" style="display: none;">Please select at least one reference type (Equipment or Defect Notification)</div>
+                                                        </div>
+                                                    </div>
+                                            </div> 
+                                            
+											@include('partials.approval-history', [
+                                                'document_status' => $workOrder->document_status,
+                                                'revision_number' => $workOrder->revision_number,
+                                            ])
+
+                                        </div> 
+                                </div>
                             </div>
-                          </div>
-                          <div class="col-md-6 text-sm-end">
-                            <a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
-                              <i data-feather="x-circle"></i> Delete</a>
-                            <a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
-                              <i data-feather="plus"></i> Add New Item</a>
-                          </div>
+                            
+                              
+                            <div class="row">
+                                <div class="col-md-12">
+                                        <div class="card quation-card">
+                                            <div class="card-header newheader">
+                                                <div>
+                                                    <h4 class="card-title">Equipment Details</h4> 
+                                                </div>
+                                            </div>
+                                            <div class="card-body"> 
+                                                <div class="row">
+
+                                                    <div class="col-md-3 basic-equipment-field">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Category <span class="text-danger">*</span></label> 
+                                                            <input type="text" placeholder="Select" value="Machinery" class="form-control ledgerselecct" id="equipment_category" readonly />
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 basic-equipment-field">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Equipment <span class="text-danger">*</span></label> 
+                                                            <input type="hidden" name="equipment_id" id="equipment_id" value="{{ $workOrder->equipment_id }}">
+                                                            <input type="text" placeholder="Select Equipment" class="form-control ledgerselecct" id="equipment_name" value="{{ $workOrder->equipment_name ?? '' }}" readonly required>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary mt-1" data-bs-toggle="modal" data-bs-target="#equipmentModal">
+                                                                <i data-feather="search"></i> Select Equipment
+                                                            </button>
+                                                        </div>
+                                                    </div> 
+
+                                                    <div class="col-md-3 basic-equipment-field">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>
+                                                             <select class="form-select" name="maintenance_type" id="maintenance_type" required disabled>
+                                                                <option value="">Select Type</option>
+                                                                <option value="Preventive" {{ $workOrder->maintenance_type == 'Preventive' ? 'selected' : '' }}>Preventive</option>
+                                                                <option value="Corrective" {{ $workOrder->maintenance_type == 'Corrective' ? 'selected' : '' }}>Corrective</option>
+                                                                <option value="Predictive" {{ $workOrder->maintenance_type == 'Predictive' ? 'selected' : '' }}>Predictive</option>
+                                                                <option value="Breakdown" {{ $workOrder->maintenance_type == 'Breakdown' ? 'selected' : '' }}>Breakdown</option>
+                                                            </select> 
+                                                        </div>
+                                                    </div>
+
+                                                    
+                                                    <div class="col-md-3 equipment-detail-field">
+                                                        <div class="mb-1"  id="defect_type_field">
+                                                            <label class="form-label">Defect Type</label>
+                                                            <select class="form-select" disabled>
+                                                                <option>Select</option> 
+                                                                <option>General Defect</option> 
+                                                                <option selected>Breakdown</option> 
+                                                                <option>Quality-based</option> 
+                                                            </select>  
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 equipment-detail-field" >
+                                                        <div class="mb-1" id="problem_field">
+                                                            <label class="form-label">Problem <span class="text-danger">*</span></label>
+                                                            <input type="text" value="Please resolve ASAP" disabled class="form-control" /> 
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 equipment-detail-field" id="priority_field">
+                                                        <div class="mb-1" id="priority_field">
+                                                            <label class="form-label">Priority</label>
+                                                            <select class="form-select" name="priority" required>
+                                                                <option value="">Select Priority</option>
+                                                                <option value="Low" {{ $workOrder->priority == 'Low' ? 'selected' : '' }}>Low</option>
+                                                                <option value="Medium" {{ $workOrder->priority == 'Medium' ? 'selected' : '' }}>Medium</option>
+                                                                <option value="High" {{ $workOrder->priority == 'High' ? 'selected' : '' }}>High</option>
+                                                                <option value="Critical" {{ $workOrder->priority == 'Critical' ? 'selected' : '' }}>Critical</option>
+                                                            </select>  
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 equipment-detail-field">
+                                                        <div class="mb-1" id="report_date_field">
+                                                            <label class="form-label">Report Date & Time</label>
+                                                            <input type="text" value="22-07-2025 | 02:30 PM" disabled class="form-control" /> 
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 equipment-detail-field">
+                                                        <div class="mb-1"  id="report_by_field">
+                                                            <label class="form-label">Reported by</label>
+                                                            <input type="text" value="Aniket" disabled class="form-control" />
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-9 equipment-detail-field">
+                                                        <div class="mb-1" id="detailed_observations_field">
+                                                            <label class="form-label">Detailed observations</label>
+                                                            <textarea name="detailed_observations" class="form-control" rows="3" placeholder="Enter detailed observations">{{ $workOrder->detailed_observations ?? '' }}</textarea>
+                                                        </div>
+                                                    </div>
+													
+													<div class="col-md-3 equipment-detail-field" id="supporting_documents_field">
+                                                        <div class="mb-1" id="supporting_documents_field">
+                                                            <label class="form-label">Supporting Documents <span class="text-danger">*</span></label><br/>
+                                                            <div class="mt-50">
+                                                                <input type="file" name="supporting_documents[]" class="form-control" multiple>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>
+                                                 
+ 
+                                                 
+                        
+                                            </div>
+                                        </div>
+                                    
+                                    
+                                    </div>    
+                                
+                            </div>
+                            
+							
+                            <div class="card">
+								 <div class="card-body customernewsection-form"> 
+                                     
+                                     
+                                            <div class="border-bottom mb-2 pb-25">
+                                                     <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="newheader "> 
+                                                                <h4 class="card-title text-theme">Checklist and Defect Detail</h4>
+                                                                <p class="card-text">Fill the details</p>
+                                                            </div>
+                                                        </div>
+                                                    </div> 
+                                             </div>
+											 
+											 
+											  
+									 		<div class="step-custhomapp bg-light">
+												<ul class="nav nav-tabs my-25 custapploannav" role="tablist" id="main-tabs">
+													<li class="nav-item" id="checklist-tab">
+														<a class="nav-link" data-bs-toggle="tab" href="#payment">Checklist</a>
+													</li>
+													<li class="nav-item" id="spare-parts-tab">
+														<a class="nav-link active" data-bs-toggle="tab" href="#attachment">Spare Parts</a>
+													</li> 
+												</ul>
+											</div>
+									 
+									 		<div class="tab-content pb-1">
+												<div class="tab-pane" id="payment">
+                                                	<div class="row">  
+														 <div class="col-md-12"> 
+															 <div class="table-responsive pomrnheadtffotsticky1">
+																 <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+																	<thead>
+																		 <tr>
+																			<th style="width: 30px">#</th>
+																			<th width="250">Checklist</th>
+																			<th>Maintenance</th>
+																		  </tr>
+																		</thead>
+																		<tbody class="mrntableselectexcel1">
+																			  <tr>
+																				  <td>1</td>
+																				  <td colspan="2" class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td> 
+																			  </tr>
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 1</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																			  </tr>
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 2</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																			  </tr>
+																			
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 3</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																			  </tr>
+																			  
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 4</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																			  </tr>
+																			
+																			 <tr>
+																				  <td>2</td>
+																				  <td colspan="2" class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td> 
+																			  </tr>
+ 
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 1</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																			  </tr>
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 2</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																			  </tr>
+																			 
+																	 </tbody>
+																</table>
+															</div> 
+														</div>  
+													 </div>
+												</div>
+												<div class="tab-pane active" id="attachment">
+												<div class="border-bottom mb-2 pb-25">
+												<div class="row">
+													<div class="col-md-6">
+														<div class="newheader">
+															<h4 class="card-title text-theme">Spare Parts Detail</h4>
+															<p class="card-text">Fill the details</p>
+														</div>
+													</div>
+													<div class="col-md-6 text-sm-end">
+														<a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
+															<i data-feather="x-circle"></i> Delete</a>
+														<a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
+															<i data-feather="plus"></i> Add New Item</a>
+													</div>
+												</div>
+											</div>
+                                                	<div class="row">  
+														 <div class="col-md-12"> 
+														 <div class="table-responsive pomrnheadtffotsticky">
+											<table id="itemTable"
+												class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+												<thead>
+													<tr>
+														<th width="62" class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input"
+																	id="checkAll">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</th>
+														<th width="285">Item Code</th>
+														<th width="208">Item Name</th>
+														<th>Attributes</th>
+														<th>UOM</th>
+														<th>Qty</th>
+													</tr>
+												</thead>
+												<tbody class="mrntableselectexcel">
+													<tr class="trselected">
+														<td class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input row-check"
+																	id="Email">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</td>
+														<td class="poprod-decpt">
+															<input type="hidden" class="item_id">
+															<input required type="text" placeholder="Select" name="item[]"
+																class="item_code form-control mw-100 ledgerselecct mb-25" />
+														</td>
+														<td required class="poprod-decpt">
+															<input type="text" placeholder="Select"
+																class="item_name form-control mw-100 ledgerselecct mb-25" />
+														</td>
+
+														<td class="poprod-decpt">
+															<input type="hidden" class="attribute">
+															<button data-bs-toggle="modal" data-bs-target="#attribute"
+																class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+																style="font-size: 10px">Attributes</button>
+														</td>
+														<td>
+															<select class="uom form-select mw-100" name="uom[]" required>
+
+															</select>
+														</td>
+														<td><input type="number" class="qty form-control mw-100"
+																name="qty[]" required /></td>
+													</tr>
+												</tbody>
+												<tfoot>
+
+
+													<tr valign="top">
+														<td colspan="6" rowspan="10">
+															<table class="table border">
+																<tr>
+																	<td class="p-0">
+																		<h6
+																			class="text-dark mb-0 bg-light-primary py-1 px-50">
+																			<strong>Part Details</strong>
+																		</h6>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="poitemtxt mw-100"><strong>Name</strong>:<span
+																				id="part_name"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt" id="attributes_badges">
+																		
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Inv.
+																				UOM</strong>: <span id="uom"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
+																			<span id="qty"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	{{-- <td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>:
+																			<span id="remarks"></span></span>
+																	</td> --}}
+																</tr>
+															</table>
+														</td>
+
+													</tr>
+
+												</tfoot>
+											</table>
+										</div>
+ 
+														</div> 
+
+													 </div>
+												</div>
+									 		</div>
+									 
+									 		<div class="row mt-2"> 
+													<div class="col-md-12">
+														 <div class="col-md-4">
+															<div class="mb-1">
+																<label class="form-label">Upload Document</label>
+																<input type="file" name="upload_file" class="form-control">
+															</div>
+														</div> 
+												 </div>
+
+
+
+													<div class="col-md-12">
+														<div class="mb-1">  
+															<label class="form-label">Final Remarks</label> 
+															<textarea type="text" rows="4" class="form-control" name="final_remark" placeholder="Enter Remarks here...">{{ $workOrder->final_remark ?? '' }}</textarea> 
+
+														</div>
+													</div>
+
+												 </div>
+  
+											
+											 
+								</div>
+                            </div>
+                            
+                            
+                            
+                             
+                            
+                            
                         </div>
-                      </div>
+                    </div>
+                    <!-- Modal to add new record -->
+                     
+                </section>
+                 
 
-                      <div class="row">
-                        <div class="col-md-12">
-                          <div class="table-responsive pomrnheadtffotsticky">
-                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                              <thead>
-                                <tr>
-                                  <th width="62" class="customernewsection-form">
-                                    <div class="form-check form-check-primary custom-checkbox">
-                                      <input type="checkbox" class="form-check-input" id="checkAll">
-                                      <label class="form-check-label" for="checkAll"></label>
-                                    </div>
-                                  </th>
-                                  <th width="285">Item Code</th>
-                                  <th width="208">Item Name</th>
-                                  <th>Attributes</th>
-                                  <th>UOM</th>
-                                  <th>Qty</th>
-                                </tr>
-                              </thead>
-                              <tbody class="mrntableselectexcel">
-                                @if(!empty($sparePartsData))
-                                  @foreach($sparePartsData as $index => $part)
-                                    <tr @if($index === 0) class="trselected" @endif>
-                                       <td class="customernewsection-form">
-                                         <div class="form-check form-check-primary custom-checkbox">
-                                           <input type="checkbox" class="form-check-input row-check" id="row_{{ $index }}">
-                                           <label class="form-check-label" for="row_{{ $index }}"></label>
-                                         </div>
-                                       </td>
-                                       <td class="poprod-decpt">
-                                         <input type="hidden" name="item_id[]" class="item_id" value="{{ $part['item_id'] ?? ($part->item_id ?? '') }}">
-                                         <input type="text" name="item[]" 
-                                                value="{{ $part['item_code'] ?? ($part->item_code ?? '') }}"
-                                                data-id="{{ $part['item_id'] ?? ($part->item_id ?? '') }}"
-                                                data-code="{{ $part['item_code'] ?? ($part->item_code ?? '') }}"
-                                                data-name="{{ $part['item_name'] ?? ($part->item_name ?? '') }}"
-                                                data-attr="{{ $part['item_attributes'] ?? ($part->item_attributes ?? '[]') }}"
-                                                class="item_code form-control mw-100 ledgerselecct mb-25" 
-                                                placeholder="Select" />
-                                       </td>
-                                       <td class="poprod-decpt">
-                                         <input type="text" 
-                                                value="{{ $part['item_name'] ?? ($part->item_name ?? '') }}"
-                                                class="item_name piitem form-control mw-100 ledgerselecct mb-25" 
-                                                placeholder="Select"  />
-                                       </td>
-                                       <td class="poprod-decpt">
-                                         <input type="hidden" class="attribute" value='{{ $part['attribute'] ?? ($part->attribute ?? "[]") }}'>
-                                         <button type="button" data-bs-toggle="modal" data-bs-target="#attribute"
-                                                 class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-                                                 style="font-size: 10px">Attributes</button>
-                                       </td>
-                                       <td>
-                                         <select class="uom form-select mw-100" name="uom[]" required>
-                                           <option value="{{ $part['uom_id'] ?? ($part->uom_id ?? '') }}">
-                                             {{ $part['uom_name'] ?? ($part->uom ?? 'Select UOM') }}
-                                           </option>
-                                         </select>
-                                       </td>
-                                       <td>
-                                          <input type="number" class="qty form-control mw-100" name="qty[]"
-                                                 value="{{ $part['qty'] ?? ($part->qty ?? '') }}" required />
-                                      </td>
-                                    </tr>
-                                  @endforeach
-                                @else
-                                  <tr class="trselected">
-{{ ... }}
-                                    <td class="customernewsection-form">
-                                      <div class="form-check form-check-primary custom-checkbox">
-                                        <input type="checkbox" class="form-check-input row-check" id="row_first">
-                                        <label class="form-check-label" for="row_first"></label>
-                                      </div>
-                                    </td>
-                                    <td class="poprod-decpt">
-                                      <input type="hidden" class="item_id">
-                                      <input required type="text" placeholder="Select" name="item[]" class="item_code form-control mw-100 ledgerselecct mb-25" />
-                                    </td>
-                                    <td class="poprod-decpt">
-                                      <input type="text" placeholder="Select" class="item_name form-control mw-100 ledgerselecct mb-25" />
-                                    </td>
-                                    <td class="poprod-decpt">
-                                      <input type="hidden" class="attribute">
-                                      <button type="button" data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" style="font-size:10px">Attributes</button>
-                                    </td>
-                                    <td>
-                                      <select class="uom form-select mw-100" name="uom[]" required></select>
-                                    </td>
-                                    <td>
-                                      <input type="number" class="qty form-control mw-100" name="qty[]" required />
-                                    </td>
-                                  </tr>
-                                @endif
-                              </tbody>
-                              <tfoot>
-                                <tr valign="top">
-                                  <td colspan="6" rowspan="10">
-                                    <table class="table border">
-                                      <tr>
-                                        <td class="p-0">
-                                          <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Part Details</strong></h6>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td class="poprod-decpt">
-                                          <span class="poitemtxt mw-100">
-                                            <strong>Name</strong>: 
-                                            <span id="part_name">
-                                              @if(!empty($sparePartsData) && count($sparePartsData) > 0)
-                                                {{ $sparePartsData[0]['item_name'] ?? ($sparePartsData[0]->item_name ?? 'N/A') }}
-                                              @endif
-                                            </span>
-                                          </span>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td class="poprod-decpt" id="attributes_badges">
-                                          @if(!empty($sparePartsData) && count($sparePartsData) > 0)
-                                            @php
-                                              $attributes = $sparePartsData[0]['attribute'] ?? ($sparePartsData[0]->attribute ?? '[]');
-                                              $attributesArray = is_string($attributes) ? json_decode($attributes, true) : $attributes;
-                                            @endphp
-                                            @if(!empty($attributesArray) && is_array($attributesArray))
-                                              {{-- Debug: Show raw attribute data --}}
-                                              <!-- Debug: {{ json_encode($attributesArray) }} -->
-                                              @foreach($attributesArray as $attribute)
-                                                {{-- Debug: Show individual attribute --}}
-                                                <!-- Attribute: {{ json_encode($attribute) }} -->
-                                                @if(isset($attribute['name']) && isset($attribute['value']))
-                                                  <span class="badge rounded-pill badge-light-secondary me-1 mb-1">
-                                                    <strong>{{ $attribute['name'] }}</strong>: {{ $attribute['value'] }}
-                                                  </span>
-                                                @else
-                                                  {{-- Show what fields are available if name/value missing --}}
-                                                  <!-- Missing name/value. Available keys: {{ implode(', ', array_keys($attribute)) }} -->
-                                                @endif
-                                              @endforeach
-                                            @else
-                                              <!-- No attributes found or not array. Data: {{ json_encode($attributesArray) }} -->
-                                            @endif
-                                          @endif
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td class="poprod-decpt">
-                                          <span class="badge rounded-pill badge-light-primary">
-                                            <strong>Inv. UOM</strong>: 
-                                            <span id="uom">
-                                              @if(!empty($sparePartsData) && count($sparePartsData) > 0)
-                                                {{ $sparePartsData[0]['uom_name'] ?? ($sparePartsData[0]->uom ?? 'N/A') }}
-                                              @endif
-                                            </span>
-                                          </span>
-                                          <span class="badge rounded-pill badge-light-primary">
-                                            <strong>Qty.</strong>: 
-                                            <span id="qty">
-                                              @if(!empty($sparePartsData) && count($sparePartsData) > 0)
-                                                {{ $sparePartsData[0]['qty'] ?? ($sparePartsData[0]->qty ?? 'N/A') }}
-                                              @endif
-                                            </span>
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    </table>
-                                  </td>
-                                </tr>
-                              </tfoot>
-                            </table>
-                          </div>
+            </div>
+        </div>
+    </div>
+    <!-- END: Content-->
+
+
+    <div class="sidenav-overlay"></div>
+    <div class="drag-target"></div>
+
+    <!-- BEGIN: Footer-->
+    <!-- END: Footer-->
+     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+		<div class="modal-dialog sidebar-sm">
+			<form class="add-new-record modal-content pt-0"> 
+				<div class="modal-header mb-1">
+					<h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+				</div>
+				<div class="modal-body flex-grow-1">
+					<div class="mb-1">
+						  <label class="form-label" for="fp-range">Select Date</label>
+<!--                        <input type="text" id="fp-default" class="form-control flatpickr-basic" placeholder="YYYY-MM-DD" />-->
+						  <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+					</div>
+					
+					<div class="mb-1">
+						<label class="form-label">Series</label>
+						<select class="form-select">
+							<option>Select</option>
+						</select>
+					</div> 
+                    
+                    <div class="mb-1">
+						<label class="form-label">BOM Name</label>
+						<select class="form-select select2">
+							<option>Select</option> 
+						</select>
+					</div>
+                    
+                     
+                    
+                    <div class="mb-1">
+						<label class="form-label">Status</label>
+						<select class="form-select">
+							<option>Select</option>
+							<option>Active</option>
+							<option>Inactive</option>
+						</select>
+					</div> 
+					 
+				</div>
+				<div class="modal-footer justify-content-start">
+					<button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
+					<button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+    <div class="modal fade" id="approved" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Close the Maintenance</h4> 
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body pb-2"> 
+
+					<div class="row mt-1"> 
+						
+						   <div class="col-md-12">  
+                               
+                                    <div class="mb-1">
+                                       <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                                       <textarea class="form-control"></textarea>
+                                     </div>
+							   
+							   		  <div class="mb-1">
+                                       <label class="form-label">Upload Document</label>
+                                       <input type="file" class="form-control" />
+                                     </div>
+                     
+                            </div>
+						  
+					</div>
+				</div>
+				
+				<div class="modal-footer justify-content-center">  
+						<button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+					<button type="reset" class="btn btn-primary">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
+     
+    
+    <div class="modal fade text-start" id="reference" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select Equipment</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                               <label class="form-label">Equipment</label>
+                               <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
                         </div>
-                      </div>
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Maintenance Type</label>
+                                <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
+                        </div>
+                          
+                         
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Maint. BOM</label>
+                                <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
+                        </div>
+						  
+                         
+                         <div class="col  mb-1">
+                              <label class="form-label">&nbsp;</label><br/>
+                             <button class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                         </div>
 
-                    </div>{{-- /tab-pane --}}
-                  </div>{{-- /tab-content --}}
-                </div>
-              </div>
-            </div>
+						 <div class="col-md-12">
+ 
 
-          </div>
-        </section>
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail"> 
+									<thead>
+													 <tr>
+													 	<th width="62" class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input sp-select">
+																<label class="form-check-label" for="Email"></label>
+															</div> 
+													 	</th>
+											<th>Equipment</th>  
+											<th>Maintenance Type</th>
+											<th>BOM</th> 
+											<th>Series</th> 
+											<th>Doc No</th>
+										  </tr>
+										</thead>
+										<tbody>
+											<tr class="trail-bal-tabl-none">
+											    <th class="customernewsection-form">
+													<div class="form-check form-check-primary custom-radio">
+														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_1" data-equipment-id="1">
+														<label class="form-check-label" for="equipment_1"></label>
+													</div> 
+												</th> 
+												<td><strong>Procesor</strong></td> 
+												<td>Running</td>
+												<td>Plant</td>
+												<td>BOM</td>
+												<td>01</td>
+											</tr>
+											<tr class="trail-bal-tabl-none">
+											    <th class="customernewsection-form">
+													<div class="form-check form-check-primary custom-radio">
+														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_2" data-equipment-id="2">
+														<label class="form-check-label" for="equipment_2"></label>
+													</div> 
+												</th>
+												<td><strong>Procesor</strong></td> 
+												<td>Running</td>
+												<td>Plant</td>
+												<td>BOM</td>
+												<td>01</td>
+											</tr>
+											<tr class="trail-bal-tabl-none">
+											    <th class="customernewsection-form">
+													<div class="form-check form-check-primary custom-radio">
+														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_3" data-equipment-id="3">
+														<label class="form-check-label" for="equipment_3"></label>
+													</div> 
+												</th>
+												<td><strong>Procesor</strong></td> 
+												<td>Running</td>
+												<td>Plant</td>
+												<td>BOM</td>
+												<td>01</td>
+												
+											</tr>
+											<tr class="trail-bal-tabl-none">
+											    <th class="customernewsection-form">
+													<div class="form-check form-check-primary custom-radio">
+														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_4" data-equipment-id="4">
+														<label class="form-check-label" for="equipment_4"></label>
+													</div> 
+												</th>
+												<td><strong>Procesor</strong></td> 
+												<td>Running</td>
+												<td>Plant</td>
+												<td>BOM</td>
+												<td>01</td>
+											</tr>
+											<tr class="trail-bal-tabl-none">
+											    <th class="customernewsection-form">
+													<div class="form-check form-check-primary custom-radio">
+														<input type="radio" class="form-check-input equipment-radio" name="equipmentRadio" id="equipment_5" data-equipment-id="5">
+														<label class="form-check-label" for="equipment_5"></label>
+													</div> 
+												</th>
+												<td><strong>Procesor</strong></td> 
+												<td>Running</td>
+												<td>Plant</td>
+												<td>BOM</td>
+												<td>01</td>
+											</tr>
+											 
+											  
+										</tbody>
 
-        {{-- Upload + Remarks --}}
-        <div class="row mt-2">
-          <div class="col-md-4">
-            <div class="mb-1">
-              <label class="form-label">Upload Document</label>
-              <input type="file" name="upload_file" class="form-control">
-            </div>
-          </div>
-          <div class="col-md-12">
-            <div class="mb-1">
-              <label class="form-label">Final Remarks</label>
-              <textarea rows="4" class="form-control" name="final_remark" placeholder="Enter Remarks here...">{{ $workOrder->final_remark ?? '' }}</textarea>
-            </div>
-          </div>
-        </div>
 
-        {{-- ===================== Modals ===================== --}}
+								</table>
+							</div>
+						</div>
 
-        {{-- Filter Modal --}}
-        <div class="modal modal-slide-in fade filterpopuplabel" id="filter" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog sidebar-sm">
-            <form class="add-new-record modal-content pt-0">
-              <div class="modal-header mb-1">
-                <h5 class="modal-title">Apply Filter</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
-              </div>
-              <div class="modal-body flex-grow-1">
-                <div class="mb-1">
-                  <label class="form-label" for="fp-range">Select Date</label>
-                  <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
-                </div>
-                <div class="mb-1">
-                  <label class="form-label">Series</label>
-                  <select class="form-select"><option>Select</option></select>
-                </div>
-                <div class="mb-1">
-                  <label class="form-label">BOM Name</label>
-                  <select class="form-select select2"><option>Select</option></select>
-                </div>
-                <div class="mb-1">
-                  <label class="form-label">Status</label>
-                  <select class="form-select">
-                    <option>Select</option>
-                    <option>Active</option>
-                    <option>Inactive</option>
-                  </select>
-                </div>
-              </div>
-              <div class="modal-footer justify-content-start">
-                <button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
-                <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
 
-        {{-- Approved/Close Maintenance Modal --}}
-        <div class="modal fade" id="approved" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <div>
-                  <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal">Close the Maintenance</h4>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body pb-2">
-                <div class="row mt-1">
-                  <div class="col-md-12">
-                    <div class="mb-1">
-                      <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                      <textarea class="form-control"></textarea>
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+					<button id="equipment_process_btn" onclick="processEquipmentSelection()" class="btn btn-primary btn-sm"><i data-feather="check-circle"></i> Process</button>
+				</div>
+			</div>
+		</div>
+	</div> 
+	
+	<div class="modal fade text-start" id="defectlog" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select Defect</h4>
+                        <p class="mb-0">Select from the below list</p>
                     </div>
-                    <div class="mb-1">
-                      <label class="form-label">Upload Document</label>
-                      <input type="file" class="form-control" />
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                               <label class="form-label">Equipment</label>
+                               <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
+                        </div>
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Defect Type</label>
+                                <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
+                        </div>
+						 
+						 <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Priority</label>
+                                <select class="form-select">
+									<option>Select</option>
+									<option>High</option>
+									<option>Medium</option>
+									<option>Low</option>
+								</select>
+                            </div>
+                        </div>
+                          
+                         
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series</label>
+                                <input type="text" placeholder="Select" class="form-control ledgerselecct" />
+                            </div>
+                        </div>
+						 
+						  
+                         
+                         <div class="col  mb-1">
+                              <label class="form-label">&nbsp;</label><br/>
+                             <button class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                         </div>
+
+						 <div class="col-md-12">
+ 
+
+							<div class="table-responsive">
+								<table class="mt-1 table table-striped po-order-detail"> 
+									<thead>
+										 <tr>
+										    <th class="customernewsection-form">
+												<div class="form-check form-check-primary custom-radio">
+													<input type="radio" class="form-check-input defect-radio" name="defectRadio" id="defect_header" disabled>
+													<label class="form-check-label" for="defect_header"></label>
+												</div> 
+											</th>
+											<th>Date</th> 
+											<th>Series</th> 
+											<th>Doc No</th>
+											<th>Equipment</th>  
+											<th>Defect Type</th>
+											<th>Priority</th> 
+											<th>Problem</th>  
+											<th>Reported By</th>  
+										  </tr>
+										</thead>
+										<tbody>
+											@if(isset($defectNotifications) && $defectNotifications->count() > 0)
+												@foreach($defectNotifications as $index => $defect)
+													<tr class="trail-bal-tabl-none">
+														<td class="customernewsection-form">
+															<div class="form-check form-check-primary custom-radio">
+																<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_{{ $defect->id }}" 
+																	data-defect-id="{{ $defect->id }}"
+																	data-equipment="{{ $defect->equipment?->name ?? '' }}"
+																	data-defect-type="{{ $defect->defectType?->name ?? '' }}"
+																	data-priority="{{ $defect->priority ?? '' }}"
+																	data-problem="{{ $defect->problem ?? '' }}"
+																	data-reported-by="{{ $defect->creator?->name ?? '' }}">
+																<label class="form-check-label" for="defect_row_{{ $defect->id }}"></label>
+															</div> 
+														</td>
+														<td><strong>{{ $defect->document_date ? \Carbon\Carbon::parse($defect->document_date)->format('d-m-Y') : 'N/A' }}</strong></td> 
+														<td>{{ $defect->book?->book_code ?? '' }}</td>
+														<td>{{ $defect->document_number ?? '' }}</td>
+														<td>{{ $defect->equipment?->name ?? '' }}</td>
+														<td>{{ $defect->defectType?->name ?? '' }}</td>
+														<td>{{ $defect->priority ?? '' }}</td>
+														<td>{{ $defect->problem ?? '' }}</td>
+														<td>{{ $defect->creator?->name ?? '' }}</td>
+													</tr>
+												@endforeach
+											@else
+												<tr class="trail-bal-tabl-none">
+													<td colspan="9" class="text-center">No defect notifications found</td>
+												</tr>
+											@endif
+											 
+											  
+										</tbody>
+
+
+								</table>
+							</div>
+						</div>
+
+
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+					<button id="defect_process_btn" onclick="processDefectSelection()" class="btn btn-primary btn-sm"><i data-feather="check-circle"></i> Process</button>
+				</div>
+			</div>
+		</div>
+	</div>
+    
+    <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+		<div class="modal-dialog  modal-dialog-centered" >
+			<div class="modal-content">
+				<div class="modal-header p-0 bg-transparent">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body px-sm-2 mx-50 pb-2">
+					<h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
+					<p class="text-center">Enter the details below.</p>
+                    
+                    
+                     <div class="row mt-2">
+                         
+						
+						<div class="col-md-12 mb-1">
+							<label class="form-label">Remarks <span class="text-danger">*</span></label>
+							<textarea class="form-control" placeholder="Enter Remarks"></textarea>
+						</div> 
+                    
                     </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer justify-content-center">
-                <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
-                <button type="reset" class="btn btn-primary">Submit</button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {{-- Select Equipment (Reference) Modal --}}
-        <div class="modal fade text-start" id="reference" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:1000px">
-            <div class="modal-content">
-              <div class="modal-header">
-                <div>
-                  <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal">Select Equipment</h4>
-                  <p class="mb-0">Select from the below list</p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="row">
-                  <div class="col"><div class="mb-1"><label class="form-label">Equipment</label>
-                  <select class="form-control ledgerselecct" name="equipment_id">
-                    <option value="">Select Equipment</option>
-                    @foreach($equipments as $equipment)
-                      <option value="{{ $equipment->id }}">{{ $equipment->name }}</option>
-                    @endforeach
-                  </select>
-                </div>
-              </div>
-                  <div class="col">
-                    <div class="mb-1">
-                      <label class="form-label">Maintenance Type</label>
-                      <select class="form-control ledgerselecct" name="maintenance_type_id">
-                            <option value="">Select Maintenance Type</option>
-                            @php
-                            $allMaintenanceTypes = [];
-                            foreach(($maintenanceTypesByEquipment ?? []) as $equipmentId => $types) {
-                              foreach($types as $type) {
-                                $allMaintenanceTypes[$type['id']] = $type['name'];
-                              }
-                            }
-                          @endphp
-                          @foreach($allMaintenanceTypes as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                          @endforeach
-					          </select>
-                    </div>
-                  </div>
-                  <div class="col"><div class="mb-1"><label class="form-label">Maint. BOM</label>
-                  <select class="form-control ledgerselecct" name="maintenance_bom_id">
-                <option value="">Select Maint. BOM</option>
-                @foreach($maintenanceBoms as $bomData)
-                  <option value="{{ $bomData['id'] }}">{{ $bomData['display_name'] }}</option>
-                @endforeach
-              </select>
-                </div></div>
-                <div class="col mb-1"><label class="form-label">&nbsp;</label><br/><button type="button" id="equipmentSearchBtn" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button></div>
+					 
+                    
+				</div>
+				
+				<div class="modal-footer justify-content-center">  
+						<button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+					<button type="reset" class="btn btn-primary">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
-                  <div class="col-md-12">
-                    <div class="table-responsive">
-                      <table class="mt-1 table table-striped po-order-detail">
-                        <thead>
-                          <tr>
-                            <th width="62" class="customernewsection-form">
-                              <div class="form-check form-check-primary custom-checkbox">
-                                <input type="checkbox" class="form-check-input sp-select">
-                                <label class="form-check-label" for="Email"></label>
-                              </div>
-                            </th>
-                            <th>Equipment</th>
-                            <th>Maintenance Type</th>
-                            <th>BOM</th>
-                            <th>Series</th>
-                            <th>Doc No</th>
-                          </tr>
-                        </thead>
-                        <tbody id="eqptTable">
-                          {{-- populate via JS --}}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+	<!-- Attribute Modal -->
+	<div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header p-0 bg-transparent">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body px-sm-2 mx-50 pb-2">
+					<h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
+					<p class="text-center">Enter the details below.</p>
 
-                </div>
-              </div>
-              <div class="modal-footer text-end">
-                <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-                <button id="equipment_process_btn" onclick="processEquipmentSelection()" class="btn btn-primary btn-sm"><i data-feather="check-circle"></i> Process</button>
-              </div>
-            </div>
-          </div>
-        </div>
+					<div class="table-responsive-md customernewsection-form">
+						<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"
+							id="attributes_table_modal" item-index="">
+							<thead>
+								<tr>
+									<th>Attribute Name</th>
+									<th>Attribute Value</th>
+								</tr>
+							</thead>
+							<tbody id="attribute_table">
 
-        {{-- Defect Log Modal --}}
-        <div class="modal fade text-start" id="defectlog" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:1000px">
-            <div class="modal-content">
-              <div class="modal-header">
-                <div>
-                  <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal">Select Defect</h4>
-                  <p class="mb-0">Select from the below list</p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="row">
-                  <!-- Filters -->
-                  <div class="col">
-                  <label class="form-label">Equipment</label>
-                  <select class="form-control ledgerselecct" name="equipment_id">
-                    <option value="">Select Equipment</option>
-                    @foreach($equipments as $equipment)
-                      <option value="{{ $equipment->id }}">{{ $equipment->name }}</option>
-                    @endforeach
-                  </select>
-                  </div>
-                  <div class="col">
-                    <div class="mb-1">
-                      <label class="form-label">Defect Type</label>
-                      <select class="form-control ledgerselecct" name="maintenance_type_id">
-                        <option value="">Select Maintenance Type</option>
-                        @php
-                          $allMaintenanceTypes = [];
-                          foreach(($maintenanceTypesByEquipment ?? []) as $equipmentId => $types) {
-                            foreach($types as $type) {
-                              $allMaintenanceTypes[$type['id']] = $type['name'];
-                            }
-                          }
-                        @endphp
-                        @foreach($allMaintenanceTypes as $id => $name)
-                          <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="mb-1">
-                      <label class="form-label">Priority</label>
-                      <select class="form-select" name="priority">
-                        <option value="">Select</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col">
-                    <div class="mb-1">
-                      <label class="form-label">Series</label>
-                      <select class="form-select" id="series_filter" name="series">
-                        <option value="">Select Series</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col mb-1">
-                    <label class="form-label">&nbsp;</label><br/>
-                    <button class="btn btn-warning btn-sm" id="defect_search_btn">
-                      <i data-feather="search"></i> Search
-                    </button>
-                  </div>
+							</tbody>
 
-                  <!-- Table -->
-                  <div class="col-md-12 mt-3">
-                    <div class="table-responsive">
-                      <table class="mt-1 table table-striped po-order-detail">
-                        <thead>
-                          <tr>
-                            <th class="customernewsection-form">
-                              <div class="form-check form-check-primary custom-radio">
-                                <input type="radio" class="form-check-input defect-radio" name="defectRadio" id="defect_header" disabled>
-                                <label class="form-check-label" for="defect_header"></label>
-                              </div>
-                            </th>
-                            <th>Date</th>
-                            <th>Series</th>
-                            <th>Doc No</th>
-                            <th>Equipment</th>
-                            <th>Defect Type</th>
-                            <th>Priority</th>
-                            <th>Problem</th>
-                            <th>Reported By</th>
-                          </tr>
-                        </thead>
-                        <tbody id="defectTable">
-                          <tr class="trail-bal-tabl-none">
-                            <td colspan="9" class="text-center">No defect notifications found</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+						</table>
+					</div>
+				</div>
 
-                </div>
-              </div>
-              <div class="modal-footer text-end">
-                <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-                  <i data-feather="x-circle"></i> Cancel
-                </button>
-                <button id="defect_process_btn" onclick="processDefectSelection()" class="btn btn-primary btn-sm">
-                  <i data-feather="check-circle"></i> Process
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+				<div class="modal-footer justify-content-center">
+					<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('attribute');">Cancel</button>
+					<button type="button" class="btn btn-primary submitAttributeBtn" onclick="closeModal('attribute');">Select</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
-        {{-- Attribute Modal --}}
-        <div class="modal fade" id="attribute" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
-                <p class="text-center">Enter the details below.</p>
-
-                <div class="table-responsive-md customernewsection-form">
-                  <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id="attributes_table_modal" item-index="">
-                    <thead>
-                      <tr>
-                        <th>Attribute Name</th>
-                        <th>Attribute Value</th>
-                      </tr>
-                    </thead>
-                    <tbody id="attribute_table"><!-- populated by JS --></tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('attribute');">Cancel</button>
-                <button type="button" class="btn btn-primary submitAttributeBtn" onclick="closeModal('attribute');">Select</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {{-- Remarks Modal --}}
-        <div class="modal fade" id="Remarks" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header p-0 bg-transparent">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1">Add/Edit Remarks</h1>
-                <p class="text-center">Enter the details below.</p>
-                <div class="row mt-2">
-                  <div class="col-md-12 mb-1">
-                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                    <textarea class="form-control" placeholder="Enter Remarks"></textarea>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer justify-content-center">
-                <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
-                <button type="reset" class="btn btn-primary">Submit</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </form>
-    </div>
-
-  </div>
-</div>
-
-<div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
-     aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header p-0 bg-transparent">
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body alertmsg text-center warning">
-        <i data-feather='alert-circle'></i>
-        <h2>Are you sure?</h2>
-        <p>Are you sure you want to <strong>Amendment</strong> this <strong>Maint. Wo</strong></p>
-        <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Amendment Submit Modal -->
-<div class="modal fade" id="amendmentSubmitModal" tabindex="-1" aria-labelledby="amendmentSubmitModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="amendmentSubmitModalLabel">Submit Amendment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label for="amendment_remarks" class="form-label">Amendment Remarks <span class="text-danger">*</span></label>
-          <textarea class="form-control" id="amendment_remarks" name="amendment_remarks" rows="4" placeholder="Please provide detailed remarks for this amendment..." required></textarea>
-        </div>
-        <div class="mb-3">
-          <label for="amendment_attachment" class="form-label">Supporting Document (Optional)</label>
-          <input type="file" class="form-control" id="amendment_attachment" name="amendment_attachment" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-          <small class="text-muted">Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max: 10MB)</small>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmAmendmentSubmit">
-          <i data-feather="check-circle"></i> Submit Amendment
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
+    </form>
 @endsection
 
-
-
-
 @section('scripts')
-	<script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
-    @include('plant.maint_wo.common-js-route',["wo" => isset($wo) ? $wo : null, "route_prefix" => "maint-wo"])
-    <script src="{{ asset('assets/js/modules/maint-wo/common-script.js') }}"></script>
-  	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 	<script>
 		const itemsData = @json($items);
+		const workOrderData = @json($workOrder);
 		let rowCount = 1;
 		$(window).on('load', function () {
 			if (feather) {
@@ -1047,7 +1037,209 @@
 					height: 14
 				});
 			}
+			
+			// Initialize form with existing work order data
+			initializeEditForm();
 		})
+		
+		function initializeEditForm() {
+			console.log('Initializing edit form with data:', workOrderData);
+			
+			// Parse and populate equipment details first
+			let equipmentDetails = null;
+			if (workOrderData.equipment_details) {
+				try {
+					equipmentDetails = typeof workOrderData.equipment_details === 'string' 
+						? JSON.parse(workOrderData.equipment_details) 
+						: workOrderData.equipment_details;
+					console.log('Equipment details parsed:', equipmentDetails);
+				} catch (e) {
+					console.error('Error parsing equipment details:', e);
+				}
+			}
+			
+			// Set reference type based on equipment details or default logic
+			let referenceType = equipmentDetails?.equipment_reference_type || 'equipment';
+			$('#reference_type').val(referenceType);
+			
+			// Show appropriate reference button as selected and UI sections
+			if (referenceType === 'equipment') {
+				$('#equipment_ref_btn').removeClass('btn-outline-primary').addClass('btn-primary');
+				$('#defect_ref_btn').removeClass('btn-primary').addClass('btn-outline-primary');
+				$('.basic-equipment-field').show();
+				$('.equipment-detail-field').hide();
+				$('#checklist-tab').show();
+			} else if (referenceType === 'defect_notification') {
+				$('#defect_ref_btn').removeClass('btn-outline-primary').addClass('btn-primary');
+				$('#equipment_ref_btn').removeClass('btn-primary').addClass('btn-outline-primary');
+				$('.basic-equipment-field').show();
+				$('.equipment-detail-field').show();
+				$('#checklist-tab').hide();
+				$('#spare-parts-tab a').tab('show');
+			}
+			
+			// Populate equipment fields from equipment_details JSON
+			if (equipmentDetails) {
+				if (equipmentDetails.equipment_id) {
+					$('#equipment_id').val(equipmentDetails.equipment_id);
+				}
+				if (equipmentDetails.equipment_name) {
+					$('#equipment_name').val(equipmentDetails.equipment_name);
+					$('#equipment_name_hidden').val(equipmentDetails.equipment_name);
+				}
+				if (equipmentDetails.equipment_category) {
+					$('#equipment_category').val(equipmentDetails.equipment_category);
+					$('#equipment_category_hidden').val(equipmentDetails.equipment_category);
+				}
+				if (equipmentDetails.equipment_maintenance_type) {
+					$('#maintenance_type').val(equipmentDetails.equipment_maintenance_type);
+				}
+				if (equipmentDetails.equipment_defect_type) {
+					$('#defect_type_field select').val(equipmentDetails.equipment_defect_type);
+					$('#defect_type_hidden').val(equipmentDetails.equipment_defect_type);
+				}
+				if (equipmentDetails.equipment_problem) {
+					$('#problem_field input').val(equipmentDetails.equipment_problem);
+					$('#problem_hidden').val(equipmentDetails.equipment_problem);
+				}
+				if (equipmentDetails.equipment_priority) {
+					$('#priority_field select').val(equipmentDetails.equipment_priority);
+				}
+				if (equipmentDetails.equipment_report_date) {
+					$('#report_date_field input').val(equipmentDetails.equipment_report_date);
+					$('#report_date_time_hidden').val(equipmentDetails.equipment_report_date);
+				}
+				if (equipmentDetails.equipment_reported_by) {
+					$('#report_by_field input').val(equipmentDetails.equipment_reported_by);
+					$('#reported_by_hidden').val(equipmentDetails.equipment_reported_by);
+				}
+				if (equipmentDetails.equipment_detailed_observations) {
+					$('#detailed_observations_field textarea').val(equipmentDetails.equipment_detailed_observations);
+				}
+			}
+			
+			// Parse and populate spare parts data if it exists
+			if (workOrderData.spare_parts) {
+				try {
+					const sparePartsData = typeof workOrderData.spare_parts === 'string' 
+						? JSON.parse(workOrderData.spare_parts) 
+						: workOrderData.spare_parts;
+					
+					console.log('Spare parts data parsed:', sparePartsData);
+					if (Array.isArray(sparePartsData) && sparePartsData.length > 0) {
+						populateSparePartsTable(sparePartsData);
+					}
+				} catch (e) {
+					console.error('Error parsing spare parts data:', e);
+				}
+			}
+			
+			// Parse and populate checklist data if it exists
+			if (workOrderData.checklist_data) {
+				try {
+					const checklistData = typeof workOrderData.checklist_data === 'string' 
+						? JSON.parse(workOrderData.checklist_data) 
+						: workOrderData.checklist_data;
+					
+					console.log('Checklist data parsed:', checklistData);
+					if (Array.isArray(checklistData) && checklistData.length > 0) {
+						populateChecklistData(checklistData);
+					}
+				} catch (e) {
+					console.error('Error parsing checklist data:', e);
+				}
+			}
+		}
+		
+		function populateSparePartsTable(sparePartsData) {
+			const tbody = $('.mrntableselectexcel');
+			tbody.empty(); // Clear existing rows
+			
+			sparePartsData.forEach((item, index) => {
+				const newRow = `
+					<tr class="${index === 0 ? 'trselected' : ''}">
+						<td class="customernewsection-form">
+							<div class="form-check form-check-primary custom-checkbox">
+								<input type="checkbox" class="form-check-input row-check" id="Email_${index}">
+								<label class="form-check-label" for="Email_${index}"></label>
+							</div>
+						</td>
+						<td class="poprod-decpt">
+							<input type="hidden" class="item_id" value="${item.item_id || ''}">
+							<input required type="text" placeholder="Select" name="item[]"
+								class="item_code form-control mw-100 ledgerselecct mb-25" 
+								value="${item.item_code || ''}" 
+								data-id="${item.item_id || ''}"
+								data-name="${item.item_name || ''}"
+								data-code="${item.item_code || ''}"
+								data-attr="${item.attribute || '[]'}" />
+						</td>
+						<td required class="poprod-decpt">
+							<input type="text" placeholder="Select"
+								class="item_name form-control mw-100 ledgerselecct mb-25" 
+								value="${item.item_name || ''}" />
+						</td>
+						<td class="poprod-decpt">
+							<input type="hidden" class="attribute" value="${item.attribute || ''}">
+							<button data-bs-toggle="modal" data-bs-target="#attribute"
+								class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+								style="font-size: 10px">Attributes</button>
+						</td>
+						<td>
+							<select class="uom form-select mw-100" name="uom[]" required>
+								<option value="${item.uom_id || ''}" selected>${item.uom_name || ''}</option>
+							</select>
+						</td>
+						<td>
+							<input type="number" class="qty form-control mw-100" name="qty[]" 
+								value="${item.qty || ''}" required />
+						</td>
+					</tr>
+				`;
+				tbody.append(newRow);
+			});
+			
+			// Initialize autocomplete for populated rows
+			initAutoForItem('.item_code');
+			
+			// Update footer with first row data
+			updateFooterFromSelected();
+		}
+		
+		function populateChecklistData(checklistData) {
+			console.log('Populating checklist data:', checklistData);
+			
+			// Find all checklist input fields in the static table
+			$('.mrntableselectexcel1 tr').each(function() {
+				const row = $(this);
+				const checklistNameCell = row.find('td:nth-child(2)');
+				
+				if (checklistNameCell.length > 0) {
+					const checklistName = checklistNameCell.text().trim();
+					
+					// Find matching data for this checklist item
+					const matchingData = checklistData.find(item => 
+						item.name && item.name.trim() === checklistName
+					);
+					
+					if (matchingData) {
+						console.log('Found matching data for:', checklistName, matchingData);
+						
+						// Handle text inputs
+						const textInput = row.find('input[type="text"]');
+						if (textInput.length > 0 && matchingData.type === 'text') {
+							textInput.val(matchingData.value || '');
+						}
+						
+						// Handle checkboxes
+						const checkboxInput = row.find('input[type="checkbox"]');
+						if (checkboxInput.length > 0 && matchingData.type === 'checkbox') {
+							checkboxInput.prop('checked', matchingData.value === true || matchingData.value === 'true');
+						}
+					}
+				}
+			});
+		}
 
 		$(".mrntableselectexcel tr").click(function () {
 			$(this).addClass('trselected').siblings().removeClass('trselected');
@@ -1097,24 +1289,18 @@
 						let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
 						let selectedVal = selectedValObj ? selectedValObj.value_id : '';
 
-						// Get text for selected value - try direct value first, then lookup
+						// Find text for selected value
 						let selectedText = '';
-						if (selectedValObj && selectedValObj.value) {
-							// Use directly stored text value (new format)
-							selectedText = selectedValObj.value;
-						} else if (selectedVal) {
-							// Fallback to lookup method (old format)
+						if (selectedVal) {
 							let valObj = element.values_data.find(v => v.id === selectedVal);
 							selectedText = valObj ? valObj.value : '';
 						}
 
-						if (selectedText) {
-							badgesHtml += `
-						<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
-							<strong>${element.group_name}</strong>: <span>${selectedText}</span>
-						</span>
-					`;
-						}
+						badgesHtml += `
+					<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+						<strong>${element.group_name}</strong>: <span>${selectedText}</span>
+					</span>
+				`;
 					});
 
 					$badgesContainer.html(badgesHtml);
@@ -1131,8 +1317,6 @@
 			console.log('Document ready - initializing autocomplete for existing rows');
 			console.log('Found .item_code elements:', $('.item_code').length);
 			initAutoForItem('.item_code');
-			// Initialize attribute badges display for existing data
-			// updateFooterFromSelected();
 		});
 
 		$('#addNewRowBtn').on('click', function () {
@@ -1198,6 +1382,101 @@
 			let isChecked = $(this).is(':checked');
 			$('.mrntableselectexcel .row-check').prop('checked', isChecked);
 		});
+		function resetParametersDependentElements(data) {
+			let backDateAllowed = false;
+			let futureDateAllowed = false;
+
+			if (data != null) {
+				console.log(data.parameters.back_date_allowed);
+				if (Array.isArray(data?.parameters?.back_date_allowed)) {
+					for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
+						if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
+							backDateAllowed = true;
+							break; // Exit the loop once we find "yes"
+						}
+					}
+				}
+				if (Array.isArray(data?.parameters?.future_date_allowed)) {
+					for (let i = 0; i < data.parameters.future_date_allowed.length; i++) {
+						if (data.parameters.future_date_allowed[i].trim().toLowerCase() === "yes") {
+							futureDateAllowed = true;
+							break; // Exit the loop once we find "yes"
+						}
+					}
+				}
+				//console.log(backDateAllowed, futureDateAllowed);
+
+			}
+
+			const dateInput = document.getElementById("document_date");
+
+			// Determine the max and min values for the date input
+			const today = moment().format("YYYY-MM-DD");
+
+			if (backDateAllowed && futureDateAllowed) {
+				dateInput.removeAttribute("min");
+				dateInput.removeAttribute("max");
+			} else if (backDateAllowed) {
+				dateInput.setAttribute("max", today);
+				dateInput.removeAttribute("min");
+			} else if (futureDateAllowed) {
+				dateInput.setAttribute("min", today);
+				dateInput.removeAttribute("max");
+			} else {
+				dateInput.setAttribute("min", today);
+				dateInput.setAttribute("max", today);
+
+			}
+		}
+
+		$('#book_id').on('change', function () {
+			resetParametersDependentElements(null);
+			let currentDate = new Date().toISOString().split('T')[0];
+			let document_date = $('#document_date').val();
+			let bookId = $('#book_id').val();
+			let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
+				"&document_date=" + document_date;
+			fetch(actionUrl).then(response => {
+				return response.json().then(data => {
+					if (data.status == 200) {
+						resetParametersDependentElements(data.data);
+						$("#book_code_input").val(data.data.book_code);
+						if (!data.data.doc.document_number) {
+							$("#document_number").val('');
+							$('#doc_number_type').val('');
+							$('#doc_reset_pattern').val('');
+							$('#doc_prefix').val('');
+							$('#doc_suffix').val('');
+							$('#doc_no').val('');
+						} else {
+							$("#document_number").val(data.data.doc.document_number);
+							$('#doc_number_type').val(data.data.doc.type);
+							$('#doc_reset_pattern').val(data.data.doc.reset_pattern);
+							$('#doc_prefix').val(data.data.doc.prefix);
+							$('#doc_suffix').val(data.data.doc.suffix);
+							$('#doc_no').val(data.data.doc.doc_no);
+						}
+						if (data.data.doc.type == 'Manually') {
+							$("#document_number").attr('readonly', false);
+						} else {
+							$("#document_number").attr('readonly', true);
+						}
+
+					}
+					if (data.status == 404) {
+						$("#document_number").val('');
+						$('#doc_number_type').val('');
+						$('#doc_reset_pattern').val('');
+						$('#doc_prefix').val('');
+						$('#doc_suffix').val('');
+						$('#doc_no').val('');
+						showToast('error', data.message);
+					}
+				});
+			});
+		});
+
+		$('#book_id').trigger('change');
 		initAutoForItem('.item_code');
 		function updateJsonData() {
 			// Collect Spare Parts Data
@@ -1271,7 +1550,7 @@
 				equipment_name: $('#equipment_name_hidden').val() || $('#equipment_name').val() || '',
 				equipment_id: $('#equipment_id').val() || '',
 				equipment_maintenance_type: $('#maintenance_type').val() || '',
-				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_select').val() || '',
+				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_field select').val() || '',
 				equipment_problem: $('#problem_hidden').val() || $('#problem_field input').val() || '',
 				equipment_priority: $('#priority_field select').val() || '',
 				equipment_report_date: $('#report_date_time_hidden').val() || $('#report_date_field input').val() || '',
@@ -1296,6 +1575,7 @@
 			document.getElementById('document_status').value = 'draft';
 			updateJsonData();
 			document.getElementById('maint-wo-form').submit();
+
 		});
 
 
@@ -1360,7 +1640,6 @@
 		});
 		
 		function initAutoForItem(selector, type) {
-            // alert("hii");
 			$(selector).autocomplete({
 				minLength: 0,
 				source: function (request, response) {
@@ -1483,21 +1762,11 @@
 				if (hiddenInputAttr && selectElement) {
 					const attributeId = parseInt(hiddenInputAttr.value, 10);
 					const selectedVal = parseInt(selectElement.value, 10);
-					
-					// Get the attribute name from the row
-					const attributeNameCell = row.querySelector('td:first-child');
-					const attributeName = attributeNameCell ? attributeNameCell.textContent.trim() : '';
-					
-					// Get the selected value text
-					const selectedOption = selectElement.options[selectElement.selectedIndex];
-					const selectedValueText = selectedOption ? selectedOption.textContent.trim() : '';
 
 					if (!isNaN(attributeId) && !isNaN(selectedVal) && selectedVal > 0) {
 						selectedAttributes.push({
 							item_attribute_id: attributeId,
-							value_id: selectedVal,
-							name: attributeName,
-							value: selectedValueText
+							value_id: selectedVal
 						});
 					}
 				}
@@ -1505,29 +1774,22 @@
 
 			// Update hidden input with JSON
 			hiddenInput.val(JSON.stringify(selectedAttributes));
+			console.log(selectedAttributes);
 		}
 
 		$(document).on('click', '.attributeBtn', function (e) {
-      updateJsonData();
 			let $tr = $(this).closest('tr');
 			let $selectElement = $tr.find('.item_code');
-     
-      
-      
-
 			let $attributesTable = $('#attribute_table'); // modal table
 			$attributesTable.data('currentRow', $tr);
 
 			if ($selectElement.val() !== "") {
 				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
 				let $hiddenInput = $tr.find('.attribute');
-       
-        
 				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
 					? JSON.parse($hiddenInput.val())
 					: [];
-      
-        
+
 				if (!attributesJSON.length) {
 					$attributesTable.html(`
 							<tr>
@@ -1542,16 +1804,7 @@
 				$.each(attributesJSON, function (index, element) {
 					let optionsHtml = ``;
 
-					// Handle case where values_data might not exist (for edit blade)
-					let valuesData = element.values_data || [];
-					
-					// If no values_data, create a basic structure for compatibility
-					if (!valuesData.length) {
-						// Show basic option for now - this handles the case where attribute structure is incomplete
-						optionsHtml = `<option value="">Select attribute value</option>`;
-					}
-
-					$.each(valuesData, function (i, value) {
+					$.each(element.values_data, function (i, value) {
 						let isSelected = existingAttributes.some(attr =>
 							attr.item_attribute_id === element.id && attr.value_id === value.id
 						);
@@ -1602,56 +1855,43 @@
 
 		// Simple functions for equipment selection
 		function selectEquipmentReference() {
-			loadModal('eqpt');
+			console.log('Equipment button clicked');
 			$('#reference_type').val('equipment');
 			$('#reference_type_error').hide();
 			$('#equipment_ref_btn').removeClass('btn-outline-primary').addClass('btn-primary');
 			$('#defect_ref_btn').removeClass('btn-primary').addClass('btn-outline-primary');
 			
-			// Show only basic equipment fields, hide detail fields
+			// Show basic equipment fields immediately
 			$('.basic-equipment-field').show();
 			$('.equipment-detail-field').hide();
-			
-			// Make basic fields read-only immediately
-			$('#equipment_category').prop('readonly', true);
-			$('#equipment_name').prop('readonly', true);
-			$('#maintenance_type').prop('disabled', true);
+			console.log('Equipment fields shown');
 			
 			// Show checklist tab when equipment is selected
 			$('#checklist-tab').show();
+			console.log('Checklist tab shown for equipment selection');
 		}
 		
 		function selectDefectNotificationReference() {
-			loadModal('defect');
+			console.log('Defect notification button clicked');
 			$('#reference_type').val('defect_notification');
 			$('#reference_type_error').hide();
 			$('#defect_ref_btn').removeClass('btn-outline-primary').addClass('btn-primary');
 			$('#equipment_ref_btn').removeClass('btn-primary').addClass('btn-outline-primary');
 			
-			// Show all equipment detail fields but make them read-only
+			// Show all equipment detail fields
 			$('.basic-equipment-field').show();
 			$('.equipment-detail-field').show();
-			
-			// Make fields read-only for defect notification (they will be populated from selected defect)
-			$('#equipment_category').prop('readonly', true);
-			$('#equipment_name').prop('readonly', true);
-			$('#maintenance_type').prop('disabled', true); // Keep maintenance type enabled for user selection
-			
-			// Also disable other equipment detail fields
-			$('#defect_type_select').prop('disabled', true);
-			$('#priority_field select').prop('disabled', true);
-			$('#problem_field input').prop('readonly', true);
-			$('#detailed_observations_field textarea').prop('readonly', true);
-			$('#report_by_field input').prop('readonly', true);
-			$('#supporting_documents_field input').prop('disabled', true);
+			console.log('All fields shown for defect notification');
 			
 			// Hide checklist tab and show only spare parts tab
 			$('#checklist-tab').hide();
 			$('#spare-parts-tab a').tab('show'); // Activate spare parts tab
+			console.log('Checklist tab hidden, spare parts tab activated');
 		}
 
 		function processEquipmentSelection() {
-			var selectedEquipment = $('input[name="equipment_radio"]:checked');
+			console.log('Process equipment selection called');
+			var selectedEquipment = $('input[name="equipmentRadio"]:checked');
 			
 			if (selectedEquipment.length === 0) {
 				// Show toaster notification
@@ -1665,20 +1905,13 @@
 			if (!equipmentName) {
 				equipmentName = equipmentRow.find('td').eq(0).text().trim();
 			}
-			var eqpt = selectedEquipment.data('eqpt');
 			
 			// Populate equipment fields
-			$('#equipment_name').val(selectedEquipment.data('equipment-name'));
+			$('#equipment_name').val(equipmentName);
 			$('#equipment_id').val(selectedEquipment.data('equipment-id'));
-			$('#maintenance_type').val(selectedEquipment.data('maintenance-type'));
 			
-			// Keep only basic equipment fields visible and read-only for equipment selection
-			$('.equipment-detail-field').hide();
-			$('.basic-equipment-field').show();
-			$('#equipment_category').prop('readonly', true);
-			$('#equipment_name').prop('readonly', true);
-			$('#maintenance_type').prop('disabled', true);
-				
+			console.log('Equipment selected:', equipmentName);
+			
 			// Close modal manually
 			$('#reference').modal('hide');
 			
@@ -1686,133 +1919,61 @@
 		}
 
 		function processDefectSelection() {
-			let selectedDefect = $('input.defect-radio:checked').attr('id');
-      let onlyNumber = selectedDefect.replace("defect_row_", "");
-  
-			if (onlyNumber === "") {
-				showToast('error', 'Please select a defect notification');
-				return false;
+			console.log('Process defect selection called');
+			var selectedDefect = $('input[name="defect_selection"]:checked');
+			
+			if (selectedDefect.length === 0) {
+				// Show toaster notification
+				showToast('error', 'Please select at least one defect notification');
+				return false; // Don't close modal
 			}
-
-			var defectId = onlyNumber;
-
-      
-
-			$('#defect_process_btn')
-				.prop('disabled', true)
-				.html('<span class="spinner-border spinner-border-sm"></span> Loading...');
-
-			$.ajax({
-				url: "{{ route('defect-notification.get', 'PLACEHOLDER') }}".replace('PLACEHOLDER', defectId),
-				type: 'GET',
-				success: function(response) {
-					if (response.status && response.data) {
-						var defect = response.data;
-						// Equipment
-						if (defect.equipment) {
-							$('#equipment_id').val(defect.equipment.id);
-							$('#equipment_name').val(defect.equipment.document_number || defect.equipment.name || '');
-						}
-
-						// Defect Type
-						if (defect.defect_type) {
-							var defectTypeSelect = $('#defect_type_select');
-							if (defectTypeSelect.find('option[value="' + defect.defect_type.id + '"]').length === 0) {
-								defectTypeSelect.append('<option value="' + defect.defect_type.id + '">' + defect.defect_type.name + '</option>');
-							}
-							defectTypeSelect.val(defect.defect_type.id).prop('disabled', true);
-						}
-
-						// Category
-						if (defect.category) {
-							$('#equipment_category').val(defect.category.name);
-						}
-
-						// Book
-						if (defect.book) {
-							$('#book_code').val(defect.book.book_code);
-						}
-
-						// Location
-						if (defect.location) {
-							$('#location_name').val(defect.location.name);
-						}
-
-						// Priority
-						if (defect.priority) {
-							$('#priority_field select').val(defect.priority).prop('disabled', true);
-						}
-
-						// Problem
-						if (defect.problem) {
-							$('#problem_field input').val(defect.problem).prop('disabled', true);
-						}
-
-						// Detailed Observation
-						if (defect.detailed_oberservation) {
-							$('#detailed_observation').val(defect.detailed_oberservation).prop('disabled', true);
-						}
-
-						// Report Date
-						var reportDate = defect.report_date_time ? defect.report_date_time.replace('T', ' ').split('.')[0] : '';
-						$('#report_date_field input').val(reportDate).prop('disabled', true);
-
-						if (defect.detailed_oberservation) {
-							$('#detailed_observations').val(defect.detailed_oberservation);
-						} else {
-							$('#detailed_observations').val('');
-						}
-
-						$('#supporting_documents_field').empty();
-						var supportingDiv = $('#supporting_documents_field');
-						if (defect.attachment) {
-							supportingDiv.show();
-							var iconContainer = supportingDiv.find('.mt-50');
-							iconContainer.empty();
-							var icon = $('<i>', { 'data-feather': 'file-text', class: 'font-large-1 me-25' });
-							iconContainer.append(icon);
-							if (typeof feather !== 'undefined') {
-								feather.replace();
-							}
-						} else {
-							supportingDiv.remove();
-						}
-
-						// Hidden fields
-						$('#defect_notification_id_hidden').val(defect.id);
-						$('#equipment_name_hidden').val(defect.equipment ? defect.equipment.document_number : '');
-						$('#defect_type_hidden').val(defect.defect_type ? defect.defect_type.name : '');
-						$('#problem_hidden').val(defect.problem);
-						$('#report_date_time_hidden').val(reportDate);
-						$('#reported_by_hidden').val(defect.created_by || '');
-
-						// Close modal
-						$('#defectlog').modal('hide');
-
-						showToast('success', 'Defect notification selected successfully');
-					} else {
-						showToast('error', 'Invalid defect data received');
-					}
-				},
-				error: function(err) {
-					console.error(err);
-					showToast('error', 'Failed to load defect details');
-				},
-				complete: function() {
-					$('#defect_process_btn').prop('disabled', false).html('<i data-feather="check-circle"></i> Process');
-				}
-			});
-
+			
+			// Get selected defect data from table row
+			var defectRow = selectedDefect.closest('tr');
+			var date = defectRow.find('td').eq(1).text().trim();
+			var equipment = defectRow.find('td').eq(4).text().trim();
+			var defectType = defectRow.find('td').eq(5).text().trim();
+			var priority = defectRow.find('td').eq(6).text().trim();
+			var problem = defectRow.find('td').eq(7).text().trim();
+			var reportedBy = defectRow.find('td').eq(8).text().trim();
+			
+			console.log('Defect data:', {date, equipment, defectType, priority, problem, reportedBy});
+			
+			// Populate equipment detail fields with defect notification data
+			$('#equipment_name').val(equipment);
+			$('#defect_type_field select').val(defectType).prop('disabled', true);
+			$('#problem_field input').val(problem).prop('disabled', true);
+			$('#priority_field select').val(priority).prop('disabled', true);
+			$('#report_date_field input').val(date).prop('disabled', true);
+			$('#report_by_field input').val(reportedBy).prop('disabled', true);
+			
+			// Also populate hidden inputs for form submission
+			$('#equipment_name_hidden').val(equipment);
+			$('#defect_type_hidden').val(defectType);
+			$('#problem_hidden').val(problem);
+			$('#report_date_time_hidden').val(date);
+			$('#reported_by_hidden').val(reportedBy);
+			
+			console.log('Defect notification fields populated');
+			
+			// Close modal manually
+			$('#defectlog').modal('hide');
+			
 			return true;
 		}
 
-		function showEquipmentFields() {	
+		function showEquipmentFields() {
+			console.log('showEquipmentFields() called');
+			
 			// Hide all equipment detail fields first
 			$('.basic-equipment-field').hide();
 			$('.equipment-detail-field').hide();
+			console.log('All fields hidden');
 			
 			// Show only basic equipment fields (Category, Equipment, Maintenance Type)
 			$('.basic-equipment-field').show();
+			console.log('Basic equipment fields shown, count:', $('.basic-equipment-field:visible').length);
+			
 			// Enable the fields for user interaction
 			$('#equipment_category').prop('readonly', true); // Keep category readonly with default value
 			$('#equipment_name').prop('readonly', true); // Keep equipment readonly until selected
@@ -1824,329 +1985,206 @@
 			$('#report_date_time_hidden').val('');
 			$('#reported_by_hidden').val('');
 			
-			
+			console.log('Equipment fields setup complete');
 		}
 
-		// function showDefectNotificationFields() {
-		// 	// Show all equipment detail fields
-		// 	$('.equipment-detail-field').show();
+		function showDefectNotificationFields() {
+			// Show all equipment detail fields
+			$('.equipment-detail-field').show();
 			
-		// 	// Set all fields as readonly with default values
-		// 	$('#defect_type_select').prop('disabled', true).val('General Defect');
-		// 	$('#defect_type_hidden').val('General Defect');
+			// Set all fields as readonly with default values
+			$('#defect_type_field select').prop('disabled', true).val('General Defect');
+			$('#defect_type_hidden').val('General Defect');
 			
-		// 	$('#problem_field input').prop('disabled', true).val('Please resolve ASAP');
-		// 	$('#problem_hidden').val('Please resolve ASAP');
+			$('#problem_field input').prop('disabled', true).val('Please resolve ASAP');
+			$('#problem_hidden').val('Please resolve ASAP');
 			
-		// 	$('#priority_field select').prop('disabled', true).val('High');
+			$('#priority_field select').prop('disabled', true).val('High');
 			
-		// 	$('#report_date_field input').prop('disabled', true).val('22-07-2025 | 02:30 PM');
-		// 	$('#report_date_time_hidden').val('22-07-2025 | 02:30 PM');
+			$('#report_date_field input').prop('disabled', true).val('22-07-2025 | 02:30 PM');
+			$('#report_date_time_hidden').val('22-07-2025 | 02:30 PM');
 			
-		// 	$('#report_by_field input').prop('disabled', true).val('Aniket');
-		// 	$('#reported_by_hidden').val('Aniket');
+			$('#report_by_field input').prop('disabled', true).val('Aniket');
+			$('#reported_by_hidden').val('Aniket');
 			
-		// 	$('#detailed_observations_field textarea').prop('readonly', true).val('Defect notification requires immediate attention');
+			$('#detailed_observations_field textarea').prop('readonly', true).val('Defect notification requires immediate attention');
 			
-		// 	$('#supporting_documents_field input').prop('disabled', false); // Keep file upload enabled
-		// }
+			$('#supporting_documents_field input').prop('disabled', false); // Keep file upload enabled
+		}
 
-		// function showDefectNotificationFields() {
-		// 	// Show all equipment detail fields
-		// 	$('.equipment-detail-field').show();
-			
-		// 	// Set all fields as readonly with default values
-		// 	$('#defect_type_select').prop('disabled', true).val('General Defect');
-		// 	$('#defect_type_hidden').val('General Defect');
-			
-		// 	$('#problem_field input').prop('disabled', true).val('Please resolve ASAP');
-		// 	$('#problem_hidden').val('Please resolve ASAP');
-			
-		// 	$('#priority_field select').prop('disabled', true).val('High');
-			
-		// 	$('#report_date_field input').prop('disabled', true).val('22-07-2025 | 02:30 PM');
-		// 	$('#report_date_time_hidden').val('22-07-2025 | 02:30 PM');
-			
-		// 	$('#report_by_field input').prop('disabled', true).val('Aniket');
-		// 	$('#reported_by_hidden').val('Aniket');
-			
-		// 	$('#detailed_observations_field textarea').prop('readonly', true).val('Defect notification requires immediate attention');
-			
-		// 	$('#supporting_documents_field input').prop('disabled', false); // Keep file upload enabled
-		// }
-
-
-		//Search function for the defect modal 
-
-		$(document).ready(function() {
-			$('#defect_search_btn').on('click', function(e) {
-				e.preventDefault();
-
-				var equipmentId = $('select[name="equipment_id"]').val();
-				var defectTypeId = $('select[name="defect_type_id"]').val();
-				var priority = $('select[name="priority"]').val();
-				var series = $('select[name="series"]').val();
-
-				$.ajax({
-					url: '/plant/maint-wo/filter',
-					method: 'POST',
-					data: {
-						type: 'defect',
-						equipment_id: equipmentId,
-						defect_type_id: defectTypeId,
-						priority: priority,
-						series_code: series,
-						_token: $('meta[name="csrf-token"]').attr('content')
-					},
-					beforeSend: function() {
-						
-					},
-					success: function(response) {
-						
-						if(response && response.length > 0) {
-							var tbody = '';
-							response.forEach(function(defect) {
-								tbody += `<tr>
-									<td class="customernewsection-form">
-										<div class="form-check form-check-primary custom-radio">
-											<input type="radio" class="form-check-input" name="defect_selection" id="defect_row_${defect.id}"
-												value="${defect.id}"
-												data-defect-id="${defect.id}"
-												data-equipment-id="${defect.equipment?.id ?? ''}"
-												data-equipment-name="${defect.equipment?.name ?? 'N/A'}"
-												data-defect-type="${defect.defect_type?.name ?? 'N/A'}"
-												data-priority="${defect.priority ?? ''}"
-												data-problem="${defect.problem ?? ''}"
-												data-reported-by="${defect.creator?.name ?? 'N/A'}">
-											<label class="form-check-label" for="defect_row_${defect.id}"></label>
-										</div>
-									</td>
-									<td><strong>${defect.document_date ? formatDate(defect.document_date) : 'N/A'}</strong></td>
-									<td>${defect.book?.book_code ?? 'N/A'}</td>
-									<td>${defect.document_number ?? 'N/A'}</td>
-									<td>${defect.equipment?.name ?? 'N/A'}</td>
-									<td>${defect.defect_type?.name ?? 'N/A'}</td>
-									<td>${defect.priority ?? ''}</td>
-									<td>${defect.problem ?? ''}</td>
-									<td>${defect.creator?.name ?? 'N/A'}</td>
-								</tr>`;
-							});
-							$('.po-order-detail tbody').html(tbody);
-							feather.replace(); // re-render Feather icons
-						} else {
-							$('.po-order-detail tbody').html('<tr><td colspan="9" class="text-center">No defect notifications found</td></tr>');
-						}
-					},
-					error: function(xhr) {
-						console.error(xhr);
-						showToast('error', 'Failed to fetch filtered defects.');
-					},
-					complete: function() {
-					}
-				});
-			});
-
-			// Equipment Search Button Handler
-			$('#equipmentSearchBtn').on('click', function() {
-				const equipmentId = $('select[name="equipment_id"]').val();
-				const maintenanceTypeId = $('select[name="maintenance_type_id"]').val();
-				const bomId = $('select[name="maintenance_bom_id"]').val();
-
-				if (!equipmentId) {
-					Swal.fire({
-						title: 'Missing Information',
-						text: 'Please select Equipment before searching.',
-						icon: 'warning'
-					});
-					return;
-				}
-
-				// Show loading state
-				$(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Searching...');
-
-				// Call filter method for equipment
-				$.ajax({
-					url: '/plant/maint-wo/filter',
-					method: 'POST',
-					data: {
-						type: 'equipment',
-						equipment_id: equipmentId,
-						maintenance_type_id: maintenanceTypeId,
-						bom_id: bomId,
-						_token: $('meta[name="csrf-token"]').attr('content')
-					},
-					success: function(response) {
-						console.log("Equipment filter response:", response);
-						
-						// Response is now direct array data (like populateModal)
-						if (response && response.length > 0) {
-							// Show equipment modal with filtered results
-							populateEquipmentModal(response);
-							$('#equipment-modal').modal('show');
-
-							Swal.fire({
-								title: 'Success!',
-								text: `Found ${response.length} equipment configuration(s).`,
-								icon: 'success',
-								timer: 2000,
-								showConfirmButton: false
-							});
-
-						} else {
-							// No data found - show empty modal
-							$('#equipment-modal-table tbody').html('<tr><td colspan="5" class="text-center">No equipment found for the selected criteria.</td></tr>');
-							$('#equipment-modal').modal('show');
-							
-							Swal.fire({
-								title: 'No Results',
-								text: 'No equipment found matching the selected criteria.',
-								icon: 'info'
-							});
-						}
-					},
-					error: function(xhr, status, error) {
-						console.error('Equipment search error:', error);
-						Swal.fire({
-							title: 'Error!',
-							text: 'An error occurred while searching for equipment data.',
-							icon: 'error'
-						});
-					},
-					complete: function() {
-						// Reset button state
-						$('#equipmentSearchBtn').prop('disabled', false).html('<i data-feather="search"></i> Search Equipment');
-						feather.replace();
-					}
-				});
-			});
-
-			function formatDate(dateStr) {
-				var date = new Date(dateStr);
-				var day = ("0" + date.getDate()).slice(-2);
-				var month = ("0" + (date.getMonth() + 1)).slice(-2);
-				var year = date.getFullYear();
-				return `${day}-${month}-${year}`;
-			}
-		});
-	</script>
-
-	<script>
-		// Amendment submission functionality
-		$(document).ready(function() {
 		
-
-			// Handle amendment submission
-			$('#amendmentBtn').on('click', function(e) {
-				e.preventDefault();
-				
-				// Set action type for amendment
-				$('<input>').attr({
-					type: 'hidden',
-					name: 'action_type',
-					value: 'amendment'
-				}).appendTo('#maint-wo-form');
-				
-				// Set document status to submitted for amendment
-				$('#document_status').val('submitted');
-				
-				// Submit the form
-				$('#maint-wo-form').submit();
-			});
-			
-			// Handle revision number change for viewing different revisions
-			$(document).on('change', '#revisionNumber', function() {
-				const selectedRevision = $(this).val();
-				const currentUrl = new URL(window.location.href);
-				currentUrl.searchParams.set('revisionNumber', selectedRevision);
-				window.location.href = currentUrl.toString();
-			});
+		// Button functionality following defect notification pattern
+		document.getElementById('save-draft-btn')?.addEventListener('click', function () {
+			$('.preloader').show();
+			document.getElementById('document_status').value = 'draft';
+			document.getElementById('maint-wo-form').submit();
 		});
-	</script>
-	<script>
-		// Amendment Modal Logic - Handle everything in edit blade
-		$(document).ready(function() {
-			// Check if we're in amendment mode
-			const isAmendmentMode = window.location.search.includes('amendment=1');
-			
-			if (isAmendmentMode) {
-				// Override any external script behavior
-				// Remove the common script's dynamic button if it exists
-				$('#amend-submit-button').remove();
-				
-				// Override the form submit handler for amendment mode
-				$('#submit-btn').off('click').on('click', function(e) {
-					e.preventDefault();
-					
-					// Show amendment modal for remarks and documents
-					$('#amendmentSubmitModal').modal('show');
-				});
-				
-				// Override any external openAmendConfirmModal calls
-				window.openAmendConfirmModal = function() {
-					$('#amendmentSubmitModal').modal('show');
-				};
+
+		// Form submission functionality
+		$('#maint-wo-form').on('submit', function(e) {
+			e.preventDefault();
+			$('#document_status').val('submitted');
+			submitForm();
+		});
+
+		// Approve button functionality
+		$('#approved-button').on('click', function() {
+			if (confirm('Are you sure you want to approve this maintenance work order?')) {
+				$('#document_status').val('approved');
+				$('#maint-wo-form')[0].submit();
+			}
+		});
+
+		// Reject button functionality
+		$('#reject-button').on('click', function() {
+			$('#rejectionModal').modal('show');
+		});
+
+		$('#confirm-rejection').on('click', function() {
+			const reason = $('#rejection-reason').val().trim();
+			if (!reason) {
+				showToast('error', 'Please enter a reason for rejection.');
+				return;
 			}
 			
-			// Handle amendment modal submission
-			$('#confirmAmendmentSubmit').on('click', function(e) {
-				e.preventDefault();
-				
-				// Get amendment remarks
-				const remarks = $('#amendment_remarks').val().trim();
-				
-				// Validate remarks (required)
-				if (!remarks) {
-					alert('Amendment remarks are required.');
-					$('#amendment_remarks').focus();
-					return false;
-				}
-				
-				// Hide modal
-				$('#amendmentSubmitModal').modal('hide');
-				
-				// Add amendment data to form
-				const form = $('#maint-wo-form');
-				
-				// Remove any existing amendment fields
-				form.find('input[name="action_type"]').remove();
-				form.find('input[name="amendment_remarks"]').remove();
-				
-				// Add amendment action type
-				$('<input>').attr({
-					type: 'hidden',
-					name: 'action_type',
-					value: 'amendment'
-				}).appendTo(form);
-				
-				// Add amendment remarks
-				$('<input>').attr({
-					type: 'hidden',
-					name: 'amendment_remarks',
-					value: remarks
-				}).appendTo(form);
-				
-				// Handle file upload if present
-				const fileInput = $('#amendment_attachment')[0];
-				if (fileInput && fileInput.files.length > 0) {
-					// File will be handled by the existing form submission
-				}
-				
-				// Show loading
-				$('.preloader').show();
-				
-				// Set document status and submit form
-				$('#document_status').val('submitted');
-				updateJsonData();
-				form.off('submit').submit();
-			});
+			// Add rejection reason to form
+			$('<input>').attr({
+				type: 'hidden',
+				name: 'rejection_reason',
+				value: reason
+			}).appendTo('#maint-wo-form');
 			
-			// Prevent any external script from interfering with amendment modal
-			$(document).on('DOMNodeInserted', function(e) {
-				if (isAmendmentMode && $(e.target).attr('id') === 'amend-submit-button') {
-					// Remove any dynamically added submit buttons from external scripts
-					$(e.target).remove();
+			$('#document_status').val('rejected');
+			$('#maint-wo-form')[0].submit();
+		});
+
+		// Amendment functionality
+		$('#confirm-amendment').on('click', function() {
+			const reason = $('#amendment-reason').val().trim();
+			if (!reason) {
+				showToast('error', 'Please enter a reason for amendment.');
+				return;
+			}
+			
+			// Redirect to amendment creation
+			window.location.href = `{{ route('maint-wo.create') }}?amend={{ $workOrder->id }}&reason=${encodeURIComponent(reason)}`;
+		});
+
+		function submitForm() {
+			// Validate required fields for submission (not draft)
+			let isValid = true;
+			let errorMessage = '';
+
+			// Check required fields
+			if (!$('#book_id').val()) {
+				isValid = false;
+				errorMessage += 'Series is required.\n';
+			}
+			if (!$('#document_number').val()) {
+				isValid = false;
+				errorMessage += 'Document Number is required.\n';
+			}
+			if (!$('#document_date').val()) {
+				isValid = false;
+				errorMessage += 'Document Date is required.\n';
+			}
+			if (!$('#location_id').val()) {
+				isValid = false;
+				errorMessage += 'Location is required.\n';
+			}
+
+			if (!isValid) {
+				showToast('error', errorMessage);
+				return;
+			}
+
+			// Show loading
+			$('.preloader').show();
+
+			// Submit the form
+			$('#maint-wo-form')[0].submit();
+		}
+
+		function showToast(icon, title) {
+			const Toast = Swal.mixin({
+				toast: true,
+				position: 'top-end',
+				showConfirmButton: false,
+				timer: 3000,
+				timerProgressBar: true,
+				didOpen: (toast) => {
+					toast.addEventListener('mouseenter', Swal.stopTimer)
+					toast.addEventListener('mouseleave', Swal.resumeTimer)
 				}
 			});
-		});
+			Toast.fire({
+				icon,
+				title
+			});
+		}
+
+		@if (session('success'))
+			$('.preloader').hide();
+			showToast("success", "{{ session('success') }}");
+		@endif
+
+		@if (session('error'))
+			$('.preloader').hide();
+			showToast("error", "{{ session('error') }}");
+		@endif
+
+		@if ($errors->any())
+			$('.preloader').hide();
+			showToast('error',
+				"@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
+			);
+		@endif
+
 	</script>
+
+	<!-- Amendment Confirmation Modal -->
+	<div class="modal fade" id="amendmentconfirm" tabindex="-1" aria-labelledby="amendmentconfirmLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="amendmentconfirmLabel">Amendment Confirmation</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<p>Are you sure you want to create an amendment for this maintenance work order?</p>
+					<div class="mb-3">
+						<label for="amendment-reason" class="form-label">Amendment Reason</label>
+						<textarea class="form-control" id="amendment-reason" rows="3" placeholder="Enter reason for amendment"></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="confirm-amendment">Confirm Amendment</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Rejection Modal -->
+	<div class="modal fade" id="rejectionModal" tabindex="-1" aria-labelledby="rejectionModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="rejectionModalLabel">Rejection Reason</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="rejection-reason" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
+						<textarea class="form-control" id="rejection-reason" rows="3" placeholder="Enter reason for rejection" required></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-danger" id="confirm-rejection">Confirm Rejection</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 @endsection

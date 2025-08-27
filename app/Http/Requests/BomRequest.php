@@ -117,7 +117,7 @@ class BomRequest extends FormRequest
             $rules['components.*.sub_section_name'] = $subSectionRequired ? 'required' : 'nullable';
         }
         $headItem = Item::find($this->item_id ?? null);
-        
+
         if ($headItem && $headItem?->itemAttributes?->count() > 0) {
             $rules['attributes.*.attr_group_id.*.attr_name'] = 'required';
         }
@@ -141,7 +141,7 @@ class BomRequest extends FormRequest
         }
         return $rules;
     }
-    
+
     public function withValidator(Validator $validator)
     {
         $validator->after(function ($validator) {
@@ -155,7 +155,7 @@ class BomRequest extends FormRequest
             $selectedAttributes = [];
             if(count($attributes)) {
                 foreach($attributes as $k => $attribute) {
-                    $attr_group = array_values($attribute['attr_group_id']); 
+                    $attr_group = array_values($attribute['attr_group_id']);
                     $ia = ItemAttribute::where('item_id',$itemId)
                                     ->where('attribute_group_id',@$attr_group[0]['attr_group_id'])
                                     ->first();

@@ -202,7 +202,6 @@ class BomController extends Controller
 
     public function store(BomRequest $request)
     {
-        // dd($request->components);
         # check validation
         $canView = true;
         $parentUrl = request()->segments()[0];

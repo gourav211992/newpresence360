@@ -59,7 +59,7 @@
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;" class="page-break">
         @include('pdf.partials.header', [
-            'orgLogo' => $orgLogo,
+            'orgLogo' => @$orgLogo,
             'moduleTitle' => $title,
             'imagePath' => $imagePath,
         ])

@@ -92,7 +92,7 @@ class FixedAssetRegistration extends Model
     {
         return $this->belongsTo(Vendor::class, 'vendor_id');
     }
-
+    
     public function currency()
     {
         return $this->belongsTo(Currency::class, 'currency_id');
@@ -120,7 +120,7 @@ class FixedAssetRegistration extends Model
     public function getDepreciationsAttribute()
     {
         return FixedAssetDepreciation::whereRaw(
-            "JSON_CONTAINS(assets, ?)",
+            "JSON_CONTAINS(assets, ?)", 
             [json_encode((string) $this->id)]
         )->get();
     }
@@ -158,7 +158,7 @@ class FixedAssetRegistration extends Model
             ->where('ted_code', '=', 'SGST')
             ->sum('ted_amount');
 
-        $tedRecord = MrnExtraAmount::with(['taxDetail'])
+            $tedRecord = MrnExtraAmount::with(['taxDetail'])
             ->where('mrn_detail_id', $this->mrn_detail_id)
             ->where('mrn_header_id', $this->mrn_header_id)
             ->where('ted_type', '=', 'Tax')
@@ -169,7 +169,7 @@ class FixedAssetRegistration extends Model
 
         return [
             'rate' => @$tedRecord->taxDetail->tax_percentage,
-            'ledger' => @$tedRecord->taxDetail->ledger->id,
+             'ledger' => @$tedRecord->taxDetail->ledger->id,
             'ledger_group' => @$tedRecord->taxDetail->ledgerGroup->id,
             'value' => $tedRecords ?? 0.00
         ];
@@ -183,7 +183,7 @@ class FixedAssetRegistration extends Model
             ->where('ted_code', '=', 'IGST')
             ->sum('ted_amount');
 
-        $tedRecord = MrnExtraAmount::with(['taxDetail'])
+            $tedRecord = MrnExtraAmount::with(['taxDetail'])
             ->where('mrn_detail_id', $this->mrn_detail_id)
             ->where('mrn_header_id', $this->mrn_header_id)
             ->where('ted_type', '=', 'Tax')
@@ -200,32 +200,11 @@ class FixedAssetRegistration extends Model
         ];
     }
     public function updateTotalDep()
-    {
-        $total = $this->subAsset()->sum('total_depreciation'); // Soft-deleted are excluded automatically
-        $this->total_depreciation = $total;
-        $this->save();
-        return $total;
-    }
-    public function updateUniqueCodes()
-    {
-        $sub_assets = $this->subAsset()->orderBy('id')->get();
-        $detail = $this->mrnDetail;
-        if ($detail && $detail->uniqueCodes && $detail->uniqueCodes->isNotEmpty()) {
-            $codes = $detail->uniqueCodes->values(); // reset keys
-            DB::transaction(function () use ($codes, $sub_assets) {
-                foreach ($codes as $index => $code) {
-                    if (isset($sub_assets[$index])) {
-                        $sub_assets[$index]->update([
-                            'uid' => $code->uid ?? null,
-                            'batch_number' => $code->batch_number ?? null,
-                            'manufacturing_year' => $code->manufacturing_year ?? null,
-                        ]);
-                        $code->sub_asset_id = $sub_assets[$index]->id;
-                        $code->save();
-                    }
-                }
-            });
-        }
-    }
-    
+{
+    $total = $this->subAsset()->sum('total_depreciation'); // Soft-deleted are excluded automatically
+    $this->total_depreciation = $total;
+    $this->save();
+    return $total;
+}
+   
 }

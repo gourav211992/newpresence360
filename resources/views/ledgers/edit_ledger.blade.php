@@ -379,18 +379,6 @@
                                                             pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
-                                                    <div class="row align-items-center mb-1" id="tcs_without_pan_label">
-                                                        <div class="col-md-2">
-                                                            <label class="form-label"> % TCS Without PAN <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-
-                                                        <div class="col-md-3">
-                                                            <input type="number" class="form-control"
-                                                                id="tcs_without_pan" name="tcs_without_pan" value="{{ $data->tcs_without_pan }}" step="0.01"
-                                                            pattern="^\d+(\.\d{1,2})?$" />
-                                                        </div>
-                                                    </div>
                                                     <div class="row align-items-center mb-1" id="tcs_capping_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label"> TCS Capping <span
@@ -598,7 +586,6 @@
     <script>
         const existingLedgers = @json($existingLedgers);
         const ExistingTdsSections = @json($ExistingTdsSections);
-        const ExistingTcsSections = @json($ExistingTcsSections);
         $(document).ready(function() {
             $('#amendConfirm').hide();
             $('#checkAndOpenModal').on('click', function() {
@@ -626,7 +613,6 @@
 
                 let selectedGroups = $('#ledger_group_id').val() || [];
                 let selectedTdsSection = $('#tds_section').val();
-                let selectedTcsSection = $('#tcs_section').val();
                 let originalTdsSection = $('#tds_section').attr('value'); // Original TDS section value
                 
                 if (selectedTdsSection && selectedGroups.length > 0 && selectedTdsSection !== originalTdsSection) {
@@ -651,33 +637,6 @@
                         if (duplicateTdsSection) {
                             $('.preloader').hide();
                             showToast('error', 'This TDS section type already exists in the selected TDS group.', 'Duplicate TDS Section');
-                            return;
-                        }
-                    }
-                }
-
-                if (selectedTcsSection && selectedGroups.length > 0 && selectedTcsSection !== originalTcsSection) {
-                    // Check if any of the selected groups have TDS in their name (indicating TDS group)
-                    let hasTcsGroup = false;
-                    selectedGroups.forEach(groupId => {
-                        let groupOption = $('#ledger_group_id option[value="' + groupId + '"]');
-                        if (groupOption.text().toLowerCase().includes('tcs')) {
-                            hasTcsGroup = true;
-                        }
-                    });
-                    
-                    if (hasTcsGroup) {
-                        // Check if TDS section already exists in any of the selected groups (excluding current record)
-                        let duplicateTcsSection = ExistingTcsSections.some(existing => {
-                            return existing.tcs_section === selectedTcsSection && 
-                                   existing.ledger_group_ids.some(existingGroupId => 
-                                       selectedGroups.includes(existingGroupId.toString())
-                                   );
-                        });
-                        
-                        if (duplicateTcsSection) {
-                            $('.preloader').hide();
-                            showToast('error', 'This TCS section type already exists in the selected TCS group.', 'Duplicate TCS Section');
                             return;
                         }
                     }

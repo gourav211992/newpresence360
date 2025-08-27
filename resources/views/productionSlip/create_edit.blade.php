@@ -1566,18 +1566,18 @@
             let deletedConsItemIds = JSON.parse(localStorage.getItem('deletedConsItemIds')) || [];
             const allRowsCheck = document.querySelectorAll('#production-items .item_row_checks');
             const allConsCheck = document.querySelectorAll('#raw-materials .consumption_row_checks');
-          
+
             let deleteableElementsId = [];
 
             for (let index = allRowsCheck.length - 1; index >= 0; index--) {
-            
+
                 if (allRowsCheck[index]) {
                     const currentRowIndex = allRowsCheck[index].getAttribute('del-index');
                     var currentRowcheckbox = document.getElementById('item_row_check_' + currentRowIndex);
                     if(!currentRowcheckbox){
                         var currentRowcheckbox = document.getElementById('item_checkbox_' + currentRowIndex);
                     }
-                  console.log(currentRowcheckbox);
+                    // console.log(currentRowcheckbox);
                     if(currentRowcheckbox.checked){
                         const inputElement = document.getElementById('items_dropdown_' + currentRowIndex);
                         if (inputElement) {
@@ -1602,9 +1602,9 @@
                     }
                     row.remove();
                 }
-            }  
-            
-            // write code for consumption 
+            }
+
+            // write code for consumption
             for (let Consindex = allConsCheck.length - 1; Consindex >= 0; Consindex--) {
                 if (allConsCheck[Consindex]) {
                     const parentRow = allConsCheck[Consindex].closest('tr');
@@ -2357,8 +2357,17 @@
         var selectedRefFromServiceOption = paramData.reference_from_service;
         var selectedBackDateOption = paramData.back_date_allowed;
         var selectedFutureDateOption = paramData.future_date_allowed;
-        const inspectionRequired	 = paramData.inspection_required;
+        // var inspectionRequired	 = paramData.inspection_required;
+        var inspectionRequired = paramData?.inspection_required ?? [];
+
+        // console.log('inspectionRequired', inspectionRequired);
+
         $('#inspection_required_key').val(inspectionRequired);
+
+        // Handle Inspection Show/Hide
+        if (inspectionRequired.includes("yes") || inspectionRequired =='yes') {
+            $('.inspectionChecklistBtn').show();
+        }
 
         var invoiceToFollowParam = paramData?.invoice_to_follow;
         var issueTypeParameters = paramData?.issue_type;
@@ -2397,11 +2406,6 @@
                     backDateAllow = false;
                 }
             }
-        }
-
-        // Handle Inspection Show/Hide
-        if (inspectionRequired.includes("yes") || inspectionRequired =='yes') {
-            $('.inspectionChecklistBtn').show();
         }
 
         //Future Date Allow
@@ -3655,10 +3659,10 @@ function openHeaderPullModal(type = null)
     function processOrder()
     {
         // Handle Inspection Show/Hide
-        let inspectionRequired = $('#inspection_required_key').val();
+        let inspectionRequiredP = $('#inspection_required_key').val();
         // console.log('inspectionRequired2', inspectionRequired);
 
-        if (inspectionRequired.includes("yes") || inspectionRequired =='yes') {
+        if (inspectionRequiredP.includes("yes") || inspectionRequiredP =='yes') {
             $('.inspectionChecklistBtn').show();
         }
 
@@ -3685,7 +3689,7 @@ function openHeaderPullModal(type = null)
                     docIds: JSON.stringify(docId),
                     doc_type: 'mo',
                     store_id : $("#store_id_input").val(),
-                    inspection_required : inspectionRequired,
+                    inspection_required : inspectionRequiredP,
                 },
                 success: function(data) {
                     // Mo detail fill
@@ -4298,7 +4302,6 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr){
                 }else{
                     avlStock(rowCount)
                 }
-                qtyEnabledDisabled();
             }
         });
     });
@@ -4332,7 +4335,8 @@ function avlStock(indexId){
     let match = value.match(/(\d+)(?!.*\d)/);
 
 
-    let lastNumber = match[0];
+    // let lastNumber = match[0];
+    let lastNumber = (match && match[0]) ? match[0] : null;
 
     const attributes=selectedAttributeIds;
     const store_id=$("#store_id_input").val();

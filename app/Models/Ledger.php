@@ -41,8 +41,7 @@ class Ledger extends Model
         'created_by',
         'tcs_capping',
         'tds_capping',
-        'tds_without_pan',
-        'tcs_without_pan'
+        'tds_without_pan'
     ];
     public function costCenter()
     {
