@@ -64,8 +64,10 @@
                                                         </td>
                                                         <td>{{ $equipment->alias ?? '' }}</td>
                                                         <td>{{ $equipment->category->name ?? '' }}</td>
-                                                        <td>{{ $equipment->checklist_name ?? '' }}</td>
-                                                        <td>{{ $equipment->maintenanceDetails->last()?->created_at?->format('Y-m-d') ?? '' }}</td>
+                                                         <td>
+            {{ $equipment->maintenanceDetails->flatMap->checklists->pluck('name')->implode(', ') }}
+        </td>
+        <td>{{ $equipment->maintenanceDetails->last()?->created_at?->format('Y-m-d') ?? '' }}</td>
                                                         <td>{{ $equipment->maint_due_date ?? '' }}</td>
                                                         <td class="tableactionnew">
                                                             <div class="dropdown">

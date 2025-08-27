@@ -4044,7 +4044,7 @@ class Helper
                 ->exists();
             
             $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
-           
+
             
             if ($assets && !$mrn_assets->isEmpty()) {
                 $mrn = MrnHeader::find($mrn_id);
@@ -4191,6 +4191,9 @@ class Helper
                         'mrn_header_id' => $mrn->id,
                         'asset_code' => $asset_code,
                         'asset_name' => $asset_name,
+                        'brand_name'=>$mrn_asset->brand_name,
+                        'model_no'=>$mrn_asset->model_no,
+                        'procurement_type'=>$mrn_asset->procurement_type,
                         'quantity' => $mrn_detail->accepted_inv_uom_qty,
                         'category_id' => $category_id,
                         'reference_doc_id' => $mrn->id,
@@ -4237,7 +4240,9 @@ class Helper
                     );
                     $mrn_asset->salvage_value = $salvageValue;
                     $mrn_asset->asset_code = $asset_code;
+                    $mrn_asset->asset_id = $asset->id;
                     $mrn_asset->save();
+                    $asset->updateUniqueCodes();
                 }
                 
 

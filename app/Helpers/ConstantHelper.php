@@ -709,6 +709,7 @@ class ConstantHelper
         self::SR_SERVICE_ALIAS=>self::CREDIT_Note,
         self::PSV_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
         self::PRODUCTION_SLIP_SERVICE_ALIAS => self::JOURNAL_VOUCHER,
+        self::TI_SERVICE_ALIAS => self::TI_SERVICE_ALIAS,
     ];
 
     //Service Alias Models Mapping

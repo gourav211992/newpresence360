@@ -70,7 +70,7 @@ class VoucherController extends Controller
                  $query->when(function () use ($request) {
             return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
-            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');;
         })->whereIn('organization_id', $orgs);
             }])
             ->with('organization')

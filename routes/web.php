@@ -2288,12 +2288,15 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
     Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
 
-    Route::post('/transporter-invoices/e-invoice-mail', [TransportInvoiceController::class, 'InvoiceMail'])
+   Route::post('/transporter-invoices/e-invoice-mail', [TransporterInvoiceController::class, 'InvoiceMail'])
     ->name('tranport.invoice.eInvoiceMail');
-    Route::post('/transporter-invoices/confirm', [TransportInvoiceController::class, 'confirm'])
+    Route::post('/transporter-invoices/confirm', [TransporterInvoiceController::class, 'confirm'])
     ->name('sale.transporterInvoice.confirm');
-    Route::get('/transporter-invoices/print', [TransportInvoiceController::class, 'print'])
+    Route::get('/transporter-invoices/print/{id}', [TransporterInvoiceController::class, 'print'])
     ->name('sale.transporterInvoice.print');
+    Route::get('/transporter-invoice/posting/get', [TransporterInvoiceController::class, 'getPostingDetails'])->name('transport.invoice.posting.get');
+    Route::post('/transporter-invoice/post', [TransporterInvoiceController::class, 'postInvoice'])->name('transport.invoice.post');
+
 
 
     # Production Work Order Route
@@ -2847,17 +2850,28 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
     });
-
+Route::get('plant/maint-wo/get-ajax-data', [MaintWoController::class, 'ajaxData'])->name('maint-wo.ajax-data');
+    Route::get('plant/maint-wo/get-equipment-spare-parts', [MaintWoController::class, 'getEquipmentSpareParts'])->name('maint-wo.get-equipment-spare-parts');
+    Route::post('plant/maint-wo/approve', [MaintWoController::class, 'documentApproval'])->name('maint-wo.approval');
+    Route::post('plant/maint-wo/filter', [MaintWoController::class, 'filter'])->name('maint-wo.filter');
+    
     Route::resource('plant/maint-wo', MaintWoController::class)->names([
+        'index' => 'maint-wo.index',
         'create' => 'maint-wo.create',
         'store' => 'maint-wo.store',
         'update' => 'maint-wo.update',
         'show' => 'maint-wo.show',
         'edit' => 'maint-wo.edit',
     ]);
+
+    
     Route::get('plant/defect-noti/get-ajax-data', [DefectNotificationController::class, 'getDefectNotificationsData'])->name('defect-notification.ajax-data');
     Route::get('plant/populate-modal', [MaintWoController::class, 'populateModal'])->name('maint-wo.populateModal');
 
+    Route::get('plant/defect-noti/filter', [DefectNotificationController::class, 'filter'])->name('defect-notification.filter');
+    Route::get('plant/defect-noti/{id}/get', [DefectNotificationController::class, 'getDefectNotification'])->name('defect-notification.get');
+    Route::post('plant/defect-noti/get-checklists', [DefectNotificationController::class, 'getChecklistsByMaintenanceType'])->name('defect-notification.get-checklists');
+    
     Route::resource('plant/defect-noti', DefectNotificationController::class)
         ->names([
             'index' => 'defect-notification.index',
@@ -2867,7 +2881,6 @@ Route::middleware(['user.auth'])->group(function () {
             'show' => 'defect-notification.show',
             'edit' => 'defect-notification.edit',
         ]);
-
 
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');

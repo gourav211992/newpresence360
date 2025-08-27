@@ -176,7 +176,7 @@ class LedgerController extends Controller
 
             $groups = Helper::getGroupsQuery()->whereNotNull('parent_group_id')->select('id', 'name')->get();
             $ledgers = Ledger::select('id', 'name')->orderBy('id', 'desc')->get();
-            $mappings = Helper::access_org();
+            $mappings = $user->access_rights_org;
 
             return view('ledgers.view_ledgers', compact('groups', 'ledgers', 'mappings', "organizationId"));
         } catch (\Exception $e) {
@@ -244,6 +244,20 @@ class LedgerController extends Controller
                 ];
         });
 
+         // Get existing TDS sections grouped by ledger groups for frontend validation
+         $ExistingTcsSections = Ledger::select('ledger_group_id', 'tcs_section')
+         ->whereNotNull('tcs_section')
+         ->where('tcs_section', '!=', '')
+         ->whereNull('deleted_at')
+         ->get()
+         ->map(function ($ledger) {
+             $groupIds = json_decode($ledger->ledger_group_id, true) ?? [];
+             return [
+                 'ledger_group_ids' => $groupIds,
+                 'tcs_section' => $ledger->tcs_section
+             ];
+        });
+
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
@@ -267,7 +281,7 @@ class LedgerController extends Controller
         }
 
 
-        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers', 'ExistingTdsSections'));
+        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers', 'ExistingTdsSections', 'ExistingTcsSections'));
     }
 
     public function showImportForm()
@@ -491,6 +505,11 @@ class LedgerController extends Controller
                 'numeric',
                 'max:255',
             ],
+            'tcs_without_pan' => [
+                'nullable',
+                'numeric',
+                'max:255',
+            ],
             'ledger_code_type' => [
                 'nullable',
                 'string',
@@ -675,6 +694,20 @@ class LedgerController extends Controller
                 ];
             });
 
+             // Get existing TDS sections grouped by ledger groups for frontend validation
+            $ExistingTcsSections = Ledger::select('ledger_group_id', 'tcs_section')
+            ->whereNotNull('tcs_section')
+            ->where('tcs_section', '!=', '')
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(function ($ledger) {
+                $groupIds = json_decode($ledger->ledger_group_id, true) ?? [];
+                return [
+                    'ledger_group_ids' => $groupIds,
+                    'tcs_section' => $ledger->tcs_section
+                ];
+        });
+
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
@@ -719,7 +752,8 @@ class LedgerController extends Controller
             'approvalHistory',
             'buttons',
             'docStatusClass',
-            'ExistingTdsSections'
+            'ExistingTdsSections',
+            'ExistingTcsSections'
         ));
     }
 
@@ -799,6 +833,11 @@ class LedgerController extends Controller
                 'max:255',
             ],
             'tcs_percentage' => [
+                'nullable',
+                'numeric',
+                'max:255',
+            ],
+            'tcs_without_pan' => [
                 'nullable',
                 'numeric',
                 'max:255',
