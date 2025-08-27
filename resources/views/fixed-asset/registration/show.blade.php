@@ -1171,6 +1171,9 @@
                          <tr>
                              <th>S.No</th>
                              <th>Asset Code</th>
+                             <th>UID</th>
+                             <th>Batch Number</th>
+                             <th>Manufactering Year</th>
                              <th>Location</th>
                              <th>Cost Center</th>
                              <th>Current Value</th>
@@ -1181,9 +1184,12 @@
                          @foreach($sub_assets as $index => $sub_asset)
                          <tr>
                              <td>{{ $index + 1 }}</td>
-                             <td>{{ $sub_asset->sub_asset_code }}</td>
-                              <td>{{ $sub_asset?->location?->store_name }}</td>
-                               <td>{{ $sub_asset?->costCenter?->name }}</td>
+                            <td>{{ $sub_asset->sub_asset_code }}</td>
+                            <td>{{ $sub_asset?->uid }}</td>
+                            <td>{{ $sub_asset?->batch_number }}</td>
+                            <td>{{ $sub_asset?->manufacturing_year }}</td>
+                            <td>{{ $sub_asset?->location?->store_name }}</td>
+                            <td>{{ $sub_asset?->costCenter?->name }}</td>
                              <td>{{ $sub_asset->current_value }}</td>
                          </tr>
                          @endforeach

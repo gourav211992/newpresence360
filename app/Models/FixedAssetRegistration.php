@@ -225,23 +225,22 @@ class FixedAssetRegistration extends Model
                     }
                 }
             });
-        }
-        // else{
-        //     if ($detail && $detail->batches && $detail->batches->isNotEmpty()) {
-        //           $batches = $detail->batches->values(); // reset keys
-        //           $i = 0;
-        //           foreach($batches as $batch){
-        //             while($i<$batch->inventory_uom_qty){
-        //                  $sub_assets[$i]->update([
-        //                     'batch_number' => $batch->batch_number ?? null,
-        //                     'manufacturing_year' => $batch->manufacturing_year ?? null,
-        //                 ]);
-        //             $i++;
-        //             }
-
-        //           }
-        //     }
-        // }
+        }else if ($detail && $detail->batches && $detail->batches->isNotEmpty()) {
+                $batches = $detail->batches->values(); // reset keys
+                DB::transaction(function () use ($batches, $sub_assets) {
+                $i = 0;
+                 foreach($batches as $batch){
+                    for($j=0;$j<(int)$batch->inventory_uom_qty;$j++){
+                         $sub_assets[$i]->update([
+                            'batch_number' => $batch->batch_number ?? null,
+                            'manufacturing_year' => $batch->manufacturing_year ?? null,
+                        ]);
+                    $i++;
+                    }
+                }
+                });
+            }
+        
     }
     
 }
