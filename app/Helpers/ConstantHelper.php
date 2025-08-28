@@ -81,7 +81,7 @@ class ConstantHelper
     const PAYABLE='Account Payable';
     const RECEIVABLE = 'Account Receivable';
     const DOCUMENT_STATUS = [self::DRAFT, self::SUBMITTED, self::APPROVAL_NOT_REQUIRED, self::PARTIALLY_APPROVED, self::APPROVED, self::REJECTED];
-
+    const DUE_DATE_ALIAS = [self::MRN_SERVICE_ALIAS,self::PB_SERVICE_ALIAS,self::SI_SERVICE_ALIAS,self::SERVICE_INV_SERVICE_ALIAS,self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
     const DOCUMENT_STATUS_CSS = [self::DRAFT => 'text-warning', self::SUBMITTED => 'text-primary', self::APPROVAL_NOT_REQUIRED => 'text-success', self::PARTIALLY_APPROVED => 'text-warning', self::APPROVED => 'text-success', self::REJECTED => 'text-danger', self::POSTED => 'text-primary-new',self::COMPLETED => 'text-warning'];
 
     const DOCUMENT_STATUS_CSS_WO_TEXT = [self::DRAFT => 'warning', self::SUBMITTED => 'primary', self::APPROVAL_NOT_REQUIRED => 'success', self::PARTIALLY_APPROVED => 'warning', self::APPROVED => 'success', self::REJECTED => 'danger', self::POSTED => 'info'];

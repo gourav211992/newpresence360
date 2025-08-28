@@ -5577,7 +5577,7 @@ class FinancialPostingHelper
                     ]);
                 }
                 
-                $customerAccountDebit += $tax -> ted_amount;
+                $customerAccountDebit += $tax->ted_amount;
             }
 
         }
@@ -5613,7 +5613,7 @@ class FinancialPostingHelper
                         'ledger_code' => $customerLedger?->code,
                         'ledger_name' => $customerLedger?->name,
                         'ledger_group_code' => $customerLedgerGroup?->name,
-                        'debit_amount' => $salesCreditAmount,
+                        'debit_amount' => $customerAccountDebit,
                         'credit_amount' => 0,
                     ]);
                 }
