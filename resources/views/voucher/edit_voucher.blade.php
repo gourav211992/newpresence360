@@ -520,6 +520,9 @@
                                                         <th>Group</th>
                                                         <th width="150px" class="text-end">Debit Amt</th>
                                                         <th width="150px" class="text-end">Credit Amt</th>
+                                                        @if(in_array($data->reference_service,App\Helpers\ConstantHelper::DUE_DATE_ALIAS))
+                                                        <th>Due Date</th>
+                                                        @endif
                                                         <th width="200px">Cost Center</th>
                                                         <th>Remarks</th>
                                                         <th width="60px">Action</th>
@@ -616,6 +619,10 @@
                                                                     onfocus="focusInput(this)" min="0"
                                                                     step="0.01" value="{{ $item->credit_amt }}" />
                                                             </td>
+                                                             @if(in_array($data->reference_service,App\Helpers\ConstantHelper::DUE_DATE_ALIAS))
+                                                             <td><input type="date" value="{{$item->due_date ??""}}" class="form-control mw-100"/></td>  
+                                                           
+                                                            @endif
                                                             <td>
                                                                 <select class="costCenter form-select mw-100"
                                                                     name="cost_center_id[]"
@@ -683,7 +690,8 @@
                                                 <td hidden class="text-end">
                                                     <h5 id="crd_total_inr">0.00</h5>
                                                 </td>
-                                                <td colspan="3" class="text-end">
+                                                 
+                                                <td colspan="{{in_array($data->reference_service,App\Helpers\ConstantHelper::DUE_DATE_ALIAS)?4:3}}" class="text-end">
                                                     @if ($buttons['draft'] && $fyear['authorized'])
                                                         <a href="#"
                                                             class="text-primary add-contactpeontxt mt-0 add-item-row"

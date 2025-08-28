@@ -132,7 +132,8 @@ class VoucherController extends Controller
                         $balance = VoucherReference::where('voucher_id', $voucher->id)
                             ->withWhereHas('voucherPayRec', function ($query) use($request,$orgs) {
                                 $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
+                                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                                    ->withoutGlobalScope('defaultLocation');
                                 })->whereIn("organization_id",$orgs);
                                 //$query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
                                 $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);

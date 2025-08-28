@@ -62,6 +62,10 @@ class CrDrReportController extends Controller
         $cost = null;
         $org = null;
 
+        $due_date="invoice";
+        if ($request->has('d'))
+            $due_date = $request->d;
+
         if ($request->has('location_id'))
             $loc = $request->location_id;
 
@@ -125,7 +129,7 @@ class CrDrReportController extends Controller
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 if (!is_null($ledger_groups))
-                    $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
+                    $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids,$due_date);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $all_ledgers = Ledger::where('status', 1)
@@ -140,7 +144,7 @@ class CrDrReportController extends Controller
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
                 if (!is_null($ledger_groups))
-                    $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
+                    $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids,$due_date);
             }
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
@@ -158,9 +162,14 @@ class CrDrReportController extends Controller
         $loc = null;
         $cost = null;
         $org = null;
+        
 
         if ($request->has('location_id'))
             $loc = $request->location_id;
+        
+        $due_date="invoice";
+        if ($request->has('d'))
+            $due_date = $request->d;
 
         if ($request->has('cost_center_id'))
             $cost = $request->cost_center_id;
@@ -214,7 +223,7 @@ class CrDrReportController extends Controller
                     })
                     ->get();
                 if (!is_null($ledger_groups))
-                    $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
+                    $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids,$due_date);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
@@ -229,7 +238,7 @@ class CrDrReportController extends Controller
                     ->get();
 
                 if (!is_null($ledger_groups))
-                    $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
+                    $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids,$due_date);
             }
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
@@ -259,7 +268,7 @@ class CrDrReportController extends Controller
             return 'days_above_180';
         }
     }
-    function get_ledgers_data($ledger_groups, $ages_all, $type, $filter, $start, $end, $org, $loc, $cost)
+    function get_ledgers_data($ledger_groups, $ages_all, $type, $filter, $start, $end, $org, $loc, $cost,$due_date)
     {
         $amount = $type . '_amt_org';
         $ages0 = $ages_all[0];
@@ -326,7 +335,7 @@ class CrDrReportController extends Controller
                     })
                     ->where($type . '_amt_org', '>', 0)->get()
                     ->groupBy('ledger_id')
-                    ->map(function ($items) use ($ages0, $ages1, $ages2, $ages3, $ages4, $amount) {
+                    ->map(function ($items) use ($ages0, $ages1, $ages2, $ages3, $ages4, $amount,$due_date) {
                         $totals = (object) [
                             'ledger_id' => null,
                             'ledger_name' => '',
@@ -340,14 +349,15 @@ class CrDrReportController extends Controller
                             'total_outstanding' => 0
                         ];
                         foreach ($items as $item) {
-                            $documentDate = optional($item->voucher)->document_date
-                                ? \Carbon\Carbon::parse($item->voucher->document_date)->format('Y-m-d')
-                                : null;
-
                             $totals->ledger_id = $item->ledger_id;
                             $totals->ledger_name = Ledger::find($item->ledger_id)->name;
                             $totals->ledger_parent_name = Group::find($item->ledger_parent_id)->name;
                             $totals->ledger_parent_id = $item->ledger_parent_id;
+                            
+                            $d_date = ($due_date =="invoice" || empty($item->due_date)) 
+                            ? Voucher::find($item->voucher_id)->document_date: $item->due_date;
+                            $documentDate = \Carbon\Carbon::parse($d_date)->format('Y-m-d');
+                    
                             $days_diff = $documentDate ? now()->diffInDays(\Carbon\Carbon::createFromFormat('Y-m-d', $documentDate)) : 0;
 
                             if ($days_diff <= $ages0) {
@@ -371,7 +381,7 @@ class CrDrReportController extends Controller
 
                 foreach ($l_ledger as $customer) {
                     $ledger = $customer->ledger_id;
-                    $voucher = Voucher::withWhereHas('items', function ($query) use ($cost, $ledger, $group, $type) {
+                    $voucher = Voucher::withWhereHas('items', function ($query) use ($due_date,$cost, $ledger, $group, $type) {
                         $query->where('ledger_id', $ledger);
                         $query->where('ledger_parent_id', $group);
                         $query->where($type . '_amt_org', '>', 0);
@@ -407,14 +417,14 @@ class CrDrReportController extends Controller
                         ->where('ledger_id', $ledger)
                         ->value('credit_days');
 
-                    $overdue = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end);
-                    $ages0 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_0_30');
-                    $ages1 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_30_60');
-                    $ages2 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_60_90');
-                    $ages3 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_90_120');
-                    $ages4 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_120_180');
-                    $ages5 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_above_180');
-                    $total_outstanding = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'total_outstanding');
+                    $overdue = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end,'overdue',$due_date);
+                    $ages0 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_0_30',$due_date);
+                    $ages1 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_30_60',$due_date);
+                    $ages2 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_60_90',$due_date);
+                    $ages3 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_90_120',$due_date);
+                    $ages4 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_120_180',$due_date);
+                    $ages5 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'days_above_180',$due_date);
+                    $total_outstanding = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $voucher, $credit_days, $group, $ledger, null, $start, $end, 'total_outstanding',$due_date);
                     $customer->days_0_30 = $ages0;
                     $customer->days_30_60 = $ages1;
                     $customer->days_60_90 = $ages2;
@@ -482,7 +492,7 @@ class CrDrReportController extends Controller
                             }
                         })->where($type . '_amt_org', '>', 0)->get()
                         ->groupBy('ledger_parent_id')
-                        ->map(function ($items) use ($group, $ages0, $ages1, $ages2, $ages3, $ages4, $amount) {
+                        ->map(function ($items) use ($group, $ages0, $ages1, $ages2, $ages3, $ages4, $amount,$due_date) {
                             $totals = (object) [
                                 'ledger_id' => null,
                                 'ledger_name' => '',
@@ -496,9 +506,9 @@ class CrDrReportController extends Controller
                                 'total_outstanding' => 0
                             ];
                             foreach ($items as $item) {
-                                $documentDate = optional($item->voucher)->document_date
-                                    ? \Carbon\Carbon::parse($item->voucher->document_date)->format('Y-m-d')
-                                    : null;
+                            $d_date = ($due_date =="invoice" || empty($item->due_date)) 
+                            ? Voucher::find($item->voucher_id)->document_date: $item->due_date;
+                            $documentDate = \Carbon\Carbon::parse($d_date)->format('Y-m-d');
 
                                 $totals->ledger_parent_name = Group::find($group)->name;
                                 $totals->ledger_parent_id = $group;
@@ -523,13 +533,13 @@ class CrDrReportController extends Controller
                         })->values();
                     if (isset($customer[0])) {
 
-                        $ages0 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_0_30');
-                        $ages1 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_30_60');
-                        $ages2 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_60_90');
-                        $ages3 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_90_120');
-                        $ages4 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_120_180');
-                        $ages5 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_above_180');
-                        $total_outstanding = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'total_outstanding');
+                        $ages0 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_0_30',$due_date);
+                        $ages1 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_30_60',$due_date);
+                        $ages2 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_60_90',$due_date);
+                        $ages3 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_90_120',$due_date);
+                        $ages4 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_120_180',$due_date);
+                        $ages5 = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'days_above_180',$due_date);
+                        $total_outstanding = self::get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, 0, $group, null, null, $start, $end, 'total_outstanding',$due_date);
                         $customer = $customer[0];
                         $customer->days_0_30 = $ages0;
                         $customer->days_30_60 = $ages1;
@@ -672,7 +682,7 @@ class CrDrReportController extends Controller
         return response()->json(['data' => $all_ledgers, 'status' => 200, 'message' => 'fetched']);
     }
 
-    public static function get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, $credit_days, $group, $ledger, $details = null, $start, $end, $sum_column = 'overdue')
+    public static function get_overdue($type, $ages_all, $doc_types, $cus_type, $vouchers, $credit_days, $group, $ledger, $details = null, $start, $end, $sum_column = 'overdue',$due_date="invoice")
     {
         $amount = $type . '_amt_org';
         $ages0 = $ages_all[0];
@@ -690,7 +700,7 @@ class CrDrReportController extends Controller
                 $query->orderBy('created_at', 'asc');
             })->get()
             ->groupBy('voucher_id')
-            ->map(function ($items) use ($ages0, $ages1, $ages2, $ages3, $ages4, $amount) {
+            ->map(function ($items) use ($ages0, $ages1, $ages2, $ages3, $ages4, $amount,$due_date) {
                 $totals = (object) [
                     'id' => '',
                     'ledger_parent_id' => '',
@@ -704,11 +714,14 @@ class CrDrReportController extends Controller
                     'total_outstanding' => 0,
                     'invoice_amount' => 0,
                     'document_date' => "",
-                    'days_diff' => 0
+                    'days_diff' => 0,
+                    'due_date'=>''
                 ];
                 foreach ($items as $item) {
-                    $d_date = Voucher::find($item->voucher_id)->document_date;
+                    $d_date = ($due_date =="invoice" || empty($item->due_date)) 
+                    ? Voucher::find($item->voucher_id)->document_date:$item->due_date;
                     $totals->document_date = $d_date;
+                    $totals->due_date = $item->due_date;
                     $totals->ledger_parent_id = $item->ledger_parent_id;
                     $totals->ledger_id = $item->ledger_id;
 
@@ -767,6 +780,7 @@ class CrDrReportController extends Controller
                 'id' => $voucher->id,
                 'ledger_parent_id' => $vendor->ledger_parent_id,
                 'ledger_id' => $vendor->ledger_id,
+                'due_date'=>$vendor->due_date,
                 'bill_no' => $vs . $bill_no,
                 'view_route' => $view_route,
                 'created_at' => $voucher?->created_at,

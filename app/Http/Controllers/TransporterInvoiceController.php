@@ -997,6 +997,10 @@ class TransporterInvoiceController extends Controller
                             } else {
                                 $soItemTedForDiscount = ErpTransportInvoiceTed::create($itemDiscountRowData);
                             }
+                            array_push($itemTaxIds, $soItemTedForDiscount->id);
+                        }
+                    }
+                           
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {
                             $soItemTedForDiscount = ErpTransportInvoiceTed::updateOrCreate(
@@ -1021,8 +1025,8 @@ class TransporterInvoiceController extends Controller
 
                         }
                     }
-                }
-            }
+                
+            
                     
                 }
             } else {
