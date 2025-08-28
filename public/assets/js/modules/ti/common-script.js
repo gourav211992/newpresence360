@@ -1681,7 +1681,7 @@ function onItemClick(itemRowId)
                 if (Array.isArray(data?.lrDetails) && data.lrDetails.length > 0) {
                     let html = '';
                     let lrs = '';
-                    
+                   
                     data.lrDetails.forEach(lr => {
                         html += `
                             <span class="badge rounded-pill badge-light-primary">
@@ -1691,14 +1691,16 @@ function onItemClick(itemRowId)
                                 <strong>Service</strong>: <span>${lr.item_name}</span>
                             </span>
                             <span class="badge rounded-pill badge-light-primary">
-                                <strong>HSN Code</strong>: <span id="current_item_hsn_code">${lr.hsn_code ?? ''}</span>
+                                <strong>HSN Code</strong>: <span id="current_item_hsn_code">${data.item.hsn.code ?? ''}</span>
                             </span> 
                         `;
 
                         // ✅ now iterate locations of this LR
                         lr.locations.forEach(location => {
                             lrs += `
-                            <div class="row-line" style="margin-bottom: 8px;">
+                            <tr>
+                            <td class="poprod-decpt">
+                            <div class="row-line">
                                 <span class="badge rounded-pill badge-light-primary">
                                     <strong>Point Name</strong>: <span>${location.route_name}</span>
                                 </span>
@@ -1712,6 +1714,8 @@ function onItemClick(itemRowId)
                                     <strong>Weight</strong>: <span>${location.weight}</span>
                                 </span>
                             </div>
+                            </td>
+                            </tr>
                             `;
                         });
                     });
@@ -1724,7 +1728,7 @@ function onItemClick(itemRowId)
                     document.getElementById('current_item_cat_hsn').innerHTML = html;
 
                    
-                    document.getElementById('current_item_inventory_details').innerHTML = lrs;
+                    document.getElementById('current_item_inventory_details').insertAdjacentHTML("afterend", lrs);
                     document.getElementById('current_item_stocks_row').style.display = "none";
                     document.getElementById('current_item_lot_no_row').style.display = "none";
 
@@ -1732,12 +1736,24 @@ function onItemClick(itemRowId)
                 }
                 if (data.inv_qty && data.inv_uom) {
                     let inventoryDocElement = document.getElementById('current_item_inventory_details');
+
                     if (inventoryDocElement) {
-                        inventoryDocElement.innerHTML = `
-                            <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: ${data.inv_uom}</span>
-                            <span class="badge rounded-pill badge-light-primary"><strong>Qty in ${data.inv_uom}</strong>: ${data.inv_qty}</span>
+                        let newRow = `
+                            <tr>
+                                <td class="poprod-decpt">
+                                    <span class="badge rounded-pill badge-light-primary">
+                                        <strong>Inv. UOM</strong>: ${data.inv_uom}
+                                    </span>
+                                    <span class="badge rounded-pill badge-light-primary">
+                                        <strong>Qty in ${data.inv_uom}</strong>: ${data.inv_qty}
+                                    </span>
+                                </td>
+                            </tr>
                         `;
+
+                        inventoryDocElement.insertAdjacentHTML("afterend", newRow);
                     }
+
                 }
                 if (data?.item && data?.item?.category && data?.item?.sub_category) {
                     document.getElementById('current_item_cat_hsn').innerHTML = `
@@ -2083,9 +2099,9 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
                 document.getElementById('payment_terms_dropdown').innerHTML = "";
                 document.getElementById('payment_terms_dropdown').value = "";
                 document.getElementById('current_billing_address_id').value = "";
-                document.getElementById('current_shipping_address_id').value = "";
+                // document.getElementById('current_shipping_address_id').value = "";
                 document.getElementById('current_billing_address').textContent = "";
-                document.getElementById('current_shipping_address').textContent = "";
+                // document.getElementById('current_shipping_address').textContent = "";
                 document.getElementById('customer_id_input').value = "";
                 document.getElementById('customer_code_input').value = "";
                 return;
@@ -2119,10 +2135,10 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
                             // changeDropdownOptions(document.getElementById('billing_country_id_input'), ['billing_state_id_input'], ['states'], '/states/', null, ['billing_city_id_input']);
                         }
                         if (currentElement.id == "shipping_address_dropdown") {
-                            document.getElementById('current_shipping_address').textContent = item.label;
-                            document.getElementById('current_shipping_address_id').value = item.id;
-                            document.getElementById('current_shipping_country_id').value = item.country_id;
-                            document.getElementById('current_shipping_state_id').value = item.state_id;
+                            // document.getElementById('current_shipping_address').textContent = item.label;
+                            // document.getElementById('current_shipping_address_id').value = item.id;
+                            // document.getElementById('current_shipping_country_id').value = item.country_id;
+                            // document.getElementById('current_shipping_state_id').value = item.state_id;
                         }
 
                     }
@@ -2144,9 +2160,9 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
         document.getElementById('payment_terms_dropdown').innerHTML = "";
         document.getElementById('payment_terms_dropdown').value = "";
         document.getElementById('current_billing_address_id').value = "";
-        document.getElementById('current_shipping_address_id').value = "";
+        // document.getElementById('current_shipping_address_id').value = "";
         document.getElementById('current_billing_address').textContent = "";
-        document.getElementById('current_shipping_address').textContent = "";
+        // document.getElementById('current_shipping_address').textContent = "";
         document.getElementById('customer_id_input').value = "";
         document.getElementById('customer_code_input').value = "";
         $("#" + mainDropdownElement.id).trigger('ApiCompleted');
@@ -2662,42 +2678,42 @@ function sendMailTo() {
         $("#mail_remarks").val("");
         $('#sendMail').modal('show');
     }
-$(document).on('click','#shipAddressEditBtn',(e) => {
-    const addressId = document.getElementById('current_shipping_address_id').value;
-    const apiRequestValue = addressId;
-    const apiUrl = "/customer/address/" + apiRequestValue;
-    fetch(apiUrl, {
-        method : "GET",
-        headers : {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken
-        },
-    }).then(response => response.json()).then(data => {
-        if (data) {
-            $('#shipping_country_id_input').val(data.address.country_id).trigger('change');
-            $("#current_shipping_address_id").val(data.address.id);
-            $("#current_shipping_country_id").val(data.address.country_id);
-            $("#current_shipping_state_id").val(data.address.state_id);
-            $("#current_shipping_address").text(data.address.display_address);
-            setTimeout(() => {
+// $(document).on('click','#shipAddressEditBtn',(e) => {
+//     const addressId = document.getElementById('current_shipping_address_id').value;
+//     const apiRequestValue = addressId;
+//     const apiUrl = "/customer/address/" + apiRequestValue;
+//     fetch(apiUrl, {
+//         method : "GET",
+//         headers : {
+//             'Content-Type': 'application/json',
+//             'X-CSRF-TOKEN': csrfToken
+//         },
+//     }).then(response => response.json()).then(data => {
+//         if (data) {
+//             $('#shipping_country_id_input').val(data.address.country_id).trigger('change');
+//             $("#current_shipping_address_id").val(data.address.id);
+//             $("#current_shipping_country_id").val(data.address.country_id);
+//             $("#current_shipping_state_id").val(data.address.state_id);
+//             $("#current_shipping_address").text(data.address.display_address);
+//             setTimeout(() => {
                
-                $('#shipping_state_id_input').val(data.address.state_id).trigger('change');
+//                 $('#shipping_state_id_input').val(data.address.state_id).trigger('change');
 
-                setTimeout(() => {
+//                 setTimeout(() => {
                
-                    $('#shipping_city_id_input').val(data.address.city_id).trigger('change');
-                }, 1000);
-            }, 1000);
-            $('#shipping_pincode_input').val(data.address.pincode)
-            $('#shipping_address_input').val(data.address.address);
+//                     $('#shipping_city_id_input').val(data.address.city_id).trigger('change');
+//                 }, 1000);
+//             }, 1000);
+//             $('#shipping_pincode_input').val(data.address.pincode)
+//             $('#shipping_address_input').val(data.address.address);
 
-        }
+//         }
 
-    }).catch(error => {
-        console.log("Error : ", error);
-    });
-    $("#edit-address-shipping").modal('show');
-});
+//     }).catch(error => {
+//         console.log("Error : ", error);
+//     });
+//     $("#edit-address-shipping").modal('show');
+// });
 
 function itemRowCalculation(itemRowIndex)
 {

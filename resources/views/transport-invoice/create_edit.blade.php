@@ -730,7 +730,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                              <td></td>
                                           </tr>
                                           <tr valign="top">
-                                             <td id="item_details_td" colspan="7"
+                                             <td id="item_details_td" colspan="8"
                                                 rowspan="10">
                                                 <table class="table border">
                                                    <tr>
@@ -748,7 +748,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                          </div>
                                                       </td>
                                                    </tr>
-                                                   <tr>
+                                                   <tr id="current_item_inventory_details">
                                                       <td class="poprod-decpt">
                                                          <div id="current_item_cat_hsn">
                                                          </div>
@@ -780,8 +780,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                    </tr>
                                                    <tr id="current_item_inventory">
                                                       <td class="poprod-decpt">
-                                                         <div
-                                                            id="current_item_inventory_details">
+                                                         <div >
                                                          </div>
                                                       </td>
                                                    </tr>
@@ -823,7 +822,7 @@ class="ajax-input-form sales_module_form transport_invoice"
                                                    </tr>
                                                 </table>
                                              </td>
-                                             <td colspan="5" id="invoice_summary_td">
+                                             <td colspan="4" id="invoice_summary_td">
                                                 <table class="table border mrnsummarynewsty"
                                                    id="summary_table">
                                                    <tr>

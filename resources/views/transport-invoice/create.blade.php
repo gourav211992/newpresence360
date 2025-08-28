@@ -397,7 +397,7 @@
                                              <td></td>
                                           </tr>
                                           <tr valign="top">
-                                             <td id="item_details_td" colspan="7"
+                                             <td id="item_details_td" colspan="8"
                                                 rowspan="10">
                                                 <table class="table border">
                                                    <tr>
@@ -415,7 +415,7 @@
                                                          </div>
                                                       </td>
                                                    </tr>
-                                                   <tr>
+                                                   <tr id="current_item_inventory_details">
                                                       <td class="poprod-decpt">
                                                          <div id="current_item_cat_hsn">
                                                          </div>
@@ -448,7 +448,7 @@
                                                    <tr id="current_item_inventory">
                                                       <td class="poprod-decpt">
                                                          <div
-                                                            id="current_item_inventory_details">
+                                                            >
                                                          </div>
                                                       </td>
                                                    </tr>
@@ -490,7 +490,7 @@
                                                    </tr>
                                                 </table>
                                              </td>
-                                             <td colspan="5" id="invoice_summary_td">
+                                             <td colspan="4" id="invoice_summary_td">
                                                 <table class="table border mrnsummarynewsty"
                                                    id="summary_table">
                                                    <tr>
