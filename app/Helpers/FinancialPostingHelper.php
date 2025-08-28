@@ -8642,11 +8642,12 @@ class FinancialPostingHelper
         );
         $orgVendor = Vendor::where('enter_company_org_id', $partyOrg->id)
             ->where('company_name', $partyOrg->name)->first();
+        
 
         if (empty($orgVendor))
             return array(
                 'status' => false,
-                'message' => $vendor->party->organization->name . ' Vendor not found in ' . $organization->name,
+                'message' => $vendor?->voucher?->organization?->name . ' Vendor not found in ' . $organization->name,
                 'data' => []
             );
 
@@ -8654,14 +8655,14 @@ class FinancialPostingHelper
         if (empty($contraLedgerId))
             return array(
                 'status' => false,
-                'message' => $vendor->party->organization->name . ' Contra Ledger not found in ' . $organization->name,
+                'message' => $vendor?->voucher?->organization?->name . ' Contra Ledger not found in ' . $organization?->name,
                 'data' => []
             );
         $contraLedgerGroupId = $orgVendor->contraLedger->group() ?? null;
         if (empty($contraLedgerGroupId))
             return array(
                 'status' => false,
-                'message' => $vendor->party->organization->name . ' Contra Ledger Group not found in ' . $organization->name,
+                'message' => $vendor?->voucher?->organization?->name . ' Contra Ledger Group not found in ' . $organization->name,
                 'data' => []
             );
         $contraLedger = Ledger::find($contraLedgerId);
@@ -8732,7 +8733,7 @@ class FinancialPostingHelper
         if (empty($orgVendor))
             return array(
                 'status' => false,
-                'message' => $organization->name . ' Vendor not found in ' . $vendor->party->organization->name,
+                'message' => $organization->name . ' Vendor not found in ' . $vendor?->voucher?->organization?->name,
                 'data' => []
             );
 
@@ -8740,14 +8741,14 @@ class FinancialPostingHelper
         if (empty($contraLedgerId))
             return array(
                 'status' => false,
-                'message' => $organization->name . ' Contra Ledger not found in ' . $vendor->party->organization->name,
+                'message' => $organization->name . ' Contra Ledger not found in ' . $vendor?->voucher?->organization?->name,
                 'data' => []
             );
         $contraLedgerGroupId = $orgVendor->contraLedger->group() ?? null;
         if (empty($contraLedgerGroupId))
             return array(
                 'status' => false,
-                'message' => $organization->name . ' Contra Ledger Group not found in ' . $vendor->party->organization->name,
+                'message' => $organization->name . ' Contra Ledger Group not found in ' . $vendor?->voucher?->organization?->name,
                 'data' => []
             );
 
