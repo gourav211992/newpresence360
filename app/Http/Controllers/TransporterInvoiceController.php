@@ -1196,22 +1196,23 @@ class TransporterInvoiceController extends Controller
             if (isset($itemType) && count($itemType) > 0) {
                 $itemType = $itemType[0];
             }
+
             $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice->customer_id, $saleInvoice?->shipping_address_details?->country_id, $saleInvoice->location_address_details?->country_id);
-            if ($saleInvoice->document_status === ConstantHelper::POSTED) {
-                if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
-                    SaleModuleHelper::updateEInvoiceDataFromHelper($saleInvoice);
-                    $data = EInvoiceHelper::saveGstIn($saleInvoice);
-                    if (isset($data) && $data['status'] == 'error') {
-                        DB::rollBack();
-                        return response()->json([
-                            'message' => $data['message'],
-                            'error' => $data['message'],
-                        ], 500);
-                    } else {
-                        $saleInvoice->save();
-                    }
-                }
-            }
+            // if ($saleInvoice->document_status === ConstantHelper::POSTED) {
+            //     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
+            //         SaleModuleHelper::updateEInvoiceDataFromHelper($saleInvoice);
+            //         $data = EInvoiceHelper::saveGstIn($saleInvoice);
+            //         if (isset($data) && $data['status'] == 'error') {
+            //             DB::rollBack();
+            //             return response()->json([
+            //                 'message' => $data['message'],
+            //                 'error' => $data['message'],
+            //             ], 500);
+            //         } else {
+            //             $saleInvoice->save();
+            //         }
+            //     }
+            // }
             $saleInvoice->e_invoice_status = EInvoiceHelper::getEInvoicePendingDocumentStatus($saleInvoice, $saleInvoice->gst_invoice_type);
             $saleInvoice->save();
             SaleModuleHelper::cashCustomerMasterData($saleInvoice);

@@ -769,7 +769,7 @@ class VoucherController extends Controller
 
 
         $bookTypes = $serviceAlias['services'];
-        $bookTypes = collect($bookTypes)->whereIn('alias', [ConstantHelper::CONTRA_VOUCHER,ConstantHelper::JOURNAL_VOUCHER,ConstantHelper::JOURNAL_VOUCHER])->values()??[];
+        $bookTypes = collect($bookTypes)->whereIn('alias', [ConstantHelper::CONTRA_VOUCHER,ConstantHelper::JOURNAL_VOUCHER,ConstantHelper::OPENING_BALANCE])->values()??[];
 
         
 
