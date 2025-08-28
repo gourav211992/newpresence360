@@ -491,15 +491,23 @@ class TransporterInvoiceController extends Controller
             $customerPhoneNo = $request->customer_phone_no ?? null;
             $customerEmail = $request->customer_email ?? null;
             $customerGSTIN = $request->customer_gstin ?? null;
-            $customerName = $request->consignee_name ?? null;
+            // $customerName = $request->consignee_name ?? null;
             //If Customer is Regular, pick from Customer Master
+            if(empty($customer))
+            {
+                 return response()->json([
+                        'message' => 'Choose lorry receipt customer is not exist on database',
+                        'error' => ''
+                    ], 422);
+            }
+
             if ($customer->customer_type === ConstantHelper::REGULAR) {
                 $customerPhoneNo = $customer->mobile ?? null;
                 $customerEmail = $customer->email ?? null;
                 $customerGSTIN = $customer->compliances?->gstin_no ?? null;
             } else {
                 //Check for customer details in Cash
-                if (!$customerPhoneNo || !$customerEmail || !$customerName) {
+                if (!$customerPhoneNo || !$customerEmail) {
                     DB::rollBack();
                     return response()->json([
                         'message' => 'Please enter all details of the customer',
