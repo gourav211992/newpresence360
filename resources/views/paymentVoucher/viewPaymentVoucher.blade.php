@@ -1149,10 +1149,10 @@
                     } else {
                         document.getElementById('posting_button').style.removeProperty('display');
                     }
-                    $('#postvoucher').modal('show');
-                }
+              $('#postvoucher').modal('show');
+                     }
             });
-
+             
         }
 
         function resetPostVoucher() {
@@ -2021,14 +2021,16 @@
         type: "GET",
         dataType: "json",
         success: function(datas) {
+            let error = false;
             if (datas.status !== "success" || !Array.isArray(datas.data)) {
-                Swal.fire("Error!", "Invalid response format.", "error");
+                Swal.fire(datas.message, datas.error, "error");
                 return;
             }
 
             // Loop through each voucher in the array
             datas.data.forEach((voucherWrapper) => {
                 if (!voucherWrapper || voucherWrapper.status === false) {
+                    error = true;
                     Swal.fire("Error!", voucherWrapper?.message || "Unknown error occurred", "error");
                     return;
                 }
@@ -2122,9 +2124,11 @@
                 } else {
                     $('#posting_button').show();
                 }
-
-                $('#postvoucher').modal('show');
+                
             });
+            if(!error)
+                $('#postvoucher').modal('show');
+                
         },
         error: function(xhr, status, error) {
             Swal.fire("Error!", "Failed to load voucher data.", "error");
