@@ -564,6 +564,7 @@ class ConstantHelper
     const CREDIT_Note = 'cn';
     const JOURNAL_VOUCHER = 'jv';
     const CONTRA_VOUCHER = 'cv';
+    const OPENING_BALANCE = 'ob';
     const PAYMENT_VOUCHER_RECEIPT = 'receipt-payment-voucher';
     const PAYMENTS_SERVICE_ALIAS = 'payments';
     const RECEIPTS_SERVICE_ALIAS = 'receipts';
@@ -756,6 +757,7 @@ class ConstantHelper
         self::DEBIT_Note => 'Voucher',
         self::JOURNAL_VOUCHER => 'Voucher',
         self::CONTRA_VOUCHER => 'Voucher',
+        self::OPENING_BALANCE => 'Voucher',
         self::PAYMENT_VOUCHER_RECEIPT => 'PaymentVoucher',
         self::PAYMENTS_SERVICE_ALIAS => 'PaymentVoucher',
         self::RECEIPTS_SERVICE_ALIAS => 'PaymentVoucher',

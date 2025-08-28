@@ -232,37 +232,60 @@ class Helper
     public static function getCurrentFinancialYearMonths(): array
     {
         $user = self::getAuthenticatedUser();
+        \Log::info('Authenticated user:', [
+            'id' => $user->auth_user_id ?? null,
+            'type' => $user->authenticable_type ?? null,
+            'full_user' => $user
+        ]);
+    
         $startDate = request()->cookie('fyear_start_date');
         $endDate = request()->cookie('fyear_end_date');
-
-
+    
+        \Log::info('Cookies for Financial Year:', [
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+        ]);
+    
         if (!$startDate || !$endDate) {
+            \Log::warning('Missing financial year start/end date cookies.');
             return [];
         }
-
+    
         // 1. Find current financial year
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-
+        \Log::info('Financial Year from Helper:', $financialYear);
+    
         if (!$financialYear['authorized']) {
+            \Log::warning('User not authorized for current financial year', [
+                'financialYear' => $financialYear
+            ]);
             return [];
         }
-
-
-
+    
         // 2. Get all ErpFyMonth for this financial year
         $months = ErpFyMonth::where('fy_id', $financialYear['id'])
             ->orderBy('start_date')
             ->get();
-
+    
+        \Log::info('Fetched months:', $months->toArray());
+    
         $currentUserId = $user->auth_user_id;
-        // dd($currentUserId);
         $currentUserType = $user->authenticable_type;
-
+    
         $result = [];
         foreach ($months as $month) {
             $authorized = true;
+            \Log::debug('Checking month:', [
+                'month_id' => $month->id,
+                'start_date' => $month->start_date,
+                'end_date'   => $month->end_date,
+                'access_by'  => $month->access_by,
+            ]);
+    
             if (is_array($month->access_by)) {
                 foreach ($month->access_by as $entry) {
+                    \Log::debug('Access check entry:', $entry);
+    
                     if (
                         isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
                         $entry['user_id'] == $currentUserId &&
@@ -273,16 +296,27 @@ class Helper
                         )
                     ) {
                         $authorized = false;
+                        \Log::warning('Access denied for user in this month', [
+                            'month_id' => $month->id,
+                            'user_id' => $currentUserId,
+                            'type' => $currentUserType,
+                            'entry' => $entry
+                        ]);
                         break;
                     }
                 }
             }
+    
             $monthData = $month->toArray();
             $monthData['authorized'] = $authorized;
             $result[] = $monthData;
         }
+    
+        \Log::info('Final month result:', $result);
+    
         return $result;
     }
+    
 
     public static function getFinancialYearQuarter(string $date): mixed
     {
