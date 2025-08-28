@@ -6337,6 +6337,7 @@ class FinancialPostingHelper
         //Assign Credit and Debit amount for tally check
         $totalCreditAmount = 0;
         $totalDebitAmount = 0;
+        $totalsupplierCredit = 0;
 
         // Vendor Detail
         $vendor = Vendor::find($document->vendor_id);
@@ -6463,23 +6464,24 @@ class FinancialPostingHelper
 
             //SUPPLIER ACCOUNT
             $supplierCrAmount = ($itemValueAfterDiscount + $rejectedValue);
-            $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingVendorLedger) > 0) {
-                $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $supplierCrAmount;
-            } else { //Assign new ledger
-                array_push($postingArray[self::SUPPLIER_ACCOUNT], [
-                    'ledger_id' => $vendorLedgerId,
-                    'ledger_group_id' => $vendorLedgerGroupId,
-                    'ledger_code' => $vendorLedger?->code,
-                    'ledger_name' => $vendorLedger?->name,
-                    'ledger_group_code' => $vendorLedgerGroup?->name,
-                    'credit_amount' => $supplierCrAmount,
-                    'debit_amount' => 0,
-                ]);
-            }
+            // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+            //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingVendorLedger) > 0) {
+            //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $supplierCrAmount;
+            // } else { //Assign new ledger
+            //     array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+            //         'ledger_id' => $vendorLedgerId,
+            //         'ledger_group_id' => $vendorLedgerGroupId,
+            //         'ledger_code' => $vendorLedger?->code,
+            //         'ledger_name' => $vendorLedger?->name,
+            //         'ledger_group_code' => $vendorLedgerGroup?->name,
+            //         'credit_amount' => $supplierCrAmount,
+            //         'debit_amount' => 0,
+            //     ]);
+            // }
+            $totalsupplierCredit += $supplierCrAmount;
         }
 
         //TAXES ACCOUNT
@@ -6512,23 +6514,24 @@ class FinancialPostingHelper
                 ]);
             }
             //Tax for SUPPLIER ACCOUNT
-            $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingVendorLedger) > 0) {
-                $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
-            } else { //Assign new ledger
-                array_push($postingArray[self::SUPPLIER_ACCOUNT], [
-                    'ledger_id' => $vendorLedgerId,
-                    'ledger_group_id' => $vendorLedgerGroupId,
-                    'ledger_code' => $vendorLedger?->code,
-                    'ledger_name' => $vendorLedger?->name,
-                    'ledger_group_code' => $vendorLedgerGroup?->name,
-                    'credit_amount' => $tax->ted_amount,
-                    'debit_amount' => 0,
-                ]);
-            }
+            // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+            //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingVendorLedger) > 0) {
+            //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $tax->ted_amount;
+            // } else { //Assign new ledger
+            //     array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+            //         'ledger_id' => $vendorLedgerId,
+            //         'ledger_group_id' => $vendorLedgerGroupId,
+            //         'ledger_code' => $vendorLedger?->code,
+            //         'ledger_name' => $vendorLedger?->name,
+            //         'ledger_group_code' => $vendorLedgerGroup?->name,
+            //         'credit_amount' => $tax->ted_amount,
+            //         'debit_amount' => 0,
+            //     ]);
+            // }
+            $totalsupplierCredit += $tax->ted_amount;
         }
         //EXPENSES
         $expenses = PbTed::where('header_id', $document->id)->where('ted_type', "Expense")->get();
@@ -6560,23 +6563,24 @@ class FinancialPostingHelper
                 ]);
             }
             //Expense for SUPPLIER ACCOUNT
-            $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
-                return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
-            });
-            //Ledger found
-            if (count($existingVendorLedger) > 0) {
-                $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $expense->ted_amount;
-            } else { //Assign new ledger
-                array_push($postingArray[self::EXPENSE_ACCOUNT], [
-                    'ledger_id' => $vendorLedgerId,
-                    'ledger_group_id' => $vendorLedgerGroupId,
-                    'ledger_code' => $vendorLedger?->code,
-                    'ledger_name' => $vendorLedger?->name,
-                    'ledger_group_code' => $vendorLedgerGroup?->name,
-                    'credit_amount' => $expense->ted_amount,
-                    'debit_amount' => 0,
-                ]);
-            }
+            // $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId) {
+            //     return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId;
+            // });
+            // //Ledger found
+            // if (count($existingVendorLedger) > 0) {
+            //     $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $expense->ted_amount;
+            // } else { //Assign new ledger
+            //     array_push($postingArray[self::EXPENSE_ACCOUNT], [
+            //         'ledger_id' => $vendorLedgerId,
+            //         'ledger_group_id' => $vendorLedgerGroupId,
+            //         'ledger_code' => $vendorLedger?->code,
+            //         'ledger_name' => $vendorLedger?->name,
+            //         'ledger_group_code' => $vendorLedgerGroup?->name,
+            //         'credit_amount' => $expense->ted_amount,
+            //         'debit_amount' => 0,
+            //     ]);
+            // }
+            $totalsupplierCredit += $expense->ted_amount;
         }
         //Seperate posting of Discount
         if ($discountSeperatePosting) {
@@ -6606,6 +6610,34 @@ class FinancialPostingHelper
                         'ledger_group_code' => $discountLedgerGroup?->name,
                         'debit_amount' => 0,
                         'credit_amount' => $discount->ted_amount,
+                    ]);
+                }
+            }
+        }
+
+        //Break Supplier Account according to payment terms schedule - due date wise
+        $invoicePaymentTerms = $document->payment_term_schedules()
+            ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
+        if ($invoicePaymentTerms && count($invoicePaymentTerms)) {
+            foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
+                $currentAmount = $totalsupplierCredit * ($invoicePaymentTerm->total_percentage / 100);
+                //Check for same ledger and group in SUPPLIER ACCOUNT
+                $existingVendorLedger = array_filter($postingArray[self::SUPPLIER_ACCOUNT], function ($posting) use ($vendorLedgerId, $vendorLedgerGroupId, $invoicePaymentTerm) {
+                    return $posting['ledger_id'] == $vendorLedgerId && $posting['ledger_group_id'] === $vendorLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm->due_date;
+                });
+                //Ledger found
+                if (count($existingVendorLedger) > 0) {
+                    $postingArray[self::SUPPLIER_ACCOUNT][0]['credit_amount'] += $currentAmount;
+                } else { //Assign a new ledger
+                    array_push($postingArray[self::SUPPLIER_ACCOUNT], [
+                        'ledger_id' => $vendorLedgerId,
+                        'ledger_group_id' => $vendorLedgerGroupId,
+                        'ledger_code' => $vendorLedger?->code,
+                        'ledger_name' => $vendorLedger?->name,
+                        'ledger_group_code' => $vendorLedgerGroup?->name,
+                        'debit_amount' => 0,
+                        'credit_amount' => $currentAmount,
+                        'due_date' => $invoicePaymentTerm->due_date,
                     ]);
                 }
             }

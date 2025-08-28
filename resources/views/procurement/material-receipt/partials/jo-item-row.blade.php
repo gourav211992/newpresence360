@@ -53,7 +53,7 @@
             'estimated_life'      => $asset->estimated_life ?? ($item?->item?->expected_life ?? ''),
             'salvage_percentage'  => $item?->item?->getSalvagePercentage() ?? 0,
             'salvage_value'       => $asset->salvage_value ?? null,
-            'procurement_type'    => $procurementType ?? null,
+            'procurement_type'    => $item?->jo?->procurement_type ?? null,
             'capitalization_date' => now()->toDateString(),
         ];
     @endphp

@@ -564,20 +564,20 @@ function setTableCalculation() {
             .attr('style', totalAfterTax < 0 ? 'color: red !important;' : '');
 
         /*Bind header Expenses*/
-        if($(".display_summary_exp_row").find("[name*='[e_perc]']").length && totalAfterTax) {
-            $(".display_summary_exp_row").find("[name*='[e_perc]']").each(function(index,eachItem) {
+        if($(".display_summary_exp_row").find("[name*='[total]']").length && totalAfterTax) {
+            $(".display_summary_exp_row").find("[name*='[total]']").each(function(index,eachItem) {
                 let eachExpTypePrice = 0;
-                let hiddenPerc = Number($(`[name="exp_summary[${index+1}][hidden_e_perc]"]`).val()) || 0;
+                let hiddenPerc = Number($(`[name="exp_summary[${index+1}][total]"]`).val()) || 0;
                 let expDiscPerc = hiddenPerc || Number($(eachItem).val());
                 if(expDiscPerc) {
-                    eachExpTypePrice = (totalAfterTax * expDiscPerc) / 100;
+                    eachExpTypePrice = expDiscPerc;
                     // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                    $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
+                    $(`[name="exp_summary[${index+1}][total]"]`).closest('td').html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][e_amnt]">
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][total]">
                     `);
                 } else {
-                    eachExpTypePrice = Number($(`[name="exp_summary[${index+1}][e_amnt]"]`).val()) || 0;
+                    eachExpTypePrice = Number($(`[name="exp_summary[${index+1}][total]"]`).val()) || 0;
                 }
                 totalHeaderExp += eachExpTypePrice;
             });
@@ -586,9 +586,9 @@ function setTableCalculation() {
                 let eachExpTypePrice = 0;
                 // let expDiscPerc = Number($(eachItem).val());
                 // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
+                $(`[name="exp_summary[${index+1}][total]"]`).closest('td').html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][e_amnt]">
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][total]">
                     `);
                 totalHeaderExp += eachExpTypePrice;
             });
@@ -801,18 +801,31 @@ $(document).on('click', '.deleteExpRow', (e) => {
 // summaryExpSubmit
 $(document).on('click', '.summaryExpSubmit', (e) => {
     $("#summaryExpenModal").modal('hide');
-    return false;
-    // setTableCalculation();
+    // return false;
+    setTableCalculation();
 });
 
 function summaryExpTotal()
 {
-    let total = 0.00;
-    $(".display_summary_exp_row [name*='e_amnt']").each(function(index, item) {
-        total = total + Number($(item).val());
+    let expenseTotal = 0.0;
+    let taxTotal = 0.0;
+    let grandTotal = 0.0;
+
+    $(".display_summary_exp_row").each(function () {
+        let eAmount = parseFloat($(this).find("[name*='e_amnt']").val()) || 0;
+        let tAmount =
+            parseFloat($(this).find("[name*='tax_amount']").val()) || 0;
+        let total = parseFloat($(this).find("[name*='total']").val()) || 0;
+
+        expenseTotal += eAmount;
+        taxTotal += tAmount;
+        grandTotal += total;
     });
-    $("#expSummaryFooter #total").attr('amount', total);
-    $("#expSummaryFooter #total").text(total.toFixed(2));
+
+    // Update footer
+    $("#expSummaryFooter #expTotal").text(expenseTotal.toFixed(2));
+    $("#expSummaryFooter #taxTotal").text(taxTotal.toFixed(2));
+    $("#expSummaryFooter #grandTotal").text(grandTotal.toFixed(2));
 }
 
 $(document).on('input change', '#itemTable input', (e) => {
@@ -1186,9 +1199,12 @@ $(document).on('click', '#add_new_head_exp', (e) => {
         </td>
         <td class="text-end">${new_exp_perc}
             <input type="hidden" value="${new_exp_perc}" name="exp_summary[${tbl_row_count}][e_perc]" />
+            <input type="hidden" name="exp_summary[${tbl_row_count}][e_purch_id]" value="">
+            <input type="hidden" name="exp_summary[${tbl_row_count}][e_job_id]" value="">
+            <input type="hidden" name="exp_summary[${tbl_row_count}][e_ref_type]" value="">
         </td>
         <td class="text-end">${new_exp_value}
-        <input type="hidden" value="${new_exp_value}" name="exp_summary[${tbl_row_count}][e_amnt]" />
+            <input type="hidden" value="${new_exp_value}" name="exp_summary[${tbl_row_count}][e_amnt]" />
         </td>
         <td>
             <a href="javascript:;" class="text-danger deleteExpRow">
@@ -1428,4 +1444,24 @@ function itemCodeEnabledDisabled() {
     $("tr[id*='row_']").each(function() {
         $(this).find("input[type='text'][name^='component_item_name']").attr('readonly', true);
     });
+}
+
+// Tax breakup Format
+function formatTaxBreakup(breakupJson) {
+    let html = "";
+    try {
+        const breakup = JSON.parse(breakupJson);
+        breakup.forEach((group) => {
+            if (group.taxes) {
+                group.taxes.forEach((tax) => {
+                    html += `${tax.tax_code ?? ""} (${
+                        tax.tax_percent ?? 0
+                    }%) : ${parseFloat(tax.tax_amount ?? 0).toFixed(2)}<br>`;
+                });
+            }
+        });
+    } catch (e) {
+        console.error("Invalid tax breakup JSON", e);
+    }
+    return html;
 }

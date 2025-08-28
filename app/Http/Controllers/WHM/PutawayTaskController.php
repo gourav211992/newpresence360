@@ -4,12 +4,14 @@ namespace App\Http\Controllers\WHM;
 
 use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\UnloadingResource;
 use App\Models\Item;
 use App\Models\MrnBatchDetail;
+use App\Models\MrnHeader;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -270,6 +272,7 @@ class PutawayTaskController extends Controller
         $validator = Validator::make($request->all(),[
             'job_id' => ['required'],
             'putaway_item_id' => ['nullable'],
+            'status' => ['nullable'],
         ],[
             'job_id.required' => 'Job id is required',
             'putaway_item_id.required' => 'Putaway item id is required',
@@ -278,6 +281,8 @@ class PutawayTaskController extends Controller
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
+
+        $status = $request->status;
 
         // custom validation after
         $job = ErpWhmJob::where('type', CommonHelper::PUTAWAY)->where('id',$request->job_id)->first();
@@ -297,8 +302,11 @@ class PutawayTaskController extends Controller
         ->when($putawayItemId, function ($q) use ($putawayItemId) {
             $q->where('morphable_id', $putawayItemId);
         })
+        ->when($status, function ($query) use ($status) {
+            $query->where('status', $status);
+        })
         ->where('job_type', CommonHelper::PUTAWAY)
-        ->whereIn('status',[CommonHelper::PENDING,CommonHelper::SCANNED])
+        // ->whereIn('status',[CommonHelper::PENDING,CommonHelper::SCANNED])
         ->select('uid','job_id','morphable_id as putaway_item_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id','batch_number','manufacturing_year','expiry_date','serial_no')
         ->get();
 
@@ -599,6 +607,12 @@ class PutawayTaskController extends Controller
             // Update stock ledger qty
             if($job->status == CommonHelper::CLOSED){
                 $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
+
+                if($job->trns_type == ConstantHelper::INSPECTION_SERVICE_ALIAS){
+                    $header = $header->mrn;    
+                    $detailIds = $header->items()->where('is_inspection',1)->pluck('id')->unique()->toArray();;        
+                }
+
                 StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL);
             }
 

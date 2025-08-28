@@ -65,6 +65,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('kaizen')
                 ->namespace('App\Http\Controllers\Kaizen')
                 ->group(base_path('routes/kaizen.php'));
+            
+            Route::middleware(['web'])
+                ->prefix('report')
+                ->namespace('App\Http\Controllers\Report')
+                ->group(base_path('routes/report.php'));
         });
     }
 }

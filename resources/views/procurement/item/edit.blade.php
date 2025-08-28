@@ -218,10 +218,19 @@
                                                             </div>
 
                                                             {{-- Asset Checkbox --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_asset" value="0">
                                                                 <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }} {{ $isItemReferenced  ? 'disabled' : '' }}>
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
+                                                            </div>
+
+                                                            {{-- Scrap Checkbox --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
+                                                                <input type="hidden" name="is_scrap" value="0">
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1" 
+                                                                    {{ isset($item) && $item->is_scrap ? 'checked' : '' }} 
+                                                                    {{ $isItemReferenced ? 'disabled' : '' }}>
+                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
                                                             </div>
                                                     </div>
                                                 </div>
@@ -2414,20 +2423,29 @@
             const assetChecked = $('#subType5').is(':checked');
             const expenseChecked = $('#subType6').is(':checked');
             const rawTradeChecked = $('#subType4').is(':checked');
+            const scrapChecked = $('input[name="is_scrap"]').is(':checked'); 
             $('#subType2').prop('disabled', rawMaterialChecked || finishedGoodsChecked || rawTradeChecked);
             $('#subType3').prop('disabled', rawMaterialChecked || wipChecked || rawTradeChecked);
             $('#subType1').prop('disabled', wipChecked || finishedGoodsChecked || rawTradeChecked);
             $('#subType5').prop('disabled', expenseChecked || rawMaterialChecked || rawTradeChecked);
             $('#subType6').prop('disabled', assetChecked || rawMaterialChecked || rawTradeChecked);
             $('#subType4').prop('disabled', rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked);
-            if (rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked || rawTradeChecked) {
-                checkboxes.not(':checked').not($('input[name="is_traded_item"]')).not($('input[name="is_asset"]')).prop('disabled', true);
+             if (scrapChecked) {
+                $('.subTypeCheckbox').not('input[name="is_scrap"]').prop('disabled', true).prop('checked', false);
+                $('input[name="is_scrap"]').prop('disabled', false);
+            } else if (rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked || rawTradeChecked) {
+                $('input[name="is_scrap"]').prop('disabled', true);
+                checkboxes.not(':checked')
+                    .not('input[name="is_traded_item"], input[name="is_asset"]')
+                    .prop('disabled', true);
+            } else {
+                checkboxes.prop('disabled', false);
+                $('input[name="is_scrap"]').prop('disabled', false);
             }
            const status = document.getElementById('documentStatus')?.value;
             if (isItemReferenced) {
                 checkboxes.prop('disabled', true);
-                $('input[name="is_traded_item"]').prop('disabled', true);
-                $('input[name="is_asset"]').prop('disabled', true);
+                $('input[name="is_traded_item"], input[name="is_asset"], input[name="is_scrap"]').prop('disabled', true);
             }
             $('a[href="#UOM"]').removeClass('d-none').css('display', '');
             $('a[href="#Details"]').removeClass('d-none').css('display', '');
@@ -2442,6 +2460,7 @@
             
             $('input[name="is_traded_item"]').prop('checked', false).prop('disabled', true);
             $('input[name="is_asset"]').prop('checked', false).prop('disabled', true);
+            $('input[name="is_scrap"]').prop('checked', false).prop('disabled', true);
             $('a[href="#UOM"]').addClass('d-none');
             $('a[href="#Details"]').addClass('d-none');
             $('a[href="#Assets"]').addClass('d-none');
@@ -2613,6 +2632,7 @@
                 let hasExpense = false;
                 let hasAsset = $('#assetCheckbox').is(':checked');
                 let hasTradedItem = $('#tradedItemCheckbox').is(':checked');
+                let hasScrap = $('#scrapCheckbox').is(':checked');
                 subTypeCheckboxes.each(function() {
                     if ($(this).is(':checked')) {
                         const label = $(this).next().text().trim();
@@ -2628,6 +2648,7 @@
                 if (hasFinishedGoods) return 'FG';
                 if (hasWIP) return 'SF';
                 if (hasExpense) return 'EX';
+                if (hasScrap) return 'SC'; 
                 if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
                 if (hasAsset && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
                 if (hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'TR';
@@ -3060,7 +3081,7 @@
         }
 
        if (currentType === 'Service') {
-            ['sub_types[]', 'is_traded_item', 'is_asset'].forEach(name => {
+            ['sub_types[]', 'is_traded_item', 'is_asset','is_scrap'].forEach(name => {
                 document.querySelectorAll(`[name="${name}"]`).forEach(field => {
                     field.disabled = true;
                     field.readOnly = true;

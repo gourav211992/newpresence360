@@ -196,6 +196,13 @@
                                 Delivery Address:
                             </td>
                         </tr>
+                        @if ($po?->consignee_name)
+                        <tr>
+                            <td style="padding-top: 3px;">
+                                {{@$po->consignee_name}}
+                            </td>
+                        </tr>
+                        @endif
                         <tr>
                             <td style="padding-top: 3px;">
                                 {{@$buyerAddress->address}}
@@ -315,10 +322,10 @@
                             $taxableValue = $ted -> assessment_amount;
                             $taxTypeAmount = ($taxableValue * $ted->ted_perc) / 100;
 
-                            $key = (string) $hsnCode;
+                            $key2 = (string) $hsnCode;
 
-                            if (!isset($hsnGroups[$key])) {
-                                $hsnGroups[$key] = [
+                            if (!isset($hsnGroups[$key2])) {
+                                $hsnGroups[$key2] = [
                                     'hsn_code' => $hsnCode,
                                     'taxable_rate' => $taxPercentage,
                                     'taxable_value' => 0.00,
@@ -343,8 +350,8 @@
                     // Now, calculate total tax_amount for each HSN group
                     foreach ($hsnGroups as &$group) {
                         $taxAmount = 0.00;
-                        foreach ($group as $key => $value) {
-                            if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
+                        foreach ($group as $key2 => $value) {
+                            if (str_ends_with($key2, '_amount') && $key2 !== 'tax_amount') {
                                 $taxAmount += (float)$value;
                             }
                         }
@@ -600,6 +607,11 @@
                             <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
                             <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
                         </tr>
+                        @php
+                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",[$hsnGroups]);
+                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                        @endphp
                         @foreach($hsnGroups as $hsnCode => $hsnData)
                             <tr>
                                 <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>

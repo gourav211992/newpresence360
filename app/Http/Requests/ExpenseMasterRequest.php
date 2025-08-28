@@ -78,7 +78,7 @@ class ExpenseMasterRequest extends FormRequest
                 'max:100',
             ],
             'hsn_id' => [
-                'required',
+                'nullable',
                 'exists:erp_hsns,id',
             ],
             'expense_ledger_id' => [

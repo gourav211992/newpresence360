@@ -48,6 +48,7 @@ class PoRequest extends FormRequest
             'currency_id' => 'required',
             'payment_term_id' => 'required',
             'store_id' => 'required',
+            'consignee_name' => 'nullable|max:90',
             'procurement_type' => 'required|in:' . implode(',', $poProcurementTypes),
         ];
 
@@ -188,15 +189,15 @@ class PoRequest extends FormRequest
                 if ($poItem) {
                     $inputQty = floatval($component['qty']) ?? 0;
                     if ($inputQty < floatval($poItem->grn_qty)) {
-                        $validator->errors()->add("components.$key.qty", "Quantity can't be less than GRN.");
+                        $validator->errors()->add("components.$key.qty", "Qty. can't be less than $poItem->grn_qty GRN qt.");
                     }
 
                     if ($inputQty < floatval($poItem->ge_qty)) {
-                        $validator->errors()->add("components.$key.qty", "Quantity can't be less than Gate Entry.");
+                        $validator->errors()->add("components.$key.qty", "Qty. can't be less than $poItem->ge_qty Gate qt Entry.");
                     }
 
                     if ($inputQty < floatval($poItem->asn_qty)) {
-                        $validator->errors()->add("components.$key.qty", "Quantity can't be less than ASN.");
+                        $validator->errors()->add("components.$key.qty", "Qty. can't be less than $poItem->asn_qty ASN qt.");
                     }
                 }
 

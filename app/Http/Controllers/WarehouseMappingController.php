@@ -479,11 +479,18 @@ class WarehouseMappingController extends Controller
             ->first();
 
         $whDetails = WhDetail::whereHas('store')->with(
-            ['whLevel', 'parent', 'store', 'sub_store']
-        )->where('store_id', $id)
-            ->where('sub_store_id', $request->sub_store)
-            ->where('wh_level_id', $request->wh_level)
-            ->get();
+            [
+                'whLevel', 
+                'parent', 
+                'store', 
+                'sub_store'
+            ]
+        )
+        ->where('store_id', $id)
+        ->where('sub_store_id', $request->sub_store)
+        ->where('wh_level_id', $request->wh_level)
+        ->where('is_storage_point', 1)
+        ->get();
 
         return view('procurement.warehouse-structure.mapping.get-barcodes', [
             'level' => $level,
@@ -493,17 +500,25 @@ class WarehouseMappingController extends Controller
     }
 
     # WM Print Labels
-    public function printBarcodes(Request $request, $id)
+    public function printBarcodes(Request $request)
     {
+        
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
 
-        $whDetails = WhDetail::whereHas('store')->with(
-            ['whLevel', 'parent', 'store', 'sub_store']
-        )->where('store_id', $id)
-            ->where('sub_store_id', $request->sub_store)
-            ->where('wh_level_id', $request->wh_level)
-            ->get();
+        $whDetails = WhDetail::whereHas('store')
+        ->with(
+            [
+                'whLevel', 
+                'parent', 
+                'store', 
+                'sub_store'
+            ]
+        )
+        ->where('sub_store_id', $request->sub_store)
+        ->where('wh_level_id', operator: $request->wh_level)
+        ->whereIn('id', (array) $request->ids ?? [])
+        ->get();
 
         $html = view('procurement.warehouse-structure.mapping.print-barcodes', compact('whDetails'))->render();
 

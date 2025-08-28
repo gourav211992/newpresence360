@@ -57,6 +57,7 @@ class ItemHistory extends Model
         'inspection_checklist_id',
         'is_traded_item',
         'is_asset',
+        'is_scrap',
         'asset_category_id',
         'expected_life',
         'maintenance_schedule',

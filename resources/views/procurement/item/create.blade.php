@@ -147,10 +147,17 @@
                                                             </div>
 
                                                             {{-- Asset --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_asset" value="0">
                                                                 <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1">
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
+                                                            </div>
+
+                                                            {{-- Scrap --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
+                                                                <input type="hidden" name="is_scrap" value="0">
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1">
+                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1685,6 +1692,11 @@
             const assetChecked = $('#subType5').is(':checked');
             const expenseChecked = $('#subType6').is(':checked');
             const rawTradeChecked = $('#subType4').is(':checked');
+            const isScrapChecked = $('#scrapCheckbox').is(':checked');
+            if (isScrapChecked) {
+                $('.subTypeCheckbox').not('#scrapCheckbox').prop('checked', false).prop('disabled', true);
+                return; 
+            }
             $('#subType2').prop('disabled', rawMaterialChecked || finishedGoodsChecked || rawTradeChecked);
             $('#subType3').prop('disabled', rawMaterialChecked || wipChecked || rawTradeChecked);
             $('#subType1').prop('disabled', wipChecked || finishedGoodsChecked || rawTradeChecked);
@@ -1718,7 +1730,7 @@
             $('#Details').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Attributes').addClass('d-none');
-            ('#Assets').addClass('d-none');
+            $('#Assets').addClass('d-none');
             ['#UOM', '#Details', '#Attributes','#Assets'].forEach(function (selector) {
                 $(selector).addClass('d-none').find('input, select, textarea').each(function () {
                     const $input = $(this);
@@ -1729,6 +1741,7 @@
         }
         function handleCheckboxChange() {
             const selectedType = typeRadios.filter(':checked').val();
+             const isScrapChecked = $('#scrapCheckbox').is(':checked');
             if (selectedType === 'Goods') {
                 $('#item_code_label').text('Item Code');
                 $('#item_name_label').text('Item Name');
@@ -1854,6 +1867,7 @@ $(document).ready(function() {
             let hasExpense = false;
             let hasAsset = $('#assetCheckbox').is(':checked');
             let hasTradedItem = $('#tradedItemCheckbox').is(':checked');
+            let hasScrap = $('#scrapCheckbox').is(':checked');
             subTypeCheckboxes.each(function() {
                 if ($(this).is(':checked')) {
                     const label = $(this).next().text().trim();
@@ -1870,7 +1884,8 @@ $(document).ready(function() {
             if (hasFinishedGoods) return 'FG';
             if (hasWIP) return 'SF';
             if (hasExpense) return 'EX';
-            if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS'; // Prioritize Asset if both are checked
+            if (hasScrap) return 'SC'; 
+            if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
             if (hasAsset && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
             if (hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'TR';
         return '';
@@ -1930,6 +1945,9 @@ $(document).ready(function() {
     if (itemCodeType === 'Auto') {
         generateItemCode(); 
     }
+    typeRadios.change(function() {
+        generateItemCode();
+    });
     itemInitialInput.on('input', function() {
     let value = $(this).val().toUpperCase();
     if (value.length > 3) {

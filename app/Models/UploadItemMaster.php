@@ -42,6 +42,7 @@ class UploadItemMaster extends Model
         'sub_type',
         'is_traded_item',
         'is_asset',
+        'is_scrap',
         'asset_category_id',
         'brand_name',
         'model_no',

@@ -52,6 +52,29 @@
                                             <div class="col-md-9">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
+                                                        <label for="organization_id" class="form-label">
+                                                            Organization <span class="text-danger">*</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                       <select id="organization_id" 
+                                                            name="organization_id[]" 
+                                                            class="form-control select select2" 
+                                                            multiple>
+                                                        <option disabled hidden>-- Select Organization(s) --</option>
+                                                        @foreach($allOrganizations as $org)
+                                                            @if($org->id > 0) {{-- Only show organizations with valid IDs --}}
+                                                                <option value="{{ $org->id }}"
+                                                                    @if(collect(old('organization_id', $selectedOrgIds))->contains($org->id)) selected @endif>
+                                                                    {{ $org->name }}
+                                                                </option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Bank Name <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">

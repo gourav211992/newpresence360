@@ -4342,10 +4342,11 @@ function avlStock(indexId){
     const store_id=$("#store_id_input").val();
     const sub_store_id=$("#sub_store_id").val();
     const station_id=$("#mo_station_id").val();
-    const rm_type=$("items_type_"+indexId).val();
+    const rm_type=$("#items_type_"+indexId).val();
     const so_item_id=lastNumber;
     const item_id=tr.find('[name*="[item_id]"]').val();
-    const uom_id=$("uom_dropdown_"+indexId).val();;
+    const uom_id=$("#uom_dropdown_"+indexId).val();
+    const mo_bom_mapping_co_id=tr.attr('data-id');
 
         $.ajax({
             url: "{{ route('production.slip.avlStock') }}",
@@ -4357,6 +4358,7 @@ function avlStock(indexId){
                 uom_id: uom_id,
                 store_id: store_id,
                 attributes:attributes,
+                mo_bom_mapping_id:mo_bom_mapping_co_id,
                 sub_store_id:sub_store_id,
                 rm_type:rm_type,
             },

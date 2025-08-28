@@ -6,6 +6,7 @@ use App\Exceptions\ApiGenericException;
 use App\Helpers\Configuration\Constants;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\Common\MathHelper;
 
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
@@ -1288,7 +1289,8 @@ class ErpProductionSlipController extends Controller
         // }
         if(!empty($issueRecords['data'])){
             foreach($issueRecords['data'] as $key => $val){
-                $pslipConsumption = PslipBomConsumption::where('id',@$val->issuedBy->document_detail_id)->first();
+
+                // $pslipConsumption = PslipBomConsumption::where('id',@$val->issuedBy->document_detail_id)->first();
                 // $qty = ItemHelper::convertToAltUom($val->issuedBy->item_id, $pslipConsumption?->uom_id, $val->issuedBy->issue_qty);
                 $qty = $val->issuedBy->issue_qty;
                 PslipConsumptionLocation::create([
@@ -1319,7 +1321,8 @@ class ErpProductionSlipController extends Controller
             foreach($stockLedgers as $stockLedger) {
                 // $a = PslipBomConsumption::where('id',$stockLedger?->document_detail_id)->first();
                 $psConsumption = PslipBomConsumption::find($stockLedger->document_detail_id);
-                $psConsumption->rate = floatval($stockLedger->cost) / floatval($psConsumption->consumption_qty);
+                // $psConsumption->rate = floatval($stockLedger->cost) / floatval($psConsumption->consumption_qty);
+                $psConsumption->rate = MathHelper::safeDivide(floatval($stockLedger->cost), $psConsumption->consumption_qty, 0);
                 $psConsumption->save();
             }
             // return 'Success';
@@ -1570,14 +1573,28 @@ class ErpProductionSlipController extends Controller
         $storeId = $request->store_id ?? null;
         $subStoreId = $request->sub_store_id ?? null;
         $stationId = $request->station_id ?? null;
+        $uom_id = $request->uom_id ?? null;
+        $moBomMappingId = $request->mo_bom_mapping_id;
+        $moBomMapping = MoBomMapping::find($moBomMappingId);
         $rm_type = 'R';
         $itemWipStationId = null;
-        if($request->rm_type =='sf') {
+        if($moBomMapping->rm_type =='sf') {
             $rm_type = 'W';
-            $itemWipStationId = $request->station_id;
+            $itemWipStationId = $moBomMapping->station_id;
         }
         $soItemId = null;
-        $stocks = InventoryHelper::totalInventoryAndStock($request->item_id, $itemAttributes, $request->uom_id, $storeId,$subStoreId,$soItemId,$stationId, $rm_type, $itemWipStationId);
+        $stocks = InventoryHelper::totalInventoryAndStock(
+            $request->item_id, 
+            $itemAttributes, 
+            $uom_id, 
+            $storeId,
+            $subStoreId,
+            $soItemId,
+            $stationId, 
+            $rm_type, 
+            $itemWipStationId
+        );
+
         $stockBalanceQty = 0;
         if (isset($stocks)) {
             $stockBalanceQty = $stocks['confirmedStocks'] - $stocks['reservedStocks'];

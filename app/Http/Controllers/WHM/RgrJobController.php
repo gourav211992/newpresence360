@@ -21,20 +21,21 @@ use App\Helpers\ConstantHelper;
 
 class RgrJobController extends Controller
 {
-    public function getRgrDetails($store_id)
+   public function getRgrDetails($store_id)
     {
         if (!is_numeric($store_id)) {
-            return response()->json(['error' => 'Invalid store_id provided.'], 400);
+            return response()->json(['message' => 'Invalid store_id provided.'], 400);
         }
 
         $storeExists = ErpStore::where('id', $store_id)->exists();
         if (!$storeExists) {
-            return response()->json(['error' => 'Store does not exist.'], 404);
+            return response()->json(['message' => 'Store does not exist.'], 404);
         }
 
         $rgrs = ErpRgr::with(['items', 'job.itemUniqueCodes'])
             ->whereHas('job', function ($query) use ($store_id) {
-                $query->where('store_id', $store_id);
+                $query->where('store_id', $store_id)
+                    ->where('status', '!=', 'closed'); 
             })
             ->orderBy('id','desc')
             ->paginate(CommonHelper::PAGE_LENGTH_10);
@@ -43,16 +44,16 @@ class RgrJobController extends Controller
             $job = $rgr->job;
 
             return [
-                'document_no' => $rgr->document_number ?? null,
-                'trip_no'     => $rgr->trip_no ?? null,
-                'vehicle_no'  => $rgr->vehicle_no ?? null,
-                'store_name'  => $rgr->store_name ?? null,
+                'document_no' => $rgr->document_number ?? "",
+                'trip_no'     => $rgr->trip_no ?? "",
+                'vehicle_no'  => $rgr->vehicle_no ?? "",
+                'store_name'  => $rgr->store_name ?? "",
                 'total_items' => $rgr->items->count(),
                 'job' => $job ? [
                     'total_packets' => $job->itemUniqueCodes->count(),
-                    'job_status'    => $job->status,
-                    'created_at'    => optional($job->created_at)->format('Y-m-d'),
-                ] : null,
+                    'job_status'    => $job->status ?? "",
+                    'created_at'    => $job->created_at ? $job->created_at->format('Y-m-d') : "",
+                ] : [],
             ];
         });
 
@@ -75,7 +76,7 @@ class RgrJobController extends Controller
    public function getRgrByJob($job_id)
     {
         if (!is_numeric($job_id)) {
-            return response()->json(['error' => 'Invalid job_id provided.'], 400);
+            return response()->json(['message' => 'Invalid job_id provided.'], 400);
         }
 
         $job = ErpWhmJob::with('morphable')->find($job_id);
@@ -87,9 +88,16 @@ class RgrJobController extends Controller
             ], 200);
         }
 
+        if ($job->status === 'closed') {  
+            return response()->json([
+                'message' => 'This job is closed.',
+                'data' => []
+            ], 200);
+        }
+
         if (!$job->morphable instanceof ErpRgr) {
             return response()->json([
-                'message' => 'The related record is not an RGR.',
+                'message' => 'No RGR found for this job.',
                 'data' => []
             ], 200);
         }
@@ -97,12 +105,11 @@ class RgrJobController extends Controller
         $rgr = $job->morphable;
 
         $data = [
-            'document_no' => $rgr->document_number,
-            'trip_no'     => $rgr->trip_no,
-            'vehicle_no'  => $rgr->vehicle_no,
+            'document_no' => $rgr->document_number ?? "",
+            'trip_no'     => $rgr->trip_no ?? "",
+            'vehicle_no'  => $rgr->vehicle_no ?? "",
             'total_item'  => $job->itemUniqueCodes->count(),
         ];
-
 
         $scannedItems = ErpItemUniqueCode::where('job_id', $job_id)
             ->where('status', 'scanned')
@@ -114,19 +121,19 @@ class RgrJobController extends Controller
 
             if ($uniqueCode->item_attributes) {
                 if (is_string($uniqueCode->item_attributes)) {
-                    $attributes = json_decode($uniqueCode->item_attributes, true);
+                    $attributes = json_decode($uniqueCode->item_attributes, true) ?? [];
                 } elseif (is_array($uniqueCode->item_attributes)) {
                     $attributes = $uniqueCode->item_attributes;
                 }
             }
 
             return [
-                'item_id'    => $uniqueCode->item_id,
-                'item_code'  => $uniqueCode->item_code,
-                'item_name'  => $uniqueCode->item_name,
+                'item_id'    => $uniqueCode->item_id ?? "",
+                'item_code'  => $uniqueCode->item_code ?? "",
+                'item_name'  => $uniqueCode->item_name ?? "",
                 'attributes' => $attributes,
-                'uid'        => $uniqueCode->uid,
-                'status'     => $uniqueCode->status,
+                'uid'        => $uniqueCode->uid ?? "",
+                'status'     => $uniqueCode->status ?? "",
             ];
         });
 
@@ -149,29 +156,29 @@ class RgrJobController extends Controller
             'data' => $responseData
         ], 200);
     }
-    public function getDefectSeverity()
+  public function getDefectSeverity()
     {
         return response()->json([
-            'data' => ConstantHelper::DEFECT_SEVERITY_LEVELS
+            'message' => 'Data retrieved successfully.',
+            'data'    => ConstantHelper::DEFECT_SEVERITY_LEVELS
+        ], 200);
+    }
+   public function getDamageNatureOptions()
+    {
+        return response()->json([
+            'message' => 'Data retrieved successfully.',
+            'data'    => ConstantHelper::DAMAGE_NATURES
         ], 200);
     }
 
-    //Damage nature list
-    public function getDamageNatureOptions()
-    {
-        return response()->json([
-            'data' => ConstantHelper::DAMAGE_NATURES
-        ], 200);
-    }
-
-   public function getDefectTypes(string $severity, int $itemId)
+  public function getDefectTypes(string $severity, int $itemId)
     {
         $severity = ucfirst(strtolower($severity)); 
 
         $item = Item::find($itemId);
         if (!$item) {
             return response()->json([
-                'error' => 'Invalid item ID',
+                'error'   => 'Invalid item ID',
                 'message' => 'The provided item ID does not exist.'
             ], 400);
         }
@@ -182,19 +189,27 @@ class RgrJobController extends Controller
             ->where('defect_severity', $severity)
             ->first();
 
+
+        if (!$defectType) {
+            $defectType = ErpRgrDefectType::whereNull('category_id')
+                ->where('defect_severity', $severity)
+                ->first();
+        }
+
         if (!$defectType) {
             return response()->json([
-                'data' => [],
+                'data'    => [],
                 'message' => 'No matching defect type found for this category and severity.',
             ]);
         }
 
-        $reasons = ErpRgrDefectTypeDetail::select('id', 'type')->where('header_id', $defectType->id)
+        $reasons = ErpRgrDefectTypeDetail::select('id', 'type')
+            ->where('header_id', $defectType->id)
             ->get();
 
         return response()->json([
             'message' => 'Successfully retrieved defect reasons.',
-            'data' => $reasons,
+            'data'    => $reasons,
         ]);
     }
 
@@ -318,7 +333,7 @@ class RgrJobController extends Controller
         }
 
         return response()->json([
-            'message' => 'Item retrieved successfully.',
+            'message' => 'Data retrieved successfully.',
             'data' => [
                 'id'         => $uniqueItem->id,
                 'item_code'  => $uniqueItem->item_code,

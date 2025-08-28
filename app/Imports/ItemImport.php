@@ -215,6 +215,8 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
 
                 $isTradedItem = 0;
                 $isAsset = 0;
+                $isScrap = 0;
+                 
 
                 if (!empty($subTypeRaw)) {
                     try {
@@ -222,6 +224,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                         $subTypeData = $this->service->getSubTypeId($subTypes);
                         $isTradedItem = $subTypeData['is_traded_item'] ?? 0;
                         $isAsset = $subTypeData['is_asset'] ?? 0;
+                        $isScrap      = $subTypeData['is_scrap'] ?? 0;
                     } catch (Exception $e) {
                         $errorMessages[] = $e->getMessage();
                         $skipRow = true;
@@ -314,9 +317,10 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'group_id' => $validatedData['group_id'],
                     'company_id' => $validatedData['company_id'],
                     'organization_id' => $validatedData['organization_id'],
-                     'sub_type' => $subTypeValue,
+                    'sub_type' => $subTypeValue,
                     'is_traded_item' => $isTradedItem,
                     'is_asset' => $isAsset,
+                    'is_scrap' => $isScrap, 
                     'asset_category_id' => $row['assetcategory'] ?? null,
                     'brand_name' => $row['brand'] ?? null,
                     'model_no' => $row['modelno'] ?? null,
@@ -394,7 +398,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
             $attributes = [];  
             $specifications = []; 
             $alternateUoms = [];
-            $isAsset = 0;
+            $isTradedItem = 0;
             $isAsset = 0;
             $assetCategoryId = null;
             $expectedLife = null;
@@ -442,6 +446,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $subTypeId = $subTypeData['sub_type_id'] ?? null;
                     $isTradedItem = $subTypeData['is_traded_item'] ?? 0;
                     $isAsset = $subTypeData['is_asset'] ?? 0;
+                    $isScrap = $subTypeData['is_scrap'] ?? 0;  
                 } catch (Exception $e) {
                     $errors[] = $e->getMessage();
                 }
@@ -509,6 +514,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'item_remarks' => $uploadedItem->remarks ?? null,
                     'is_traded_item' => $subTypeData['is_traded_item'] ?? 0,
                     'is_asset'       => $subTypeData['is_asset'] ?? 0,
+                    'is_scrap'       => $subTypeData['is_scrap'] ?? 0,
                     'asset_category_id' => $assetCategoryId,
                     'expected_life' => $expectedLife,
                     'maintenance_schedule' => $maintenanceSchedule,

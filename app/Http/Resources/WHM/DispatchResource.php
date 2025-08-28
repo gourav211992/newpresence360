@@ -27,6 +27,8 @@ class DispatchResource extends JsonResource
             'header_id' => $this->morphable_id,
             'store_id' => optional($morphable)->store_id,
             'store_name' => optional(optional($morphable)->erpStore)->store_name,
+            'sub_store_id' => optional($morphable)->sub_store_id,
+            'sub_store_name' => optional(optional($morphable)->subStore)->name,
             'doc_no' => optional($morphable)->document_number,
             'doc_date' => optional($morphable)->document_date,
             'book_id' => optional($morphable)->book_id,

@@ -12,7 +12,7 @@
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
             <div class="content-body">
-                <div id="message-area">
+                {{-- <div id="message-area">
                     @if (session('success'))
                         <div class="alert alert-success">
                             {{ session('success') }}
@@ -27,7 +27,7 @@
                             </ul>
                         </div>
                     @endif
-                </div>
+                </div> --}}
                 <section id="basic-datatable">
                     <div class="card border  overflow-hidden">
                         <div class="row">
@@ -139,6 +139,7 @@
                                             <th class='no-wrap text-end'>Receipt Value</th>
                                             <th class='no-wrap text-end'>Issue Value</th>
                                             <th class='no-wrap text-end'>Reserved Stock</th>
+                                            <th class='no-wrap text-end'>Hold Stock</th>
                                             <th class="no-wrap">Status</th>
                                         </thead>
                                         <tbody id="inventory-tbody">
@@ -366,23 +367,6 @@
                                 storeId = paramValue;
                             }
                             if (key === "sub_store_id") {
-                                // var data = {
-                                //     store_id: storeId
-                                // };
-                                // $.ajax({
-                                //     type: 'GET',
-                                //     data: data,
-                                //     url: '/sub-stores/store-wise',
-                                //     success: function(data) {
-                                //         $('#sub_store_id').empty();
-                                //         $('#sub_store_id').append('<option value="">Select</option>');
-                                //         $.each(data.data, function(index, item) {
-                                //             $('#sub_store_id').append('<option value="' + item.id +
-                                //                 '">' + item.name + '</option>');
-                                //         });
-                                //         $('#sub_store_id').trigger('change');
-                                //     }
-                                // });
                                 subStoreId = paramValue;
                             }
                             if (Array.isArray(paramValue)) {
@@ -500,7 +484,7 @@
                     const cells = [
                         `<td>${index + 1}</td>`,
                         `<td class="no-wrap ">${formatDate(report.document_date)}</td>`,
-                        `<td class="no-wrap">${report.book.book_name}</td>`,
+                        `<td class="no-wrap">${report.book.book_code}</td>`,
                         `<td class="no-wrap">${report.document_number}</td>`,
                         `<td class="no-wrap">${report?.book_type ?? ""}</td>`,
                         `<td class="no-wrap">${report?.item?.item_code ?? ""}</td>`,
@@ -534,6 +518,9 @@
                         </td>`,
                         `<td class='no-wrap text-end'>
                             ${report?.reserved_qty ?? 0.00}
+                        </td>`,
+                        `<td class='no-wrap text-end'>
+                            ${report?.putaway_pending_qty ?? 0.00}
                         </td>`,
                         // `<td class="no-wrap">
                         //     ${documentStatusCssList[report?.document_status ?? ""] ?
@@ -584,6 +571,7 @@
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueQty)}" style="width: 100%;">Total: ${totalIssueQty}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptValue)}" style="width: 100%;">Total: ${totalReceiptValue}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueValue)}" style="width: 100%;">Total: ${totalIssueValue}</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 `;

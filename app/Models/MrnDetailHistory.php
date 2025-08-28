@@ -117,6 +117,11 @@ class MrnDetailHistory extends Model
         return $this->belongsTo(MrnHeader::class);
     }
 
+    public function header()
+    {
+        return $this->belongsTo(MrnHeader::class, 'mrn_header_id');
+    }
+
     public function mrnDetail()
     {
         return $this->belongsTo(MrnDetail::class);

@@ -43,6 +43,7 @@ class Item extends Model implements Exportable
         'inspection_checklist_id',
         'is_traded_item',
         'is_asset',
+        'is_scrap',
         'asset_category_id',
         'expected_life',
         'maintenance_schedule',
@@ -327,7 +328,7 @@ class Item extends Model implements Exportable
             $checkLists = $this->category?->inspectionChecklist()->with('details.values')->get()->toArray();
         }
 
-        return $checkLists;
+        return isset($checkLists) ? $checkLists : [];
     }
 
     // Corrected function to get all table columns.  Use the model's table name.

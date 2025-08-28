@@ -1281,7 +1281,7 @@ class MaterialReceiptController extends Controller
         $dynamicFieldsUI = $mrn -> dynamicfieldsUi();
         $existPaymentTermId = $mrn->payment_term_id;
         $existCreditDays = $mrn->credit_days;
-        
+
         return view($view, [
             'deliveryAddress'=> $deliveryAddress,
             'orgAddress'=> $orgAddress,
@@ -1469,7 +1469,7 @@ class MaterialReceiptController extends Controller
                 ]);
                 $storeLocation->save();
             }
-
+            $lotNumber = date('Y/M/d', strtotime($mrn->document_date)) . '/' . $mrn->book_code . '/' . $mrn->document_number;
             $totalItemValue = 0.00;
             $totalTaxValue = 0.00;
             $totalDiscValue = 0.00;
@@ -1903,7 +1903,6 @@ class MaterialReceiptController extends Controller
                         $batchDetails = is_string($component['batch_details'])
                             ? json_decode($component['batch_details'], true)
                             : $component['batch_details'];
-
                         if (is_array($batchDetails)) {
                             foreach ($batchDetails as $i => $val) {
                                 $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
@@ -1913,7 +1912,7 @@ class MaterialReceiptController extends Controller
                                 $batchDetail->item_id = $mrnDetail->item_id;
                                 $batchDetail->batch_number = $batchNo;
                                 $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
-                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
+                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : null;
                                 $batchDetail->quantity = $val['quantity'] ?? null;
                                 $batchDetail->save();
 
@@ -2856,7 +2855,6 @@ class MaterialReceiptController extends Controller
             $headerHistory = MrnHeaderHistory::create($mrnHeaderData);
             $headerHistoryId = $headerHistory->id;
 
-
             $vendorBillingAddress = $mrnHeader->billingAddress ?? null;
             $vendorShippingAddress = $mrnHeader->shippingAddress ?? null;
 
@@ -2956,6 +2954,64 @@ class MaterialReceiptController extends Controller
                             $extraAmountData['mrn_detail_history_id'] = $detailHistoryId;
                             $extraAmountDataHistory = MrnExtraAmountHistory::create($extraAmountData);
                             $extraAmountDataId = $extraAmountDataHistory->id;
+                        }
+                    }
+
+                    // Batch History
+                    $mrnBatch = MrnBatchDetail::where('header_id', $mrnHeader->id)
+                        ->where('detail_id', $detail->id)
+                        ->get();
+
+                    if (!empty($mrnBatch)) {
+                        foreach ($mrnBatch as $key4 => $batch) {
+                            $batchData = $batch->toArray();
+                            unset($batchData['id']); // You might want to remove the primary key, 'id'
+                            $batchData['source_id'] = $batch->id;
+                            $batchData['header_id'] = $headerHistoryId;
+                            $batchData['detail_id'] = $detailHistoryId;
+                            $batchData['item_id'] = $batch->item_id;
+                            $batchData['batch_number'] = $batch->batch_number;
+                            $batchData['manufacturing_year'] = $batch->manufacturing_year;
+                            $batchData['expiry_date'] = $batch->expiry_date;
+                            $batchData['quantity'] = $batch->quantity;
+                            $batchData['inventory_uom_qty'] = $batch->inventory_uom_qty;
+                            $batchData['inspection_qty'] = $batch->inspection_qty;
+                            $batchData['inspection_inv_uom_qty'] = $batch->inspection_inv_uom_qty;
+                            $batchData['accepted_qty'] = $batch->accepted_qty;
+                            $batchData['accepted_inv_uom_qty'] = $batch->accepted_inv_uom_qty;
+                            $batchData['rejected_qty'] = $batch->rejected_qty;
+                            $batchData['rejected_inv_uom_qty'] = $batch->rejected_inv_uom_qty;
+                            $batchDataHistory = MrnBatchDetailHistory::create($batchData);
+                            $batchDataId = $batchDataHistory->id;
+                        }
+                    }
+
+
+                    // Asset History
+                    $mrnAsset = MrnAssetDetail::where('header_id', $mrnHeader->id)
+                        ->where('detail_id', $detail->id)
+                        ->get();
+                    if (!empty($mrnAsset)) {
+                        foreach ($mrnAsset as $key4 => $asset) {
+                            $assetData = $asset->toArray();
+                            unset($assetData['id']); // You might want to remove the primary key, 'id'
+                            $assetData['source_id'] = $asset->id;
+                            $assetData['header_id'] = $headerHistoryId;
+                            $assetData['detail_id'] = $detailHistoryId;
+                            $assetData['asset_category_id'] = $asset->asset_category_id;
+                            $assetData['item_id'] = $asset->item_id;
+                            $assetData['procurement_type'] = $asset->asset_number;
+                            $assetData['asset_code'] = $asset->asset_code;
+                            $assetData['asset_name'] = $asset->asset_name;
+                            $assetData['procurement_type'] = $asset->procurement_type;
+                            $assetData['asset_id'] = $asset->asset_id;
+                            $assetData['capitalization_date'] = $asset->capitalization_date;
+                            $assetData['brand_name'] = $asset->inventory_uom_qty;
+                            $assetData['model_no'] = $asset->inspection_qty;
+                            $assetData['estimated_life'] = $asset->inspection_inv_uom_qty;
+                            $assetData['salvage_value'] = $asset->accepted_qty;
+                            $assetDataHistory = MrnAssetDetailHistory::create($assetData);
+                            $assetDataId = $assetDataHistory->id;
                         }
                     }
                 }
@@ -5345,16 +5401,16 @@ class MaterialReceiptController extends Controller
                 'message' => 'Please setup warehouse structure first.',
             ], 422);
         }
-        $mapping = WhItemMapping::where('store_id', $request->store_id)
-                ->where('sub_store_id', $request->sub_store_id)
-                ->first();
-        if (!$mapping) {
-            return response()->json([
-                'status' => 204,
-                "is_setup" => false,
-                'message' => 'Please setup item mapping first.',
-            ], 422);
-        }
+        // $mapping = WhItemMapping::where('store_id', $request->store_id)
+        //         ->where('sub_store_id', $request->sub_store_id)
+        //         ->first();
+        // if (!$mapping) {
+        //     return response()->json([
+        //         'status' => 204,
+        //         "is_setup" => false,
+        //         'message' => 'Please setup item mapping first.',
+        //     ], 422);
+        // }
 
         return response()->json([
             'status' => 200,

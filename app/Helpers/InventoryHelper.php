@@ -1,6 +1,7 @@
 <?php
 namespace App\Helpers;
 
+use App\Helpers\Common\MathHelper;
 use DB;
 use Auth;
 use stdClass;
@@ -207,6 +208,7 @@ class InventoryHelper
             ->with('details')
             ->where('item_id', $itemId)
             ->whereNull('utilized_id')
+            ->where('transaction_type', 'receipt')
             ->whereNotNull('receipt_qty');
 
         // Apply attribute filtering if needed
@@ -808,7 +810,8 @@ class InventoryHelper
                     $stockLedger->issue_qty = @$qty;
                     $stockLedger->book_id = @$documentHeader->book_id;
                     $totalItemCost = ($documentDetail->qty*$documentDetail->rate);
-                    $costPerUnit = $totalItemCost/$qty;
+
+                    $costPerUnit = MathHelper::safeDivide($totalItemCost, $qty, 0);
 
                     // Item Location Data
                     $stockLedger->store_id = $documentHeader->store_id ?? null;
@@ -1527,7 +1530,8 @@ class InventoryHelper
             }
             $lotNumber = implode(',', $lotNumbers); // Convert array to a comma-separated string
         }
-        $costPerUnit = ($totalCost/$invoiceLedger->issue_qty);
+        // $costPerUnit = ($totalCost/$invoiceLedger->issue_qty);
+        $costPerUnit= MathHelper::safeDivide($totalCost, $invoiceLedger->issue_qty, 0);
         $stockLedger = StockLedger::find($invoiceLedger->id);
         $stockLedger->lot_number = $lotNumber;
         $stockLedger->cost_per_unit = round($costPerUnit,6);

@@ -116,17 +116,29 @@ class PslipRequest extends FormRequest
 
                 $requiredQty = floatval($component['item_qty']);
                 $consumptionQty = floatval($component['consumption_qty']);
-                $itemAttributes = $moBomMapping->attributes ?? [];
+                // $itemAttributes = $moBomMapping->attributes ?? [];
+                // foreach ($itemAttributes as $itemAttr) {
+                //     $selectedAttributeIds[] = $itemAttr['attribute_value'];
+                // }
+
+                $itemAttributes = $component['attribute_value'] 
+                    ?? $moBomMapping->attributes 
+                    ?? [];
+
+                $itemAttributes = is_array($itemAttributes) ? $itemAttributes : [];
+
                 foreach ($itemAttributes as $itemAttr) {
-                    $selectedAttributeIds[] = $itemAttr['attribute_value'];
+                    $selectedAttributeIds[] = $itemAttr['attribute_value'] ?? null;
                 }
+
                 $storeId = $moBomMapping?->mo_product?->mo?->store_id ?? null;
                 $subStoreId = $moBomMapping?->mo_product?->mo?->sub_store_id ?? null;
                 $stationId = $moBomMapping?->mo_product?->mo?->station_id ?? null;
                 $stocks = InventoryHelper::totalInventoryAndStock(
-                    $moBomMapping?->item_id,
+                    $component['item_id'],
+                    // $moBomMapping?->item_id,
                     $selectedAttributeIds,
-                    $moBomMapping?->uom_id,
+                    $component['uom_id'],
                     $storeId,
                     $subStoreId,
                     null,

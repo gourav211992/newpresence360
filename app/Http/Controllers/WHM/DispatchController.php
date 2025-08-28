@@ -5,9 +5,11 @@ namespace App\Http\Controllers\WHM;
 use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
+use App\Helpers\Inventory\StockReservation;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\DispatchResource;
 use App\Http\Resources\WHM\UnloadingResource;
+use App\Models\ErpSaleInvoice;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -19,6 +21,7 @@ class DispatchController extends Controller
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
+        $subLocation = $request->input('sub_store_id');
         $jobs = ErpWhmJob::with(['morphable.book' => function($q){
                             $q->select('id','book_code');
                         }, 'morphable.erpStore' => function($q){
@@ -38,9 +41,10 @@ class DispatchController extends Controller
                         });
                     })
                     ->when($location, function ($query) use ($location) {
-                        $query->whereHasMorph('morphable', ['App\Models\ErpSaleInvoice'], function ($q) use ($location) {
-                            $q->where('store_id', $location);
-                        });
+                            $query->where('store_id', $location);
+                    })
+                    ->when($subLocation, function ($query) use ($subLocation) {
+                        $query->where('sub_store_id', $subLocation);
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
                     ->orderBy('id','desc')
@@ -65,7 +69,8 @@ class DispatchController extends Controller
 
     public function pendingTasks(Request $request){
         $validator = Validator::make($request->all(),[
-            'job_id' => ['required']
+            'job_id' => ['required'],
+            'status' => ['nullable'],
         ],[
             'job_id.required' => 'Job id is required'
         ]);
@@ -74,7 +79,11 @@ class DispatchController extends Controller
             throw new ValidationException($validator);
         }
 
+        $status = $request->status;
         $pendingTasks = ErpItemUniqueCode::where('job_id',$request->job_id)
+        ->when($status, function ($query) use ($status) {
+            $query->where('status', $status);
+        })
         ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status')
         ->get();
 
@@ -246,6 +255,16 @@ class DispatchController extends Controller
             $modelName = $job->morphable_type;
             $remarks = NULL;
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
+
+            $saleInvoice = ErpSaleInvoice::find($job->morphable_id);
+            if($saleInvoice){
+                foreach ($saleInvoice->items as $invItem) {
+                    $status = StockReservation::settlementOfReservedStocks($saleInvoice -> document_type, $saleInvoice->id, $invItem->id, $invItem->inventory_uom_qty);
+                    if ($status['status'] == 'error') {
+                        throw new ApiGenericException($status['message']);
+                    }
+                }
+            }
             
             \DB::commit();
             return [

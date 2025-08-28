@@ -57,12 +57,29 @@
     </td>
     <td>
         <div class="d-flex">
+            <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
+            <div class="cursor-pointer ms-50 text-success assetDetailBtn d-none"
+                data-row-count="{{ $rowCount }}"
+                data-bs-toggle="modal"
+                data-bs-target="#assetDetailModal"
+                title="Asset Detail">
+                <span data-bs-toggle="tooltip" data-bs-placement="top" class="text-primary"
+                    data-bs-original-title="Asset Detail" aria-label="Asset Detail">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                        class="bi bi-clipboard-check" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd"
+                            d="M10.854 6.146a.5.5 0 0 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708L12 8.707l1.146 1.147a.5.5 0 0 0 .708-.708L12.707 8l1.147-1.146a.5.5 0 0 0-.708-.708L12 7.293 10.854 6.146z"/>
+                        <path
+                            d="M10 1.5v1h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1v-1a1 1 0 1 1 2 0v1h2v-1a1 1 0 1 1 2 0zM5 4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5z"/>
+                    </svg>
+                </span>
+            </div>
             <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
-            <div class="me-50 cursor-pointer addBatchBtn" 
-            data-bs-toggle="modal" 
-            data-row-count="{{$rowCount}}" 
-            data-is-batch-number="" 
-            data-is-expiry="" 
+            <div class="me-50 cursor-pointer addBatchBtn"
+            data-bs-toggle="modal"
+            data-row-count="{{$rowCount}}"
+            data-is-batch-number=""
+            data-is-expiry=""
             data-bs-target="#item-batch-modal">
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                     data-bs-original-title="Item Batch" aria-label="Item Batch">

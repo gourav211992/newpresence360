@@ -65,7 +65,9 @@ use App\Models\Category;
 use App\Models\Employee;
 use App\Models\ErpItem;
 use App\Models\ErpPbDynamicField;
+use App\Models\ErpPbPaymentTerm;
 use App\Models\ErpVendor;
+use App\Models\PaymentTermDetail;
 use App\Models\PRHeader;
 use App\Services\PBCheckAndUpdateService;
 use App\Services\PBDeleteService;
@@ -277,6 +279,9 @@ class PurchaseBillController extends Controller
             $pb->billing_address = $request->billing_address;
             $pb->shipping_address = $request->shipping_address;
             $pb->cost_center_id = $request->cost_center_id;
+            $pb->reference_type = $request->reference_type;
+            $pb->payment_term_id = $request->payment_term_id;
+            $pb->credit_days = $request->credit_days;
             $pb->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
@@ -384,7 +389,7 @@ class PurchaseBillController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
                 foreach ($request->all()['exp_summary'] as $expValue) {
-                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                    $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
                 }
 
             if (isset($request->all()['components'])) {
@@ -630,6 +635,9 @@ class PurchaseBillController extends Controller
                             $ted = new PbTed;
                             $ted->header_id = $pb->id;
                             $ted->detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup  =  $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -727,6 +735,13 @@ class PurchaseBillController extends Controller
             if(($pb->document_status == ConstantHelper::APPROVED) || ($pb->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
+            }
+            $pbData = PbDetail::where('header_id', $pb->id)->get();
+            foreach ($pbData as $detail) {
+                $refId = $detail->mrn_detail_id ?? $pb->id;
+                $refType = $pb->reference_type ?? 'direct';
+                // Save PB Payment Terms
+                self::savePBPaymentTerm($request->payment_term_id, $pb->id, $pb->credit_days, $refId, $refType, $pb->document_date);
             }
             $status = DynamicFieldHelper::saveDynamicFields(ErpPbDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
             if ($status && !$status['status'] ) {
@@ -999,7 +1014,7 @@ class PurchaseBillController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
                 foreach ($request->all()['exp_summary'] as $expValue) {
-                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                    $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
                 }
 
             if (isset($request->all()['components'])) {
@@ -1270,6 +1285,9 @@ class PurchaseBillController extends Controller
                             $ted = PbTed::find($pbAmountId) ?? new PbTed;
                             $ted->header_id = $pb->id;
                             $ted->detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup = $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -1392,6 +1410,14 @@ class PurchaseBillController extends Controller
             if(($pb->document_status == ConstantHelper::APPROVED) || ($pb->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
+            }
+            $pbData = PbDetail::where('header_id', $pb->id)->get();
+            foreach ($pbData as $detail) {
+                $refId = $detail->mrn_detail_id ?? $pb->id;
+                $refType = $pb->reference_type ?? 'direct';
+
+                // Save MRN Payment Terms
+                self::savePBPaymentTerm($request->payment_term_id, $pb->id, $pb->credit_days, $refId, $refType, $pb->document_date);
             }
             $status = DynamicFieldHelper::saveDynamicFields(ErpPbDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
             if ($status && !$status['status'] ) {
@@ -2487,11 +2513,37 @@ class PurchaseBillController extends Controller
     {
         $mrnItemsQuery = $this->buildMrnQuery($request);
         return DataTables::of($mrnItemsQuery)
-            ->addColumn(
-                'select_checkbox',
-                fn($row) =>
-                app(\App\View\Components\PR\CheckBox::class, ['row' => $row])->resolveView()->render()
-            )
+            ->addColumn('select_checkbox', function ($row) use ($request) {
+                $moduleType = 'p-order';
+                $ref_no = ($row?->mrn?->book?->book_code ?? 'NA') . '-' . ($row?->mrn?->document_number ?? 'NA');
+
+                $dataCurrentMrn = ($row->mrn_header_id ?? 'null');
+
+                $decoded = urldecode(urldecode($request->selected_mrn_ids));
+                $selected_mrn_ids = json_decode($decoded, true) ?? [];
+                $mrnDetail = MrnDetail::find($selected_mrn_ids)->pluck('mrn_header_id')->toArray();
+                $dataPaymentTerm = $row->mrnHeader?->paymentTerm->name ?? 'null';
+                $dataPaymentId = $row->mrnHeader?->payment_term_id ?? 'null';
+                $dataCreditDays = $row->mrnHeader?->credit_days ?? 'null';
+                $dataExistingMrn = $request->type == 'create' && $row->mrn_header_id
+                    ? ($selected_mrn_ids[0] ?? 'null')
+                    : 'null';
+                // Determine if checkbox should be disabled
+                if (empty($selected_mrn_ids)) {
+                    $disabled = '';
+                } else {
+                    $disabled = (!in_array($dataCurrentMrn, $mrnDetail)) ? 'disabled' : '';
+            }
+
+            return "<div class='form-check form-check-inline me-0'>
+                            <input class='form-check-input mrn_item_checkbox' type='checkbox' name='mrn_item_check'
+                            value='{$row->id}' data-module='{$moduleType}'
+                            data-current-mrn='{$dataCurrentMrn}' data-existing-mrn='{$dataExistingMrn}'
+                            data-payment-id='{$dataPaymentId}' data-payment-term='{$dataPaymentTerm}'
+                            data-credit-days='{$dataCreditDays}'{$disabled}>
+                            <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
+                        </div>";
+            })
             ->addColumn(
                 'vendor',
                 fn($row) =>
@@ -2570,7 +2622,7 @@ class PurchaseBillController extends Controller
         $soId= $request->so_id ?? null;
         $mrnItems = null;
 
-        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $decoded = urldecode(urldecode($request->selected_mrn_ids));
         $selected_mrn_ids = json_decode($decoded, true) ?? [];
 
         $keys = [
@@ -2613,7 +2665,7 @@ class PurchaseBillController extends Controller
             ->leftJoin('erp_mrn_headers', 'erp_mrn_headers.id', 'erp_mrn_details.mrn_header_id')
             ->where(function ($query) use ($seriesId, $applicableBookIds, $vendorId, $selected_mrn_ids, $itemSearch, $storeId, $soId, $mrnDocNumber) {
                 if (count($selected_mrn_ids)) {
-                    $query->whereNotIn('id',$selected_mrn_ids);
+                    $query->whereNotIn('erp_mrn_details.id',$selected_mrn_ids);
                 }
                 $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$mrnDocNumber, $vendorId) {
                     $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
@@ -2666,7 +2718,7 @@ class PurchaseBillController extends Controller
         $ids = json_decode($request->ids, true) ?? [];
         $vendor = null;
         $tableRowCount = $request->tableRowCount ?: 0;
-
+        $finalExpenses = [];
         $mrnItems = MrnDetail::whereIn('id', $ids)
             ->get();
         $uniqueMrnIds = MrnDetail::whereIn('id', $ids)
@@ -2705,16 +2757,23 @@ class PurchaseBillController extends Controller
             }
 
             foreach ($mrn->expenses as $headerExpense) {
-                $headerExpense['ted_percentage'] = intval($headerExpense->ted_percentage)
-                    ? $headerExpense->ted_percentage
-                    : (floatval($headerExpense->ted_amount) / floatval($headerExpense->assesment_amount)) * 100;
-
-                $expenses->push($headerExpense);
+                $finalExpenses[] = [
+                    'id' => $headerExpense->id,
+                    'ref_type' => 'mrn',
+                    'mrn_header_id' => $headerExpense->mrn_header_id,
+                    'ted_id' => $headerExpense->ted_id,
+                    'ted_name' => $headerExpense->ted_name,
+                    'ted_amount' => $headerExpense->ted_amount,
+                    'ted_perc' => $headerExpense->ted_percentage,
+                    'hsn_id' => $headerExpense->hsn_id,
+                    'tax_breakup' => $headerExpense->tax_breakup,
+                    'tax_amount' => $headerExpense->tax_amount
+                ];
             }
         }
 
         $finalDiscounts = $discounts->groupBy('ted_id')->map(fn($g) => $g->sortByDesc('ted_percentage')->first())->values()->toArray();
-        $finalExpenses = $expenses->groupBy('ted_id')->map(fn($g) => $g->sortByDesc('ted_percentage')->first())->values()->toArray();
+        // $finalExpenses = $expenses->groupBy('ted_id')->map(fn($g) => $g->sortByDesc('ted_percentage')->first())->values()->toArray();
 
         $html = view('procurement.purchase-bill.partials.mrn-item-row',
         [
@@ -3344,6 +3403,43 @@ class PurchaseBillController extends Controller
             return response()->json(['message' => $data['message'], 'status' => 200, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
         } else {
             return response()->json(['message' => $data['message'], 'status' => 422, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
+        }
+    }
+
+    // Purchase Bill Payment
+    private function savePBPaymentTerm($paymentTermId, $pbId, $creditDays, $refId, $refType, $headerDocumentDate){
+        $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+
+        if ($paymentTermDetails->isEmpty()) {
+            return;
+        }
+
+        foreach($paymentTermDetails as $paymentTermDetail){
+            $pbPaymentTerm = ErpPbPaymentTerm::firstOrNew([
+                'pb_header_id' => $pbId,
+                // 'reference_id' => $refId,
+                // 'reference_type' => $refType,
+                'payment_term_id' => $paymentTermDetail->payment_term_id,
+                'payment_term_detail_id' => $paymentTermDetail->id,
+                'trigger_type' => $paymentTermDetail->trigger_type,
+            ]);
+            $dueDate = $headerDocumentDate;
+            $creditDueDate = $headerDocumentDate;
+            if ($creditDays && $creditDays > 0) {
+                $parsedDocumentDate = Carbon::parse($headerDocumentDate);
+                $creditDueDate = $parsedDocumentDate -> addDays($creditDays) -> format('Y-m-d');
+            }
+
+            $pbPaymentTerm->pb_header_id = $pbId;
+            $pbPaymentTerm->reference_id = $refId;
+            $pbPaymentTerm->reference_type = $refType;
+            $pbPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
+            $pbPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
+            $pbPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0;
+            $pbPaymentTerm->percent = $paymentTermDetail->percent;
+            $pbPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
+            $pbPaymentTerm->due_date = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? $creditDueDate : $dueDate;
+            $pbPaymentTerm->save();
         }
     }
 

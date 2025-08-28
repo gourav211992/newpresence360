@@ -67,7 +67,8 @@ class UnloadingTaskController extends Controller
 
     public function pendingTasks(Request $request){
         $validator = Validator::make($request->all(),[
-            'job_id' => ['required']
+            'job_id' => ['required'],
+            'status' => ['nullable'],
         ],[
             'job_id.required' => 'Job id is required'
         ]);
@@ -76,10 +77,15 @@ class UnloadingTaskController extends Controller
             throw new ValidationException($validator);
         }
 
+        $status = $request->status;
+
         $pendingTasks = ErpItemUniqueCode::with(['vendor' => function ($q) {
             $q->select('id', 'vendor_code', 'company_name');
         }])
         ->where('job_id',$request->job_id)
+        ->when($status, function ($query) use ($status) {
+            $query->where('status', $status);
+        })
         // ->where('status',CommonHelper::PENDING)
         ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
         ->get();
@@ -156,7 +162,7 @@ class UnloadingTaskController extends Controller
 
         if (!empty($invalidPackets)) {
             throw ValidationException::withMessages([
-                'packet_ids' => ['Invalid or mismatched packet IDs: ' . implode(', ', $invalidPackets)],
+                'packet_ids' => ['Invalid or mismatched packet: ' . implode(', ', $invalidPackets)],
             ]);
         }
 
@@ -167,7 +173,7 @@ class UnloadingTaskController extends Controller
 
         if (!empty($alreadyScanned)) {
             throw ValidationException::withMessages([
-                'packet_ids' => ['Some packets are already scanned: ' . implode(', ', $alreadyScanned)],
+                'packet_ids' => ['Packet already scanned: ' . implode(', ', $alreadyScanned)],
             ]);
         }
 

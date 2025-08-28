@@ -90,6 +90,7 @@ use App\Exports\PurchaseReturnExport;
 use App\Helpers\CommonHelper;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Configuration;
+use App\Models\InspChecklistHistory;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -229,7 +230,6 @@ class InspectionController extends Controller
                 $parameters = json_decode(json_encode($response['data']['parameters']), true);
             }
 
-            $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
             $organizationId = $organization?->id ?? null;
             $groupId = $organization?->group_id ?? null;
@@ -392,11 +392,11 @@ class InspectionController extends Controller
                     if ($item) {
                         // Normalize to something countable
                         $checklists = $item->loadInspectionChecklists();
-                    
+
                         $hasChecklist = $checklists instanceof Collection
                             ? $checklists->isNotEmpty()
                             : (is_array($checklists) ? !empty($checklists) : false);
-                    
+
                         if ($hasChecklist) {
                             // inspectionData may be JSON string, array, or null
                             $raw = $component['inspectionData'] ?? null;
@@ -404,9 +404,9 @@ class InspectionController extends Controller
                             if (json_last_error() !== JSON_ERROR_NONE) {
                                 $inspectionData = []; // or handle as error if you prefer
                             }
-                    
+
                             $inspectionValidator = InspectionHelper::validateInspectionCheckList((array)$inspectionData, $item);
-                    
+
                             if (!$inspectionValidator['status']) {
                                 DB::rollBack(); // keep only if you're inside a transaction
                                 return response()->json([
@@ -986,19 +986,32 @@ class InspectionController extends Controller
                     if ($inspection->mrn_header_id) {
                         $reference_type = 'mrn';
                     }
-
                     // Check Inspection
-                    if($item && count($item->loadInspectionChecklists())) {
-                        $inspectionData = is_string($component['inspectionData'])
-                                ? json_decode($component['inspectionData'], true)
-                                : $component['inspectionData'];
-                        $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
-                        if(!$inspectionValidator['status']) {
-                            DB::rollBack();
-                            return response() -> json([
-                                'message' => $inspectionValidator['message'],
-                                'error' => 'Inspection001'
-                            ], 422);
+                    if ($item) {
+                        // Normalize to something countable
+                        $checklists = $item->loadInspectionChecklists();
+
+                        $hasChecklist = $checklists instanceof Collection
+                            ? $checklists->isNotEmpty()
+                            : (is_array($checklists) ? !empty($checklists) : false);
+
+                        if ($hasChecklist) {
+                            // inspectionData may be JSON string, array, or null
+                            $raw = $component['inspectionData'] ?? null;
+                            $inspectionData = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : []);
+                            if (json_last_error() !== JSON_ERROR_NONE) {
+                                $inspectionData = []; // or handle as error if you prefer
+                            }
+
+                            $inspectionValidator = InspectionHelper::validateInspectionCheckList((array)$inspectionData, $item);
+
+                            if (!$inspectionValidator['status']) {
+                                DB::rollBack(); // keep only if you're inside a transaction
+                                return response()->json([
+                                    'message' => $inspectionValidator['message'],
+                                    'error'   => 'Inspection001',
+                                ], 422);
+                            }
                         }
                     }
 
@@ -1796,7 +1809,7 @@ class InspectionController extends Controller
             // Header History
             $inspectionHeader = InspectionHeader::find($id);
             if (!$inspectionHeader) {
-                return response()->json(['error' => 'Mrn Header not found'], 404);
+                return response()->json(['error' => 'Inspection Header not found'], 404);
             }
             $inspectionHeaderData = $inspectionHeader->toArray();
             unset($inspectionHeaderData['id']); // You might want to remove the primary key, 'id'
@@ -1825,6 +1838,7 @@ class InspectionController extends Controller
                         foreach ($inspectionAttributes as $key1 => $attribute) {
                             $inspectionAttributeData = $attribute->toArray();
                             unset($inspectionAttributeData['id']); // You might want to remove the primary key, 'id'
+                            $inspectionAttributeData['source_id'] = $attribute->id;
                             $inspectionAttributeData['attribute_id'] = $attribute->id;
                             $inspectionAttributeData['header_id'] = $headerHistoryId;
                             $inspectionAttributeData['detail_id'] = $detailHistoryId;
@@ -1843,11 +1857,65 @@ class InspectionController extends Controller
                         foreach ($inspectionTed as $key4 => $extraAmount) {
                             $extraAmountData = $extraAmount->toArray();
                             unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                            $extraAmountData['pr_ted_id'] = $extraAmount->id;
+                            $extraAmountData['source_id'] = $extraAmount->id;
                             $extraAmountData['header_id'] = $headerHistoryId;
                             $extraAmountData['detail_id'] = $detailHistoryId;
                             $extraAmountDataHistory = InspectionTedHistory::create($extraAmountData);
                             $extraAmountDataId = $extraAmountDataHistory->id;
+                        }
+                    }
+
+                    // Batch History
+                    $inspectionBatch = InspBatchDetail::where('header_id', $inspectionHeader->id)
+                        ->where('detail_id', $detail->id)
+                        ->get();
+
+                    if (!empty($inspectionBatch)) {
+                        foreach ($inspectionBatch as $key4 => $batch) {
+                            $batchData = $batch->toArray();
+                            unset($batchData['id']); // You might want to remove the primary key, 'id'
+                            $batchData['source_id'] = $batch->id;
+                            $batchData['header_id'] = $headerHistoryId;
+                            $batchData['detail_id'] = $detailHistoryId;
+                            $batchData['batch_detail_id'] = $batch->batch_detail_id;
+                            $batchData['item_id'] = $batch->item_id;
+                            $batchData['batch_number'] = $batch->batch_number;
+                            $batchData['manufacturing_year'] = $batch->manufacturing_year;
+                            $batchData['expiry_date'] = $batch->expiry_date;
+                            $batchData['quantity'] = $batch->quantity;
+                            $batchData['inventory_uom_qty'] = $batch->inventory_uom_qty;
+                            $batchData['inspection_qty'] = $batch->inspection_qty;
+                            $batchData['inspection_inv_uom_qty'] = $batch->inspection_inv_uom_qty;
+                            $batchData['accepted_qty'] = $batch->accepted_qty;
+                            $batchData['accepted_inv_uom_qty'] = $batch->accepted_inv_uom_qty;
+                            $batchData['rejected_qty'] = $batch->rejected_qty;
+                            $batchData['rejected_inv_uom_qty'] = $batch->rejected_inv_uom_qty;
+                            $batchDataHistory = InspBatchDetailHistory::create($batchData);
+                            $batchDataId = $batchDataHistory->id;
+                        }
+                    }
+
+                    // CheckList History
+                    $inspectionCheck = InspChecklist::where('header_id', $inspectionHeader->id)
+                        ->where('detail_id', $detail->id)
+                        ->get();
+
+                    if (!empty($inspectionCheck)) {
+                        foreach ($inspectionCheck as $key4 => $checkList) {
+                            $checkListData = $checkList->toArray();
+                            unset($checkListData['id']); // You might want to remove the primary key, 'id'
+                            $checkListData['header_id'] = $headerHistoryId;
+                            $checkListData['detail_id'] = $detailHistoryId;
+                            $checkListData['item_id'] = $checkList->item_id;
+                            $checkListData['checklist_id'] = $checkList->checklist_id;
+                            $checkListData['checklist_name'] = $checkList->checklist_name;
+                            $checkListData['checklist_detail_id'] = $checkList->checklist_detail_id;
+                            $checkListData['name'] = $checkList->name;
+                            $checkListData['value'] = $checkList->value;
+                            $checkListData['type'] = $checkList->type;
+                            $checkListData['result'] = $checkList->result;
+                            $checkListDataHistory = InspChecklistHistory::create($checkListData);
+                            $checkListDataId = $checkListDataHistory->id;
                         }
                     }
                 }

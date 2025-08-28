@@ -84,7 +84,8 @@
                             </div>
                             <!-- HSN -->
                             <div class="col-md-12 mb-1">
-                                <label for="hsn_id" class="form-label">HSN</label><span class="text-danger">*</span>
+                                <label for="hsn_id" class="form-label">SAC Code</label>
+                                {{-- <span class="text-danger">*</span> --}}
                                 <div class="d-flex">
                                     <input type="text" class="form-control autocomplete-hsn mw-100" id="hsn_id"
                                         name="hsn_name" placeholder="Start typing to search for a hsn" autocomplete="off">
@@ -220,6 +221,7 @@
             }
             applyCapsLock();
             const baseUrl = getBaseUrl();
+            const sac = "{{ $sac ?? 'Sac' }}";
 
             function initializeAutocomplete(selector, url, hiddenFieldSelector, groupSelector = null) {
                 if ($(selector).length) {
@@ -382,7 +384,8 @@
             });
 
             $(".autocomplete-hsn").each(function() {
-                initializeAutocomplete(this, baseUrl + "/search?type=hsn", "#id_hsn", '.autocomplete-hsn');
+                initializeAutocomplete(this, baseUrl + `/search?type=hsn&hsn_type=${sac}`, "#id_hsn",
+                    '.autocomplete-hsn');
             });
 
             $(".autocomplete-ledger-group-expense").each(function() {

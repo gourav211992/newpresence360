@@ -88,7 +88,8 @@
                                             <option value="{{ $subtype->id }}">{{ $subtype->name }}</option>
                                         @endforeach
                                         <option value="traded_item">Traded Item</option>
-                                        <option value="asset">Asset</option>   
+                                        <option value="asset">Asset</option> 
+                                        <option value="scrap">Scrap</option>   
                                     </select>
                                 </div>
                                 <div class="mb-1">

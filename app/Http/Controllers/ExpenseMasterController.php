@@ -112,8 +112,9 @@ class ExpenseMasterController extends Controller
         $ledgers = Ledger::where('status', 1)
             ->get();
         $status = ConstantHelper::STATUS;
+        $sac = ConstantHelper::SAC;
 
-        return view('procurement.expense-master.index', compact('ledgers', 'status', 'hsns'));
+        return view('procurement.expense-master.index', compact('ledgers', 'status', 'hsns', 'sac'));
     }
 
     public function store(ExpenseMasterRequest $request)

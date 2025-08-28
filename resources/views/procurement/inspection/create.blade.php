@@ -3,7 +3,8 @@
     <style>
         #mrnModal .table-responsive {
             overflow-y: auto;
-            max-height: 300px; /* Set the height of the scrollable body */
+            max-height: 300px;
+            /* Set the height of the scrollable body */
             position: relative;
         }
 
@@ -14,27 +15,41 @@
 
         #mrnModal .mrn-order-detail thead {
             position: sticky;
-            top: 0; /* Stick the header to the top of the table container */
-            background-color: white; /* Optional: Make sure header has a background */
-            z-index: 1; /* Ensure the header stays above the body content */
+            top: 0;
+            /* Stick the header to the top of the table container */
+            background-color: white;
+            /* Optional: Make sure header has a background */
+            z-index: 1;
+            /* Ensure the header stays above the body content */
         }
+
         #mrnModal .mrn-order-detail th {
-            background-color: #f8f9fa; /* Optional: Background for the header */
+            background-color: #f8f9fa;
+            /* Optional: Background for the header */
             text-align: left;
             padding: 8px;
         }
+
         #mrnModal .mrn-order-detail td {
             padding: 8px;
         }
-        .tooltip-inner { text-align: left}
-        .subStore { display: none; }
+
+        .tooltip-inner {
+            text-align: left
+        }
+
+        .subStore {
+            display: none;
+        }
+
         .pass-label {
             font-weight: 500;
         }
 
         #inspectionChecklistModal .table-responsive {
             overflow-y: auto;
-            max-height: 300px; /* Set the height of the scrollable body */
+            max-height: 300px;
+            /* Set the height of the scrollable body */
             position: relative;
         }
 
@@ -45,22 +60,29 @@
 
         #inspectionChecklistModal .po-order-detail thead {
             position: sticky;
-            top: 0; /* Stick the header to the top of the table container */
-            background-color: white; /* Optional: Make sure header has a background */
-            z-index: 1; /* Ensure the header stays above the body content */
+            top: 0;
+            /* Stick the header to the top of the table container */
+            background-color: white;
+            /* Optional: Make sure header has a background */
+            z-index: 1;
+            /* Ensure the header stays above the body content */
         }
+
         #inspectionChecklistModal .po-order-detail th {
-            background-color: #f8f9fa; /* Optional: Background for the header */
+            background-color: #f8f9fa;
+            /* Optional: Background for the header */
             text-align: left;
             padding: 8px;
         }
+
         #inspectionChecklistModal .po-order-detail td {
             padding: 8px;
         }
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
+    <form class="ajax-input-form" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection"
+        enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         @csrf
         <div class="app-content content ">
@@ -88,13 +110,16 @@
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
                                 <input type="hidden" name="document_status" value="draft" id="document_status">
-                                <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
+                                <button type="button" onClick="javascript: history.go(-1)"
+                                    class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
+                                    name="action" value="draft">
                                     <i data-feather='save'></i> Save as Draft
                                 </button>
-                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted">
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
+                                    value="submitted">
                                     <i data-feather="check-circle"></i> Submit
                                 </button>
                             </div>
@@ -109,7 +134,8 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div
+                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
@@ -119,13 +145,15 @@
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Series <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="book_id" name="book_id">
                                                             <!-- <option value="">Select</option> -->
                                                             @foreach($books as $book)
-                                                                <option value="{{$book->id}}">{{ucfirst($book->book_code)}}</option>
+                                                                <option value="{{$book->id}}">{{ucfirst($book->book_code)}}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                         <!-- <input type="hidden" name="mrn_no" id="book_code"> -->
@@ -134,29 +162,34 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Document No <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document No <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="document_number" class="form-control" id="document_number">
+                                                        <input type="text" name="document_number" class="form-control"
+                                                            id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document Date <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
+                                                        <input type="date" class="form-control" value="{{date('Y-m-d')}}"
+                                                            name="document_date">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
+                                                        <select class="form-select header_store_id" id="header_store_id"
+                                                            name="header_store_id">
                                                             @foreach($locations as $erpStore)
-                                                                <option value="{{$erpStore->id}}"
-                                                                    {{ old('header_store_id', $selectedStoreId ?? '') == $erpStore->id ? 'selected' : '' }}>
+                                                                <option value="{{$erpStore->id}}" {{ old('header_store_id', $selectedStoreId ?? '') == $erpStore->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($erpStore->store_name) }}
                                                                 </option>
                                                             @endforeach
@@ -165,10 +198,12 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Main Store <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Main Store <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
+                                                        <select class="form-select sub_store" id="sub_store_id"
+                                                            name="sub_store_id">
                                                         </select>
                                                     </div>
                                                 </div>
@@ -177,18 +212,19 @@
                                                         <label class="form-label">Rejected Store</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select rejected_sub_store rejected_sub_store_id" id="rejected_sub_store_id" name="rejected_sub_store_id">
+                                                        <select class="form-select rejected_sub_store rejected_sub_store_id"
+                                                            id="rejected_sub_store_id" name="rejected_sub_store_id">
                                                         </select>
                                                     </div>
                                                 </div>
                                                 <!-- <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control">
-                                                    </div>
-                                                </div> -->
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Reference No </label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <input type="text" name="reference_number" class="form-control">
+                                                        </div>
+                                                    </div> -->
                                                 <div class="row align-items-center mb-1 d-none" id="reference_from">
                                                     <div class="col-md-3">
                                                         <label class="form-label">
@@ -196,15 +232,20 @@
                                                         </label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
+                                                        <button type="button"
+                                                            class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
                                                             <i data-feather="plus-square"></i>
                                                             Outstanding GRN
                                                         </button>
-                                                        <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
+                                                        <input type="hidden" name="module_type" id="module_type"
+                                                            class="module_type" value="mrn">
                                                     </div>
-                                                    <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                    <div class="row align-items-center mb-1" id="referenceNoDiv"
+                                                        style="display: none;">
                                                         <div class="col-md-5">
-                                                            <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
+                                                            <input type="hidden" name="reference_type"
+                                                                class="form-control reference_type"
+                                                                id="reference_type_input" readonly>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -224,26 +265,33 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly />
+                                                            <label class="form-label">Vendor <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" placeholder="Select"
+                                                                class="form-control mw-100 ledgerselecct" id="vendor_name"
+                                                                name="vendor_name" readonly />
                                                             <input type="hidden" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" id="vendor_code" name="vendor_code" />
                                                             <input type="hidden" id="shipping_id" name="shipping_id" />
                                                             <input type="hidden" id="billing_id" name="billing_id" />
-                                                            <input type="hidden" id="hidden_state_id" name="hidden_state_id" />
-                                                            <input type="hidden" id="hidden_country_id" name="hidden_country_id" />
+                                                            <input type="hidden" id="hidden_state_id"
+                                                                name="hidden_state_id" />
+                                                            <input type="hidden" id="hidden_country_id"
+                                                                name="hidden_country_id" />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Currency <span
+                                                                    class="text-danger">*</span></label>
                                                             <select class="form-select" name="currency_id">
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Payment Terms <span
+                                                                    class="text-danger">*</span></label>
                                                             <select class="form-select" name="payment_term_id">
                                                             </select>
                                                         </div>
@@ -255,7 +303,12 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
+                                                                    <label class="form-label w-100">Vendor Address <span
+                                                                            class="text-danger">*</span> <a
+                                                                            href="javascript:;"
+                                                                            class="float-end font-small-2 editAddressBtn"
+                                                                            data-type="billing"><i
+                                                                                data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">-</div>
                                                                 </div>
                                                             </div>
@@ -266,8 +319,12 @@
                                                             <p>Billing Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
-                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                                    <label class="form-label w-100">Billing Address <span
+                                                                            class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;"
+                                                                            class="float-end font-small-2 editAddressBtn"
+                                                                            data-type="billing"><i
+                                                                                data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
                                                                     <div class="mrnaddedd-prim org_address">-</div>
                                                                 </div>
@@ -279,8 +336,12 @@
                                                             <p>Delivery Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
-                                                                        {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
+                                                                    <label class="form-label w-100">Delivery Address <span
+                                                                            class="text-danger">*</span>
+                                                                        {{-- <a href="javascript:;"
+                                                                            class="float-end font-small-2 editAddressBtn"
+                                                                            data-type="billing"><i
+                                                                                data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
                                                                     <div class="mrnaddedd-prim delivery_address">-</div>
                                                                 </div>
@@ -320,8 +381,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date"
-                                                                class="form-control  gate-entry gate_entry_date" id="datepicker2"
-                                                                placeholder="Enter Gate Entry Date">
+                                                                class="form-control  gate-entry gate_entry_date"
+                                                                id="datepicker2" placeholder="Enter Gate Entry Date">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -349,7 +410,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
-                                                            Supplier Invoice No.
+                                                                Supplier Invoice No.
                                                             </label>
                                                             <input type="text" name="supplier_invoice_no"
                                                                 class="form-control  supplier_invoice_no"
@@ -363,14 +424,14 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date"
-                                                                class="form-control  gate-entry supplier_invoice_date" id="datepicker3"
-                                                                placeholder="Enter Supplier Invoice Date">
+                                                                class="form-control  gate-entry supplier_invoice_date"
+                                                                id="datepicker3" placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
-                                                            Transporter Name
+                                                                Transporter Name
                                                             </label>
                                                             <input type="text" name="transporter_name"
                                                                 class="form-control  transporter_name"
@@ -382,13 +443,12 @@
                                                             <label class="form-label">
                                                                 Vehicle No.
                                                                 <i class="ml-2 fas fa-info-circle text-primary"
-                                                                data-bs-toggle="tooltip"
-                                                                data-bs-html="true"
-                                                                title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
+                                                                    data-bs-toggle="tooltip" data-bs-html="true"
+                                                                    title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
                                                             <input type="text" name="vehicle_no"
-                                                            class="form-control vehicle_no"
-                                                            placeholder="Enter Vehicle No." />
+                                                                class="form-control vehicle_no"
+                                                                placeholder="Enter Vehicle No." />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -408,22 +468,24 @@
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
                                                     <!-- <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                                        <i data-feather="x-circle"></i> Delete
-                                                    </a> -->
+                                                            <i data-feather="x-circle"></i> Delete
+                                                        </a> -->
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                                        data-json-key="components_json"
-                                                        data-row-selector="tr[id^='row_']">
+                                                    <table id="itemTable"
+                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                        data-json-key="components_json" data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
-                                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input" id="Email">
+                                                                    <div
+                                                                        class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="Email">
                                                                         <label class="form-check-label" for="Email"></label>
                                                                     </div>
                                                                 </th>
@@ -447,7 +509,9 @@
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                                                <h6
+                                                                                    class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                                    <strong>Item Details</strong></h6>
                                                                             </td>
                                                                         </tr>
                                                                     </table>
@@ -461,19 +525,24 @@
                                                         <div class="col-md-4">
                                                             <div class="mb-1">
                                                                 <label class="form-label">Upload Document</label>
-                                                                <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_mrn_file_preview')" multiple>
-                                                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                                                <input type="file" name="attachment[]" class="form-control"
+                                                                    onchange="addFiles(this,'main_mrn_file_preview')"
+                                                                    multiple>
+                                                                <span
+                                                                    class="text-primary small">{{__("message.attachment_caption")}}</span>
                                                             </div>
                                                         </div>
-                                                        <div class = "col-md-6" style = "margin-top:19px;">
-                                                            <div class = "row" id = "main_mrn_file_preview">
+                                                        <div class="col-md-6" style="margin-top:19px;">
+                                                            <div class="row" id="main_mrn_file_preview">
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
                                                             <label class="form-label">Final Remarks</label>
-                                                            <textarea type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here..."></textarea>
+                                                            <textarea type="text" rows="4" name="remarks"
+                                                                class="form-control"
+                                                                placeholder="Enter Remarks here..."></textarea>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -525,7 +594,8 @@
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
+                    <button type="button" {{-- data-bs-dismiss="modal" --}}
+                        class="btn btn-primary submitAttributeBtn">Select</button>
                     <!-- <button type="button" data-bs-dismiss="modal" class="btn btn-primary">Select</button> -->
                 </div>
             </div>
@@ -533,7 +603,7 @@
     </div>
     {{-- Item Remark Modal --}}
     <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" >
+        <div class="modal-dialog  modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -584,7 +654,7 @@
         let currentProcessType = null;
         let tableRowCount = 0;
 
-        $(document).on('change','#book_id',(e) => {
+        $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
                 getDocNumberByBookId(bookId);
@@ -597,31 +667,31 @@
 
         function getDocNumberByBookId(bookId) {
             let document_date = $("[name='document_date']").val();
-            let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
+            let actionUrl = '{{route("book.get.doc_no_and_parameters")}}' + '?book_id=' + bookId + '&document_date=' + document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
                         // console.log('data', data.data);
                         $("#book_code").val(data.data.book_code);
-                        if(!data.data.doc.document_number) {
+                        if (!data.data.doc.document_number) {
                             $("#document_number").val('');
                         }
                         $("#document_number").val(data.data.doc.document_number);
-                        if(data.data.doc.type == 'Manually') {
+                        if (data.data.doc.type == 'Manually') {
                             $("#document_number").attr('readonly', false);
                         } else {
                             $("#document_number").attr('readonly', true);
                         }
                         const parameters = data.data.parameters;
                         setServiceParameters(parameters);
-                        if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
+                        if (parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
                             $("#tax_required").val(parameters?.tax_required[0]);
                         } else {
                             $("#tax_required").val("");
                         }
 
                     }
-                    if(data.status == 404) {
+                    if (data.status == 404) {
                         $("#book_code").val('');
                         $("#document_number").val('');
                         $("#tax_required").val("");
@@ -642,7 +712,7 @@
         setTimeout(() => {
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
-        },0);
+        }, 0);
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
             /*Date Validation*/
@@ -670,21 +740,21 @@
                 docDateInput.attr("min", new Date().toISOString().split('T')[0]);
             }
             /*Date Validation*/
-            if(isFeature && isPast) {
+            if (isFeature && isPast) {
                 docDateInput.removeAttr('min');
                 docDateInput.removeAttr('max');
             }
 
             /*Reference from*/
             let reference_from_service = parameters.reference_from_service;
-            if(reference_from_service.length) {
+            if (reference_from_service.length) {
                 let po = '{{\App\Helpers\ConstantHelper::MRN_SERVICE_ALIAS}}';
-                if(reference_from_service.includes(po)) {
+                if (reference_from_service.includes(po)) {
                     $("#reference_from").removeClass('d-none');
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
-                if(reference_from_service.includes('d')) {
+                if (reference_from_service.includes('d')) {
                     $("#addNewItemBtn").removeClass('d-none');
                 } else {
                     $("#addNewItemBtn").addClass('d-none');
@@ -697,7 +767,7 @@
                 });
                 setTimeout(() => {
                     location.href = '{{route("inspection.index")}}';
-                },1500);
+                }, 1500);
             }
         }
 
@@ -705,17 +775,17 @@
         function initializeAutocomplete1(selector, type) {
             $(selector).autocomplete({
                 minLength: 0,
-                source: function(request, response) {
+                source: function (request, response) {
                     $.ajax({
                         url: '/search',
                         method: 'GET',
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:'vendor_list'
+                            type: 'vendor_list'
                         },
-                        success: function(data) {
-                            response($.map(data, function(item) {
+                        success: function (data) {
+                            response($.map(data, function (item) {
                                 return {
                                     id: item.id,
                                     label: item.company_name,
@@ -724,12 +794,12 @@
                                 };
                             }));
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error('Error fetching customer data:', xhr.responseText);
                         }
                     });
                 },
-                select: function(event, ui) {
+                select: function (event, ui) {
                     var $input = $(this);
                     var itemName = ui.item.value;
                     var itemId = ui.item.id;
@@ -741,14 +811,14 @@
                     vendorOnChange(itemId);
                     return false;
                 },
-                change: function(event, ui) {
+                change: function (event, ui) {
                     console.log("changess!");
                     if (!ui.item) {
                         $(this).val("");
                         $(this).attr('data-name', '');
                     }
                 }
-            }).focus(function() {
+            }).focus(function () {
                 if (this.value === "") {
                     $(this).autocomplete("search", "");
                 }
@@ -756,16 +826,16 @@
         }
         // initializeAutocomplete1("#vendor_name");
 
-        function vendorOnChange(vendorId, type=null, typeId=null) {
+        function vendorOnChange(vendorId, type = null, typeId = null) {
             let store_id = $("[name='header_store_id']").val() || '';
             let actionUrl = "{{route('inspection.get.address')}}"
-            +'?id='+vendorId+
-            '&store_id='+store_id+
-            '&type='+type+
-            '&typeId='+typeId;
+                + '?id=' + vendorId +
+                '&store_id=' + store_id +
+                '&type=' + type +
+                '&typeId=' + typeId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.data?.currency_exchange?.status == false) {
+                    if (data.data?.currency_exchange?.status == false) {
                         $("#vendor_name").val('');
                         $("#vendor_id").val('');
                         $("#vendor_code").val('');
@@ -783,7 +853,7 @@
                         });
                         return false;
                     }
-                    if(data.data.status == 200) {
+                    if (data.data.status == 200) {
                         $("#vendor_name").val(data?.data?.vendor?.company_name);
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
@@ -799,7 +869,7 @@
                         $("#hidden_state_id").val(data.data.vendor_address.state.id);
                         $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
-                        if(data.data.error_message) {
+                        if (data.data.error_message) {
                             $("#vendor_name").val('');
                             $("#vendor_id").val('');
                             $("#vendor_code").val('');
@@ -824,10 +894,10 @@
 
         function initializeAutocomplete2(selector, type) {
             $(selector).autocomplete({
-                source: function(request, response) {
+                source: function (request, response) {
                     let selectedAllItemIds = [];
-                    $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                        if(Number($(item).find('[name*="item_id"]').val())) {
+                    $("#itemTable tbody [id*='row_']").each(function (index, item) {
+                        if (Number($(item).find('[name*="item_id"]').val())) {
                             selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
                         }
                     });
@@ -837,33 +907,33 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:'goods_item_list',
-                            selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            type: 'goods_item_list',
+                            selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                         },
-                        success: function(data) {
-                            response($.map(data, function(item) {
+                        success: function (data) {
+                            response($.map(data, function (item) {
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
                                     code: item.item_code || '',
                                     item_id: item.id,
-                                    item_name:item.item_name,
-                                    is_inspection:item.is_inspection,
-                                    uom_name:item.uom?.name,
-                                    uom_id:item.uom_id,
-                                    hsn_id:item.hsn?.id,
-                                    hsn_code:item.hsn?.code,
-                                    alternate_u_o_ms:item.alternate_u_o_ms,
+                                    item_name: item.item_name,
+                                    is_inspection: item.is_inspection,
+                                    uom_name: item.uom?.name,
+                                    uom_id: item.uom_id,
+                                    hsn_id: item.hsn?.id,
+                                    hsn_code: item.hsn?.code,
+                                    alternate_u_o_ms: item.alternate_u_o_ms,
                                 };
                             }));
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error('Error fetching customer data:', xhr.responseText);
                         }
                     });
                 },
                 minLength: 0,
-                select: function(event, ui) {
+                select: function (event, ui) {
                     let $input = $(this);
                     let itemCode = ui.item.code;
                     let itemName = ui.item.value;
@@ -888,15 +958,15 @@
                     closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     $input.val(itemCode);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                    if(ui.item?.alternate_u_o_ms) {
-                        for(let alterItem of ui.item.alternate_u_o_ms) {
-                        uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                    if (ui.item?.alternate_u_o_ms) {
+                        for (let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                         }
                     }
                     closestTr.find('[name*=uom_id]').append(uomOption);
                     closestTr.find('.attributeBtn').trigger('click');
                     setTimeout(() => {
-                        if(ui.item.is_attr) {
+                        if (ui.item.is_attr) {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
                         } else {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -907,15 +977,15 @@
                     getItemDetail(closestTr);
                     return false;
                 },
-                change: function(event, ui) {
+                change: function (event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                            // $('#itemId').val('');
+                        // $('#itemId').val('');
                         $(this).attr('data-name', '');
                         $(this).attr('data-code', '');
                     }
                 }
-            }).focus(function() {
+            }).focus(function () {
                 if (this.value === "") {
                     $(this).autocomplete("search", "");
                 }
@@ -923,8 +993,8 @@
         }
 
         /*Add New Row*/
-        $(document).on('click','#addNewItemBtn', (e) => {
-            if(!checkBasicFilledDetail()) {
+        $(document).on('click', '#addNewItemBtn', (e) => {
+            if (!checkBasicFilledDetail()) {
                 Swal.fire({
                     title: 'Error!',
                     text: 'Please fill header detail first',
@@ -932,7 +1002,7 @@
                 });
                 return false;
             }
-            if(!checkVendorFilledDetail()) {
+            if (!checkVendorFilledDetail()) {
                 Swal.fire({
                     title: 'Error!',
                     text: 'Please fill vendor detail first',
@@ -944,43 +1014,43 @@
             /*Check last tr data shoud be required*/
             let lastRow = $('#itemTable .mrntableselectexcel tr:last');
             let lastTrObj = {
-                item_id : "",
-                attr_require : true,
-                row_length : lastRow.length
+                item_id: "",
+                attr_require: true,
+                row_length: lastRow.length
             };
 
-            if(lastRow.length == 0) {
+            if (lastRow.length == 0) {
                 lastTrObj.attr_require = false;
                 lastTrObj.item_id = "0";
             }
 
-            if(lastRow.length > 0) {
+            if (lastRow.length > 0) {
                 let item_id = lastRow.find("[name*='item_id']").val();
-                if(lastRow.find("[name*='attr_name']").length) {
-                    var emptyElements = lastRow.find("[name*='attr_name']").filter(function() {
+                if (lastRow.find("[name*='attr_name']").length) {
+                    var emptyElements = lastRow.find("[name*='attr_name']").filter(function () {
                         return $(this).val().trim() === '';
                     });
                     attr_require = emptyElements?.length ? true : false;
                 } else {
-                attr_require = true;
+                    attr_require = true;
                 }
 
                 lastTrObj = {
-                    item_id : item_id,
-                    attr_require : attr_require,
-                    row_length : lastRow.length
+                    item_id: item_id,
+                    attr_require: attr_require,
+                    row_length: lastRow.length
                 };
 
-                if($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && item_id) {
+                if ($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && item_id) {
                     lastTrObj.attr_require = false;
                 }
             }
 
-            let actionUrl = '{{route("inspection.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+            let actionUrl = '{{route("inspection.item.row")}}' + '?count=' + rowsLength + '&component_item=' + JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                                // $("#submit-button").click();
+                        // $("#submit-button").click();
                         if (rowsLength) {
                             $("#itemTable > tbody > tr:last").after(data.data.html);
                         } else {
@@ -991,9 +1061,9 @@
                         $(".poSelect").hide();
                         $(".joSelect").hide();
                         $(".soSelect").hide();
-                        $("#vendor_name").prop('readonly',true);
+                        $("#vendor_name").prop('readonly', true);
                         $(".editAddressBtn").addClass('d-none');
-                    } else if(data.status == 422) {
+                    } else if (data.status == 422) {
                         Swal.fire({
                             title: 'Error!',
                             text: data.message || 'An unexpected error occurred.',
@@ -1011,21 +1081,21 @@
         });
 
         /*Delete Row*/
-        $(document).on('click','#deleteBtn', (e) => {
+        $(document).on('click', '#deleteBtn', (e) => {
             let itemIds = [];
-            $('#itemTable > tbody .form-check-input').each(function() {
+            $('#itemTable > tbody .form-check-input').each(function () {
                 if ($(this).is(":checked")) {
                     itemIds.push($(this).val());
                 }
             });
             if (itemIds.length) {
-                itemIds.forEach(function(item,index) {
+                itemIds.forEach(function (item, index) {
                     let poItemHiddenId = $(`#row_${item}`).find("input[name*='[mrn_item_hidden_ids]']").val();
 
-                    if(poItemHiddenId) {
+                    if (poItemHiddenId) {
                         let idsToRemove = poItemHiddenId.split(',');
                         let selectedMrnIds = localStorage.getItem('selectedMrnIds');
-                        if(selectedMrnIds) {
+                        if (selectedMrnIds) {
                             selectedMrnIds = JSON.parse(selectedMrnIds);
                             let updatedIds = selectedMrnIds.filter(id => !idsToRemove.includes(id));
                             localStorage.setItem('selectedMrnIds', JSON.stringify(updatedIds));
@@ -1040,8 +1110,8 @@
                     icon: 'error',
                 });
             }
-            if(!$("tr[id*='row_']").length) {
-                $("#itemTable > thead .form-check-input").prop('checked',false);
+            if (!$("tr[id*='row_']").length) {
+                $("#itemTable > thead .form-check-input").prop('checked', false);
                 $("select[name='currency_id']").prop('disabled', false);
                 $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
@@ -1076,8 +1146,8 @@
         });
 
         /*For comp attr*/
-        function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("inspection.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+        function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
+            let actionUrl = '{{route("inspection.item.attr")}}' + '?item_id=' + itemId + `&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1203,12 +1273,13 @@
         }
 
         /*Display item detail*/
-        $(document).on('input change focus', '#itemTable tr input ', function(e){
+        $(document).on('input change focus', '#itemTable tr input ', function (e) {
             let currentTr = e.target.closest('tr');
             getItemDetail(currentTr);
         });
 
         function getItemDetail(currentTr, type=null) {
+            // Normalize to the <tr id="row_X" data-index="X">
             const getVal = (selector) => {
                 let el = $(currentTr).find(selector);
                 return el.length ? el.val() : '';
@@ -1246,11 +1317,12 @@
             });
         }
 
+
         /*Tbl row highlight*/
         $(document).on('click', '.mrntableselectexcel tr', (e) => {
             $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
         });
-        $(document).on('keydown', function(e) {
+        $(document).on('keydown', function (e) {
             if (e.which == 38) {
                 /*bottom to top*/
                 $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
@@ -1258,7 +1330,7 @@
                 /*top to bottom*/
                 $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
-            if($('.trselected').length) {
+            if ($('.trselected').length) {
                 // $('html, body').scrollTop($('.trselected').offset().top - 200);
             }
         });
@@ -1271,7 +1343,7 @@
             $('#edit-address').find('input,textarea,select').each(function () {
                 innerFormData.append($(this).attr('name'), $(this).val());
             });
-            var method = "POST" ;
+            var method = "POST";
             var url = '{{route("inspection.address.save")}}';
             fetch(url, {
                 method: method,
@@ -1280,32 +1352,32 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => {
-                return response.json();
-            })
-            .then(data => {
-                if(data.status == 200) {
-                    let addressType = $("#address_type").val();
-                    if(addressType == 'shipping') {
-                        $("#shipping_id").val(data.data.new_address.id);
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status == 200) {
+                        let addressType = $("#address_type").val();
+                        if (addressType == 'shipping') {
+                            $("#shipping_id").val(data.data.new_address.id);
+                        } else {
+                            $("#billing_id").val(data.data.new_address.id);
+                        }
+                        $("#edit-address").modal('hide');
                     } else {
-                        $("#billing_id").val(data.data.new_address.id);
+                        let formObj = $("#edit-address");
+                        let errors = data.errors;
+                        for (const [key, errorMessages] of Object.entries(errors)) {
+                            var name = key.replace(/\./g, "][").replace(/\]$/, "");
+                            formObj.find(`[name="${name}"]`).parent().append(
+                                `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
+                            );
+                        }
                     }
-                    $("#edit-address").modal('hide');
-                } else {
-                    let formObj = $("#edit-address");
-                    let errors = data.errors;
-                    for (const [key, errorMessages] of Object.entries(errors)) {
-                        var name = key.replace(/\./g, "][").replace(/\]$/, "");
-                        formObj.find(`[name="${name}"]`).parent().append(
-                            `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
-                        );
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Form submission error:', error);
-            });
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                });
 
         });
 
@@ -1335,27 +1407,24 @@
             }
         });
 
-        function getSelectedMrnTypes()
-        {
+        function getSelectedMrnTypes() {
             let moduleTypes = [];
-            $('.mrn_item_checkbox:checked').each(function() {
+            $('.mrn_item_checkbox:checked').each(function () {
                 moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
             });
             return moduleTypes;
         }
 
-        function openMrnRequest()
-        {
+        function openMrnRequest() {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "mrn_document_qt", "document_number", "");
             initializeAutocompleteQt("so_no_input_qt", "so_qt_val", "so_qt", "book_code", "document_number");
         }
 
-        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
+        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#mrnModal';
             $("#" + selector).autocomplete({
-                source: function(request, response) {
+                source: function (request, response) {
                     $.ajax({
                         url: '/search',
                         method: 'GET',
@@ -1363,12 +1432,12 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id : $("#vendor_id_qt_val").val(),
-                            header_book_id : $("#book_id").val(),
-                            store_id : $("#store_id").val() || '',
+                            vendor_id: $("#vendor_id_qt_val").val(),
+                            header_book_id: $("#book_id").val(),
+                            store_id: $("#store_id").val() || '',
                         },
-                        success: function(data) {
-                            response($.map(data, function(item) {
+                        success: function (data) {
+                            response($.map(data, function (item) {
                                 // return {
                                 //     id: item.id,
                                 //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
@@ -1389,34 +1458,34 @@
                                 };
                             }));
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error('Error fetching customer data:', xhr.responseText);
                         }
                     });
                 },
-                appendTo : modalType,
+                appendTo: modalType,
                 minLength: 0,
-                select: function(event, ui) {
+                select: function (event, ui) {
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
                     $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     return false;
                 },
-                change: function(event, ui) {
+                change: function (event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + selectorSibling).val("");
                         $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     }
                 }
-            }).focus(function() {
+            }).focus(function () {
                 if (this.value === "") {
                     $("#" + selectorSibling).val("");
                     $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     $(this).autocomplete("search", "");
                 }
-            }).blur(function() {
+            }).blur(function () {
                 if (this.value === "") {
                     $("#" + selectorSibling).val("");
                     $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
@@ -1440,21 +1509,20 @@
                 item_search = '',
                 selected_mrn_ids = '';
 
-            if(currentProcessType === 'mrn')
-            {
+            if (currentProcessType === 'mrn') {
                 let selectedMrnIds = localStorage.getItem('selectedMrnIds') ?? '[]';
                 selectedMrnIds = JSON.parse(selectedMrnIds);
                 selectedMrnIds = encodeURIComponent(JSON.stringify(selectedMrnIds));
                 document_date = $("[name ='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#document_id_qt_val").val() || '',
-                item_id = $("#item_id_qt_val").val() || '',
-                vendor_id = $("#vendor_id_qt_val").val(),
-                store_id = $(".header_store_id").val() || '',
-                sub_store_id = $(".sub_store").val() || '',
-                so_id = $("#po_so_qt_val").val() || '',
-                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#document_id_qt_val").val() || '',
+                    item_id = $("#item_id_qt_val").val() || '',
+                    vendor_id = $("#vendor_id_qt_val").val(),
+                    store_id = $(".header_store_id").val() || '',
+                    sub_store_id = $(".sub_store").val() || '',
+                    so_id = $("#po_so_qt_val").val() || '',
+                    item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
                 selected_mrn_ids = encodeURIComponent(selectedMrnIds)
             }
             return {
@@ -1473,28 +1541,30 @@
             };
         }
 
-        function getMrn()
-        {
+        function getMrn() {
             const ajaxUrl = '{{ route("inspection.get.mrn", ["type" => "create"]) }}';
             var columns = [];
             columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'id', visible: false, orderable: true, searchable: false },
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false },
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false },
                 { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
                 { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
                 { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
                 { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
                 { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function (td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inspection_qty', name: 'inspection_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inspection_qty', name: 'inspection_qty', render: renderData, orderable: false, searchable: false, createdCell: function (td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function (td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -1510,24 +1580,23 @@
         });
 
         /*Checkbox for po/si item list*/
-        $(document).on('change','.mrn-order-detail > thead .form-check-input',(e) => {
+        $(document).on('change', '.mrn-order-detail > thead .form-check-input', (e) => {
             if (e.target.checked) {
-                $(".mrn-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',true);
+                $(".mrn-order-detail > tbody .form-check-input").each(function () {
+                    $(this).prop('checked', true);
                 });
             } else {
-                $(".mrn-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',false);
+                $(".mrn-order-detail > tbody .form-check-input").each(function () {
+                    $(this).prop('checked', false);
                 });
             }
         });
 
-        function getSelectedMrnIDS()
-        {
+        function getSelectedMrnIDS() {
             let ids = [];
             let referenceNos = [];
 
-            $('.mrn_item_checkbox:checked').each(function() {
+            $('.mrn_item_checkbox:checked').each(function () {
                 ids.push($(this).val());
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
@@ -1572,10 +1641,10 @@
             function initializeAutocomplete2(selector, type) {
                 $(selector).autocomplete({
                     minLength: 0,
-                    source: function(request, response) {
+                    source: function (request, response) {
                         let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
+                        $("#itemTable tbody [id*='row_']").each(function (index, item) {
+                            if (Number($(item).find('[name*="[item_id]"]').val())) {
                                 selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
                             }
                         });
@@ -1585,32 +1654,32 @@
                             dataType: 'json',
                             data: {
                                 q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                                type: 'goods_item_list',
+                                selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                             },
-                            success: function(data) {
-                                response($.map(data, function(item) {
+                            success: function (data) {
+                                response($.map(data, function (item) {
                                     return {
                                         id: item.id,
                                         label: `${item.item_name} (${item.item_code})`,
                                         code: item.item_code || '',
                                         item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
+                                        item_name: item.item_name,
+                                        uom_name: item.uom?.name,
+                                        uom_id: item.uom_id,
+                                        hsn_id: item.hsn?.id,
+                                        hsn_code: item.hsn?.code,
+                                        alternate_u_o_ms: item.alternate_u_o_ms,
+                                        is_attr: item.item_attributes_count,
                                     };
                                 }));
                             },
-                            error: function(xhr) {
+                            error: function (xhr) {
                                 console.error('Error fetching customer data:', xhr.responseText);
                             }
                         });
                     },
-                    select: function(event, ui) {
+                    select: function (event, ui) {
                         let $input = $(this);
                         let itemCode = ui.item.code;
                         let itemName = ui.item.value;
@@ -1631,15 +1700,15 @@
                         $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        if (ui.item?.alternate_u_o_ms) {
+                            for (let alterItem of ui.item.alternate_u_o_ms) {
+                                uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
                         $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
-                            if(ui.item.is_attr) {
+                            if (ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -1649,15 +1718,15 @@
                         getItemDetail($input.closest('tr'), currentProcessType);
                         return false;
                     },
-                    change: function(event, ui) {
+                    change: function (event, ui) {
                         if (!ui.item) {
                             $(this).val("");
-                                // $('#itemId').val('');
+                            // $('#itemId').val('');
                             $(this).attr('data-name', '');
                             $(this).attr('data-code', '');
                         }
                     }
-                }).focus(function() {
+                }).focus(function () {
                     if (this.value === "") {
                         $(this).autocomplete("search", "");
                     }
@@ -1685,17 +1754,17 @@
 
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
             $("#" + selector).autocomplete({
-                source: function(request, response) {
+                source: function (request, response) {
                     $.ajax({
                         url: '/search',
                         method: 'GET',
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:type,
+                            type: type,
                         },
-                        success: function(data) {
-                            response($.map(data, function(item) {
+                        success: function (data) {
+                            response($.map(data, function (item) {
                                 return {
                                     id: item.id,
                                     label: `${item.name}`,
@@ -1703,13 +1772,13 @@
                                 };
                             }));
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error('Error fetching customer data:', xhr.responseText);
                         }
                     });
                 },
                 minLength: 0,
-                select: function(event, ui) {
+                select: function (event, ui) {
                     var $input = $(this);
                     var itemName = ui.item.label;
                     var itemId = ui.item.id;
@@ -1721,29 +1790,28 @@
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
                 },
-                change: function(event, ui) {
+                change: function (event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + idSelector).val("");
                         $("#" + nameSelector).val("");
                     }
                 }
-            }).focus(function() {
+            }).focus(function () {
                 if (this.value === "") {
                     $(this).autocomplete("search", "");
                 }
             });
         }
 
-        function getLocation(locationId = '')
-        {
-            let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
+        function getLocation(locationId = '') {
+            let actionUrl = '{{ route("store.get") }}' + '?location_id=' + locationId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         let options = '';
-                        data.data.locations.forEach(function(location) {
-                            options+= `<option value="${location.id}">${location.store_code}</option>`;
+                        data.data.locations.forEach(function (location) {
+                            options += `<option value="${location.id}">${location.store_code}</option>`;
                         });
                         $("[name='header_store_id']").empty().append(options);
                     } else {
@@ -1875,19 +1943,17 @@
                     $("#reference_type_input").val(modelType);
 
                     setTimeout(() => {
-                        if(idsLength > 1)
-                        {
-                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                if(tableRowCount>0)
-                                {
+                        if (idsLength > 1) {
+                            $("#itemTable .mrntableselectexcel tr").each(function (index, item) {
+                                if (tableRowCount > 0) {
                                     currentIndex = tableRowCount + 1;
                                 }
                                 let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex,"#itemTable");
+                                setAttributesUIHelper(currentIndex, "#itemTable");
                             });
                         }
                         currentIndex = tableRowCount + 1;
-                        setAttributesUIHelper(currentIndex,"#itemTable");
+                        setAttributesUIHelper(currentIndex, "#itemTable");
                     }, 500);
                 })
                 .catch(() => {

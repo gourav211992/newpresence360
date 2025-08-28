@@ -84,7 +84,9 @@ class ItemController extends Controller
                     $query->where('is_traded_item', 1);
                 } elseif ($subtypeId === 'asset') {
                     $query->where('is_asset', 1);
-                } else {
+                }elseif ($subtypeId === 'scrap') {
+                    $query->where('is_scrap', 1);
+                }  else {
                     $query->whereHas('subTypes', function ($query) use ($subtypeId) {
                         $query->whereHas('subType', function ($q) use ($subtypeId) {
                             $q->where('id', $subtypeId);
@@ -116,8 +118,12 @@ class ItemController extends Controller
                     if ($row->is_traded_item == '1') {
                         $subTypes .= ($subTypes ? ', ' : '') . 'Traded Item';
                     }
+                     // Scrap
+                    if ($row->is_scrap == '1') {
+                        $subTypes .= ($subTypes ? ', ' : '') . 'Scrap';
+                    }
 
-                    if ($row->subTypes->isEmpty() && $row->is_asset != '1' && $row->is_traded_item != '1') {
+                    if ($row->subTypes->isEmpty() && $row->is_asset != '1' && $row->is_traded_item != '1'  && $row->is_scrap != '1') {
                          $subTypes = 'No Subtypes';
                      }
 
@@ -272,6 +278,9 @@ class ItemController extends Controller
                 } elseif (strpos($searchLower, 'asset') !== false) {
                     $q->orWhere('is_asset', 1);
                 }
+                elseif (strpos($searchLower, 'scrap') !== false) {
+                    $q->orWhere('is_scrap', 1);  
+                }
             });
         }
 
@@ -405,6 +414,7 @@ class ItemController extends Controller
         $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
         $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
         $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
+        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0; 
 
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;
@@ -874,6 +884,7 @@ class ItemController extends Controller
         $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
         $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
         $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
+        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0; 
 
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;

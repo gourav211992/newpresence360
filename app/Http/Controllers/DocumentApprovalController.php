@@ -27,7 +27,6 @@ use DB;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
 use App\Helpers\InventoryHelper;
-use App\Helpers\InventoryHelperV2;
 use App\Helpers\InspectionHelper;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Bom;
@@ -607,8 +606,6 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
-            // Get login user detail
-            $user = Helper::getAuthenticatedUser();
             $mrn = MrnHeader::find($request->id);
             $bookId = $mrn->series_id;
             $docId = $mrn->id;
@@ -632,29 +629,81 @@ class DocumentApprovalController extends Controller
             if($request->action_type != 'deviation-closed')
             {
                 $mrn->document_status = $approveDocument['approvalStatus'];
-                // Get configuration detail
-                $config = Configuration::where('type','organization')
-                    ->where('type_id', $user->organization_id)
-                    ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                    ->first();
-
-                if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
-                    (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
-                }
             }
             $mrn->save();
 
-            // Deviation Job Close
+            // Get login user detail
+            $user = Helper::getAuthenticatedUser();
+
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
+                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+            }
+
             if ($request->action_type === 'deviation-closed') {
-                // dd($pendingCodes = ErpItemUniqueCode::all());
-                $closeDeviationJob = MrnModuleHelper::closeDeviationJob($mrn, $request->closing_job_id);
-                if($closeDeviationJob['status'] == 'error'){
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => "Error occurred while $actionType mrn document.",
-                    ], 500);
+                $mrnItemIds = $mrn->items->pluck('id')->toArray();
+
+                if (!empty($mrnItemIds)) {
+                    $mrnItems = MrnDetail::whereIn('id', $mrnItemIds)->get();
+                    $jobData = ErpWhmJob::find($request->closing_job_id);
+
+                    if ($jobData) {
+                        foreach ($mrnItems as $item) {
+                            $pendingCodes = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->get();
+
+                            $pendingQty = $pendingCodes->sum('qty');
+
+                            // If no pending codes for this item, skip to next
+                            if ($pendingCodes->isEmpty()) {
+                                continue;
+                            }
+
+                            // Delete all pending codes for this job
+                            $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->delete();
+
+                            // Check if any pending still exists for this job in this item
+                            $hasPending = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->exists();
+
+                            if (!$hasPending) {
+                                // Adjust accepted qty only once per item
+                                $orderQty =  ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $pendingQty ?? 0);
+                                $item->decrement('inventory_uom_qty', $pendingQty);
+                                $item->decrement('accepted_qty', $orderQty);
+                                if($mrn->reference_type == 'po'){
+                                    $item->po_item->decrement('ge_qty', $orderQty);
+                                }
+                                if($mrn->reference_type == 'jo'){
+                                    $item->jo_item->decrement('ge_qty', $orderQty);
+                                }
+                                if($mrn->reference_type == 'so'){
+                                    $item->soItem->decrement('ge_qty', $orderQty);
+                                }
+                            }
+                        }
+
+                        // Final check for pending status across all items
+                        $jobHasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
+                            ->where('status', 'pending')
+                            ->exists();
+
+                        $jobData->status = $jobHasPending ? 'deviation' : 'closed';
+                        $jobData->save();
+                    }
                 }
-                
             }
 
             // Mrn Purchase Summary
@@ -896,6 +945,7 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
+            $authUser = Helper::getAuthenticatedUser();
             $doc = ErpMaterialIssueHeader::find($request->id);
             $bookId = $doc->book_id;
             $docId = $doc->id;
@@ -917,7 +967,17 @@ class DocumentApprovalController extends Controller
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
-
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $authUser->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+            // Create job
+            if ($doc -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $doc -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                if(in_array($doc->document_status, [ConstantHelper::APPROVED]) && $config && strtolower($config->config_value) === 'yes'){
+                    (new WhmJob)->createJob($doc->id,'App\Models\ErpSaleInvoice');
+                }
+            }
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",
@@ -939,6 +999,7 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
+            $authUser = Helper::getAuthenticatedUser();
             $doc = ErpPlHeader::find($request->id);
             $bookId = $doc->book_id;
             $docId = $doc->id;
@@ -960,7 +1021,14 @@ class DocumentApprovalController extends Controller
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
+            $config = Configuration::where('type','organization')
+            ->where('type_id', $authUser->organization_id)
+            ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+            ->first();
 
+            if(in_array($doc->document_status, [ConstantHelper::APPROVED]) && $config && strtolower($config->config_value) === 'yes'){
+                (new WhmJob)->createJob($doc->id,'App\Models\ErpPlHeader');
+            }
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",

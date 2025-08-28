@@ -43,7 +43,7 @@ class InventoryHelperV2
     {
         try {
             $user = Helper::getAuthenticatedUser();
-            
+
             // --- Check Configuration for UIC scanning
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
@@ -51,7 +51,7 @@ class InventoryHelperV2
                 ->first();
 
             $cfgYes = $config && strcasecmp((string) $config->config_value, 'yes') === 0;
-    
+
             // cache for sub-store flags
             static $subStoreWarehouseCache = [];
 
@@ -77,7 +77,7 @@ class InventoryHelperV2
                 if(empty($documentDetail->batches)){
                     return self::errorResponse("Error in updateReceiptStock: Batch details not found.");
                 }
-                foreach ($documentDetail->batches as $detail) {    
+                foreach ($documentDetail->batches as $detail) {
                     // Find the original HOLD ledger row
                     $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
                         ->where('document_header_id', $detail->header_id)
@@ -98,6 +98,7 @@ class InventoryHelperV2
                     if (empty($stockLedger)) {
                         continue;
                     }
+
                     foreach($stockLedger as $stockLedger) {
                         $acceptedQty  = (float) ($detail->accepted_inv_uom_qty ?? 0);
                         $rejectedQty  = (float) ($detail->rejected_inv_uom_qty ?? 0);
@@ -105,11 +106,11 @@ class InventoryHelperV2
                         // Proportional costing (prevents double counting when both exist)
                         $totalItemCost  = (float) (($documentDetail->basic_value ?? 0) - (($documentDetail->discount_amount ?? 0) + ($documentDetail->header_discount_amount ?? 0)));
                         $totalProcessed = max($processedQty, 0.0);
-            
+
                         $acceptedCost = ($acceptedQty > 0 && $totalProcessed > 0)
                             ? round($totalItemCost * ($acceptedQty / $totalProcessed), 2)
                             : 0.0;
-            
+
                         $rejectedCost = ($rejectedQty > 0 && $totalProcessed > 0)
                             ? round($totalItemCost - $acceptedCost, 2)
                             : 0.0;
@@ -138,7 +139,7 @@ class InventoryHelperV2
                                 ->whereNull('utilized_id')
                                 ->orderBy('id', 'ASC')
                                 ->first();
-            
+
                             if (!$acceptedLedger) {
                                 $acceptedLedger = $stockLedger->replicate();
                                 $acceptedLedger->hold_qty     = 0;
@@ -146,20 +147,20 @@ class InventoryHelperV2
                                 $acceptedLedger->store_id     = $acceptedStoreId;      // ensure correct store
                                 $acceptedLedger->sub_store_id = $acceptedSubStore; // ensure correct sub-store
                             }
-            
+
                             // Reset both qty columns, then set chosen one
                             $acceptedLedger->receipt_qty         = 0;
                             $acceptedLedger->putaway_pending_qty = 0;
                             $acceptedLedger->{$acceptedQtyField} = $acceptedQty;
-            
+
                             $acceptedLedger->cost_per_unit   = round($acceptedQty > 0 ? ($acceptedCost / $acceptedQty) : 0, 6);
                             $acceptedLedger->total_cost      = $acceptedCost;
                             $acceptedLedger->document_status = $documentHeader->document_status;
-            
+
                             self::updateStockCost($acceptedLedger);
                             $acceptedLedger->save();
                         }
-            
+
                         // ------------------------------------------------------------
                         // 2) REJECTED: target store = inspection->rejected_store_id (if present), else main
                         //              target sub-store = inspection->rejected_sub_store_id
@@ -170,7 +171,7 @@ class InventoryHelperV2
 
                             $rejectedUsePutaway = $cfgYes && $subStoreHasWarehouse($rejectedSubStore);
                             $rejectedQtyField   = $rejectedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
-            
+
                             $rejectedLedger = StockLedger::withDefaultGroupCompanyOrg()
                                 ->where('document_header_id', $detail->header_id)
                                 ->where('document_detail_id', $detail->detail_id)
@@ -184,7 +185,7 @@ class InventoryHelperV2
                                 ->whereNull('utilized_id')
                                 ->orderBy('id', 'ASC')
                                 ->first();
-            
+
                             if (!$rejectedLedger) {
                                 $rejectedLedger = $stockLedger->replicate();
                                 $rejectedLedger->hold_qty     = 0;
@@ -192,26 +193,26 @@ class InventoryHelperV2
                                 $rejectedLedger->store_id     = $rejectedStoreId;  // move to rejected store (can be different)
                                 $rejectedLedger->sub_store_id = $rejectedSubStore; // rejected sub-store
                             }
-            
+
                             // Reset both qty columns, then set chosen one
                             $rejectedLedger->receipt_qty         = 0;
                             $rejectedLedger->putaway_pending_qty = 0;
                             $rejectedLedger->{$rejectedQtyField} = $rejectedQty;
-            
+
                             $rejectedLedger->cost_per_unit   = round($rejectedQty > 0 ? ($rejectedCost / $rejectedQty) : 0, 6);
                             $rejectedLedger->total_cost      = $rejectedCost;
                             $rejectedLedger->document_status = $documentHeader->document_status;
-            
+
                             self::updateStockCost($rejectedLedger);
                             $rejectedLedger->save();
                         }
-            
+
                         // ------------------------------------------------------------
                         // 3) Reduce or delete original HOLD row
                         // ------------------------------------------------------------
                         // $stockLedger->hold_qty -= $processedQty;
                         $stockLedger->receipt_qty -= $processedQty;
-            
+
                         if ($stockLedger->receipt_qty <= 0) {
                             $stockLedger->attributes()->delete();
                             $stockLedger->delete();
@@ -220,9 +221,9 @@ class InventoryHelperV2
                         }
                     }
                 }
-                
+
             }
-    
+
             return self::successResponse("MRN details updated successfully.", []);
         } catch (\Exception $e) {
             return self::errorResponse("Error in updateReceiptStock: " . $e->getMessage());
@@ -354,7 +355,7 @@ class InventoryHelperV2
         $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
             ->where('utilized_id', $issueStock->id)
             ->get();
-        
+
         $stockQty = 0;
         if ($utilizedStockLedger->isNotEmpty()) {
             foreach ($utilizedStockLedger as $val) {
@@ -482,7 +483,7 @@ class InventoryHelperV2
         $availStock = self::checkStockAvailable($mrnItem);
         $confirmedStock = $availStock['confirmedStock'] ?? null;
         if ($confirmedStock) {
-            if ($confirmedStock->receipt_qty < $mrnItem['inventory_uom_qty']) {
+            if ($confirmedStock->receipt_qty <= $mrnItem['inventory_uom_qty']) {
                 return self::successResponse("Available stock", [
                     'stockLedger' => $confirmedStock
                 ]);
@@ -582,7 +583,7 @@ class InventoryHelperV2
                     $s->whereNull('receipt_qty')->orWhere('receipt_qty', '<=', 0);
                 })
                 ->first();
-            
+
             if (!$stock) {
                 return self::errorResponse('No Putaway Stock Found.');
             }

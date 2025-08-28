@@ -11,7 +11,6 @@ let csrfToken = window.pageData.csrf_token;
 const menuAlias = window.pageData.menu_alias;
 const calTaxUrl = window.routes.calTax;
 // Assume bookId is already defined
-
 let actionUrl = `${window.routes.docParams}?book_id=${$("#series_id_input").val()}&document_date=${$("#order_date_input").val()}`;
 let storeUrl = window.routes.storeData;
 let revokeUrl = window.routes.revoke;
