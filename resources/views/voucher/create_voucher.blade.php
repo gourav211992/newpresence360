@@ -29,6 +29,10 @@
     <script>
         const locationCostCentersMap = @json($cost_centers);
         const unauthorizedMonths = @json($unauthorizedMonths);
+        const fy = @json($fy_months);
+        console.log("fy",fy);
+        console.log("unauthorizedMonths",unauthorizedMonths);
+        
     </script>
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -647,6 +651,10 @@
                     confirmButtonText: 'OK'
                     });
                 return false;
+            }
+            else{
+                console.log("authorized month name",selectedMonth);
+                
             }
             return true;
         }
