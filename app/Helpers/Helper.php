@@ -238,8 +238,8 @@ class Helper
             'full_user' => $user
         ]);
     
-        $startDate = request()->cookie('fyear_start_date');
-        $endDate = request()->cookie('fyear_end_date');
+        $startDate = request()->cookie('fyear_start_date') ?? date('Y-m-d');
+        $endDate = request()->cookie('fyear_end_date') ?? date('Y-m-d');
     
         \Log::info('Cookies for Financial Year:', [
             'startDate' => $startDate,
@@ -3475,7 +3475,6 @@ class Helper
         }
 
         $allChildIds = [];
-
         foreach ($groups as $group) {
             $childIds = $group->getAllChildIds(); // Assume this returns array
             $childIds[] = $group->id; // Add parent group ID
