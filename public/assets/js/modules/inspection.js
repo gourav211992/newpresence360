@@ -214,39 +214,30 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     safeSet("qty", orderQty.toFixed(2));
     safeSet("type", currentProcessType);
 
-    try {
-        const response = await fetch(
-            qtyChangeUrl + "?" + new URLSearchParams(data).toString()
-        );
-        const result = await response.json();
+    const response = await fetch(
+        qtyChangeUrl + "?" + new URLSearchParams(data).toString()
+    );
+    const result = await response.json();
 
-        const resultQty = parseFloat(result.order_qty) || 0;
-        const finalQty = resultQty.toFixed(2);
-        $qtyInput.val(finalQty);
+    const resultQty = parseFloat(result.order_qty) || 0;
+    const finalQty = resultQty.toFixed(2);
+    $qtyInput.val(finalQty);
 
-        let acceptedQty = resultQty;
-        let rejectedQty = resultQty - acceptedQty;
+    let acceptedQty = resultQty;
+    let rejectedQty = resultQty - acceptedQty;
 
-        $acceptedQtyInput.val(acceptedQty.toFixed(2));
-        $acceptedQtyInput.trigger("change");
-        $rejectedQtyInput.val(rejectedQty.toFixed(2));
+    $acceptedQtyInput.val(acceptedQty.toFixed(2));
+    $acceptedQtyInput.trigger("change");
+    $rejectedQtyInput.val(rejectedQty.toFixed(2));
 
-        // Keep single-batch hidden JSON aligned if user edits row Accepted/Rejected
-        const batchCount =
-            Number($tr.find(".addBatchBtn").data("batch-count")) || 0;
-        if (batchCount <= 1) seedRowFromMrn(dataIndex);
+    // // Keep single-batch hidden JSON aligned if user edits row Accepted/Rejected
+    // const batchCount =
+    //     Number($tr.find(".addBatchBtn").data("batch-count")) || 0;
+    // if (batchCount <= 1) seedRowFromMrn(dataIndex);
 
-        if (result.status !== 200 && result.message) {
-            Swal.fire({ title: "Error!", text: result.message, icon: "error" });
-            return false;
-        }
-    } catch (err) {
-        console.error(err);
-        Swal.fire({
-            title: "Error!",
-            text: "Quantity validation failed.",
-            icon: "error",
-        });
+    if (result.status !== 200 && result.message) {
+        Swal.fire({ title: "Error!", text: result.message, icon: "error" });
+        return false;
     }
 });
 

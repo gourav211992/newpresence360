@@ -51,7 +51,7 @@
             'estimated_life'      => $asset?->estimated_life ?? ($item?->item?->expected_life ?? ''),
             'salvage_percentage'  => $item?->item?->getSalvagePercentage() ?? 0,
             'salvage_value'       => $asset?->salvage_value ?? null,
-            'procurement_type'    => $procurementType ?? null,
+            'procurement_type'    => $item?->assetDetail?->procurement_type ?? null,
             'capitalization_date' => optional($asset?->capitalization_date)->toDateString()
                                         ?? optional($mrn->document_date)->toDateString()
                                         ?? now()->toDateString(),
@@ -67,7 +67,7 @@
                'expiry_date'         => $b->expiry_date?->toDateString(), // Y-m-d
                'quantity'            => (float) $b->quantity,
             ];
-      })->values();
+        })->values();
     @endphp
     <tr id="row_{{ $rowCount }}" data-index="{{ $rowCount }}"
         @if ($rowCount < 2) class="trselected" @endif>

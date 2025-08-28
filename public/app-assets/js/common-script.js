@@ -153,6 +153,17 @@ $(document).ready(function() {
                     dataType: 'json',
                     data: data,
                     success: function(data) {
+                        $(selector).next('.text-danger').remove();
+                        if (config.type === 'item-name') {
+                            let exactMatch = data.find(item => 
+                                (item[config.nameField] || '').toLowerCase() === request.term.toLowerCase()
+                            );
+                            if (exactMatch) {
+                                $(selector).after('<span class="text-danger">This item name has already been taken.</span>');
+                            }
+                        } else {
+                            $(selector).next('.text-danger').remove();
+                        }
                         response($.map(data, function(item) {
                             var result = {
                                 id: item.id,

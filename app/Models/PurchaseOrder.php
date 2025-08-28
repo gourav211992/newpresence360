@@ -60,7 +60,8 @@ class PurchaseOrder extends Model
         'gate_entry_required',
         'supp_invoice_required',
         'partial_delivery',
-        'credit_days'
+        'credit_days',
+        'consignee_name'
     ];
 
     public static function boot()

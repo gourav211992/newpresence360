@@ -95,15 +95,19 @@ class ItemImportExportService
             ['match' => ['E'],             'code' => 'EX'],
             ['match' => ['TI'],            'code' => 'TR'],
             ['match' => ['A'],             'code' => 'AS'],
+            ['match' => ['SC'],             'code' => 'SC'],
         ];
-        foreach ($combinations as $combo) {
+         foreach ($combinations as $combo) {
             $match = $combo['match'];
             sort($match);
             if ($types === $match) {
                 return $combo['code'];
             }
         }
-       return '';
+
+        throw new \InvalidArgumentException(
+            "Invalid subtype combination provided: " . implode(', ', $types)
+        );
     }
 
     public function generateCustomerCode($customerInitials, $customerType)
@@ -340,6 +344,7 @@ class ItemImportExportService
             ['match' => ['E'],             'code' => 'E'],
             ['match' => ['TI'],            'code' => null],
             ['match' => ['A'],             'code' => null],
+            ['match' => ['SC'],            'code' => null],
         ];
 
         $matched = false;
@@ -363,6 +368,7 @@ class ItemImportExportService
             'sub_type_id'     => null,
             'is_traded_item'  => in_array('TI', $subTypeCodes) ? 1 : 0,
             'is_asset'        => in_array('A', $subTypeCodes) ? 1 : 0,
+            'is_scrap'        => in_array('SC', $subTypeCodes) ? 1 : 0,
         ];
 
         if ($resolvedCode && isset($subTypeMapping[$resolvedCode])) {

@@ -166,6 +166,9 @@ class AutocompleteController extends Controller
             }
              elseif ($type === 'hsn') {
                 $results = Hsn::where('status', ConstantHelper::ACTIVE)
+                ->when($request->hsn_type, function ($q) use ($request) {
+                    return $q->where('type', $request->hsn_type);
+                })
                 ->where(function ($query) use ($term) {
                     $query->where('code', 'LIKE', "%$term%")
                           ->orWhere('description', 'LIKE', "%$term%");
@@ -232,54 +235,53 @@ class AutocompleteController extends Controller
                     $results = $fallbackQuery->limit(10)->get(['id', 'company_name', 'customer_code']);
                 }
             }
-            elseif ($type === 'item-name') {
+           elseif ($type === 'item-name') {
                 $query = Item::query()
                     ->where('status', ConstantHelper::ACTIVE);
 
                 if ($term) {
                     $query->searchByKeywords($term);
+                    $results = $query->get(['id', 'item_code', 'item_name']);
+                    if ($results->isEmpty()) {
+                        return response()->json([
+                            'message' => 'Record not found'
+                        ]);
+                    }
                 }
-                $results = $query->get(['id', 'item_code', 'item_name']);
-                if ($results->isEmpty()) {
-                    $results = Item::query()
-                        ->where('status', ConstantHelper::ACTIVE)
-                        ->limit(10)
-                        ->get(['id', 'item_code', 'item_name']);
-                }
+                return response()->json($results);
             }
 
-            elseif ($type === 'customer-name') {
-                $query = Customer::query()
-                    ->where('status', ConstantHelper::ACTIVE);
+           elseif ($type === 'customer-name') {
+            $query = Customer::query()
+                ->where('status', ConstantHelper::ACTIVE);
 
-                if ($term) {
-                    $query->searchByKeywords($term);
-                }
+            if ($term) {
+                $query->searchByKeywords($term);
                 $results = $query->get(['id', 'customer_code', 'company_name']);
 
                 if ($results->isEmpty()) {
-                    $results = Customer::query()
-                        ->where('status', ConstantHelper::ACTIVE)
-                        ->limit(10)
-                        ->get(['id', 'customer_code', 'company_name']);
+                    return response()->json([
+                        'message' => 'Record not found'
+                    ]);
                 }
             }
-            elseif ($type === 'vendor-name') {
-                $query = Vendor::query()
-                    ->where('status', ConstantHelper::ACTIVE);
+             return response()->json($results);
+          }
+         elseif ($type === 'vendor-name') {
+            $query = Vendor::query()
+                ->where('status', ConstantHelper::ACTIVE);
 
-                if ($term) {
-                    $query->searchByKeywords($term);
-                }
-
+            if ($term) {
+                $query->searchByKeywords($term);
                 $results = $query->get(['id', 'vendor_code', 'company_name']);
                 if ($results->isEmpty()) {
-                    $results = Vendor::query()
-                        ->where('status', ConstantHelper::ACTIVE)
-                        ->limit(10)
-                        ->get(['id', 'vendor_code', 'company_name']);
+                    return response()->json([
+                        'message' => 'Record not found'
+                    ]);
                 }
             }
+            return response()->json($results);
+          }
             elseif ($type === 'sub_type') {
                 $results = SubType::where('status', ConstantHelper::ACTIVE)
                 ->where(function ($query) use ($term) {
@@ -346,43 +348,28 @@ class AutocompleteController extends Controller
                     $groupIds = array_merge([$group->id], $childGroupIds);
                     $stringGroupIds = array_map('strval', $groupIds);
 
-                   $query->where(function($q2) use ($stringGroupIds) {
+                    $query->where(function($q2) use ($stringGroupIds) {
                         foreach ($stringGroupIds as $id) {
                             $q2->orWhereJsonContains('ledger_group_id', $id);
                         }
                     });
-                } else {
-                    $results = collect();
-                    return $results;
-                }
-
-                $results = $query->where(function($query) use ($term) {
-                                     $query->where('code', 'LIKE', "%{$term}%")
-                                           ->orWhere('name', 'LIKE', "%{$term}%");
-                                  })
-                                 ->get(['id', 'code', 'name']);
-
-                if ($results->isEmpty()) {
-                    $results = Ledger::where('status', 1);
-
-                     $group = Group::where('name', 'Bank Accounts')->first();
-                     if ($group) {
-                        $childGroupIds = $group->getAllChildIds();
-                        $groupIds = array_merge([$group->id], $childGroupIds);
-                        $stringGroupIds = array_map('strval', $groupIds);
-
-                         $query->where(function($q2) use ($stringGroupIds) {
-                            foreach ($stringGroupIds as $id) {
-                                $q2->orWhereJsonContains('ledger_group_id', $id);
-                            }
+                    if ($term) {
+                        $query->where(function($q2) use ($term) {
+                            $q2->where('code', 'LIKE', "%{$term}%")
+                            ->orWhere('name', 'LIKE', "%{$term}%");
                         });
                     }
+                    $results = $query->get(['id', 'code', 'name']);
 
-                    $results =   $results->limit(10)
-                                         ->get(['id', 'code', 'name']);
+                    if ($results->isEmpty()) {
+                        return collect();
+                    }
+
+                } else {
+                    return collect();
                 }
             }
-            elseif ($type === 'customerLadger' || $type === 'vendorLadger') {
+           elseif ($type === 'customerLadger' || $type === 'vendorLadger') {
                 $groupName = $type === 'customerLadger' ? 'Account Receivable' : 'Account Payable';
 
                 $query = Ledger::where('status', 1);
@@ -390,11 +377,11 @@ class AutocompleteController extends Controller
                 $group = Group::where('name', $groupName)->first();
                 if ($group) {
                     $lastLevelGroupIds = $group->getAllLastLevelGroupIds();
-                    $stringGroupIds = array_map('strval', $lastLevelGroupIds);
 
-                    $query->where(function($q2) use ($stringGroupIds) {
-                        foreach ($stringGroupIds as $id) {
-                            $q2->orWhereJsonContains('ledger_group_id', $id);
+                    $query->where(function($q) use ($lastLevelGroupIds) {
+                        foreach ($lastLevelGroupIds as $child) {
+                            $q->orWhereJsonContains('ledger_group_id', (string)$child)
+                            ->orWhereJsonContains('ledger_group_id', $child);
                         }
                     });
                 } else {
@@ -405,25 +392,25 @@ class AutocompleteController extends Controller
                     ]);
                 }
 
-                $results = $query->where(function($query) use ($term) {
-                                        $query->where('code', 'LIKE', "%{$term}%")
-                                            ->orWhere('name', 'LIKE', "%{$term}%");
-                                    })
-                                    ->get(['id', 'code', 'name']);
+                // Term search
+                if (!empty($term)) {
+                    $query->where(function($q) use ($term) {
+                        $q->where('code', 'LIKE', "%{$term}%")
+                        ->orWhere('name', 'LIKE', "%{$term}%");
+                    });
+                }
 
+                $results = $query->get(['id', 'code', 'name']);
+
+                // Fallback if empty
                 if ($results->isEmpty()) {
-                    $fallbackQuery = Ledger::where('status', 1);
-
-                    if ($group) {
-                        $lastLevelGroupIds = $group->getAllLastLevelGroupIds();
-                        $stringGroupIds = array_map('strval', $lastLevelGroupIds);
-
-                        $fallbackQuery->where(function($q2) use ($stringGroupIds) {
-                            foreach ($stringGroupIds as $id) {
-                                $q2->orWhereJsonContains('ledger_group_id', $id);
+                    $fallbackQuery = Ledger::where('status', 1)
+                        ->where(function($q) use ($lastLevelGroupIds) {
+                            foreach ($lastLevelGroupIds as $child) {
+                                $q->orWhereJsonContains('ledger_group_id', (string)$child)
+                                ->orWhereJsonContains('ledger_group_id', $child);
                             }
                         });
-                    }
 
                     $results = $fallbackQuery->limit(10)->get(['id', 'code', 'name']);
                 }
@@ -778,7 +765,12 @@ class AutocompleteController extends Controller
                     ->with(['alternateUOMs.uom'])
                     ->withCount('itemAttributes')
                     ->limit(10)
-                    ->get(['id', 'item_name', 'item_code', 'uom_id','hsn_id']);
+                    ->get(['id', 'item_name', 'item_code', 'uom_id','hsn_id'])
+                    ->map(function ($item) {
+                        // Append salvage_percentage to each item
+                        $item->salvage_percentage = $item->getSalvagePercentage();
+                        return $item;
+                    });
             } elseif ($type === 'ledger' || $type === 'ladger') {
                 $results = Ledger::where(function($query) use ($term) {
                                      $query->where('code', 'LIKE', "%{$term}%")
@@ -1248,7 +1240,7 @@ class AutocompleteController extends Controller
                     });
                 })
                 ->limit(10)
-                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 
+                ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id',
                         'payment_terms_id','display_name', 'credit_days', 'credit_days_editable']);
             } else if ($type === 'location') {
                 $results = InventoryHelper::getAccessibleLocations();

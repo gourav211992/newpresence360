@@ -43,7 +43,7 @@
                                     <button type="submit"
                                         class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
                                         value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                @endif 
+                                @endif
                                 @if (
                                     !intval(request('amendment') ?? 0) &&
                                         // $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
@@ -331,6 +331,17 @@
                                                                 id="exchange_rate" name="exchange_rate" />
                                                         </div>
                                                     </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Consignee Name
+                                                                {{-- <span class="text-danger">*</span></label> --}}
+                                                            <input type="text"
+                                                                class="form-control mw-100 @if (!$buttons['submit'] || !$buttons['draft']) disabled-input @endif"
+                                                                id="consignee_name" name="consignee_name"
+                                                                value="{{ $po->consignee_name }}" />
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div class="row">
@@ -596,20 +607,27 @@
                                                     <div class="mb-1">
                                                         <label class="form-label">Terms & Conditions</label>
                                                         <select class="form-select select2" name="term_id[]" multiple>
-                                                            @foreach($termsAndConditions as $termsAndCondition)
-                                                            <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option>
+                                                            @foreach ($termsAndConditions as $termsAndCondition)
+                                                                <option value="{{ $termsAndCondition->id }}"
+                                                                    {{ in_array($termsAndCondition->id, $po->terms->pluck('id')->toArray()) ? 'selected' : '' }}
+                                                                    data-detail="{{ $termsAndCondition->term_detail }}">
+                                                                    {{ $termsAndCondition->term_name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
 
                                                 <div class="col-md-12">
-                                                    <textarea name="terms_data" id="summernote" class="form-control " {{ $po->document_status !=\App\Helpers\ConstantHelper::DRAFT ? "disabled" : ''}} placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : "" }}</textarea>
+                                                    <textarea name="terms_data" id="summernote" class="form-control "
+                                                        {{ $po->document_status != \App\Helpers\ConstantHelper::DRAFT ? 'disabled' : '' }} placeholder="Enter Terms"
+                                                        maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : '' }}</textarea>
                                                     <small class="text-muted d-block text-end">
                                                         <span id="termsCharCount">0</span>/250 characters
                                                     </small>
-                                                    <input type="hidden" name="tnc" id="tnc" value="{{ isset($po->tnc) ? $po->tnc : "" }}">
-                                                    <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
+                                                    <input type="hidden" name="tnc" id="tnc"
+                                                        value="{{ isset($po->tnc) ? $po->tnc : '' }}">
+                                                    <input type="hidden" id="customer_terms_id" value=""
+                                                        name="terms_id" />
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -1065,32 +1083,32 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/po.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
-        @if($po->document_status != \App\Helpers\ConstantHelper::DRAFT)
-        $('#summernote').summernote('disable');
-        // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
-        $(document).on('change', 'select[name="term_id[]"]', function () {
-            let selectedText = $(this).find('option:selected').data('detail') || '';
-            $('#summernote').summernote('code', selectedText);
-            updateSummernoteData();
-        });
+        @if ($po->document_status != \App\Helpers\ConstantHelper::DRAFT)
+            $('#summernote').summernote('disable');
+            // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
+            $(document).on('change', 'select[name="term_id[]"]', function() {
+                let selectedText = $(this).find('option:selected').data('detail') || '';
+                $('#summernote').summernote('code', selectedText);
+                updateSummernoteData();
+            });
 
-        // Function to update char count & hidden input
-        function updateSummernoteData() {
-            let content = $('#summernote').summernote('code');
-            let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
-            $('#termsCharCount').text(plainText.length);
-            $('#tnc').val(content); // store HTML content in hidden input
-        }
+            // Function to update char count & hidden input
+            function updateSummernoteData() {
+                let content = $('#summernote').summernote('code');
+                let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
+                $('#termsCharCount').text(plainText.length);
+                $('#tnc').val(content); // store HTML content in hidden input
+            }
 
-        // Bind Summernote change events
-        $('#summernote').on('summernote.change', function (we, contents, $editable) {
-            updateSummernoteData();
-        });
+            // Bind Summernote change events
+            $('#summernote').on('summernote.change', function(we, contents, $editable) {
+                updateSummernoteData();
+            });
 
-        // Initialize Summernote (example)
-        $('#summernote').summernote({
-            height: 200
-        });
+            // Initialize Summernote (example)
+            $('#summernote').summernote({
+                height: 200
+            });
         @endif
         /*Clear local storage*/
         @if ($pi_item_ids)

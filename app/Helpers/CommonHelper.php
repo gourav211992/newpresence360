@@ -216,7 +216,8 @@ class CommonHelper
         }elseif($morphableType == 'App\Models\ErpPlHeader'){
             $type = ConstantHelper::PL_SERVICE_ALIAS;
         }elseif($morphableType == 'App\Models\InspectionHeader'){
-            $type = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+            // $type = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+            $type = ConstantHelper::MRN_SERVICE_ALIAS;
         }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
             $type = ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS;
         }

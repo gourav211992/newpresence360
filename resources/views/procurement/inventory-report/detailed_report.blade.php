@@ -12,7 +12,7 @@
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
             <div class="content-body">
-                <div id="message-area">
+                {{-- <div id="message-area">
                     @if (session('success'))
                         <div class="alert alert-success">
                             {{ session('success') }}
@@ -27,7 +27,7 @@
                             </ul>
                         </div>
                     @endif
-                </div>
+                </div> --}}
                 <section id="basic-datatable">
                     <div class="card border  overflow-hidden">
                         <div class="row">
@@ -138,6 +138,7 @@
                                             <th class='no-wrap text-end'>Receipt Value</th>
                                             <th class='no-wrap text-end'>Issue Value</th>
                                             <th class='no-wrap text-end'>Reserved Stock</th>
+                                            <th class='no-wrap text-end'>Hold Stock</th>
                                             <th class="no-wrap">Status</th>
                                         </thead>
                                         <tbody id="inventory-tbody">
@@ -495,6 +496,7 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
                 `;
                 tbody.appendChild(openingBalanceRow); // Append the opening balance row
 
@@ -537,7 +539,7 @@
                     const cells = [
                         `<td>${index + 1}</td>`,
                         `<td class="no-wrap ">${formatDate(report.document_date)}</td>`,
-                        `<td class="no-wrap">${report.book.book_name}</td>`,
+                        `<td class="no-wrap">${report.book.book_code}</td>`,
                         `<td class="no-wrap">${report.document_number}</td>`,
                         `<td class="no-wrap">${report?.book_type ?? ""}</td>`,
                         `<td class="no-wrap">${report?.item?.item_code ?? ""}</td>`,
@@ -572,14 +574,9 @@
                         `<td class='no-wrap text-end'>
                         ${report?.reserved_qty ?? 0.00}
                         </td>`,
-                        // `<td class="no-wrap">
-                        //     ${documentStatusCssList[report?.document_status ?? ""] ?
-                        //         `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
-                        //             ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
-                        //             </span>` :
-                        //         `<span class='badge default-status-class'>${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}</span>`
-                        //     }
-                        // </td>`,
+                        `<td class='no-wrap text-end'>
+                        ${report?.putaway_pending_qty ?? 0.00}
+                        </td>`,
                         `<td class="no-wrap">
                             ${report?.document_status ? (
                                 documentStatusCssList[report.document_status]
@@ -621,6 +618,7 @@
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueQty)}" style="width: 100%;">Total: ${totalIssueQty}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalReceiptValue)}" style="width: 100%;">Total: ${totalReceiptValue}</td>
                 <td class="fw-bolder text-end ${getBalanceColor(totalIssueValue)}" style="width: 100%;">Total: ${totalIssueValue}</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 `;

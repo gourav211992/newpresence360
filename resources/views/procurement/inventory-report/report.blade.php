@@ -6,7 +6,7 @@
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
             <div class="content-body">
-                <div id="message-area">
+                {{-- <div id="message-area">
                     @if (session('success'))
                         <div class="alert alert-success">
                             {{ session('success') }}
@@ -21,7 +21,7 @@
                             </ul>
                         </div>
                     @endif
-                </div>
+                </div> --}}
                 <section id="basic-datatable">
                     <div class="card border  overflow-hidden">
                         <div class="row">

@@ -419,7 +419,6 @@ Route::middleware(['user.auth'])->group(function () {
 
     Route::prefix('vendors')->controller(VendorController::class)->group(function () {
         Route::get('/', 'index')->name('vendor.index');
-        Route::get('/', 'index')->name('vendor.index');
         Route::get('/create', 'create')->name('vendor.create');
         Route::post('/', 'store')->name('vendor.store');
         Route::post('/revoke', 'revoke')->name('vendor.revoke');
@@ -445,9 +444,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/get-uoms', 'getUOM')->name('send.uom');
     });
 
-    Route::prefix('vendor-new')->controller(VendorController::class)->group(function () {
-        Route::get('/', 'index')->name('vendor.index');
-    });
+    // Route::prefix('vendor-new')->controller(VendorController::class)->group(function () {
+    //     Route::get('/', 'index')->name('vendor.index');
+    // });
 
     // Route::prefix('vendors')->controller(VendorController::class)->group(function () {
     //     Route::get('/', 'index')->name('vendor.index');

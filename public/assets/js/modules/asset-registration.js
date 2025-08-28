@@ -80,8 +80,8 @@ $(document).on("click", ".assetDetailBtn", function () {
     // 2) render form
     const assetCodeRO = model.asset_code ? "readonly" : ""; // if you want code to be locked when present
     const html = `
-      <div class="row g-3" data-row-count="${row}">
-        <div class="col-md-12">
+      <div class="row g-1" data-row-count="${row}">
+        <div class="col-md-8">
             <label class="form-label">Asset Name <span class="text-danger">*</span></label>
             <input type="text" name="asset_name" class="form-control" required value="${escapeHTML(
                 model.asset_name
@@ -91,7 +91,7 @@ $(document).on("click", ".assetDetailBtn", function () {
             )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Asset Category <span class="text-danger">*</span></label>
           <input type="text" name="asset_category_name" class="form-control" required readonly value="${escapeHTML(
               model.asset_category_name
@@ -101,49 +101,49 @@ $(document).on("click", ".assetDetailBtn", function () {
           )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Capitalization Date</label>
           <input type="date" name="capitalization_date" class="form-control" value="${escapeHTML(
               model.capitalization_date
           )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Brand Name <span class="text-danger">*</span></label>
           <input type="text" name="brand_name" class="form-control" required value="${escapeHTML(
               model.brand_name
           )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Model Number <span class="text-danger">*</span></label>
           <input type="text" name="model_no" class="form-control" required value="${escapeHTML(
               model.model_no
           )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Estimated Life (years) <span class="text-danger">*</span></label>
           <input type="number" min="0" step="1" name="estimated_life" class="form-control" required value="${escapeHTML(
               model.estimated_life
           )}" />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Salvage Value <span class="text-danger">*</span></label>
           <input type="number" step="0.01" name="salvage_value" class="form-control" required value="${escapeHTML(
               model.salvage_value
           )}" readonly />
         </div>
   
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">Procurement Type</label>
           <input type="text" name="procurement_type" class="form-control" value="${escapeHTML(
               model.procurement_type
           )}" readonly />
         </div>
   
-        <div class="col-md-6 d-none">
+        <div class="col-md-4 d-none">
           <label class="form-label">Asset Code</label>
           <input type="text" name="asset_code" class="form-control" value="${escapeHTML(
               model.asset_code

@@ -217,7 +217,7 @@ class StockReservation
             $receiveStockLedger->document_number = $header -> document_number;
             $receiveStockLedger->document_date = $header -> document_date;
             $receiveStockLedger->transaction_type = 'receipt';
-            $receiveStockLedger->lot_number = InventoryHelper::generateLotNumber($header -> document_date, $bookType, $header -> document_number);
+            $receiveStockLedger->lot_number = $issueStockLedger->lot_number;
             $receiveStockLedger->document_status=$header->document_status;
             $receiveStockLedger->issue_qty=0;
             $receiveStockLedger->reserved_qty=0;
@@ -236,13 +236,13 @@ class StockReservation
         return ['status' => 'success', 'message' => 'Stock issued and received successfully'];
     }
 
-    public function issueReservedStock(string $bookType, int $headerId, int $detailId, float $qty) : array
-    {
+    // public function issueReservedStock(string $bookType, int $headerId, int $detailId, float $qty) : array
+    // {
         
-    }
+    // }
 
-    public function receiveReservedStocks() : array
-    {
+    // public function receiveReservedStocks() : array
+    // {
          
-    }
+    // }
 }

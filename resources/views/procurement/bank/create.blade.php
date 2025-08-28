@@ -45,6 +45,22 @@
                                             <div class="col-md-9">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
+                                                        <label for="organization_id" class="form-label">
+                                                            Organization <span class="text-danger">*</span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select id="organization_id"  name="organization_id[]" class="form-control select select2" multiple data-placeholder="-- Select Organization(s) --">
+                                                            @foreach($allOrganizations as $org)
+                                                                <option value="{{ $org->id }}">
+                                                                    {{ $org->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Bank Name <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">

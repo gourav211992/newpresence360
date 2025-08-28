@@ -182,10 +182,17 @@
                                                             <select class="form-select" name="currency_id"></select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
                                                             <select class="form-select" name="payment_term_id"></select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days </label>
+                                                            <input type="text" class="form-control mw-100 credit_days"
+                                                                id="credit_days" name="credit_days" disabled/>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -789,7 +796,7 @@
                         $("#hidden_country_id").val('');
                         // $("#vendor_id").trigger('blur');
                         $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        // $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
                         // $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({
@@ -804,9 +811,9 @@
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
                         let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                        let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                        // let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
-                        $('[name="payment_term_id"]').empty().append(termOption);
+                        // $('[name="payment_term_id"]').empty().append(termOption);
                         $("#billing_id").val(data.data.vendor_address.id);
                         $(".billing_detail").text(data.data.vendor_address.display_address);
                         $(".delivery_address").text(data.delivery_address.display_address);
@@ -823,7 +830,7 @@
                             $("#hidden_country_id").val('');
                             // $("#vendor_id").trigger('blur');
                             $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            // $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
                             // $(".shipping_detail").text('-');
                             $(".billing_detail").text('-');
                             Swal.fire({
@@ -1086,7 +1093,7 @@
             if(!$("tr[id*='row_']").length) {
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 $("select[name='currency_id']").prop('disabled', false);
-                $("select[name='payment_term_id']").prop('disabled', false);
+                // $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
                 // $(".header_store_id").prop('readonly',false);
@@ -1586,6 +1593,24 @@
             };
         }
 
+        function getSelectedPaymentTerms()
+        {
+            let paymentIds = [];
+            let paymentTerms = [];
+            let CreditDays = [];
+
+            $('.mrn_item_checkbox:checked').each(function() {
+                paymentIds.push($(this).attr('data-payment-id'));
+                paymentTerms.push($(this).attr('data-payment-term'));
+                CreditDays.push($(this).attr('data-credit-days'));
+            });
+            return {
+                paymentIds: paymentIds,
+                paymentTerms: paymentTerms,
+                creditDays: CreditDays,
+            };
+        }
+
         $(document).on('click', '.mrnProcess', (e) => {
             let result = getSelectedMrnIDS();
             let ids = result.ids;
@@ -1604,6 +1629,7 @@
                 return false;
             }
 
+            let paymentTerms = getSelectedPaymentTerms();
             let moduleTypes = getSelectedMrnTypes();
             $("[name='mrn_item_ids']").val(ids);
             $("#addNewItemBtn").hide();
@@ -1729,6 +1755,9 @@
                 referenceNo: referenceNo,
                 store_id: header_store_id,
                 module_type: moduleTypes,
+                payment_ids: paymentTerms.paymentIds,
+                payment_terms: paymentTerms.paymentTerms,
+                credit_days: paymentTerms.creditDays,
             };
 
             asnProcess(processData, 'mrn-process');
@@ -1981,31 +2010,68 @@
                             index = index + 1;
                             rows+=`<tr class="display_summary_exp_row">
                                     <td>${index}</td>
-                                    <td>${item.ted_name}
-                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                    </td>
-                                    <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                        <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
-                                        <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
+                                    <td class="text-right">
+                                        ${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][hsn_id]" value="${item.hsn_id}">
+                                        <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
                                     </td>
                                     <td class="text-end">
-                                    <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                        ${parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][e_amnt]"
+                                            value="${(item.ted_amount ?? "0").toString().replace(/,/g, '')}">
+                                    </td>
+                                    <td class="text-end">
+                                        ${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][tax_amount]"
+                                            value="${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}">
+                                    </td>
+                                    <td class="text-end">
+                                        ${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][total]"
+                                            value="${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}">
                                     </td>
                                     <td>
-                                        <a href="javascript:;" class="text-danger deleteExpRow">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                        </a>
+                                        ${item.tax_breakup ? formatTaxBreakup(item.tax_breakup) : ''}
+                                        <input type="hidden" name="exp_summary[${index}][tax_breakup]" value='${item.tax_breakup ?? ''}'>
+                                    </td>
+                                    <td>
+                                        <!-- <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a> -->
                                     </td>
                                 </tr>`;
                         });
-                        $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                        $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                        if (!$(".display_summary_exp_row").length) {
+                            $("#summaryExpTable #expSummaryFooter").before(rows);
+                        } else {
+                            $(".display_summary_exp_row:last").after(rows);
+                        }
+                        $("#f_header_expense_hidden").removeClass('d-none');
+                        $("#new_exp_name_select").val("");
+                        $("#new_exp_id").val("");
+                        $("#new_exp_name").val("");
+                        $("#new_exp_perc").val("").prop("readonly", false);
+                        $("#new_exp_value").val("").prop("readonly", false);
+                        let total_head_exp = 0;
+                        $("[name*='[total]']").each(function (index, item) {
+                            total_head_exp += Number($(item).val());
+                        });
+
+                        $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
+
+                        summaryExpTotal();
+                    } else {
+                        $("#f_header_expense_hidden").addClass('d-none');
                     }
 
                     // General details
-                    console.log('moduleType', moduleType);
                     if (mrnHeader) {
                         $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
                         $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
@@ -2034,6 +2100,21 @@
                         currentIndex = tableRowCount + 1;
                         setAttributesUIHelper(currentIndex,"#itemTable");
                     },500);
+                    const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
+                        ? asnData.payment_ids[0]
+                        : '';
+                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0
+                        ? asnData.payment_terms[0]
+                        : '';
+                    const firstCreditDays  = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0
+                        ? asnData.credit_days[0]
+                        : 0;
+                    let payOption = '';
+                    if (firstPaymentId && firstPaymentTerm) {
+                        payOption = `<option value="${firstPaymentId}">${firstPaymentTerm}</option>`;
+                    }
+                    $('[name="payment_term_id"]').empty().append(payOption);
+                    $('[name="credit_days"]').val(firstCreditDays);
                 })
                 .catch(() => {
                     Swal.fire({

@@ -36,6 +36,7 @@ use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\Helper;
+use App\Helpers\Inventory\StockReservation;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
@@ -1632,6 +1633,11 @@ class ErpSaleInvoiceController extends Controller
                         $mediaFiles = $saleInvoice->uploadDocuments($singleFile, 'sale_order', false);
                     }
                 }
+                // Get configuration detail
+                $config = Configuration::where('type','organization')
+                    ->where('type_id', $user->organization_id)
+                    ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                    ->first();
                 //Logs
                 // if ($request->document_status == ConstantHelper::SUBMITTED) {
                 //     $bookId = $saleInvoice->book_id;
@@ -1644,7 +1650,7 @@ class ErpSaleInvoiceController extends Controller
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                    $error = self::maintainStockLedger($saleInvoice);
+                    $error = self::maintainStockLedger($saleInvoice, $config);
                     if ($error) {     
                         DB::rollBack();
                         return response() -> json([
@@ -1683,11 +1689,6 @@ class ErpSaleInvoiceController extends Controller
                 } else {
                     SaleModuleHelper::buildCustomerSaleInvoiceSummary($saleInvoice, $fyYear);
                 }
-                // Get configuration detail
-                $config = Configuration::where('type','organization')
-                    ->where('type_id', $user->organization_id)
-                    ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                    ->first();
 
                 // Create job
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
@@ -1977,13 +1978,13 @@ class ErpSaleInvoiceController extends Controller
                     return $plAvlQty;
                 })
                 ->addColumn('stock_qty', function ($item) use ($request) {
-                    if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
-                        return $item -> picked_qty;
-                    } else {
+                    // if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                    //     return $item -> picked_qty;
+                    // } else {
                         return method_exists($item, 'getStockBalanceQty')
                         ? $item->getStockBalanceQty($request->store_id ?? 0, $request->sub_store_id ?? 0) ?? 0 
                         : 0;
-                    }
+                    // }
                     
                 })
                 ->addColumn('check_stock', function ($item) use ($request, $checkStock) {
@@ -2436,6 +2437,9 @@ class ErpSaleInvoiceController extends Controller
                             $item -> balance_qty = $item -> picked_qty - $item -> dnote_qty; 
                             $item -> stock_qty = $item -> picked_qty - $item -> dnote_qty; 
                             $item -> item_discount_amount = 0; 
+                            $item -> header_discount_amount = 0; 
+                            $item -> header_expense_amount = 0; 
+                            $item -> tax_amount = 0; 
 
                         }
                     }
@@ -2923,10 +2927,20 @@ class ErpSaleInvoiceController extends Controller
         }
     }
 
-    private static function maintainStockLedger($saleInvoice)
+    private static function maintainStockLedger($saleInvoice, $enforceUicScan)
     {
         $user = Helper::getAuthenticatedUser();
         $detailIds = $saleInvoice->items->pluck('id')->toArray();
+
+        if ($enforceUicScan && strtolower($enforceUicScan->config_value) === 'yes')
+        {
+            $stockReservation = StockReservation::stockReservation($saleInvoice -> document_type, $saleInvoice -> id, $saleInvoice->items);
+            if ($stockReservation['status'] == 'error') {
+                return $stockReservation['message'];
+            }
+            return "";
+        }
+
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($saleInvoice->id, $detailIds, $saleInvoice -> document_type, $saleInvoice->document_status, 'issue');
         if($issueRecords['status'] == 'error'){
             return $issueRecords['message'];

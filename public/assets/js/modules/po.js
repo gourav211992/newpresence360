@@ -2176,7 +2176,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
 
         summaryExpTotal();
         setTableCalculation();
-    }, 5000);
+    }, 500);
 });
 
 function renderBreakupHtml(breakup) {
@@ -2262,9 +2262,9 @@ function calculateTaxAndApply(el = null) {
 -------------------------*/
 function applyTaxDetails(taxResponse, params) {
     const breakup = taxResponse.group_taxes || [];
-    const expenseAmount = taxResponse.price || params.price;
-    const totalTax = taxResponse.total_tax || 0;
-    const totalAmount = taxResponse.total_amount_after_tax || 0;
+    const expenseAmount = parseFloat(taxResponse.price || params.price);
+    const totalTax = parseFloat(taxResponse.total_tax || 0);
+    const totalAmount = parseFloat(taxResponse.total_amount_after_tax || 0);
 
     const container = $("#tax_details_container").empty();
     breakup.forEach((group) => {

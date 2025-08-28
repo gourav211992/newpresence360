@@ -485,6 +485,7 @@ class PoController extends Controller
             $po->total_tax_value = 0.00;
             $po->total_expense_value = 0.00;
             $po->credit_days = $request->credit_days;
+            $po->consignee_name = $request->consignee_name;
             $po->save();
 
             if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
@@ -1119,6 +1120,7 @@ class PoController extends Controller
             $po->tnc = $request->tnc ?? null;
             $po->document_date = $request->document_date ?? $po->document_date;
             $po->credit_days = $request->credit_days;
+            $po->consignee_name = $request->consignee_name;
             $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';
             $po->po_type = $poTypeParam;
 

@@ -12,6 +12,7 @@ use App\Http\Requests\BankRequest;
 use App\Helpers\ConstantHelper;
 use App\Models\Organization;
 use App\Helpers\Helper;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use Auth;
 
 class BankController extends Controller
@@ -58,59 +59,83 @@ class BankController extends Controller
 
     public function create()
     {
+        $user = Helper::getAuthenticatedUser();
+        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+        if ($user->organization_id) {
+            $orgIds[] = $user->organization_id;
+        }
+       $allOrganizations = Organization::whereIn('id', $orgIds)
+        ->where('status', 'active')
+        ->get();
+     
         $status = ConstantHelper::STATUS;
         return view('procurement.bank.create',[
             'status' => $status,
+            'allOrganizations'=>$allOrganizations,
         ]);
     }
 
-    public function store(BankRequest $request)
+   public function store(BankRequest $request)
     {
         $validatedData = $request->validated();
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $parentUrl = ConstantHelper::BANK_SERVICE_ALIAS;
-        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-            $firstService = $services['services']->first();
-            $serviceId = $firstService->service_id;
-            $policyData = Helper::getPolicyByServiceId($serviceId);
-            if ($policyData && isset($policyData['policyLevelData'])) {
-                $policyLevelData = $policyData['policyLevelData'];
-                $validatedData['group_id'] = $policyLevelData['group_id'];
-                $validatedData['company_id'] = $policyLevelData['company_id'];
-                $validatedData['organization_id'] = $policyLevelData['organization_id'];
-            } else {
-                $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = $organization->company_id;
-                $validatedData['organization_id'] = $organization->id;
-            }
-        } else {
-            $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] =$organization->company_id;
-            $validatedData['organization_id'] = $organization->id;
-        }
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
         try {
-            $bank = Bank::create($validatedData);
-            if (isset($validatedData['bank_details']) && is_array($validatedData['bank_details'])) {
-                foreach ($validatedData['bank_details'] as $detail) {
-                    $bankDetailData = [
-                        'account_number' => $detail['account_number'] ?? null,
-                        'branch_name' => $detail['branch_name'] ?? null,
-                        'branch_address' => $detail['branch_address'] ?? null,
-                        'ifsc_code' => $detail['ifsc_code'] ?? null,
-                        'ledger_id' => $detail['ledger_id'] ?? null,
-                        'ledger_group_id' => $detail['ledger_group_id'] ?? null,
-                        'bank_id' => $bank->id,
-                    ];
-    
-                    BankDetail::create($bankDetailData);
+            $createdBanks = [];
+
+            $organizationIds = $validatedData['organization_id'] ?? [$organization->id];
+
+            foreach ($organizationIds as $orgId) {
+                $bankData = $validatedData;
+                
+                if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+                    $firstService = $services['services']->first();
+                    $serviceId = $firstService->service_id;
+                    $policyData = Helper::getPolicyByServiceId($serviceId);
+
+                    if ($policyData && isset($policyData['policyLevelData'])) {
+                        $policyLevelData = $policyData['policyLevelData'];
+                        $bankData['group_id'] = $policyLevelData['group_id'];
+                        $bankData['company_id'] = $policyLevelData['company_id'];
+                        $bankData['organization_id'] = $orgId;
+                    } else {
+                        $bankData['group_id'] = $organization->group_id;
+                        $bankData['company_id'] = $organization->company_id;
+                        $bankData['organization_id'] = $orgId;
+                    }
+                } else {
+                    $bankData['group_id'] = $organization->group_id;
+                    $bankData['company_id'] = $organization->company_id;
+                    $bankData['organization_id'] = $orgId;
                 }
+
+                $bank = Bank::create($bankData);
+
+                if (isset($validatedData['bank_details']) && is_array($validatedData['bank_details'])) {
+                    foreach ($validatedData['bank_details'] as $detail) {
+                        $bankDetailData = [
+                            'account_number' => $detail['account_number'] ?? null,
+                            'branch_name' => $detail['branch_name'] ?? null,
+                            'branch_address' => $detail['branch_address'] ?? null,
+                            'ifsc_code' => $detail['ifsc_code'] ?? null,
+                            'ledger_id' => $detail['ledger_id'] ?? null,
+                            'ledger_group_id' => $detail['ledger_group_id'] ?? null,
+                            'bank_id' => $bank->id,
+                        ];
+                        BankDetail::create($bankDetailData);
+                    }
+                }
+
+                $createdBanks[] = $bank;
             }
+
             return response()->json([
                 'status' => true,
-                'message' => 'Record created successfully.',
-                'data' => $bank,
+                'message' => 'Record(s) created successfully.',
+                'data' => $createdBanks,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -152,87 +177,134 @@ class BankController extends Controller
 
     public function edit($id)
     {
+        $user = Helper::getAuthenticatedUser();
+        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+        if ($user->organization_id) {
+            $orgIds[] = $user->organization_id;
+        }
+
+        $allOrganizations = Organization::whereIn('id', $orgIds)
+            ->where('status', 'active')
+            ->get();
+
         $status = ConstantHelper::STATUS;
-        $bank = Bank::with('bankDetails')->findOrFail($id); 
+        $bank = Bank::with('bankDetails')->findOrFail($id);
         $ledgerId = $bank->ledger_id;
         $ledger = Ledger::find($ledgerId);
-        $ledgerGroups = $ledger ? $ledger->groups() : collect(); 
-        return view('procurement.bank.edit', compact('bank','status','ledgerGroups'));
+        $ledgerGroups = $ledger ? $ledger->groups() : collect();
+        $relatedBanks = Bank::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+        ->where(function($q) use ($bank) {
+            $q->where('bank_name', $bank->bank_name)
+            ->orWhere('bank_code', $bank->bank_code)
+            ->orWhere('id', $bank->id); 
+        })
+        ->get();
+
+       $selectedOrgIds = $relatedBanks->pluck('organization_id')->toArray();
+        return view('procurement.bank.edit', [
+                'bank'              => $bank,              
+                'relatedBanks'      => $relatedBanks,     
+                'status'            => $status,
+                'ledgerGroups'      => $ledgerGroups,
+                'allOrganizations'  => $allOrganizations,
+                'selectedOrgIds'    => $selectedOrgIds, 
+            ]);
     }
 
-
-    public function update(BankRequest $request, $id)
+  public function update(BankRequest $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validatedData = $request->validated();
-    
+
         try {
-            $bank = Bank::findOrFail($id);
+            $currentBank = Bank::findOrFail($id);
             $parentUrl = ConstantHelper::BANK_SERVICE_ALIAS;
-            $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
             if ($services && $services['services'] && $services['services']->isNotEmpty()) {
                 $firstService = $services['services']->first();
                 $serviceId = $firstService->service_id;
                 $policyData = Helper::getPolicyByServiceId($serviceId);
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validatedData['group_id'] = $policyLevelData['group_id'];
-                    $validatedData['company_id'] = $policyLevelData['company_id'];
-                    $validatedData['organization_id'] = $policyLevelData['organization_id'];
-                } else {
-                    $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = $organization->company_id;
-                    $validatedData['organization_id'] = $organization->id;
-                }
+
+                $validatedData['group_id']   = $policyData['group_id'] ?? $organization->group_id;
+                $validatedData['company_id'] = $policyData['company_id'] ?? $organization->company_id;
             } else {
-                $validatedData['group_id'] = $organization->group_id;
+                $validatedData['group_id']   = $organization->group_id;
                 $validatedData['company_id'] = $organization->company_id;
-                $validatedData['organization_id'] = $organization->id;
             }
-            $bank->update($validatedData);
-            if ($request->has('bank_details') && is_array($validatedData['bank_details'])) {
-                $newDetailIds = []; 
-                foreach ($validatedData['bank_details'] as $detail) {
-                    $detailId = $detail['id'] ?? null; 
-    
-                    $bankDetailData = [
-                        'account_number' => $detail['account_number'] ?? null,
-                        'branch_name' => $detail['branch_name'] ?? null,
-                        'branch_address' => $detail['branch_address'] ?? null,
-                        'ifsc_code' => $detail['ifsc_code'] ?? null,
-                        'ledger_id' => $detail['ledger_id'] ?? null,
-                        'ledger_group_id' => $detail['ledger_group_id'] ?? null,
-                        'bank_id' => $bank->id,
-                    ];
-    
-                    if ($detailId) {
-                        $existingDetail = $bank->bankDetails()->find($detailId);
+
+            $updatedBanks = [];
+
+            $organizationIds = $validatedData['organization_id'] ?? [$organization->id];
+
+            Bank::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('bank_name', $currentBank->bank_name)
+                ->whereNotIn('organization_id', $organizationIds)
+                ->each(function ($bankToDelete) {
+                    $bankToDelete->bankDetails()->delete();
+                    $bankToDelete->delete();
+                });
+           
+            foreach ($organizationIds as $orgId) {
+                $bank = Bank::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('bank_name', $currentBank->bank_name)
+                    ->where('organization_id', $orgId)
+                    ->first();
+
+                if ($bank) {
+                    $bank->update(array_merge($validatedData, ['organization_id' => $orgId]));
+                } else {
+                    $bank = Bank::create(array_merge($validatedData, ['organization_id' => $orgId]));
+                }
+
+                if (isset($validatedData['bank_details']) && is_array($validatedData['bank_details'])) {
+                    foreach ($validatedData['bank_details'] as $detail) {
+                        $accountNumber = $detail['account_number'] ?? null;
+                        $ifscCode      = $detail['ifsc_code'] ?? null;
+
+                        $existingDetail = $bank->bankDetails()
+                            ->where('account_number', $accountNumber)
+                            ->where('ifsc_code', $ifscCode)
+                            ->first();
+
                         if ($existingDetail) {
-                            $existingDetail->update($bankDetailData);
+                            $existingDetail->update([
+                                'bank_id'          => $bank->id,
+                                'branch_name'      => $detail['branch_name'] ?? $existingDetail->branch_name,
+                                'branch_address'   => $detail['branch_address'] ?? $existingDetail->branch_address,
+                                'ledger_id'        => $detail['ledger_id'] ?? $existingDetail->ledger_id,
+                                'ledger_group_id'  => $detail['ledger_group_id'] ?? $existingDetail->ledger_group_id,
+                            ]);
+                        } else {
+                            $bankDetailData = [
+                                'bank_id'          => $bank->id,
+                                'account_number'   => $accountNumber,
+                                'branch_name'      => $detail['branch_name'] ?? null,
+                                'branch_address'   => $detail['branch_address'] ?? null,
+                                'ifsc_code'        => $ifscCode,
+                                'ledger_id'        => $detail['ledger_id'] ?? null,
+                                'ledger_group_id'  => $detail['ledger_group_id'] ?? null,
+                            ];
+                            $bank->bankDetails()->create($bankDetailData);
                         }
-                        $newDetailIds[] = $detailId; 
-                    } else {
-                        $newDetail = $bank->bankDetails()->create($bankDetailData);
-                        $newDetailIds[] = $newDetail->id;
                     }
                 }
-    
-                $bank->bankDetails()->whereNotIn('id', $newDetailIds)->delete();
-            } else {
-                $bank->bankDetails()->delete();
+
+                $updatedBanks[] = $bank;
             }
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Record updated successfully.',
-                'data' => $bank,
+                'data' => $updatedBanks,
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
-                'message' => 'An error occurred while updating the bank.',
-                'error' => $e->getMessage(),
+                'status'  => false,
+                'message' => 'Error while updating bank.',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -258,31 +330,58 @@ class BankController extends Controller
         return response()->json($ledgers);
     }
 
-    public function deleteBankDetail($id)
+   public function deleteBankDetail($id)
     {
         try {
             $bankDetail = BankDetail::findOrFail($id);
-            $result = $bankDetail->deleteWithReferences();
-            if (!$result['status']) {
+            $bank       = $bankDetail->bank;
+
+            if (!$bank) {
                 return response()->json([
                     'status' => false,
-                    'message' => $result['message'],
-                    'referenced_tables' => $result['referenced_tables'] ?? []
-                ], 400);
+                    'message' => 'Parent bank not found for this detail.',
+                ], 404);
             }
-            return response()->json([
-                'status' => true,
-                'message' => 'Record deleted successfully.',
-            ], 200);
+           $relatedBanks = Bank::withoutGlobalScopes()
+            ->where('bank_name', $bank->bank_name)
+            ->where('bank_code', $bank->bank_code)
+            ->pluck('id')
+            ->toArray();
+
+            $relatedDetails = BankDetail::whereIn('bank_id', $relatedBanks)
+                ->where('account_number', $bankDetail->account_number)
+                ->where('ifsc_code', $bankDetail->ifsc_code)
+                ->get();
         
+
+            $deletedCount = 0;
+
+            foreach ($relatedDetails as $detail) {
+                $result = $detail->deleteWithReferences();
+
+                if (!$result['status']) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => $result['message'],
+                        'referenced_tables' => $result['referenced_tables'] ?? [],
+                    ], 400);
+                }
+
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'status'  => true,
+                'message' => "Record Deleted successfully.",
+            ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'An error occurred while deleting the record: ' . $e->getMessage(),
             ], 500);
         }
     }
-
     public function destroy($id)
     {
         try {

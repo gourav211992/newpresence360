@@ -129,4 +129,44 @@ class ErpPlItemDetail extends Model
     public function uom(){
         return $this->belongsTo(Unit::class, 'uom_id');
     }
+    public function getAvailableStocks($storeId, $subStoreId)
+    {
+        $itemId = $this -> getAttribute('item_id');
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds, $this -> getAttribute('uom_id'), $storeId, $subStoreId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        return $stockBalanceQty;
+    }
+
+    public function getStockBalanceQty($storeId = null, $subStoreId = null)
+    {
+        $itemId = $this -> getAttribute('item_id');
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,null,$storeId, $subStoreId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        $stockBalanceQty = ItemHelper::convertToAltUom($this -> getAttribute(('item_id')), $this -> getAttribute('uom_id'), (float)$stockBalanceQty);
+        return $stockBalanceQty;
+    }
 }

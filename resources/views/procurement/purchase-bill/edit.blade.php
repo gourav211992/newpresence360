@@ -205,12 +205,21 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
                                                             <select class="form-select" name="payment_term_id">
                                                                 <option value="{{@$mrn->payment_term_id}}">{{@$mrn->paymentTerm->name}}</option>
                                                             </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control mw-100"
+                                                                id="credit_days" name="credit_days"
+                                                                value="{{ @$mrn->credit_days }}" readonly/>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -914,7 +923,6 @@
                 return response.json().then(data => {
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
-                        console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1072,7 +1080,7 @@
                         $("#hidden_country_id").val('');
                         // $("#vendor_id").trigger('blur');
                         $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        // $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({
@@ -1087,9 +1095,9 @@
                     $("#vendor_id").val(data?.data?.vendor?.id);
                     $("#vendor_code").val(data?.data?.vendor.vendor_code);
                     let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                    let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                    // let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                     $('[name="currency_id"]').empty().append(curOption);
-                    $('[name="payment_term_id"]').empty().append(termOption);
+                    // $('[name="payment_term_id"]').empty().append(termOption);
                     $("#shipping_id").val(data.data.shipping.id);
                     $("#billing_id").val(data.data.billing.id);
                     // $(".shipping_detail").text(data.data.shipping.display_address);
@@ -1108,7 +1116,7 @@
                             $("#hidden_country_id").val('');
                             // $("#vendor_id").trigger('blur');
                             $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            // $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
                             // $(".shipping_detail").text('-');
                             $(".billing_detail").text('-');
                             Swal.fire({
@@ -1624,7 +1632,6 @@
         $(document).on('click','#deleteConfirm', (e) => {
             let ids = e.target.getAttribute('data-ids');
             ids = JSON.parse(ids);
-            console.log('ids--->>', ids);
             localStorage.setItem('deletedMrnItemIds', JSON.stringify(ids));
             $("#deleteComponentModal").modal('hide');
 
@@ -2531,7 +2538,6 @@
                     const modelType = 'mrn';
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
-                    // console.log(vendor?.id, modelType, order.id);
 
                     vendorOnChange(vendor?.id, modelType, order.id);
 
@@ -2628,7 +2634,6 @@
                     }
 
                     // General details
-                    console.log('moduleType', moduleType);
                     if (mrnHeader) {
                         $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
                         $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
@@ -2641,28 +2646,27 @@
 
                     $("#reference_type_input").val(modelType);
 
-                    // setTimeout(() => {
-                    //     setTableCalculation();
-                    //     if(idsLength > 1)
-                    //     {
-                    //         $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                    //             if(tableRowCount>0)
-                    //             {
-                    //                 currentIndex = tableRowCount + 1;
-                    //             }
-                    //             let currentIndex = index + 1;
-                    //             setAttributesUIHelper(currentIndex,"#itemTable");
-                    //         });
-                    //     }
-                    //     currentIndex = tableRowCount + 1;
-                    //     setAttributesUIHelper(currentIndex,"#itemTable");
-                    // },500);
                     setTimeout(() => {
                         setTableCalculation();
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {
                             setAttributesUIHelper(index + 1, "#itemTable");
                         });
                     }, 500);
+                    const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
+                        ? asnData.payment_ids[0]
+                        : '';
+                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0
+                        ? asnData.payment_terms[0]
+                        : '';
+                    const firstCreditDays  = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0
+                        ? asnData.credit_days[0]
+                        : 0;
+                    let payOption = '';
+                    if (firstPaymentId && firstPaymentTerm) {
+                        payOption = `<option value="${firstPaymentId}">${firstPaymentTerm}</option>`;
+                    }
+                    $('[name="payment_term_id"]').empty().append(payOption);
+                    $('[name="credit_days"]').val(firstCreditDays);
                 })
                 .catch(() => {
                     Swal.fire({
@@ -2674,7 +2678,6 @@
         }
 
         function handleProcessError(message = 'Invalid data') {
-            // console.log('message', message);
             $(".editAddressBtn").removeClass('d-none');
             $("#vendor_name").val('').prop('readonly', false);
             $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');

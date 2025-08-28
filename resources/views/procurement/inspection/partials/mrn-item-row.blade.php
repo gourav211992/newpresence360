@@ -9,15 +9,18 @@
         $isBatchEnable = ($item?->item?->is_batch_no == 1) ? 'Yes' : 'No';
         $mrnBatches = collect($batchDetails ?? [])->map(function ($b) {
             return [
-                'id' => null,
-                'mrn_batch_detail_id' => (int) $b->id,
-                'batch_number'        => (string) $b->batch_number,
-                'manufacturing_year'  => $b->manufacturing_year ? (int) $b->manufacturing_year : null,
-                'expiry_date'         => $b->expiry_date?->toDateString(), // Y-m-d
-                'quantity'            => (float) $b->quantity,
-                'inspection_qty'      => (float) $b->inspection_qty,
-                'accepted_qty'        => (float) $b->accepted_qty,
-                'rejected_qty'        => (float) $b->rejected_qty,
+                'id'                 => null,
+                'mrn_batch_detail_id'=> (int) $b->id,
+                'batch_number'       => (string) $b->batch_number,
+                // "" instead of null
+                'manufacturing_year' => $b->manufacturing_year ? (string) (int) $b->manufacturing_year : '',
+                // keep your date or default if you want a fixed placeholder
+                'expiry_date'        => $b->expiry_date?->toDateString() ?: '-0001-11-30',
+                // 🔄 rename quantity -> mrn_qty
+                'mrn_qty'            => (float) $b->quantity,
+                'inspection_qty'     => (float) $b->quantity,
+                'accepted_qty'       => (float) $b->quantity,
+                'rejected_qty'       => (float) $b->rejected_qty,
             ];
         })->values();
     @endphp
@@ -102,12 +105,15 @@
                         </span>
                     </div>
                 @endif
-                <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
-                <div
-                    class="addBatchBtn"
+                <input type="hidden"
+                    id="components_batches_{{ $rowCount }}"
+                    name="components[{{ $rowCount }}][batch_details]"
+                    value='@json($mrnBatches, JSON_UNESCAPED_SLASHES)' />
+
+                <div class="addBatchBtn"
                     data-row-count="{{ $rowCount }}"
                     data-batch-count="{{ count($batchDetails ?? []) }}"
-                    data-mrn-batches='@json($mrnBatches)'   {{-- ← single quotes here --}}
+                    data-mrn-batches='@json($mrnBatches, JSON_UNESCAPED_SLASHES)'
                     data-bs-toggle="modal"
                     data-bs-target="#item-batch-modal"
                     style="display: {{ $isBatchEditable ? 'block' : 'none' }};">

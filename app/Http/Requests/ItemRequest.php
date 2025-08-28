@@ -237,10 +237,11 @@ class ItemRequest extends FormRequest
             $subTypes = $this->input('sub_types', []);
             $isTradedItem = $this->input('is_traded_item');
             $isAsset = $this->input('is_asset');
+            $isScrap = $this->input('is_scrap');
 
             // Validation logic: only validate sub_types if type is 'Goods' and neither traded nor asset is selected
             if ($type == 'Goods') {
-                if (empty($subTypes) && $isTradedItem != '1' && $isAsset != '1') {
+                if (empty($subTypes) && $isTradedItem != '1' && $isAsset != '1' && $isScrap != '1') {
                     $validator->errors()->add('sub_types', 'Please select at least one subtype, or check Traded Item/Asset.');
                 }
             }

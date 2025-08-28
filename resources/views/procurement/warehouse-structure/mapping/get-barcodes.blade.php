@@ -22,46 +22,60 @@
                             </div>
                             <div class="card">
                                 <div class="table-responsive">
-                                    <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                        <thead>
+                                    <table id="wh-details-table"
+                                        class="table table-striped po-order-detail border w-100">
+                                    `   <thead>
                                             <tr>
-                                                <th>S.No.</th>
+                                                <th style="width:40px;">
+                                                    <div class="form-check m-0">
+                                                        <input type="checkbox" class="form-check-input" id="checkAll">
+                                                    </div>
+                                                </th>
+                                                <!-- <th>S.No.</th> -->
                                                 <th>Location</th>
                                                 <th>Warehouse</th>
                                                 <th>Name</th>
-                                                <th>Parent</th>
-                                                <th>QR Code/Bar Code</th>
+                                                <th>Storage No.</th>
+                                                <th>Heirarchy</th>
+                                                <th>QR Code</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @forelse($whDetails as $key => $val)
-                                                <tr>
+                                                @php
+                                                    $hasStorage = !empty($val->storage_number);
+                                                @endphp
+                                                <tr data-row-id="{{ $val->id }}">
+                                                    {{-- Row checkbox (enabled only if storage_number exists) --}}
                                                     <td>
-                                                        {{ $loop->iteration }}
+                                                        <div class="form-check m-0">
+                                                            <input
+                                                                type="checkbox"
+                                                                class="form-check-input row-check"
+                                                                value="{{ $val->id }}"
+                                                                data-has-storage="{{ $hasStorage ? '1' : '0' }}"
+                                                                {{ $hasStorage ? '' : 'disabled' }}
+                                                            >
+                                                        </div>
                                                     </td>
-                                                    <td>
-                                                        {{ $val?->store?->store_name }}
-                                                    </td>
-                                                    <td>
-                                                        {{ $val?->sub_store?->name }}
-                                                    </td>
-                                                    <td>
-                                                        {{ $val?->name }}
-                                                    </td>
-                                                    <td>
-                                                        {{ str_replace('-', ' > ', $val?->heirarchy_name) }}
-                                                    </td>
+                                                    <!-- <td>{{ $loop->iteration }}</td> -->
+                                                    <td>{{ $val?->store?->store_name }}</td>
+                                                    <td>{{ $val?->sub_store?->name }}</td>
+                                                    <td>{{ $val?->name }}</td>
+                                                    <td>{{ $val?->storage_number }}</td>
+                                                    <td>{{ str_replace('-', ' > ', $val?->heirarchy_name) }}</td>
                                                     <td>
                                                         @if($val->storage_number)
-                                                            <img src="data:image/png;base64,{{ DNS2D::getBarcodePNG($val->storage_number, 'QRCODE') }}" class="barcode-img" alt="{{ $val->storage_number }}" style="height:60px;width:60px;" />
+                                                            <img src="data:image/png;base64,{{ DNS2D::getBarcodePNG($val->storage_number, 'QRCODE') }}"
+                                                                class="barcode-img"
+                                                                alt="{{ $val->storage_number }}"
+                                                                style="height:60px;width:60px;" />
                                                         @endif
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="6">
-                                                        No Record Found
-                                                    </td>
+                                                    <td colspan="8">No Record Found</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -75,41 +89,113 @@
         </div>
     </div>
 @endsection
-@section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+@push('styles')
+    {{-- If your layout doesn’t already include DataTables assets, uncomment these CDNs --}}
+    {{-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"> --}}
+@endpush
 
+@section('scripts')
+    {{-- If your layout doesn’t already include DataTables assets, uncomment these CDNs --}}
+    {{-- <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script> --}}
+
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-datatable.js') }}"></script>
     <script>
+        // Feather icons
         $(window).on("load", function () {
-            if (feather) {
-                feather.replace({
-                    width: 14,
-                    height: 14,
-                });
-            }
+            if (window.feather) feather.replace({ width: 14, height: 14 });
         });
 
-        $(document).on('click', '#printBarcodesBtn', function () {
-            const locationId = $(this).data('location-id');
-            const storeId = $(this).data('store-id');
-            const levelId = $(this).data('level-id');
+        $(function () {
+            // Initialize DataTable
+            const table = $('#wh-details-table').DataTable({
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [], // keep original order
+                responsive: true,
+                columnDefs: [
+                    { targets: 0, orderable: false, searchable: false }, // checkbox
+                    { targets: -1, orderable: false, searchable: false } // QR column
+                ],
+                // If you want to localize labels, add "language" here.
+            });
 
-            $.ajax({
-                url: `/warehouse-mappings/${locationId}/print-barcodes?sub_store=${storeId}&wh_level=${levelId}}`,
-                method: 'GET',
-                success: function (response) {
-                    if (response.status === 200) {
-                        const printWindow = window.open('', '', 'width=900,height=600');
-                        printWindow.document.write(response.html);
-                        printWindow.document.close();
-                    } else {
-                        Swal.fire('Error', 'Failed to generate barcode print view.', 'error');
-                    }
-                },
-                error: function () {
-                    Swal.fire('Error', 'AJAX request failed.', 'error');
+            // Persist selected IDs across paging/search
+            const selectedSet = new Set(); // string IDs
+
+            function syncHeaderCheckbox() {
+                const $enabledOnPage = $('#wh-details-table tbody .row-check:enabled');
+                const allOnPageChecked =
+                    $enabledOnPage.length > 0 &&
+                    $enabledOnPage.filter(':checked').length === $enabledOnPage.length;
+                $('#checkAll').prop('checked', allOnPageChecked);
+            }
+
+            // Restore checks on redraw
+            table.on('draw.dt', function () {
+                $('#wh-details-table tbody .row-check').each(function () {
+                    const id = String($(this).val());
+                    $(this).prop('checked', selectedSet.has(id));
+                });
+                syncHeaderCheckbox();
+            });
+
+            // Row checkbox toggle
+            $(document).on('change', '#wh-details-table tbody .row-check', function () {
+                const id = String($(this).val());
+                if ($(this).is(':checked')) selectedSet.add(id);
+                else selectedSet.delete(id);
+
+                $('#printBarcodesBtn').prop('disabled', false);
+                syncHeaderCheckbox();
+            });
+
+            // Select All (current page enabled rows only)
+            $(document).on('change', '#checkAll', function () {
+                const checked = $(this).is(':checked');
+                $('#wh-details-table tbody .row-check:enabled').each(function () {
+                    const id = String($(this).val());
+                    $(this).prop('checked', checked);
+                    if (checked) selectedSet.add(id); else selectedSet.delete(id);
+                });
+                $('#printBarcodesBtn').prop('disabled', false);
+            });
+
+            // Print
+            $(document).on('click', '#printBarcodesBtn', function () {
+                const locationId = $(this).data('location-id');
+                const storeId    = $(this).data('store-id');
+                const levelId    = $(this).data('level-id');
+
+                const base = `/warehouse-mappings/${locationId}/print-barcodes`;
+                const params = new URLSearchParams({ sub_store: storeId, wh_level: levelId });
+
+                // Send ids[] array; if empty, backend will print ALL rows having storage_number
+                if (selectedSet.size > 0) {
+                    [...selectedSet].forEach(id => params.append('ids[]', id));
                 }
+
+                $.ajax({
+                    url: `${base}?${params.toString()}`,
+                    method: 'GET',
+                    success: function (response) {
+                        if (response.status === 200 && response.html) {
+                            const w = window.open('', '', 'width=900,height=600');
+                            w.document.write(response.html);
+                            w.document.close();
+                            w.focus();
+                            w.onload = function () { w.print(); /* w.close(); */ };
+                        } else {
+                            Swal.fire('Error', response.message || 'Failed to generate barcode print view.', 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'AJAX request failed.', 'error');
+                    }
+                });
             });
         });
-
     </script>
 @endsection
+
+
+

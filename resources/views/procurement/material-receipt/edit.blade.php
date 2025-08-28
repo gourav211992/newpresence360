@@ -13,6 +13,7 @@
     <form id="mrnEditForm" data-module="mrn" class="ajax-input-form" method="POST" action="{{ route('material-receipt.update', $mrn->id) }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
+        <input type="hidden" name="inspection_required" id="inspection_required" class="inspection_required" value="">
         <div class="app-content content ">
             <div class="content-overlay"></div>
             <div class="header-navbar-shadow"></div>
@@ -1189,6 +1190,7 @@
                         }
                         setTableCalculation(true);
                         // checkWarehouseSetup(storeId, subStoreId);
+                        $(".inspection_required").val(parameters?.inspection_required[0]);
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -1389,12 +1391,24 @@
                                     code: item.item_code || '',
                                     item_id: item.id,
                                     item_name:item.item_name,
+                                    is_inspection:item.is_inspection,
                                     uom_name:item.uom?.name,
                                     uom_id:item.uom_id,
                                     hsn_id:item.hsn?.id,
                                     hsn_code:item.hsn?.code,
                                     alternate_u_o_ms:item.alternate_u_o_ms,
                                     is_attr:item.item_attributes_count,
+                                    is_asset: item.is_asset,
+                                    asset_name:item.item_name,
+                                    asset_category_id: item.asset_category_id,
+                                    asset_category_name: item.asset_category?.name,
+                                    brand_name: item.brand_name,
+                                    model_no: item.model_no,
+                                    estimated_life: item.expected_life,
+                                    salvage_percentage: item.getSalvagePercentage ?? 0,
+                                    procurement_type: 'BUY',
+                                    is_batch_number: item.is_batch_no,
+                                    is_expiry : item.is_expiry,
                                 };
                             }));
                         },
@@ -1414,6 +1428,9 @@
                     let uomName = ui.item.uom_name;
                     let hsnId = ui.item.hsn_id;
                     let hsnCode = ui.item.hsn_code;
+                    let isInspection = ui.item.is_inspection;
+                    let batchNumber = ui.item.is_batch_number;
+                    let expiry = ui.item.is_expiry;
                     $input.attr('data-name', itemName);
                     $input.attr('data-code', itemCode);
                     $input.attr('data-id', itemId);
@@ -1433,6 +1450,36 @@
                     }
                     closestTr.find('[name*=uom_id]').append(uomOption);
                     closestTr.find('.attributeBtn').trigger('click');
+                    if (ui.item.is_asset === 1) {
+                        const assetPayload = {
+                            asset_id: null,
+                            asset_name: ui.item.asset_name ?? '',
+                            asset_category_id: ui.item.asset_category_id ?? null,
+                            asset_category_name: ui.item.asset_category_name ?? '',
+                            asset_code: null,
+                            brand_name: ui.item.brand_name ?? '',
+                            model_no: ui.item.model_no ?? '',
+                            estimated_life: ui.item.estimated_life ?? '',
+                            salvage_percentage: ui.item.salvage_percentage ?? 0,
+                            salvage_value: ui.item.salvage_percentage ?? 0,
+                            procurement_type: ui.item.procurement_type ?? null,
+                            capitalization_date: new Date().toISOString().split('T')[0]
+                        };
+
+
+                        closestTr.find('[name*="[assetDetailData]"]').val(JSON.stringify(assetPayload));
+                        closestTr.find('.assetDetailBtn')
+                            .removeClass('d-none')
+                            .attr('data-asset', JSON.stringify(assetPayload));
+                    } else {
+                        closestTr.find('[name*="[assetDetailData]"]').val('');
+                        closestTr.find('.assetDetailBtn')
+                            .addClass('d-none')
+                            .removeAttr('data-asset');
+                    }
+
+                    closestTr.find('.addBatchBtn').attr('data-is-batch-number', batchNumber);
+                    closestTr.find('.addBatchBtn').attr('data-is-expiry', expiry);
                     let price = 0;
                     let transactionType = 'collection';
                     let partyCountryId = $("#hidden_country_id").val();
@@ -1706,6 +1753,7 @@
                     if (data.status == 200) {
                         // Update the modal or display section
                         $("#itemDetailDisplay").html(data.data.html);
+                        applyInspectionState();
 
                         var approvedStockLedger = data.data.checkApprovedQuantity;
                         if(approvedStockLedger)
@@ -4138,6 +4186,7 @@
                     $('.asn_process').prop('disabled', true);
                     $(".supplier_invoice_no").prop('readonly', false);
                     $(".supplier_invoice_date").prop('readonly', false);
+                    applyInspectionState();
                     seedAllLockedRows();
 
                     switch (moduleProcess) {
@@ -4306,5 +4355,36 @@
                 icon: 'error'
             });
         }
+
+        // Call once on load, and whenever the inspection_required control changes
+        function applyInspectionState() {
+            const inspectionRequired = $('.inspection_required').val() === 'yes';
+
+            $('tr[id^="row_"]').each(function () {
+                const $row = $(this);
+                const $order   = $row.find('input[name*="[order_qty]"]');
+                const $accepted = $row.find('input.accepted_qty');
+                const $rejected = $row.find('input.rejected_qty');
+
+                const orderQty = parseFloat($order.val()) || 0;
+
+                if (inspectionRequired) {
+                // Required: accepted = 0; lock both fields
+                $accepted.val(0).prop('readonly', true);
+                $rejected.prop('readonly', true);
+                // (Optional) also zero rejected if you want:
+                // $rejected.val(0);
+                } else {
+                // Not required: accepted = order qty; unlock both fields
+                $accepted.val(orderQty).prop('readonly', true);
+                $rejected.prop('readonly', true);
+                }
+            });
+        }
+
+        // When page loads
+        $(document).ready(function () {
+            applyInspectionState();
+        });
     </script>
 @endsection

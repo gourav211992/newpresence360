@@ -788,9 +788,9 @@ function setTableCalculation(edit = null) {
                     ) || 0;
 
                 let totalExpValue =
-                Number(
-                    $(`[name="exp_summary[${index + 1}][e_amnt]"]`).val()
-                ) || 0;
+                    Number(
+                        $(`[name="exp_summary[${index + 1}][e_amnt]"]`).val()
+                    ) || 0;
 
                 let tedId =
                     Number(
@@ -1829,8 +1829,13 @@ $(document).on("change", ".sub_store", function () {
     const selectedSubStoreId = $(this).val();
     const isRequired = $(this).find(":selected").data("warehouse-required");
 
-    if (selectedStoreId && selectedSubStoreId && isRequired) {
-        checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+    if (selectedStoreId && selectedSubStoreId) {
+        if (isRequired) {
+            checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+        }
+        else {
+            $(".is_warehouse_required").val(0);
+        }
     }
 });
 
@@ -1838,6 +1843,8 @@ $(document).on("change", ".sub_store", function () {
 const selectedStoreId = $(".header_store_id").val();
 const $selectedSubStore = $(".sub_store").find("option:selected");
 const selectedSubStoreId = $(".sub_store").val();
+console.log("selectedSubStoreId", selectedSubStoreId);
+
 const isSubStoreRequired =
     Number($selectedSubStore.data("warehouse-required")) === 1;
 
@@ -1852,9 +1859,14 @@ if (selectedStoreId) {
     getCostCenters(selectedStoreId);
 }
 
-if (selectedStoreId && selectedSubStoreId && isSubStoreRequired) {
-    checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
-}
+if (selectedStoreId && selectedSubStoreId) {
+        if (isSubStoreRequired) {
+            checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+        }
+        else {
+            $(".is_warehouse_required").val(0);
+        }
+    }
 // 4. Get Sub Stores
 function getSubStores(storeLocationId, selectedSubStoreId = null) {
     const storeId = storeLocationId;
@@ -1882,6 +1894,8 @@ function getSubStores(storeLocationId, selectedSubStoreId = null) {
                 let options = "";
 
                 response.data.forEach(function (location) {
+                    console.log("location", location);
+
                     const isSelected =
                         selectedSubStoreId && location.id == selectedSubStoreId
                             ? "selected"
@@ -1901,9 +1915,13 @@ function getSubStores(storeLocationId, selectedSubStoreId = null) {
                 const isWarehouseRequired = Number(
                     $selectedOption.data("warehouse-required")
                 );
-
-                if (subStoreId && isWarehouseRequired) {
-                    checkWarehouseSetup(storeId, subStoreId);
+                if (subStoreId) {
+                    if (isWarehouseRequired) {
+                        checkWarehouseSetup(storeId, subStoreId);
+                    }
+                    else {
+                        $(".is_warehouse_required").val(0);
+                    }
                 }
             } else {
                 $(".sub_store").empty();
@@ -2469,7 +2487,7 @@ $(document).on("click", ".asn_process", function () {
                 currentProcessType = asnData.type;
                 $("#reference_type_input").val(currentProcessType);
                 asnProcess(asnData, "asn-process");
-                $("#scanQrModal").modal('hide');
+                $("#scanQrModal").modal("hide");
             } else {
                 Swal.fire({
                     title: "Error!",
@@ -2493,7 +2511,7 @@ $(document).on("click", ".asn_process", function () {
 
 $(document).on("click", "#add_new_head_exp", (e) => {
     e.preventDefault();
-// Delay execution to ensure input values are up-to-date
+    // Delay execution to ensure input values are up-to-date
     setTimeout(() => {
         let new_exp_id = $("#new_exp_id").val() || "";
         let new_exp_name = $("#new_exp_name").val() || "";
@@ -2561,7 +2579,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
 
         summaryExpTotal();
         setTableCalculation();
-    }, 5000);
+    }, 500);
 });
 
 function renderBreakupHtml(breakup) {
@@ -2591,8 +2609,12 @@ function getTaxParams(el = null) {
         price: parseFloat(price) || 0,
         from_country: Number($("#country_id").val()) || 0,
         from_state: Number($("#state_id").val()) || 0,
-        party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
-        party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
+        party_country_id:
+            Number($("#party_country_id").val()) ||
+            Number($("#hidden_country_id").val()),
+        party_state_id:
+            Number($("#party_state_id").val()) ||
+            Number($("#hidden_state_id").val()),
         transaction_type: $("#transaction_type").val() || "purchase",
         date: "",
     };
@@ -2636,10 +2658,9 @@ function calculateTaxAndApply(el = null) {
 -------------------------*/
 function applyTaxDetails(taxResponse, params) {
     const breakup = taxResponse.group_taxes || [];
-    const expenseAmount = taxResponse.price || params.price;
-
-    const totalTax = taxResponse.total_tax || 0;
-    const totalAmount = taxResponse.total_amount_after_tax || 0;
+    const expenseAmount = parseFloat(taxResponse.price || params.price);
+    const totalTax = parseFloat(taxResponse.total_tax || 0);
+    const totalAmount = parseFloat(taxResponse.total_amount_after_tax || 0);
 
     const container = $("#tax_details_container").empty();
     breakup.forEach((group) => {

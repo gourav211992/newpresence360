@@ -689,12 +689,22 @@ class TaxController extends Controller
         if ($item) {
             $hsnId = $item->hsn_id;
             if (!$hsnId) {
-                return response()->json(['error' => 'HSN is not mapped with this Item'], 500);
+                return response()->json([
+                    'price'                  => $price,
+                    'total_tax'              => 0.0,
+                    'total_amount_after_tax' => $price,
+                    'group_taxes'            => [],
+                ]);
             }
         } else {
             $hsnId = $request->hsn_id;
             if (!$hsnId) {
-                return response()->json(['error' => 'HSN is not mapped'], 500);
+                return response()->json([
+                    'price'                  => $price,
+                    'total_tax'              => 0.0,
+                    'total_amount_after_tax' => $price,
+                    'group_taxes'            => [],
+                ]);
             }
         }
 

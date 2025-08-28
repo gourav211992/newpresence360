@@ -335,4 +335,9 @@ class PbHeader extends Model
     {
         return $this -> hasMany(ErpPbDynamicField::class, 'header_id');
     }
+
+    public function payment_term_schedules()
+    {
+        return $this -> hasMany(ErpPbPaymentTerm::class, 'pb_header_id');
+    }
 }

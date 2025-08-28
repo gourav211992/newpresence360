@@ -83,6 +83,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
     if (!visibleColumnIndices.includes(15)) visibleColumnIndices.push(15);
     if (!visibleColumnIndices.includes(16)) visibleColumnIndices.push(16);
     if (!visibleColumnIndices.includes(17)) visibleColumnIndices.push(17);
+    if (!visibleColumnIndices.includes(18)) visibleColumnIndices.push(18);
 
     // Define table headers corresponding to the columns
     const day_1 = $("#day1").val();
@@ -108,6 +109,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         `<th class='text-end'>Unconfirmed<br> Stock</th>`, // Unconfirmed Stock Quantity
         `<th class='text-end'>Cost</th>`, // Unconfirmed Stock Cost
         `<th class='text-end'>Value</th>`, // Unconfirmed Stock Value
+        `<th class='text-end'>Reserved<br> Stock</th>`, // Reserved Quantity
         `<th class='text-end'>Hold<br> Stock</th>`, // Hold Quantity
         `<th>0-${day_1} Days</th>`,
         `<th>${day_1}-${day_2} Days</th>`,
@@ -270,7 +272,8 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             `<td class='text-end'>${
                 report?.unconfirmed_stock_value ?? 0.0
             }</td>`, // Unconfirmed Stock Value
-            `<td class='text-end'>${report?.hold_qty ?? 0.0}</td>`, // Unconfirmed Stock Value
+            `<td class='text-end'>${report?.reserved_qty ?? 0.0}</td>`, // Reserved Qty
+            `<td class='text-end'>${report?.putaway_pending_qty ?? 0.0}</td>`, // Hold Qty
             `<td class='text-end'>${
                 report?.confirmed_stock_day1_days ?? 0.0
             }</td>`, // 10 Days Ago
@@ -496,13 +499,14 @@ function getColumnIndexById(columnId) {
         "unconfirmed-stock-qty": 14,
         "unconfirmed-stock-cost": 15,
         "unconfirmed-stock-value": 16,
-        hold_qty: 17,
-        day1_visibility: 18,
-        day2_visibility: 19,
-        day3_visibility: 20,
-        day4_visibility: 21,
-        day5_visibility: 22,
-        day6_visibility: 23,
+        reserved_qty: 17,
+        hold_qty: 18,
+        day1_visibility: 19,
+        day2_visibility: 20,
+        day3_visibility: 21,
+        day4_visibility: 22,
+        day5_visibility: 23,
+        day6_visibility: 24,
     };
     // console.clear();
 

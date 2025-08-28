@@ -1175,6 +1175,17 @@
                                     hsn_id:item.hsn?.id,
                                     hsn_code:item.hsn?.code,
                                     alternate_u_o_ms:item.alternate_u_o_ms,
+                                    is_asset: item.is_asset,
+                                    asset_name:item.item_name,
+                                    asset_category_id: item.asset_category_id,
+                                    asset_category_name: item.asset_category?.name,
+                                    brand_name: item.brand_name,
+                                    model_no: item.model_no,
+                                    estimated_life: item.expected_life,
+                                    salvage_percentage: item.getSalvagePercentage?? 0,
+                                    procurement_type: 'BUY',
+                                    is_batch_number: item.is_batch_no,
+                                    is_expiry : item.is_expiry,
                                 };
                             }));
                         },
@@ -1195,6 +1206,8 @@
                     let hsnId = ui.item.hsn_id;
                     let hsnCode = ui.item.hsn_code;
                     let isInspection = ui.item.is_inspection;
+                    let batchNumber = ui.item.is_batch_number;
+                    let expiry = ui.item.is_expiry;
                     $input.attr('data-name', itemName);
                     $input.attr('data-code', itemCode);
                     $input.attr('data-id', itemId);
@@ -1217,6 +1230,36 @@
                     }
                     $input.closest('tr').find('[name*=uom_id]').empty().append(uomOption);
                     closestTr.find('.attributeBtn').trigger('click');
+                    if (ui.item.is_asset === 1) {
+                        const assetPayload = {
+                            asset_id: null,
+                            asset_name: ui.item.asset_name ?? '',
+                            asset_category_id: ui.item.asset_category_id ?? null,
+                            asset_category_name: ui.item.asset_category_name ?? '',
+                            asset_code: null,
+                            brand_name: ui.item.brand_name ?? '',
+                            model_no: ui.item.model_no ?? '',
+                            estimated_life: ui.item.estimated_life ?? '',
+                            salvage_percentage: ui.item.salvage_percentage ?? 0,
+                            salvage_value: ui.item.salvage_percentage ?? 0,
+                            procurement_type: ui.item.procurement_type ?? null,
+                            capitalization_date: new Date().toISOString().split('T')[0]
+                        };
+
+
+                        closestTr.find('[name*="[assetDetailData]"]').val(JSON.stringify(assetPayload));
+                        closestTr.find('.assetDetailBtn')
+                            .removeClass('d-none')
+                            .attr('data-asset', JSON.stringify(assetPayload));
+                    } else {
+                        closestTr.find('[name*="[assetDetailData]"]').val('');
+                        closestTr.find('.assetDetailBtn')
+                            .addClass('d-none')
+                            .removeAttr('data-asset');
+                    }
+
+                    closestTr.find('.addBatchBtn').attr('data-is-batch-number', batchNumber);
+                    closestTr.find('.addBatchBtn').attr('data-is-expiry', expiry);
                     setTimeout(() => {
                         if(ui.item.is_attr) {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -1620,10 +1663,10 @@
                         $("#itemDetailDisplay").html(data.data.html);
                         applyInspectionState();
                         // ✅ Fill storage_points hidden input
-                        const hiddenInput = getVal("input[name*='[storage_points]']");
-                        if (hiddenInput.length) {
-                            hiddenInput.val(JSON.stringify(storagePoints));
-                        }
+                        // const hiddenInput = getVal("input[name*='[storage_points]']");
+                        // if (hiddenInput.length) {
+                        //     hiddenInput.val(JSON.stringify(storagePoints));
+                        // }
 
                         $('.addBatchBtn').css('display', 'block');
                     }
