@@ -4808,7 +4808,7 @@ function onPostVoucherOpen(type = "not_posted")
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                     <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
-                    <td class="text-end">${voucherDetail.due_date ? moment(voucherDetail.due_date).format('D/M/Y') : moment(voucherEntries.document_date).format('D/M/Y')}</td>
+                    <td class="text-end">${voucherDetail.due_date ? moment(voucherDetail.due_date).format('D/M/Y') : ''}</td>
 					</tr>
                     `
                 });

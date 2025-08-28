@@ -24,7 +24,7 @@
                                         <ol class="breadcrumb">
                                             <li class="breadcrumb-item"><a href="/">Home</a>
                                             </li>
-                                            <li class="breadcrumb-item active">Edit</li>
+                                            <li class="breadcrumb-item active">View</li>
                                         </ol>
                                     </div>
                                 </div>

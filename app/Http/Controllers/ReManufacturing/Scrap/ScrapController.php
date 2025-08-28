@@ -1,0 +1,650 @@
+<?php
+
+namespace App\Http\Controllers\ReManufacturing\Scrap;
+
+use DB;
+use Carbon\Carbon;
+use App\Models\Item;
+use App\Models\Unit;
+use App\Helpers\Helper;
+use App\Helpers\BookHelper;
+use App\Helpers\UserHelper;
+use App\Models\ErpPslipItem;
+use App\Models\ErpSaleOrder;
+use App\Models\Organization;
+use Illuminate\Http\Request;
+use App\Models\Scrap\ErpScrap;
+use App\Helpers\ConstantHelper;
+use App\Helpers\InventoryHelper;
+use Yajra\DataTables\DataTables;
+use App\Models\Scrap\ErpScrapItem;
+use App\Http\Requests\ScrapRequest;
+use App\Http\Controllers\Controller;
+use App\Helpers\ServiceParametersHelper;
+use App\Models\Scrap\ErpScrapItemAttribute;
+
+class ScrapController extends Controller
+{
+    public function index(Request $request)
+    {
+        if (request()->ajax()) {
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+            $selectColumns = ['id', 'document_date', 'document_status', 'book_id', 'store_id', 'sub_store_id', 'user_id', 'revision_number', 'document_number'];
+            $scrapHeaders = ErpScrap::select($selectColumns)->withDraftListingLogic()
+                ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+                ->latest();
+            return DataTables::of($scrapHeaders)
+                ->addIndexColumn()
+                ->editColumn('document_status', function ($row) {
+                    return view('partials.action-dropdown', [
+                        'statusClass' => ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status] ?? 'badge-light-secondary',
+                        'displayStatus' => $row->display_status,
+                        'row' => $row,
+                        'actions' => [
+                            [
+                                'url' => fn($r) => route('scrap.edit', $r->id),
+                                'icon' => 'edit-3',
+                                'label' => 'View/ Edit Detail',
+                            ]
+                        ]
+                    ])->render();
+                })
+                ->addColumn('book_name', function ($row) {
+                    return $row->book ? $row->book?->book_name : '';
+                })
+                ->addColumn('store', function ($row) {
+                    return $row?->store ? $row?->store?->store_name : '';
+                })
+                ->addColumn('sub_store', function ($row) {
+                    return $row?->subStore ? $row?->subStore?->name : '';
+                })
+                ->editColumn('document_date', function ($row) {
+                    return $row->getFormattedDate('document_date') ?? '';
+                })
+                ->editColumn('revision_number', function ($row) {
+                    return strval($row->revision_number);
+                })
+                ->addColumn('components', function ($row) {
+                    return $row->items->count() ?? 0;
+                })
+                ->rawColumns(['document_status'])
+                ->make(true);
+        }
+        $parentUrl = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        return view('remanufacturing.scrap.index', ['servicesBooks' => $servicesBooks]);
+    }
+
+    public function create()
+    {
+        $parentUrl = request()->segments()[0];
+        // $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        // if (count($servicesBooks['services']) == 0)  return redirect()->back();
+
+        $user = Helper::getAuthenticatedUser();
+        $serviceAlias = ConstantHelper::SCRAP_SERVICE_ALIAS;
+        $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+        $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
+        $selecteduserId = $user->auth_user_id;
+        $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+
+        return view('remanufacturing.scrap.create', [
+            'books' => $books,
+            'users' => $users['data'],
+            'locations' => $locations,
+            'selecteduserId' => $selecteduserId,
+            'current_financial_year' => $selectedfyYear,
+        ]);
+    }
+
+    # Edit Po
+    public function edit(Request $request, $id)
+    {
+        $parentUrl = request()->segments()[0];
+        // $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        // if (count($servicesBooks['services']) == 0)  return redirect()->back();
+
+        $user = Helper::getAuthenticatedUser();
+        $serviceAlias = ConstantHelper::SCRAP_SERVICE_ALIAS;
+        $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
+        $erpScrap = ErpScrap::find($id);
+        $createdBy = $erpScrap->created_by;
+        $revision_number = $erpScrap->revision_number ?? 0;
+        $creatorType = Helper::userCheck()['type'];
+        $buttons = Helper::actionButtonDisplay($erpScrap->book_id, $erpScrap->document_status, $erpScrap->id, 0, $erpScrap->approval_level, $erpScrap->created_by ?? 0, $creatorType, $revision_number);
+
+        $revNo = $erpScrap->revision_number;
+        if ($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $erpScrap->revision_number;
+        }
+
+        $selectedfyYear = Helper::getFinancialYear($erpScrap->document_date ?? Carbon::now()->format('Y-m-d'));
+        $approvalHistory = Helper::getApprovalHistory($erpScrap->book_id, $erpScrap->id, $revNo, 0, $createdBy);
+
+        $view = 'remanufacturing.scrap.edit';
+        if ($request->has('revisionNumber') && $request->revisionNumber != $erpScrap->revision_number) {
+            $erpScrap = $erpScrap->source()->where('revision_number', $request->revisionNumber)->first();
+            $view = 'remanufacturing.scrap.view';
+        }
+
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$erpScrap->document_status] ?? '';
+        $departmentsData = UserHelper::getDepartments($user->auth_user_id ?? 0);
+        $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
+        $selecteduserId = $erpScrap?->user_id;
+        $isEdit = $buttons['submit'];
+        if (!$isEdit) {
+            $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true : false;
+        }
+        $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $parameters = [];
+        $response = BookHelper::fetchBookDocNoAndParameters($erpScrap->book_id, $erpScrap->document_date);
+        if ($response['status'] === 200) {
+            $parameters = json_decode(json_encode($response['data']['parameters']), true);
+        }
+
+        return view($view, [
+            'isEdit' => $isEdit,
+            'books' => $books,
+            'erpScrap' => $erpScrap,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'docStatusClass' => $docStatusClass,
+            'revision_number' => $revision_number,
+            'departments' => $departmentsData['departments'],
+            'users' => $users['data'],
+            'selecteduserId' => $selecteduserId,
+            'locations' => $locations,
+            'parameters' => $parameters,
+            'current_financial_year' => $selectedfyYear,
+        ]);
+    }
+
+    public function store(ScrapRequest $request)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Helper::getAuthenticatedUser();
+            $organization = Organization::findOrFail($user->organization_id);
+
+            $erpScrap = new ErpScrap([
+                'organization_id' => $organization->id,
+                'group_id'        => $organization->group_id,
+                'company_id'      => $organization->company_id,
+                'department_id'   => $request->department_id,
+                'user_id'         => $request->user_id,
+                'book_id'         => $request->book_id,
+                'book_code'       => $request->book_code,
+                'store_id'        => $request->store_id,
+                'sub_store_id'    => $request->sub_store_id,
+                'remarks'         => $request->document_remarks,
+                'document_date'   => $request->document_date,
+            ]);
+
+            $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
+            if (!$numberPatternData) {
+                return response()->json(['message' => "Invalid Book", 'error' => ""], 422);
+            }
+
+            $document_number = $numberPatternData['document_number'] ?? $request->document_number;
+            $exists = ErpScrap::where('book_id', $request->book_id)
+                ->where('document_number', $document_number)
+                ->exists();
+
+            if ($exists) {
+                return response()->json(['message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER, 'error' => ""], 422);
+            }
+
+            $erpScrap->fill([
+                'doc_number_type'   => $numberPatternData['type'],
+                'doc_reset_pattern' => $numberPatternData['reset_pattern'],
+                'doc_prefix'        => $numberPatternData['prefix'],
+                'doc_suffix'        => $numberPatternData['suffix'],
+                'doc_no'            => $numberPatternData['doc_no'],
+                'document_number'   => $document_number,
+            ]);
+
+            $erpScrap->save();
+
+            /** ------------------------------
+             * Save Components
+             * ------------------------------ */
+            $components = $request->input('components', []);
+            if (empty($components)) {
+                DB::rollBack();
+                return response()->json(['message' => 'Please add at least one row in component table.', 'error' => ""], 422);
+            }
+
+            foreach ($components as $component) {
+                $item = Item::find($component['item_id'] ?? null);
+                $unit = Unit::find($component['uom_id'] ?? null);
+
+                $erpItemDetail = new ErpScrapItem([
+                    'erp_scrap_id'       => $erpScrap->id,
+                    'item_id'            => $component['item_id'],
+                    'item_code'          => $component['item_code'],
+                    'item_name'          => $component['item_name'],
+                    'hsn_id'             => $component['hsn_id'],
+                    'hsn_code'           => $component['hsn_code'],
+                    'uom_id'             => $component['uom_id'],
+                    'uom_code'           => $unit?->name,
+                    'qty'                => $component['qty'] ?? 0.00,
+                    'remarks'            => $component['remark'],
+                ]);
+
+                $erpItemDetail->inventory_uom_code = $item?->uom?->name;
+                if ($component['uom_id'] == $item?->uom_id) {
+                    $erpItemDetail->inventory_uom_id  = $component['uom_id'];
+                    $erpItemDetail->inventory_uom_code = $component['uom_code'] ?? $item?->uom?->name;
+                    $erpItemDetail->inventory_uom_qty  = $component['indent_qty'] ?? 0;
+                } else {
+                    $alUom = $item?->alternateUOMs()->where('uom_id', $component['uom_id'])->first();
+                    $erpItemDetail->inventory_uom_id   = $component['uom_id'];
+                    $erpItemDetail->inventory_uom_code = $component['uom_code'] ?? $unit?->name;
+                    $erpItemDetail->inventory_uom_qty  = ($component['indent_qty'] ?? 0) * ($alUom?->conversion_to_inventory ?? 1);
+                }
+
+                $erpItemDetail->save();
+
+                // Save Attributes
+                foreach ($item?->itemAttributes ?? [] as $itemAttribute) {
+                    $selectedAttr = $component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'] ?? null;
+                    if ($selectedAttr) {
+                        ErpScrapItemAttribute::create([
+                            'erp_scrap_id'       => $erpScrap->id,
+                            'item_attribute_id'  => $itemAttribute->id,
+                            'item_code'          => $component['item_code'],
+                            'attribute_name'     => $itemAttribute->attribute_group_id,
+                            'attribute_value'    => $selectedAttr,
+                            'attribute_group_id' => $itemAttribute->attribute_group_id,
+                            'attribute_id'       => $selectedAttr,
+                        ]);
+                    }
+                }
+            }
+
+            /** ------------------------------
+             * Attachments
+             * ------------------------------ */
+            if ($request->hasFile('attachment')) {
+                $erpScrap->uploadDocuments($request->file('attachment'), 'scrap', false);
+            }
+
+            /** ------------------------------
+             * Document Status & Workflow
+             * ------------------------------ */
+            if ($request->document_status == ConstantHelper::SUBMITTED) {
+                $approveDocument = Helper::approveDocument($erpScrap->book_id, $erpScrap->id, $erpScrap->revision_number ?? 0, $erpScrap->remarks, $request->file('attachment'), $erpScrap->approval_level ?? 1, 'submit', 0, get_class($erpScrap));
+
+                $erpScrap->document_status = $approveDocument['approvalStatus'] ?? $erpScrap->document_status;
+            } else {
+                $erpScrap->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            }
+
+            $erpScrap->save();
+
+
+            if ($request->pull_item_type) {
+                $pullItemIds = $request->pull_item_ids;
+                switch ($request->pull_item_type) {
+                    case 'pslip':
+                        if (count($pullItemIds)) {
+                            ErpPslipItem::whereIn('id', $pullItemIds)->update(['erp_scrap_id' => $erpScrap->id]);
+                        }
+                        break;
+                    case 'repairOrder':
+                        // if (count($pullItemIds)) {
+                        // }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            $redirectUrl = route('scrap.index');
+            // $redirectUrl = route('scrap.edit', $erpScrap->id);
+
+            DB::commit();
+
+            return response()->json([
+                'message'      => 'Record created successfully',
+                'data'         => $erpScrap,
+                'redirect_url' => $redirectUrl,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error occurred while creating the record.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getItemDetail(Request $request)
+    {
+        $tab = $request->tab ?? null;
+        // get the tab name
+        $itemId = $request->item_id;
+        $storeId = $request->store_id;
+        $subStoreId = $request->sub_store_id;
+        $selectedAttr = json_decode($request->selectedAttr, true) ?? [];
+
+        $item = Item::find($itemId);
+        if (!$item) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Item not found',
+                'data' => []
+            ]);
+        }
+
+        /* Attribute handling */
+        $attributeName = [];
+        $attributeValue = [];
+        foreach ($item->itemAttributes as $attribute) {
+            $attributeGroupId = $attribute->attribute_group_id ?? null;
+            $attributeIds = $attribute->attribute_id ?? [];
+
+            if (!is_array($attributeIds)) {
+                $attributeIds = [$attributeIds];
+            }
+
+            foreach ($attributeIds as $attrId) {
+                $attrId = (string) trim($attrId);
+                if (in_array($attrId, $selectedAttr, true)) {
+                    $attributeName[] = $attributeGroupId;
+                    $attributeValue[] = $attrId;
+                }
+            }
+        }
+
+        $attributes = [
+            'attribute_name' => $attributeName,
+            'attribute_value' => $attributeValue,
+        ];
+
+        /* Qty & UOM */
+        $uomId = $request->uom_id ?? null;
+        $qty = floatval($request->qty) ?? 0;
+        $uomName = $item->uom->name ?? 'NA';
+
+        if ($item->uom_id != $uomId && $uomId) {
+            $alUom = $item->alternateUOMs()->where('uom_id', $uomId)->first();
+            $qty = $alUom?->conversion_to_inventory * $qty;
+        }
+
+        /* Extra Data */
+        $remark = $request->remark ?? null;
+        $specifications = $item->specifications()->whereNotNull('value')->get();
+        $scrapItemIds = $request->scrap_item_id ? [$request->scrap_item_id] : [];
+        $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item?->uom_id, $storeId, $subStoreId);
+
+        switch ($tab) {
+            case 'scavenging':
+                $view = 'remanufacturing.scrap.partials.comp-item-detail';
+                break;
+            case 'repairOrder':
+                $view = 'remanufacturing.scrap.partials.comp-item-detail';
+                break;
+            case 'productionSlip':
+                $view = 'remanufacturing.scrap.partials.comp-item-detail';
+                break;
+            default:
+                $view = 'remanufacturing.scrap.partials.comp-item-detail';
+                break;
+        }
+
+        $html = view($view, compact(
+            'item',
+            'selectedAttr',
+            'remark',
+            'uomName',
+            'qty',
+            'specifications',
+            'inventoryStock',
+            'itemId',
+            'storeId',
+            'subStoreId',
+            'attributes'
+        ))->render();
+
+        return response()->json([
+            'data' => [
+                'html' => $html,
+                'inventoryStock' => $inventoryStock,
+            ],
+            'status' => 200,
+            'message' => 'Fetched successfully'
+        ]);
+    }
+
+
+    public function getPs(Request $request)
+    {
+        $query = $this->buildPsQuery($request);
+        return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) {
+                return '<div class="form-check form-check-inline me-0">
+                            <input class="form-check-input ps_item_checkbox"
+                                type="checkbox"
+                                name="ps_item_check[]"
+
+                                data-item-id="' . e($row?->item_id) . '"
+                                value="' . e($row?->id) . '">
+                        </div>';
+            })
+            ->addColumn('book_name', fn($row) => $row?->pslip?->book?->book_code ?? '')
+            ->addColumn('doc_no', fn($row) => $row?->pslip?->document_number ?? '')
+            ->addColumn('doc_date', fn($row) => $row?->pslip?->getFormattedDate('document_date') ?? '')
+            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
+            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
+            ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
+            ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
+            ->addColumn('rejected_qty', fn($row) => number_format($row?->rejected_qty ?? 0, 2))
+            ->addColumn('remarks', fn($row) => $row?->remarks ?? '')
+            ->rawColumns([
+                'select_checkbox',
+                'attributes',
+            ])
+            ->make(true);
+    }
+
+    protected function buildPsQuery(Request $request)
+    {
+        $storeId     = $request->store_id ?? null;
+        $pslipId    = $request->pslip_id ?? null;
+        $seriesId     = $request->series_id ?? null;
+        $itemSearch  = $request->item_search ?? null;
+        $subStoreId  = $request->sub_store_id ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $ps_item_ids = json_decode($request->ps_item_ids, true) ?? [];
+        $selected_ps_item_ids = json_decode($request->selected_ps_item_ids, true) ?? [];
+
+        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+
+        // $selectColumn = [
+        //     'id',
+        //     'pslip_id',
+        //     'item_id',
+        //     'item_code',
+        //     'item_name',
+        //     'uom_id',
+        //     'uom_code',
+        //     'remarks',
+        //     'rejected_qty',
+        // ];
+
+        $ErpPslipItem = ErpPslipItem::where(function ($query) use ($applicableBookIds, $selected_ps_item_ids, $ps_item_ids, $itemSearch, $storeId, $subStoreId, $pslipId, $seriesId) {
+            if (count($selected_ps_item_ids)) {
+                $query->whereNotIn('id', $selected_ps_item_ids);
+            }
+
+            if (count($ps_item_ids)) {
+                $query->whereIn('id', $ps_item_ids);
+            }
+
+            $query->whereHas('pslip', function ($pslip) use ($applicableBookIds, $storeId, $subStoreId, $pslipId, $seriesId) {
+
+                $pslip->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+
+                // if ($seriesId) {
+                //     $pslip->where('book_id', $seriesId);
+                // }
+
+                if (count($applicableBookIds)) {
+                    $pslip->whereIn('book_id', $applicableBookIds);
+                }
+                if ($storeId) {
+                    $pslip->where('store_id', $storeId);
+                }
+                if ($subStoreId) {
+                    $pslip->where('rg_sub_store_id', $subStoreId);
+                }
+                if ($pslipId) {
+                    $pslip->where('id', $pslipId);
+                }
+            });
+
+            if ($itemSearch) {
+                $query->whereHas('item', function ($query) use ($itemSearch) {
+                    $query->searchByKeywords($itemSearch);
+                });
+            }
+
+            $query->whereNull('erp_scrap_id');
+            $query->whereRaw('rejected_qty > 0');
+        });
+
+        return $ErpPslipItem;
+    }
+
+    # Add item row
+    public function addItemRow(Request $request)
+    {
+        $item = json_decode($request->item, true) ?? [];
+        $componentItem = json_decode($request->component_item, true) ?? [];
+
+        /*Check last tr in table mandatory*/
+        if (isset($componentItem['attr_require']) && isset($componentItem['item_id']) && isset($componentItem['count'])) {
+            if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['count'] != 0) {
+                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
+            }
+        }
+
+        $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
+        $html = view('remanufacturing.scrap.partials.item-row', compact('rowCount'))->render();
+        return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
+    }
+
+    # On change item attribute
+    public function getItemAttribute(Request $request)
+    {
+        $isSo = intval($request->isSo) ?? 0;
+        $rowCount = intval($request->rowCount) ?? 1;
+        $item = Item::find($request->item_id);
+        $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
+        $itemAttributeArray = [];
+        $scrapItemId = $request->scrap_item_id ?? null;
+        $itemAttIds = [];
+        if ($scrapItemId) {
+            $scrapItem = ErpPslipItem::where('id', $scrapItemId)->where('item_id', $item->id ?? null)->first();
+            if ($scrapItem) {
+                $itemAttIds = $scrapItem->attributes()->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $scrapItem->item_attributes_array();
+            }
+        }
+        $itemAttributes = collect();
+        if (count($itemAttIds)) {
+            $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
+        } else {
+            $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
+        }
+
+        $html = view('remanufacturing.scrap.partials.comp-attribute', compact('item', 'rowCount', 'selectedAttr', 'isSo', 'itemAttributes'))->render();
+        $hiddenHtml = '';
+        foreach ($itemAttributes as $attribute) {
+            $selected = '';
+            foreach ($attribute->attributes() as $value) {
+                if (in_array($value->id, $selectedAttr)) {
+                    $selected = $value->id;
+                }
+            }
+            $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
+        }
+
+        if (count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
+    }
+
+    public function processItem(Request $request)
+    {
+        $type = $request->type ?? null;
+        $ids = json_decode($request->ids, true) ?? [];
+        if ($type == 'pslip') {
+            $items = ErpPslipItem::whereIn('id', $ids)->get();
+        }
+        $transactionDate = $request->d_date ?? date('Y-m-d');
+        $current_row_count = intval($request->current_row_count);
+        $html = view('remanufacturing.scrap.partials.pull-items', [
+            'type' => $type,
+            'items' => $items,
+            'transactionDate' => $transactionDate,
+            'current_row_count' => $current_row_count
+        ])->render();
+
+        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
+    }
+
+    public function revokeDocument(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $erpScrap = ErpScrap::find($request->id);
+            if (isset($erpScrap)) {
+                $revoke = Helper::approveDocument($erpScrap->book_id, $erpScrap->id, $erpScrap->revision_number, '', [], 0, ConstantHelper::REVOKE, $erpScrap->grand_total_amount, get_class($erpScrap));
+                if ($revoke['message']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $revoke['message'],
+                    ]);
+                } else {
+                    $erpScrap->document_status = $revoke['approvalStatus'];
+                    $erpScrap->save();
+                    DB::commit();
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Revoked succesfully',
+                    ]);
+                }
+            } else {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No Document found',
+                ]);
+            }
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $ex->getMessage(),
+            ]);
+        }
+    }
+}

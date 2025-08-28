@@ -213,13 +213,13 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Consignee Name
+                                                            <label class="form-label">Consignee Name </label>
                                                                 {{-- <span class="text-danger">*</span></label> --}}
-                                                            <input type="text"
-                                                                class="form-control mw-100 disabled-input"
+                                                            <input type="text" class="form-control mw-100"
                                                                 id="consignee_name" name="consignee_name" />
                                                         </div>
                                                     </div>
+
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-4">

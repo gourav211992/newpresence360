@@ -4,6 +4,7 @@ namespace App\Lib\Services\WHM;
 
 use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
+use App\Models\InspectionDetail;
 use App\Models\MrnBatchDetail;
 use App\Models\MrnDetail;
 use App\Models\WHM\ErpItemUniqueCode;
@@ -12,10 +13,23 @@ use Illuminate\Support\Str;
 
 class WhmJob
 {
+    protected $referenceNo;  
+    protected $referenceHeader; 
+    protected $storeId; 
+    protected $subStoreId; 
+
     public function createJob($id, $namespace, $jobType = null, $subStoreType = null)
     {
         // Step 1: Get Header
         $header = app($namespace)::findOrFail($id);
+        $morphableType = $namespace;
+        $morphableId = $header->id;
+        $referenceType = null;
+        $referenceId = null;
+        $this->referenceNo = null;
+        $this->referenceHeader = $header;
+        $this->storeId = isset($header->store_id) ? $header->store_id : null;
+        $this->subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
 
         // ✅ Conditionally skip MRN headers with no is_inspection = 0
         if ($namespace === \App\Models\MrnHeader::class) {
@@ -25,17 +39,24 @@ class WhmJob
             }
         }
 
-        $subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
         if ($namespace == \App\Models\ErpPlHeader::class) {
-            $subStoreId = isset($header->main_sub_store_id) ? $header->main_sub_store_id : null;
+            $this->subStoreId = isset($header->main_sub_store_id) ? $header->main_sub_store_id : null;
         }
 
         if ($namespace === \App\Models\InspectionHeader::class) {
+            $referenceType = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+            $referenceId = $header->id;
+            $this->referenceNo = $header->book_code.'-'.$header->doc_no;
+
             if($subStoreType === 'rejected_store'){
-                $subStoreId = isset($header->rejected_sub_store_id) ? $header->rejected_sub_store_id : null;
+                $this->subStoreId = isset($header->rejected_sub_store_id) ? $header->rejected_sub_store_id : null;
             } else{
-                $subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
+                $this->subStoreId = isset($header->sub_store_id) ? $header->sub_store_id : null;
             }
+            
+            $namespace = \App\Models\MrnHeader::class;
+            $id = $header->mrn_header_id;
+            $header = app($namespace)::findOrFail($id);
         }
 
         $type = $jobType ?? CommonHelper::getJobType($namespace);
@@ -54,8 +75,11 @@ class WhmJob
                 'company_id' => $header->company_id,
                 'status' => 'pending',
                 'trns_type' => $trnstype,
-                'store_id' => $header->store_id ?? null,
-                'sub_store_id' => $subStoreId ?? null,
+                'store_id' => $this->storeId ?? null,
+                'sub_store_id' => $this->subStoreId ?? null,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'reference_no' => $this->referenceNo,
             ]
         );
 
@@ -80,6 +104,10 @@ class WhmJob
             $detailsQuery->where('is_inspection', 0);
         }
 
+        if($referenceType == ConstantHelper::INSPECTION_SERVICE_ALIAS){
+            $detailsQuery = InspectionDetail::where('header_id',$referenceId)->with('attributes');
+        }
+        
         $details = $detailsQuery->get();
 
         // Step 3: Loop through each detail and create unique item codes
@@ -95,6 +123,67 @@ class WhmJob
         $attributes = $this->getAttributes($detail);
         $qty = intval($detail->inventory_uom_qty);
 
+        $batchData = [];
+        if (in_array($namespace, [\App\Models\MrnDetail::class,\App\Models\InspectionDetail::class])) {
+            $batchData = $detail->batches()
+                ->where('header_id',$this->referenceHeader->id)
+                ->where('detail_id',$detail->id)
+                ->where('item_id',$detail->item_id)
+                ->get();
+        }
+
+        // Check if this is MrnDetail and has gate_entry_detail_id
+        if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
+            if ($batchData->count() > 0) {
+                foreach($batchData as $batch){
+                    $qty = isset($batch->accepted_inv_uom_qty) & $batch->accepted_inv_uom_qty ? $batch->accepted_inv_uom_qty : intval($batch->inventory_uom_qty);
+                    $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
+                    if ($existingQRCodes->count() > 0) {
+                        $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, $batch);
+                    }else {
+                        // ❗ Fall back to fresh QR code creation
+                        $this->createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch, $qty);
+                    }
+                }
+
+                return; // Exit here so fresh creation logic is not executed for MRN
+            }
+
+            $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
+            if ($existingQRCodes->count() > 0) {
+                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, NULL);
+                return; // exit after copying
+            }
+        }
+
+        // Check if this is InspectionDetail and has mrn_header_id
+        if ($namespace === \App\Models\InspectionDetail::class && isset($detail->mrn_detail_id) && $detail->mrn_detail_id) {
+            $mrnDetail = MrnDetail::find($detail->mrn_detail_id);
+            if (isset($mrnDetail->gate_entry_detail_id) && $mrnDetail->gate_entry_detail_id) {
+
+                if ($batchData->count() > 0) {
+                    foreach($batchData as $batch){
+                        $qty = isset($batch->accepted_inv_uom_qty) & $batch->accepted_inv_uom_qty ? $batch->accepted_inv_uom_qty : intval($batch->inventory_uom_qty);
+                        $existingQRCodes = $this->getUnloadingQr($mrnDetail->geItem, $qty);
+                        if ($existingQRCodes->count() > 0) {
+                            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, $batch);
+                        }else{
+                            $this->createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch, $qty);
+                        }
+                    }
+
+                    return; // Exit here so fresh creation logic is not executed for MRN
+                }
+
+
+                $existingQRCodes = $this->getUnloadingQr($mrnDetail->geItem, $qty);
+                if ($existingQRCodes->count() > 0) {
+                    $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, NULL);
+                    return; // exit after copying
+                }
+            }
+        }
+
         // Check if this is ErpInvoiceItem and has pl_item_id
         if ($namespace === \App\Models\ErpInvoiceItem::class && isset($detail->pl_item_id) && $detail->pl_item_id) {
             // $qty = intval($detail->order_qty);
@@ -104,55 +193,16 @@ class WhmJob
         }
 
         // Check if this is MrnDetail and has gate_entry_detail_id
-        if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
-            $batchData = MrnBatchDetail::where('header_id',$header->id)
-                ->where('detail_id',$detail->id)
-                ->where('item_id',$detail->item_id)
-                ->get();
-
-            if ($batchData->count() > 0) {
-                foreach($batchData as $batch){
-                    $qty = intval($batch->inventory_uom_qty);
-                    $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
-                    // dd($existingQRCodes);
-                    $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, $batch);
-                }
-
-                return; // Exit here so fresh creation logic is not executed for MRN
-            }
-
-            $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
-            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, NULL);
-            return; // exit after copying
-        }
-
-        // Check if this is MrnDetail and has gate_entry_detail_id
         if ($namespace === \App\Models\ErpMiItem::class && $job == CommonHelper::DISPATCH) {
             $existingQRCodes = $this->getPickingQr($detail, $qty);
             $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT);
             return; // exit after copying
         }
-
-        // Check if this is InspectionDetail and has mrn_header_id
-        if ($namespace === \App\Models\InspectionDetail::class && isset($detail->mrn_detail_id) && $detail->mrn_detail_id) {
-            $mrnDetail = MrnDetail::find($detail->mrn_detail_id);
-            if (isset($mrnDetail->gate_entry_detail_id) && $mrnDetail->gate_entry_detail_id) {
-                $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
-                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, NULL);
-                return; // exit after copying
-            }
-        }
         
-        $batchData = [];
-        if ($namespace === \App\Models\MrnDetail::class) {
-            $batchData = MrnBatchDetail::where('header_id',$header->id)
-                ->where('detail_id',$detail->id)
-                ->where('item_id',$detail->item_id)
-                ->get();
-
+        if (in_array($namespace, [\App\Models\MrnDetail::class,\App\Models\InspectionDetail::class])) {
             if ($batchData->count() > 0) {
                 foreach($batchData as $batch){
-                    $qty = intval($batch->inventory_uom_qty);
+                    $qty = isset($batch->accepted_inv_uom_qty) & $batch->accepted_inv_uom_qty ? $batch->accepted_inv_uom_qty : intval($batch->inventory_uom_qty);
                     $this->createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch,$qty);
                 }
 
@@ -183,6 +233,19 @@ class WhmJob
     private function createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch, $qty){
         $records = [];
         $uid = null;
+        $referenceType = null;
+        $referenceDetailId = null;
+
+        $morphableType = $namespace;
+        $morphableId = $detail->id;
+
+        if ($namespace === \App\Models\InspectionDetail::class){
+            $morphableType = \App\Models\MrnDetail::class;
+            $morphableId = $detail->mrn_detail_id;
+            $referenceType = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+            $referenceDetailId = $detail->id;
+        }
+
         for ($i = 0; $i < $qty; $i++) {
             //Preserve the UID if present and qty is 1
             if ($qty === 1 && isset($detail -> item_uid) && $detail -> item_uid) {
@@ -196,16 +259,16 @@ class WhmJob
                 'organization_id' => $header->organization_id,
                 'group_id' => $header->group_id,
                 'company_id' => $header->company_id,
-                'morphable_type' => $namespace,
-                'morphable_id' => $detail->id,
+                'morphable_type' => $morphableType,
+                'morphable_id' => $morphableId,
                 'job_type' => $type,
                 'trns_type' => $trnstype,
                 'doc_type' => CommonHelper::RECEIPT,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
                 'book_id' => $header->book_id ?? null,
-                'store_id' => $header->store_id ?? null,
-                'sub_store_id' => isset($header->sub_store_id) ? $header->sub_store_id : null,
+                'store_id' => $this->storeId ?? null,
+                'sub_store_id' => $this->subStoreId ?? null,
                 'book_code' => $header->book_code ?? null,
                 'item_attributes' => json_encode($attributes),
                 'item_id' => $detail->item_id,
@@ -220,6 +283,9 @@ class WhmJob
                 'type' => 'qr',
                 'qty' => 1,
                 'status' => 'pending',
+                'reference_type' => $referenceType,
+                'reference_detail_id' => $referenceDetailId,
+                'reference_no' => $this->referenceNo,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -252,7 +318,18 @@ class WhmJob
     }
 
     private function copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, $status, $docType = CommonHelper::RECEIPT, $trnstype, $batch){
-        // dd($batch);
+        $morphableType = $namespace;
+        $morphableId = $detail->id;
+        $referenceType = null;
+        $referenceDetailId = null;
+
+        if ($namespace === \App\Models\InspectionDetail::class){
+            $morphableType = \App\Models\MrnDetail::class;
+            $morphableId = $detail->mrn_detail_id;
+            $referenceType = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+            $referenceDetailId = $detail->id;
+        }
+
         foreach ($existingQRCodes as $code) {
             $newRecord = ErpItemUniqueCode::create([
                 'uid' => $this->generateUniqueUid(),
@@ -260,16 +337,16 @@ class WhmJob
                 'organization_id' => $header->organization_id,
                 'group_id' => $header->group_id,
                 'company_id' => $header->company_id,
-                'morphable_type' => $namespace,
-                'morphable_id' => $detail->id,
+                'morphable_type' => $morphableType,
+                'morphable_id' => $morphableId,
                 'job_type' => $type,
                 'trns_type' => $trnstype,
                 'doc_type' => $docType,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
                 'book_id' => $header->book_id ?? null,
-                'store_id' => $header->store_id ?? null,
-                'sub_store_id' => $header->sub_store_id ?? null,
+                'store_id' => $this->storeId ?? null,
+                'sub_store_id' => $this->subStoreId ?? null,
                 'book_code' => $header->book_code ?? null,
                 'item_attributes' => json_encode($attributes),
                 'item_id' => $detail->item_id,
@@ -284,6 +361,9 @@ class WhmJob
                 'type' => 'qr',
                 'qty' => 1,
                 'status' => $status,
+                'reference_type' => $referenceType,
+                'reference_detail_id' => $referenceDetailId,
+                'reference_no' => $this->referenceNo,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

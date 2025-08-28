@@ -13,6 +13,7 @@ class ErpPslipItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'erp_scrap_id',
         'pslip_id',
         'mo_product_id',
         'item_id',
@@ -57,7 +58,7 @@ class ErpPslipItem extends Model
         'hsn' => 'hsn_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
-    
+
     protected $hidden = ['deleted_at'];
     protected $with = ['mo_product.mo'];
     protected $casts = [
@@ -67,12 +68,12 @@ class ErpPslipItem extends Model
     {
         return $this->qty * $this->rate;
     }
-    
+
     public function pslip()
     {
         return $this -> belongsTo(ErpProductionSlip::class, 'pslip_id', 'id');
     }
-    
+
     public function mo_product()
     {
         return $this -> belongsTo(MoProduct::class, 'mo_product_id', 'id');
@@ -87,7 +88,7 @@ class ErpPslipItem extends Model
     {
         return $this -> hasMany(PslipBomConsumption::class, 'pslip_item_id', 'id');
     }
-    
+
     public function getMoAttribute()
     {
         return $this->mo_product?->mo;
@@ -130,7 +131,7 @@ class ErpPslipItem extends Model
         return $this->hasMany(InspChecklist::class, 'detail_id')
             ->whereType(ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS);
     }
-    
+
     public function uom()
     {
         return $this->belongsTo(Unit::class, 'uom_id');
@@ -166,7 +167,7 @@ class ErpPslipItem extends Model
                         $attributeValueData -> selected = $isSelected ? true : false;
                         array_push($attributesArray, $attributeValueData);
                     }
-                
+
             }
            $attribute -> values_data = $attributesArray;
            $attribute = $attribute -> only(['id','group_name', 'values_data', 'attribute_group_id']);

@@ -81,7 +81,7 @@ class ConstantHelper
     const PAYABLE='Account Payable';
     const RECEIVABLE = 'Account Receivable';
     const DOCUMENT_STATUS = [self::DRAFT, self::SUBMITTED, self::APPROVAL_NOT_REQUIRED, self::PARTIALLY_APPROVED, self::APPROVED, self::REJECTED];
-    const DUE_DATE_ALIAS = [self::MRN_SERVICE_ALIAS,self::PB_SERVICE_ALIAS,self::SI_SERVICE_ALIAS,self::SERVICE_INV_SERVICE_ALIAS,self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
+
     const DOCUMENT_STATUS_CSS = [self::DRAFT => 'text-warning', self::SUBMITTED => 'text-primary', self::APPROVAL_NOT_REQUIRED => 'text-success', self::PARTIALLY_APPROVED => 'text-warning', self::APPROVED => 'text-success', self::REJECTED => 'text-danger', self::POSTED => 'text-primary-new',self::COMPLETED => 'text-warning'];
 
     const DOCUMENT_STATUS_CSS_WO_TEXT = [self::DRAFT => 'warning', self::SUBMITTED => 'primary', self::APPROVAL_NOT_REQUIRED => 'success', self::PARTIALLY_APPROVED => 'warning', self::APPROVED => 'success', self::REJECTED => 'danger', self::POSTED => 'info'];
@@ -480,6 +480,7 @@ class ConstantHelper
         self::BOM_SERVICE_ALIAS => "Bill Of Material",
         self::PO_SERVICE_ALIAS => "Purchase Order" ,
         self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" ,
+        self::SCRAP_SERVICE_ALIAS => "Scrap" ,
         self::PI_SERVICE_ALIAS => "Purchase Indent" ,
         self:: MRN_SERVICE_ALIAS => "MRN" ,
         self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" ,
@@ -521,6 +522,7 @@ class ConstantHelper
     const PQC_SERVICE_ALIAS = 'pqc';
     const PDS_SERVICE_ALIAS = 'pds';
     const SUPPLIER_INVOICE_SERVICE_ALIAS = 'supplier-invoice';
+    const SCRAP_SERVICE_ALIAS = 'scrap';
     const PI_SERVICE_ALIAS = 'purchase-indent';
     const MRN_SERVICE_ALIAS = 'mrn';
     const GATE_ENTRY_SERVICE_ALIAS = 'ge';
@@ -564,7 +566,6 @@ class ConstantHelper
     const CREDIT_Note = 'cn';
     const JOURNAL_VOUCHER = 'jv';
     const CONTRA_VOUCHER = 'cv';
-    const OPENING_BALANCE = 'ob';
     const PAYMENT_VOUCHER_RECEIPT = 'receipt-payment-voucher';
     const PAYMENTS_SERVICE_ALIAS = 'payments';
     const RECEIPTS_SERVICE_ALIAS = 'receipts';
@@ -723,6 +724,8 @@ class ConstantHelper
         self::JO_SERVICE_ALIAS => 'JobOrder\JobOrder', // If model inside sub folder
         self::SUPPLIER_INVOICE_SERVICE_ALIAS => 'PurchaseOrder',
         self::PI_SERVICE_ALIAS => 'PurchaseIndent',
+
+        self::SCRAP_SERVICE_ALIAS => 'Scrap\ErpScrap',
         self::MRN_SERVICE_ALIAS => 'MrnHeader',
         self::INSPECTION_SERVICE_ALIAS => 'InspectionHeader',
         self::PUTAWAY_SERVICE_ALIAS => 'PutAwayHeader',
@@ -757,7 +760,6 @@ class ConstantHelper
         self::DEBIT_Note => 'Voucher',
         self::JOURNAL_VOUCHER => 'Voucher',
         self::CONTRA_VOUCHER => 'Voucher',
-        self::OPENING_BALANCE => 'Voucher',
         self::PAYMENT_VOUCHER_RECEIPT => 'PaymentVoucher',
         self::PAYMENTS_SERVICE_ALIAS => 'PaymentVoucher',
         self::RECEIPTS_SERVICE_ALIAS => 'PaymentVoucher',
@@ -860,7 +862,7 @@ class ConstantHelper
         self::LOAN_SETTLEMENT => 'loan.settlement.view',
         self::LOAN_DISBURSEMENT => 'loan.view-disbursement',
         self::FIXED_ASSET_DEPRECIATION => 'finance.fixed-asset.depreciation.show',
-        self::PI_SERVICE_ALIAS => 'pi.edit',
+        self::SCRAP_SERVICE_ALIAS => 'remanufacturing.scrap.edit',
         self::PO_SERVICE_ALIAS =>'po.edit',
         self::JO_SERVICE_ALIAS => 'jo.edit',
         self::GATE_ENTRY_SERVICE_ALIAS => 'gate-entry.edit',

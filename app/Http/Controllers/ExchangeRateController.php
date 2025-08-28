@@ -68,9 +68,9 @@ class ExchangeRateController extends Controller
 
     $fromCurrencies = Currency::all();
     $toCurrencies = Currency::where(function($query) use ($user) {
-        $query->where('id', $user->organization->currency_id)
-            ->orWhere('id', $user->organization->group->currency_id)
-            ->orWhere('id', $user->organization->company->currency_id);
+        $query->where('id', $user->organization?->currency_id)
+            ->orWhere('id', $user->organization?->group?->currency_id)
+            ->orWhere('id', $user->organization?->company?->currency_id);
     })->distinct('id')->get();
     
     return view('procurement.exchange-rate.index', compact('fromCurrencies', 'toCurrencies'));

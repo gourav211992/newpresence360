@@ -26,45 +26,47 @@ class IndexController extends Controller
 {
     public function userDashboard(Request $request) {
         $location = $request->input('store_id');
+        $subLocation = $request->input('sub_store_id');
         $employee = Helper::getAuthenticatedUser();
 
         $pendingUnloadingCounts = ErpWhmJob::where('type', CommonHelper::UNLOADING)
                 ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
-                        $q->where('store_id', $location);
-                    });
+                ->when($location, function ($q) use ($location) {
+                    $q->where('store_id', $location);
                 })
                 ->count();
          
         $pendingPutawayCounts = ErpWhmJob::where('type', CommonHelper::PUTAWAY)
                 ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\MrnHeader','App\Models\InspectionHeader'], function ($q) use ($location) {
-                        $q->where('store_id', $location);
-                    });
+                ->when($location, function ($q) use ($location) {
+                    $q->where('store_id', $location);
+                })
+                ->when($subLocation, function ($q) use ($subLocation) {
+                    $q->where('sub_store_id', $subLocation);
                 })
                 ->count();    
 
         $pendingPickingCounts = ErpWhmJob::where('type', CommonHelper::PICKING)
                 ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($location) {
+                ->when($location, function ($q) use ($location) {
                         $q->where('store_id', $location);
-                    });
+                })
+                ->when($subLocation, function ($q) use ($subLocation) {
+                    $q->where('sub_store_id', $subLocation);
                 })
                 ->count();    
 
         $pendingDispatchCounts = ErpWhmJob::where('type', CommonHelper::DISPATCH)
                 ->whereIn('status',[CommonHelper::PENDING,CommonHelper::DEVIATION, CommonHelper::IN_PROGRESS])
                 // ->where('organization_id', @$employee->organization_id)
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\ErpSaleInvoice'], function ($q) use ($location) {
-                        $q->where('store_id', $location);
-                    });
+                ->when($location, function ($q) use ($location) {
+                    $q->where('store_id', $location);
+                })
+                ->when($subLocation, function ($q) use ($subLocation) {
+                    $q->where('sub_store_id', $subLocation);
                 })
                 ->count();        
 
@@ -118,7 +120,7 @@ class IndexController extends Controller
                     ->whereIn('id', $subStoreIds) 
                     ->where('status',ConstantHelper::ACTIVE)
                     ->where('type','stock')
-                    ->where('is_warehouse_required',1)
+                    // ->where('is_warehouse_required',1)
                     ->get();
 
         return [

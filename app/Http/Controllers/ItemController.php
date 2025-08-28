@@ -1573,7 +1573,7 @@ class ItemController extends Controller
     public function getAssetDataForCategory($categoryId)
     {
         $data = FixedAssetSetup::where('status', 'ACTIVE')
-            ->where('id', $categoryId)
+            ->where('asset_category_id', $categoryId)
             ->select('expected_life_years', 'maintenance_schedule')
             ->first();
 

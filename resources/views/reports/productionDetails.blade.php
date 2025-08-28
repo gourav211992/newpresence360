@@ -17,9 +17,9 @@
                     </div>
                     <div class="content-header-right text-end col-md-6">
 
-                        <a href="{{ route('productionTracking.download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
-                                data-feather="download"></i> Export CSV
-                        </a>
+                        {{-- <a href="{{ route('productionTracking.download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                                data-feather="download"></i> Print
+                        </a> --}}
                     </div>
                 </div>
             </div>
@@ -41,7 +41,15 @@
                             </tr>
                             <tr>
                                 <td><b>Attributes</b></td>
-                                <td>{{$details->pwo_document_date}}</td>
+                                @php
+                                    $attributes = explode(',', $details->attributes); // assuming it's comma separated
+                                @endphp
+
+                                <td>
+                                    @foreach($attributes as $attr)
+                                        <span class="badge bg-primary me-1">{{ trim($attr) }}</span>
+                                    @endforeach
+                                </td>
                                 <td><b>Date</b></td>
                                 <td>{{$details->pwo_document_date}}</td>
                             </tr>
@@ -81,6 +89,7 @@
                                                     <th>Date</th>
                                                     <th>PSLIP No.</th>                              
                                                     <th>Station</th>
+                                                    <th>Sub Store</th>
                                                     <th>MO No.</th>
                                                     <th>MO Date</th>
                                                     <th>TYPE</th>
@@ -105,8 +114,10 @@
 @endsection
 
 @section('scripts')
-    {{-- <script>
-        $(document).ready(function() {      
+    <script>
+        $(document).ready(function() {  
+            var id = "{{ request()->route('id') }}";  
+   
             var dt_basic_table = $('.datatables-basic');
 
             function renderData(data) {
@@ -120,23 +131,13 @@
                         scrollY: "500px",       
                         scrollCollapse: true,
                         autoWidth: false,
-                        fixedHeader: true,  
-                        fixedColumns: {
-                            rightColumns: 1 
-                        },
+                       
                         columnDefs: [
                             { targets: "_all", className: "text-nowrap" },
-                            { targets: -1, orderable: false, searchable: false }
                         ],
         
                         ajax: {
-                            url: '{{ route('productionTracking.report') }}',
-                            data: function(d) {
-                                d.date_range          = $('#fp-range').val();
-                                d.so_document_number  = $('#so_number').val();
-                                d.pwo_document_number  = $('#pwo_number').val();
-                                d.consumed_item_code  = $('#consumed_item_code').val();
-                            }
+                            url: "{{ url('report/production-tracking/details') }}/" + id,      
                         },
                         columns: [
                                 {
@@ -146,81 +147,97 @@
                                     className: "text-center text-nowrap"
                                 },
                                 {
-                                    data: 'pwo_document_date',
-                                    name: 'pwo_document_date',
+                                    data: 'pslip_document_date',
+                                    name: 'c.document_date',
                                     render: function (data, type, row) {
-                                        return row.pwo_document_date;
+                                        let raw = row.pslip_document_date;              // e.g. 2025-05-27
+                                        let formatted = formatDateDMY(raw);            // e.g. 27-05-2025
+
+                                        if (type === 'display') {
+                                            return formatted;
+                                        }
+                                        if (type === 'filter') {
+                                            // Make both formats searchable
+                                            return raw + ' ' + formatted;
+                                        }
+                                        return raw; // for sort
                                     }
-                                },
-                                {
-                                    data: 'pwo_document_number',
-                                    name: 'pwo_document_number'
-                                },
-                                {
-                                    data: 'item_code',
-                                    name: 'item_code'
                                 },  
                                 {
-                                    data: 'item_name',
-                                    name: 'item_name'
-                                }, 
-                                {
-                                    data: 'attributes',
-                                    name: 'attributes',
-                                    orderable: false,
-                                    searchable: false,
+                                    data: 'pslip_document_number',
+                                    name: 'c.document_number',
                                     render: function (data, type, row) {
-                                        return row.attributes;
+                                        return row.pslip_book_code+' - '+row.pslip_document_number;
+                                    }
+                                },            
+                                {
+                                    data: 'name',
+                                    name: 'e.name',
+                                    render: function (data, type, row) {
+                                        return row.name;
+                                    }
+                                },            
+                                {
+                                    data: 'sub_store_name',
+                                    name: 'f.name',
+                                    render: function (data, type, row) {
+                                        return row.sub_store_name;
+                                    }
+                                },  
+                                {
+                                    data: 'document_number',
+                                    name: 'b.document_number',
+                                    render: function (data, type, row) {
+                                        return row.book_code+' - '+row.document_number;
                                     }
                                 },
                                 {
-                                    data: 'uom_code',
-                                    name: 'uom_code'
+                                    data: 'document_date',
+                                    name: 'b.document_date',
+                                    render: function (data, type, row) {
+                                        let raw = row.document_date;
+                                        let formatted = formatDateDMY(raw);
+
+                                        if (type === 'display') {
+                                            return formatted;
+                                        }
+                                        if (type === 'filter') {
+                                            return raw + ' ' + formatted;
+                                        }
+                                        return raw;
+                                    }
                                 },
                                 {
-                                    data: 'so_order_qty',
-                                    name: 'so_order_qty'
-                                }, 
+                                    data: 'type',
+                                    name: 'type',
+                                    orderable: false,
+                                    searchable: false,
+                                },  
                                 {
                                     data: 'qty',
-                                    name: 'qty'
-                                },
-                                {
-                                    data: 'pslip_qty',
-                                    name: 'pslip_qty',
-                                },
-                                {
-                                    data: 'completion_percent',
-                                    name: 'completion_percent',
-                                     render: function (data, type, row) {
-                                        return row.completion_percent+' %';
-                                    }
-                                },
-                                {
-                                    data: 'customer_name',
-                                    name: 'customer_name'
+                                    name: 'd.qty'
                                 }, 
                                 {
-                                    data: 'so_document_number',
-                                    name: 'so_document_number'
-                                }, 
-                                {
-                                    data: 'so_document_date',
-                                    name: 'so_document_date'
-                                }, 
-                                {
-                                    data: 'a.id',
-                                    name: 'a.id',
+                                    data: 'accepted_qty',
+                                    name: 'accepted_qty',
                                     orderable: false,
                                     searchable: false,
                                     render: function (data, type, row) {
-                                         let baseUrl = "{{ route('productionTracking.details', ':id') }}"; 
-                                         baseUrl = baseUrl.replace(':id', row.id);
-                                        return '<a href="' + baseUrl + '" target="_blank" class="btn btn-sm btn-primary">' +
-                                    '<i class="fa fa-external-link-alt"></i> ' +
-                                    '</a>';
+                                        return row.accepted_qty;
                                     }
-                                }                          
+                                },
+                                {
+                                    data: 'subprime_qty',
+                                    name: 'd.subprime_qty',
+                                },
+                                {
+                                    data: 'rejected_qty',
+                                    name: 'd.rejected_qty',
+                                     render: function (data, type, row) {
+                                        return row.rejected_qty;
+                                    }
+                                }
+                                                   
                         ],
                         dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                         buttons: [{
@@ -238,7 +255,7 @@
                                     className: 'dropdown-item',
                                     title: 'pSlipReport',
                                     exportOptions: {
-                                        columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+                                        columns: [0,1,2,3,4,5,6,7,8,9,10]
                                     }
                                 }
                             ],
@@ -266,5 +283,14 @@
                     });
             }
         });
-    </script> --}}
+
+        function formatDateDMY(dateStr) {
+            if (!dateStr) return '';
+            let date = new Date(dateStr);
+            let day = String(date.getDate()).padStart(2, '0');
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+    </script>
 @endsection

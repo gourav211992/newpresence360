@@ -376,6 +376,8 @@ $(document).on('submit', '.ajax-input-form', function (e) {
  *                           - cleanupRegex: RegExp to remove related keys from FormData.
  */
 function appendSerializedFormRows(formData, containerSelector, jsonKey, options = {}) {
+    console.log(formData);
+
     const {
         rowSelector = 'tr[id^="row_"], .display_overhead_row',
         dataModule = null,
@@ -462,6 +464,10 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
                     /^item_id\\[\\]$/
                     // /^.*_\d+$/
                 );
+                break;
+            case 'scrap':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                cleanupRegex2 = '^component\\[\\d+\\]\\[.*\\]$';
                 break;
             default:
                 console.warn("No cleanup regex defined for module:", dataModule);

@@ -27,10 +27,12 @@ class PutawayTaskController extends Controller
         $subLocation = $request->input('sub_store_id');
         $jobs = ErpWhmJob::with(['morphable.book' => function($q){
                         $q->select('id','book_code');
-                    }, 'morphable.erpStore' => function($q){
-                        $q->select('id','store_name');
                     }, 'itemUniqueCodes' => function($q){
                         $q->select('id','job_id','item_id');
+                    },'store' => function($q){
+                        $q->select('id','store_name');
+                    },'subStore' => function($q){
+                        $q->select('id','name');
                     }])
                     ->where('type', CommonHelper::PUTAWAY)
                     ->when($search, function ($query) use ($search) {
@@ -607,13 +609,19 @@ class PutawayTaskController extends Controller
             // Update stock ledger qty
             if($job->status == CommonHelper::CLOSED){
                 $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
+                $subStoreId = $job->sub_store_id;
+                // if($job->trns_type == ConstantHelper::INSPECTION_SERVICE_ALIAS){
+                //     $header = $header->mrn;    
+                //     $detailIds = $header->items()->where('is_inspection',1)->pluck('id')->unique()->toArray();;        
+                // }
 
-                if($job->trns_type == ConstantHelper::INSPECTION_SERVICE_ALIAS){
-                    $header = $header->mrn;    
-                    $detailIds = $header->items()->where('is_inspection',1)->pluck('id')->unique()->toArray();;        
+                $res = StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL, $subStoreId);
+                if($res['status'] == 'error'){
+                    \DB::rollback();
+                    return[
+                        'message' => $res['message']
+                    ];
                 }
-
-                StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL);
             }
 
             \DB::commit();

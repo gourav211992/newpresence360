@@ -316,7 +316,6 @@ class Helper
     
         return $result;
     }
-    
 
     public static function getFinancialYearQuarter(string $date): mixed
     {
@@ -3475,6 +3474,7 @@ class Helper
         }
 
         $allChildIds = [];
+
         foreach ($groups as $group) {
             $childIds = $group->getAllChildIds(); // Assume this returns array
             $childIds[] = $group->id; // Add parent group ID

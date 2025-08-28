@@ -7,39 +7,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Purchase Order</title>
     <style>
-        .status{
+        .status {
             font-weight: 900;
             text-align: center;
             white-space: nowrap;
         }
+
         .text-info {
             color: #17a2b8;
         }
 
         .text-primary {
-            color: #007bff; /* Blue for "Submitted" status */
+            color: #007bff;
+            /* Blue for "Submitted" status */
         }
 
         .text-success {
-            color: #28a745; /* Green for "Approval Not Required" and "Approved" statuses */
+            color: #28a745;
+            /* Green for "Approval Not Required" and "Approved" statuses */
         }
 
         .text-warning {
-            color: #ffc107; /* Yellow for "Partially Approved" status */
+            color: #ffc107;
+            /* Yellow for "Partially Approved" status */
         }
 
         .text-danger {
-            color: #dc3545; /* Red for "Rejected" status */
+            color: #dc3545;
+            /* Red for "Rejected" status */
         }
     </style>
 </head>
+
 <body>
-    @include('components.pdf-watermark',['status' => isset($po->document_status) ? $po->document_status : ''])
+    @include('components.pdf-watermark', [
+        'status' => isset($po->document_status) ? $po->document_status : '',
+    ])
     <div style="width:700px; font-size: 11px; font-family:Arial;">
         @include('pdf.partials.header', [
             'orgLogo' => $orgLogo,
             'imagePath' => $imagePath,
-            'moduleTitle' => 'Purchase Order'
+            'moduleTitle' => 'Purchase Order',
         ])
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
@@ -66,32 +74,38 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;">
-                                {{$sellerBillingAddress?->address}}
+                                {{ $sellerBillingAddress?->address }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$sellerBillingAddress?->city?->name }}, {{ @$sellerBillingAddress?->state?->name }}, {{ @$sellerBillingAddress?->country?->name }}, Pin Code: {{ @$sellerBillingAddress->pincode }}
+                                {{ @$sellerBillingAddress?->city?->name }}, {{ @$sellerBillingAddress?->state?->name }},
+                                {{ @$sellerBillingAddress?->country?->name }}, Pin Code:
+                                {{ @$sellerBillingAddress->pincode }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$sellerBillingAddress->phone)Phone: {{ @$sellerBillingAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if (@$sellerBillingAddress->phone)
+                                    Phone: {{ @$sellerBillingAddress->phone }},
+                                    @endif @if (@$organization?->email)
+                                        Email: {{ @$organization?->email }}
+                                    @endif
                             </td>
                         </tr>
-                        @if($organization?->gst_number || $organization?->pan_number)
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                GSTIN NO: {{ $organization?->gst_number }}
-                            </td>
-                        </tr>
+                        @if ($organization?->gst_number || $organization?->pan_number)
+                            <tr>
+                                <td style="padding-top: 3px;">
+                                    GSTIN NO: {{ $organization?->gst_number }}
+                                </td>
+                            </tr>
                         @endif
-                        @if($organization?->pan_number)
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                PAN NO: {{ $organization?->pan_number }}
-                            </td>
-                        </tr>
+                        @if ($organization?->pan_number)
+                            <tr>
+                                <td style="padding-top: 3px;">
+                                    PAN NO: {{ $organization?->pan_number }}
+                                </td>
+                            </tr>
                         @endif
                     </table>
                 </td>
@@ -141,7 +155,7 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">GSTIN No:</td>
-                            <td style="padding-top: 3px;">{{@$po?->vendor?->compliances?->gstin_no}}</td>
+                            <td style="padding-top: 3px;">{{ @$po?->vendor?->compliances?->gstin_no }}</td>
                         </tr>
 
                         <tr>
@@ -165,25 +179,25 @@
                             <td style="font-weight: 900;">{{ $po->document_number ?? '-' }}</td>
                         </tr>
 
-                        @if($po->document_date)
-                        <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">PO Date:</td>
-                            <td style="font-weight: 900;">{{ date('d-M-Y', strtotime($po->document_date)) }}</td>
-                        </tr>
+                        @if ($po->document_date)
+                            <tr>
+                                <td style="font-weight: bold; white-space: nowrap;">PO Date:</td>
+                                <td style="font-weight: 900;">{{ date('d-M-Y', strtotime($po->document_date)) }}</td>
+                            </tr>
                         @endif
 
-                        @if($po->reference_number)
-                        <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">Reference No.:</td>
-                            <td style="font-weight: 900;">{{ $po->reference_number }}</td>
-                        </tr>
+                        @if ($po->reference_number)
+                            <tr>
+                                <td style="font-weight: bold; white-space: nowrap;">Reference No.:</td>
+                                <td style="font-weight: 900;">{{ $po->reference_number }}</td>
+                            </tr>
                         @endif
 
-                        @if(!empty($referenceText))
-                        <tr>
-                            <td style="font-weight: bold; white-space: nowrap;">Indent:</td>
-                            <td style="font-weight: 900;">{{ $referenceText }}</td>
-                        </tr>
+                        @if (!empty($referenceText))
+                            <tr>
+                                <td style="font-weight: bold; white-space: nowrap;">Indent:</td>
+                                <td style="font-weight: 900;">{{ $referenceText }}</td>
+                            </tr>
                         @endif
                     </table>
                 </td>
@@ -197,25 +211,30 @@
                             </td>
                         </tr>
                         @if ($po?->consignee_name)
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                {{@$po->consignee_name}}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="padding-top: 3px;">
+                                    {{ @$po->consignee_name }}
+                                </td>
+                            </tr>
                         @endif
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{@$buyerAddress->address}}
+                                {{ @$buyerAddress->address }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }}, {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
+                                {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }},
+                                {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$buyerAddress->phone)Phone: {{ @$buyerAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if (@$buyerAddress->phone)
+                                    Phone: {{ @$buyerAddress->phone }},
+                                    @endif @if (@$organization?->email)
+                                        Email: {{ @$organization?->email }}
+                                    @endif
                             </td>
                         </tr>
                     </table>
@@ -226,7 +245,7 @@
                         <tr>
                             <td>
                                 <b style="font-weight: 900;">Status :-</b>
-                                @if($po->document_status == 'submitted')
+                                @if ($po->document_status == 'submitted')
                                     <span class="status" style="color: #17a2b8 ">
                                         {{ $po->display_status }}
                                     </span>
@@ -234,7 +253,7 @@
                                     <span style="color: #6c757d">
                                         {{ $po->display_status }}
                                     </span>
-                                @elseif($po->document_status == 'approved' || $po->document_status == "approval_not_required")
+                                @elseif($po->document_status == 'approved' || $po->document_status == 'approval_not_required')
                                     <span style="color: #28a745">
                                         Approved
                                     </span>
@@ -305,103 +324,116 @@
             @php
                 $hsnGroups = [];
                 $taxBracket = [];
-                $totalCGSTValue = 0.00;
-                $totalSGSTValue = 0.00;
-                $totalIGSTValue = 0.00;
+                $totalCGSTValue = 0.0;
+                $totalSGSTValue = 0.0;
+                $totalIGSTValue = 0.0;
             @endphp
-            @foreach($po->po_items as $key => $val)
+            @foreach ($po->po_items as $key => $val)
                 @php
-                    $totalTaxPercentage = 0.00;
-                    if ($val->item && $val->item->hsn) {
+                    $totalTaxPercentage = 0.0;
+                    if (!empty($val->item) && !empty($val->item->hsn) && !empty($val->item->hsn->code)) {
                         $hsnCode = $val->item->hsn->code;
-                        $taxPercentage = 0.00;
-                        $teds = $val->taxes;
+                        $teds = $val->taxes ?? [];
+
+                        if (!isset($hsnGroups[$hsnCode])) {
+                            $hsnGroups[$hsnCode] = [
+                                'hsn_code' => $hsnCode,
+                                'taxable_rate' => 0.0,
+                                'taxable_value' => 0.0,
+                                'tax_amount' => 0.0,
+                                'tax_group' => null,
+                            ];
+                        }
+
                         foreach ($teds as $ted) {
-                            $taxPercentage += $ted->ted_perc;
                             $taxType = $ted->ted_name;
-                            $taxableValue = $ted -> assessment_amount;
-                            $taxTypeAmount = ($taxableValue * $ted->ted_perc) / 100;
+                            $taxPercentage = (float) ($ted->ted_perc ?? 0);
+                            $taxableValue = (float) ($ted->assessment_amount ?? 0);
+                            $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
 
-                            $key2 = (string) $hsnCode;
-
-                            if (!isset($hsnGroups[$key2])) {
-                                $hsnGroups[$key2] = [
-                                    'hsn_code' => $hsnCode,
-                                    'taxable_rate' => $taxPercentage,
-                                    'taxable_value' => 0.00,
-                                    'tax_amount' => 0.00,
-                                    'tax_group' => $ted->ted_group_code,
-                                ];
-                            }
-
-                            // Initialize tax type amount if not set
                             if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
-                                $hsnGroups[$hsnCode][$taxType   . '_amount'] = 0.00;
+                                $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.0;
                             }
+
                             $totalTaxPercentage += $taxPercentage;
                             $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
                             $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                            $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
+                            $hsnGroups[$hsnCode]['tax_group'] = $ted->ted_group_code ?? $hsnGroups[$hsnCode]['tax_group'];
                         }
-                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
-                        $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;
-
                     }
 
-                    // Now, calculate total tax_amount for each HSN group
-                    foreach ($hsnGroups as &$group) {
-                        $taxAmount = 0.00;
-                        foreach ($group as $key2 => $value) {
-                            if (str_ends_with($key2, '_amount') && $key2 !== 'tax_amount') {
-                                $taxAmount += (float)$value;
+                    foreach ($hsnGroups as $hsnCode => &$group) {
+                        $taxAmount = 0.0;
+                        foreach ($group as $i => $value) {
+                            if (str_ends_with($i, '_amount')) {
+                                $taxAmount += (float) $value;
                             }
                         }
                         $group['tax_amount'] = $taxAmount;
                     }
+                    unset($group);
                 @endphp
+
                 <tr>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ (int)$key + 1 }}</td>
-                    <td style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none; word-break: break-word;">
-                        <b> {{ @$val?->item?->item_name }}</b><br/>
+                        {{ $key + 1 }}
+                    </td>
+                    <td
+                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none; word-break: break-word;">
+                        <b> {{ @$val?->item?->item_name }}</b><br />
 
-                        @if($val?->attributes->count())
-                        @php
-                            $html = '';
-                            foreach($val?->attributes as $attribute) {
-                            $attr = \App\Models\AttributeGroup::where('id', @$attribute->attribute_name)->first();
-                            $attrValue = \App\Models\Attribute::where('id', @$attribute->attribute_value)->first();
+                        @if ($val?->attributes->count())
+                            @php
+                                $html = '';
+                                foreach ($val?->attributes as $attribute) {
+                                    $attr = \App\Models\AttributeGroup::where(
+                                        'id',
+                                        @$attribute->attribute_name,
+                                    )->first();
+                                    $attrValue = \App\Models\Attribute::where(
+                                        'id',
+                                        @$attribute->attribute_value,
+                                    )->first();
 
-                                if ($attr && $attrValue) {
-                                        if($html) {
-                                            $html.= ', ';
+                                    if ($attr && $attrValue) {
+                                        if ($html) {
+                                            $html .= ', ';
                                         }
                                         $html .= "$attr->name : $attrValue->value";
-                                } else {
-                                        $html .= ":";
+                                    } else {
+                                        $html .= ':';
+                                    }
                                 }
-                            }
-                        @endphp
-                            {{$html}}
+                            @endphp
+                            {{ $html }}
                         @endif
-                        <br/>
-                        @if(@$val?->item?->specifications->count())
+                        <br />
+                        @if (@$val?->item?->specifications->count())
                             {{ $val->item->specifications->pluck('value')->implode(', ') }}
-                            <br/>
+                            <br />
                         @endif
                         Code : {{ @$val->item_code }}
                         <br />
-                        @if(@$val?->itemDelivery?->count() > 1)
+                        @if (@$val?->itemDelivery?->count() > 1)
                             Delivery Schedule: <br />
-                            @foreach(@$val?->itemDelivery as  $poItemDelivery)
-                                {{$poItemDelivery->getFormattedDate('delivery_date')}}:{{$poItemDelivery->qty}} @if(!$loop->last) , @endif
+                            @foreach (@$val?->itemDelivery as $poItemDelivery)
+                                {{ $poItemDelivery->getFormattedDate('delivery_date') }}:{{ $poItemDelivery->qty }}
+                                @if (!$loop->last)
+                                    ,
+                                @endif
                             @endforeach
                         @else
-                            Delivery Date: {{$val->getFormattedDate('delivery_date')}}
+                            Delivery Date: {{ $val->getFormattedDate('delivery_date') }}
                         @endif
 
-                        @if($soTracking) <br /> So No.: {{@$val->so->full_document_number}} @endif
-                        @if(@$val->remarks) <br /> Remarks : {{@$val->remarks}}@endif
+                        @if ($soTracking)
+                            <br /> So No.: {{ @$val->so->full_document_number }}
+                        @endif
+                        @if (@$val->remarks)
+                            <br /> Remarks : {{ @$val->remarks }}
+                        @endif
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
@@ -409,19 +441,19 @@
                     </td>
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; word-break: break-word;">
-                        {{@$val->order_qty}}
+                        {{ @$val->order_qty }}
                     </td>
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center; word-break: break-word;">
-                       {{ucfirst(@$val?->item?->uom?->name)}}
+                        {{ ucfirst(@$val?->item?->uom?->name) }}
                     </td>
 
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; word-break: break-word;">
-                        {{@$val->rate}}
+                        {{ @$val->rate }}
                     </td>
                     @php
-                    $total = number_format(($val->order_qty * $val->rate), 2, '.', '');
+                        $total = number_format($val->order_qty * $val->rate, 2, '.', '');
                     @endphp
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right; word-break: break-word;">
@@ -433,17 +465,17 @@
                     </td>
                     @php
                         $total = $val->order_qty * $val->rate;
-                        $netValue = $total- $val->item_discount_amount - $val->header_discount_amount;
+                        $netValue = $total - $val->item_discount_amount - $val->header_discount_amount;
                         $netValue = number_format($netValue, 2, '.', '');
                     @endphp
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right; word-break: break-word;">
-                        {{number_format($netValue,2)}}
+                        {{ number_format($netValue, 2) }}
                     </td>
                     @php
                         if (count($val->taxes)) {
-                            foreach($val->taxes as $taxs){
-                                $taxName = $taxs->ted_name . " " . number_format($taxs->ted_perc, 2) . " %";
+                            foreach ($val->taxes as $taxs) {
+                                $taxName = $taxs->ted_name . ' ' . number_format($taxs->ted_perc, 2) . ' %';
                                 if (isset($taxBracket[$taxName])) {
                                     $taxBracket[$taxName][0] += $taxs->ted_amount;
                                     $taxBracket[$taxName][1] += $taxs->assessment_amount;
@@ -453,12 +485,12 @@
                                 }
                             }
                         }
-                                    $totalCGSTValue += $val->cgst_value['value'];
-                                    $totalSGSTValue += $val->sgst_value['value'];
-                                    $totalIGSTValue += $val->igst_value['value'];
-                                    $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
+                        $totalCGSTValue += $val->cgst_value['value'];
+                        $totalSGSTValue += $val->sgst_value['value'];
+                        $totalIGSTValue += $val->igst_value['value'];
+                        $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
 
-                                @endphp
+                    @endphp
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right; word-break: break-word;">
                         {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
@@ -481,11 +513,11 @@
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 15px;"><b>Currency:</b> {{@$po->currency->name}} </td>
+                            <td style="padding-top: 15px;"><b>Currency:</b> {{ @$po->currency->name }} </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;"><b>Payment Terms :</b>
-                            {{@$po->paymentTerm->name}}
+                                {{ @$po->paymentTerm->name }}
                             </td>
                         </tr>
                         <tr>
@@ -498,13 +530,14 @@
                 </td>
                 <td
                     style="padding: 3px; border: 1px solid #000; border-top: none; border-left: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px; margin-top: 10px;" cellspacing="0" cellpadding="0">
+                    <table style="width: 100%; margin-bottom: 0px; margin-top: 10px;" cellspacing="0"
+                        cellpadding="0">
                         <tr>
                             <td style="text-align: right;">
                                 <b>Total Value:</b>
                             </td>
                             <td style="text-align: right;">
-                                {{ number_format($totalItemValue,2) }}
+                                {{ number_format($totalItemValue, 2) }}
                             </td>
                         </tr>
                         <tr>
@@ -512,7 +545,7 @@
                                 <b>Total Discount:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format(($totalItemDiscount + $totalHeaderDiscount),2) }}
+                                {{ number_format($totalItemDiscount + $totalHeaderDiscount, 2) }}
                             </td>
                         </tr>
                         <tr>
@@ -520,36 +553,36 @@
                                 <b>Taxable Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($totalTaxableValue,2) }}
+                                {{ number_format($totalTaxableValue, 2) }}
                             </td>
                         </tr>
-                        @foreach($taxBracket as $tax => $value)
+                        @foreach ($taxBracket as $tax => $value)
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    <b>{{$tax}} @ {{number_format($value[1], 2)}}:</b>
+                                    <b>{{ $tax }} @ {{ number_format($value[1], 2) }}:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
                                     {{ number_format($value[0], 2) }}
                                 </td>
                             </tr>
                         @endforeach
-                        @if($po?->headerExpenses?->count())
-                        <tr>
-                            <td style="text-align: right; padding-top: 3px;">
-                                <b>Total After Tax:</b>
-                            </td>
-                            <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($totalAfterTax,2)}}
-                            </td>
-                        </tr>
+                        @if ($po?->headerExpenses?->count())
+                            <tr>
+                                <td style="text-align: right; padding-top: 3px;">
+                                    <b>Total After Tax:</b>
+                                </td>
+                                <td style="text-align: right; padding-top: 3px;">
+                                    {{ number_format($totalAfterTax, 2) }}
+                                </td>
+                            </tr>
                         @endif
-                        @foreach($po->headerExpenses as $key => $expense)
+                        @foreach ($po->headerExpenses as $expense)
                             @php
                                 $totalExp = @$expense->ted_amount + @$expense->tax_amount;
                             @endphp
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    <b>{{ucFirst($expense->ted_name ?? 'NA') ?? 'NA'}}:</b>
+                                    <b>{{ ucFirst($expense->ted_name ?? 'NA') ?? 'NA' }}:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
                                     {{ number_format($totalExp, 2) }}
@@ -561,10 +594,10 @@
                                 <b>Total PO Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($totalAmount,2) }}
+                                {{ number_format($totalAmount, 2) }}
                             </td>
                         </tr>
-                        {{-- @if($isDifferentCurrency)
+                        {{-- @if ($isDifferentCurrency)
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
                                 <b>Value in {{$po?->org_currency_code}}:</b>
@@ -586,7 +619,7 @@
                             <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
                             <td>
                                 <div style="min-height: 8px;">
-                                    {{$po->remarks}}
+                                    {{ $po->remarks }}
                                 </div>
                             </td>
                         </tr>
@@ -595,66 +628,89 @@
             </tr>
 
             <tr>
-                <td colspan="2"
-                    style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                <td colspan="2" style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;"> <b>HSN / SAC</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Tax Rate</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Taxable Amount</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>CGST Amt</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>SGST Amt</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
-                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
+                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;">
+                                <b>HSN / SAC</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>Tax Rate</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>Taxable Amount</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>CGST Amt</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>SGST Amt</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>IGST Amt</b>
+                            </td>
+                            <td
+                                style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;">
+                                <b>Total Tax</b>
+                            </td>
                         </tr>
-                        @php
-                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",[$hsnGroups]);
-                            \Log::info("hs group    =>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-                        @endphp
-                        @foreach($hsnGroups as $hsnCode => $hsnData)
+                        @foreach ($hsnGroups as $code => $hsnData)
                             <tr>
-                                <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format($hsnData['taxable_rate'], 2) }} %</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['taxable_value'], 2) }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : "" }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : "" }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : "" }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['tax_amount'], 2) }}</td>
+                                <td style="padding: 4px; text-align: center;">{{ $code }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">
+                                    {{ number_format($hsnData['taxable_rate'], 2) }} %</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
+                                    {{ number_format($hsnData['taxable_value'], 2) }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
+                                    {{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : '' }}
+                                </td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
+                                    {{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : '' }}
+                                </td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
+                                    {{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : '' }}
+                                </td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
+                                    {{ number_format($hsnData['tax_amount'], 2) }}</td>
                             </tr>
                         @endforeach
                     </table>
                 </td>
             </tr>
-            @if($po?->tnc)
-            <tr>
-                <td colspan="2"
-                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td style="font-weight: bold; font-size: 13px;"> <b>Terms and Conditions :</b></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div style="min-height: 80px;">
-                                    {!! $po?->tnc !!}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
+            @if ($po?->tnc)
+                <tr>
+                    <td colspan="2"
+                        style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                        <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                            <tr>
+                                <td style="font-weight: bold; font-size: 13px;"> <b>Terms and Conditions :</b></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="min-height: 80px;">
+                                        {!! $po?->tnc !!}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
             @endif
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td style="padding-top: 5px;">Created By : {{@$po?->createdBy?->name ?? ''}}
+                            <td style="padding-top: 5px;">Created By : {{ @$po?->createdBy?->name ?? '' }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 5px;">Printed By : {{@$user?->name ?? ''}}
+                            <td style="padding-top: 5px;">Printed By : {{ @$user?->name ?? '' }}
                             </td>
                         </tr>
                     </table>
@@ -676,7 +732,12 @@
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
-                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
+                    Regd. Office: {{ @$organizationAddress->getFullAddressAttribute() }} @if (@$organization?->gst_number)
+                        , GSTIN NO - {{ @$organization?->gst_number }}
+                        @endif @if (@$organization?->pan_number)
+                            , PAN NO - {{ @$organization?->pan_number }}
+                        @endif
+                        <br>
                 </td>
             </tr>
         </table>

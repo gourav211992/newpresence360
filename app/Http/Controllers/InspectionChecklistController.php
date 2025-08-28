@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\InspectionChecklist;
 use App\Models\InspectionChecklistDetail;
 use App\Models\InspectionChecklistDetailValue;
+use App\Models\UploadInspectionChecklist;
 use App\Http\Requests\InspectionChecklistRequest; 
+use App\Imports\InspectionChecklistImport;
+use Maatwebsite\Excel\Facades\Excel; 
+use App\Mail\ImportComplete;
+use Illuminate\Support\Facades\Mail;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use Yajra\DataTables\DataTables;
+use App\Exports\InspectionChecklistExport;
+use App\Exports\FailedInspectionChecklistExport;
 
 class InspectionChecklistController extends Controller
 {
@@ -289,6 +296,141 @@ class InspectionChecklistController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function showImportForm()
+    {
+        return view('inspection-checklist.import');
+    }
+
+   public function import(Request $request)
+    {
+       $user = Helper::getAuthenticatedUser();
+
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls|max:30720',
+            ]);
+
+            if (!$request->hasFile('file')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No file uploaded.',
+                ], 400);
+            }
+
+            $file = $request->file('file');
+
+            //Check excel file is correct or not
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
+            } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
+                ], 400);
+            }
+
+            $sheet = $spreadsheet->getActiveSheet();
+            $rowCount = $sheet->getHighestRow() - 1;
+
+            if ($rowCount > 10000) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file contains more than 10000 items. Please upload a file with 10000 or fewer items.',
+                ], 400);
+            }
+            if ($rowCount < 1) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file is empty.',
+                ], 400);
+            }
+             // Remove previous uploads for this user 
+            $deleteQuery = UploadInspectionChecklist::where('user_id', $user->id);
+            $deleteQuery->delete();
+
+            // Import file
+            $import = new InspectionChecklistImport();
+            Excel::import($import, $request->file('file'));
+
+            $successfulItems = $import->getSuccessful();
+            $failedItems = $import->getFailed();
+
+            $status = count($failedItems) > 0 ? 'failure' : 'success';
+            $message = count($failedItems) > 0
+                ? 'Checklist import completed with some failures.'
+                : 'Checklists imported successfully.';
+
+            // Optional: send mail
+            $mailData = [
+                'modelName' => 'Inspection Checklist',
+                'successful_items' => $successfulItems,
+                'failed_items' => $failedItems,
+                'export_successful_url' => route('inspection-checklists.export.successful'),
+                'export_failed_url' => route('inspection-checklists.export.failed'),
+            ];
+
+            if ($user->email) {
+                try {
+                    Mail::to($user->email)->send(new ImportComplete($mailData));
+                } catch (\Exception $e) {
+                    $message .= " However, there was an error sending the email notification.";
+                }
+            }
+
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+                'successful_items' => $successfulItems,
+                'failed_items' => $failedItems,
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid file format or file size. Please upload a valid Excel file (.xlsx/.xls) up to 30MB.',
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to import checklists: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Export all successful rows for the logged-in user
+     */
+    public function exportSuccessful()
+    {
+       $user = Helper::getAuthenticatedUser();
+
+        $uploadRows = UploadInspectionChecklist::where('status', 'Success')
+            ->where('user_id', $user->id)
+            ->get();
+
+        return Excel::download(
+            new InspectionChecklistExport($uploadRows),
+            "successful-checklists.xlsx"
+        );
+    }
+
+    /**
+     * Export all failed rows for the logged-in user
+     */
+    public function exportFailed()
+    {
+       $user = Helper::getAuthenticatedUser();
+
+        $failedRows = UploadInspectionChecklist::where('status', 'Failed')
+            ->where('user_id', $user->id)
+            ->get();
+
+        return Excel::download(
+            new FailedInspectionChecklistExport($failedRows),
+            "failed-checklists.xlsx"
+        );
     }
     public function deleteChecklistDetail($id)
     {

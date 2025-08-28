@@ -334,8 +334,8 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Consignee Name
-                                                                {{-- <span class="text-danger">*</span></label> --}}
+                                                            <label class="form-label">Consignee Name </label>
+                                                                {{-- <span class="text-danger">*</span> --}}
                                                             <input type="text"
                                                                 class="form-control mw-100 @if (!$buttons['submit'] || !$buttons['draft']) disabled-input @endif"
                                                                 id="consignee_name" name="consignee_name"

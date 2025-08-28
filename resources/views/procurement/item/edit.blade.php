@@ -1086,8 +1086,8 @@
                                                                 <select id="asset_category" name="asset_category_id" class="form-select mw-100 select2">
                                                                     <option value="">Select</option>
                                                                         @foreach($fixedAssetCategories as $fixedAssetCategorie)
-                                                                            <option value="{{ $fixedAssetCategorie->id }}"
-                                                                                {{ (isset($item) && $item->asset_category_id == $fixedAssetCategorie->id) ? 'selected' : '' }}>
+                                                                            <option value="{{ $fixedAssetCategorie->asset_category_id }}"
+                                                                                {{ (isset($item) && $item->asset_category_id == $fixedAssetCategorie->asset_category_id) ? 'selected' : '' }}>
                                                                                 {{ $fixedAssetCategorie->assetCategory->name ?? 'N/A' }}
                                                                             </option>
                                                                         @endforeach

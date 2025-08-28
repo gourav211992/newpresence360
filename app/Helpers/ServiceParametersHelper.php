@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Helpers;
+
 use App\Models\Book;
 use App\Models\NumberPattern;
 use App\Models\Organization;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\RGR\Constants as RGRConstants;
 use App\Helpers\ASN\Constants as ASNConstants;
+
 /**
  * Helper Class containing all logics related to Parameters Functionality in the project.
  */
@@ -57,7 +59,7 @@ class ServiceParametersHelper
     const INVOICE_TO_FOLLOW_PARAM = 'invoice_to_follow';
     const INVOICE_TO_FOLLOW_PARAM_VALUES = ['yes', 'no'];
     const BOM_CONSUMPTION_METHOD = 'consumption_method';
-    const BOM_CONSUMPTION_METHOD_VALUES = ['manual','norms'];
+    const BOM_CONSUMPTION_METHOD_VALUES = ['manual', 'norms'];
     const BOM_SECTION_REQUIRED = 'section_required';
     const BOM_SECTION_REQUIRED_VALUES = ['yes', 'no'];
     const BOM_SUB_SECTION_REQUIRED = 'sub_section_required';
@@ -75,8 +77,8 @@ class ServiceParametersHelper
     const ITEM_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
     const LEDGER_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
     const PROCUREMENT_TYPE_PARAM = "procurement_type";
-    const PROCUREMENT_TYPE_VALUES = ['Make to order', 'Buy to order','All'];
-      const ITEM_SERVICE_PARAMETERS = [
+    const PROCUREMENT_TYPE_VALUES = ['Make to order', 'Buy to order', 'All'];
+    const ITEM_SERVICE_PARAMETERS = [
         [
             "name" => self::ITEM_CODE_TYPE_PARAM,
             "applicable_values" => self::ITEM_CODE_TYPE_PARAM_VALUES,
@@ -99,7 +101,7 @@ class ServiceParametersHelper
 
     const VENDOR_CODE_TYPE_PARAM = "vendor_code_type";
     const VENDOR_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
-      const VENDOR_SERVICE_PARAMETERS = [
+    const VENDOR_SERVICE_PARAMETERS = [
         [
             "name" => self::VENDOR_CODE_TYPE_PARAM,
             "applicable_values" => self::VENDOR_CODE_TYPE_PARAM_VALUES,
@@ -112,7 +114,7 @@ class ServiceParametersHelper
 
     const CUSTOMER_CODE_TYPE_PARAM = "customer_code_type";
     const CUSTOMER_CODE_TYPE_PARAM_VALUES = ['Auto', 'Manual'];
-      const CUSTOMER_SERVICE_PARAMETERS = [
+    const CUSTOMER_SERVICE_PARAMETERS = [
         [
             "name" => self::CUSTOMER_CODE_TYPE_PARAM,
             "applicable_values" => self::CUSTOMER_CODE_TYPE_PARAM_VALUES,
@@ -131,7 +133,7 @@ class ServiceParametersHelper
     const STATION_WISE_CONSUMPTION = 'station_wise_consumption';
     const STATION_WISE_CONSUMPTION_VALUES = ["yes", "no"];
     const SO_TRACKING_REQUIRED = "so_tracking_required";
-    const SO_TRACKING_REQUIRED_VALUES = ['yes','no'];
+    const SO_TRACKING_REQUIRED_VALUES = ['yes', 'no'];
     /**
      * Constant Array for all Service Parameters
      */
@@ -143,15 +145,15 @@ class ServiceParametersHelper
         self::BACK_DATE_ALLOW_PARAM => 'Back Date Allowed?', //Applied
         self::FUTURE_DATE_ALLOW_PARAM => 'Future Date Allowed?', //Applied
         self::GOODS_SERVICES_PARAM => 'Goods/ Services', //Applied
-        self::GL_POSTING_REQUIRED_PARAM => 'Financial Posting Required?',//Applied
-        self::GL_SEPERATE_DISCOUNT_PARAM => 'Seperate Discount Posting?',//Applied
+        self::GL_POSTING_REQUIRED_PARAM => 'Financial Posting Required?', //Applied
+        self::GL_SEPERATE_DISCOUNT_PARAM => 'Seperate Discount Posting?', //Applied
         self::GL_POSTING_SERIES_PARAM => 'Voucher Series',
-        self::CONTRA_POSTING_SERIES_PARAM => 'Contra Voucher Series',//Applied
-        self::POST_ON_ARROVE_PARAM => 'Post on Approval?',//Applied
-        self::TAX_REQUIRED_PARAM => 'Tax Required?',//Applied
-        self::BILL_TO_FOLLOW_PARAM => 'Bill To Follow',//Applied
-        self::INSPECTION_REQUIRED_PARAM => 'Inspection Required',//Applied
-        self::INVOICE_TO_FOLLOW_PARAM => 'Invoice To Follow?',//Applied
+        self::CONTRA_POSTING_SERIES_PARAM => 'Contra Voucher Series', //Applied
+        self::POST_ON_ARROVE_PARAM => 'Post on Approval?', //Applied
+        self::TAX_REQUIRED_PARAM => 'Tax Required?', //Applied
+        self::BILL_TO_FOLLOW_PARAM => 'Bill To Follow', //Applied
+        self::INSPECTION_REQUIRED_PARAM => 'Inspection Required', //Applied
+        self::INVOICE_TO_FOLLOW_PARAM => 'Invoice To Follow?', //Applied
         self::BOM_CONSUMPTION_METHOD => 'Consumption Calculation Method',
         self::BOM_SECTION_REQUIRED => 'Product Section Required?',
         self::BOM_SUB_SECTION_REQUIRED => 'Product Sub Section Required?',
@@ -176,20 +178,20 @@ class ServiceParametersHelper
     // Service Parameters Mapping
     const SERVICE_PARAMETERS_VALUES = [
         self::REFERENCE_FROM_SERVICE_PARAM => [], //Applied
-        self::SERVICE_ITEM_PARAM => [],//Applied
+        self::SERVICE_ITEM_PARAM => [], //Applied
         self::REFERENCE_FROM_SERIES_PARAM => [], //Applied
         self::BACK_DATE_ALLOW_PARAM => self::BACK_DATE_ALLOW_PARAM_VALUES, //Applied
         self::FUTURE_DATE_ALLOW_PARAM => self::FUTURE_DATE_ALLOW_PARAM_VALUES, //Applied
         self::GOODS_SERVICES_PARAM => self::GOODS_SERVICES_PARAM_VALUES, //Applied
-        self::GL_POSTING_REQUIRED_PARAM => self::GL_POSTING_REQUIRED_PARAM_VALUES,//Applied
-        self::GL_SEPERATE_DISCOUNT_PARAM => self::GL_SEPERATE_DISCOUNT_PARAM_VALUE,//Applied
-        self::GL_POSTING_SERIES_PARAM => [],//Applied
-        self::CONTRA_POSTING_SERIES_PARAM => [],//Applied
-        self::POST_ON_ARROVE_PARAM => self::POST_ON_ARROVE_PARAM_VALUES,//Applied
-        self::TAX_REQUIRED_PARAM => self::TAX_REQUIRED_PARAM_VALUES,//Applied
-        self::BILL_TO_FOLLOW_PARAM => self::BILL_TO_FOLLOW_PARAM_VALUES,//Applied
-        self::INVOICE_TO_FOLLOW_PARAM => self::INVOICE_TO_FOLLOW_PARAM_VALUES,//Applied
-        self::ON_ACCOUNT_REQUIRED_PARAM=>self::ON_ACCOUNT_REQUIRED_PARAM_VALUES,
+        self::GL_POSTING_REQUIRED_PARAM => self::GL_POSTING_REQUIRED_PARAM_VALUES, //Applied
+        self::GL_SEPERATE_DISCOUNT_PARAM => self::GL_SEPERATE_DISCOUNT_PARAM_VALUE, //Applied
+        self::GL_POSTING_SERIES_PARAM => [], //Applied
+        self::CONTRA_POSTING_SERIES_PARAM => [], //Applied
+        self::POST_ON_ARROVE_PARAM => self::POST_ON_ARROVE_PARAM_VALUES, //Applied
+        self::TAX_REQUIRED_PARAM => self::TAX_REQUIRED_PARAM_VALUES, //Applied
+        self::BILL_TO_FOLLOW_PARAM => self::BILL_TO_FOLLOW_PARAM_VALUES, //Applied
+        self::INVOICE_TO_FOLLOW_PARAM => self::INVOICE_TO_FOLLOW_PARAM_VALUES, //Applied
+        self::ON_ACCOUNT_REQUIRED_PARAM => self::ON_ACCOUNT_REQUIRED_PARAM_VALUES,
         self::BOM_CONSUMPTION_METHOD => self::BOM_CONSUMPTION_METHOD_VALUES,
         self::BOM_SECTION_REQUIRED => self::BOM_SECTION_REQUIRED_VALUES,
         self::BOM_SUB_SECTION_REQUIRED => self::BOM_SUB_SECTION_REQUIRED_VALUES,
@@ -256,7 +258,7 @@ class ServiceParametersHelper
     ];
 
 
-     const TI_SERVICE_PARAMETERS = [
+    const TI_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
             "applicable_values" => ["0", ConstantHelper::LR_SERVICE_ALIAS], //All possible values
@@ -264,7 +266,7 @@ class ServiceParametersHelper
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],
-          [
+        [
             "name" => self::SERVICE_ITEM_PARAM,
             "applicable_values" => [],
             "default_value" => [],
@@ -654,7 +656,7 @@ class ServiceParametersHelper
     const SR_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SI_SERVICE_ALIAS,ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
             "default_value" => ["0", ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
@@ -1312,6 +1314,39 @@ class ServiceParametersHelper
         // ]
     ];
     /*BOM PO PI*/
+
+    const SCRAP_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+    ];
+
+    /*BOM PO PI*/
     const PI_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -1626,7 +1661,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-       [
+        [
             "name" => self::FUTURE_DATE_ALLOW_PARAM,
             "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
             "default_value" => ['yes'],
@@ -1643,7 +1678,7 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-       [
+        [
             "name" => self::FUTURE_DATE_ALLOW_PARAM,
             "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
             "default_value" => ['yes'],
@@ -2499,7 +2534,7 @@ class ServiceParametersHelper
     const PWO_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM,
-            "applicable_values" => ["0",ConstantHelper::SO_SERVICE_ALIAS],
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS],
             "default_value" => ["0"],
             'is_multiple' => true,
             'service_level_visibility' => true,
@@ -2723,6 +2758,7 @@ class ServiceParametersHelper
         ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS => self::LEASE_INV_SERVICE_PARAMETERS,
         ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => self::DN_CUM_INVOICE_SERVICE_PARAMETERS,
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_SERVICE_PARAMETERS,
+        ConstantHelper::SCRAP_SERVICE_ALIAS => self::SCRAP_SERVICE_PARAMETERS,
         ConstantHelper::BOM_SERVICE_ALIAS => self::BOM_SERVICE_PARAMETERS,
         ConstantHelper::MO_SERVICE_ALIAS => self::MO_SERVICE_PARAMETERS,
         ConstantHelper::PAYMENT_VOUCHER_RECEIPT => self::PV_SERVICE_PARAMETERS,
@@ -2732,9 +2768,9 @@ class ServiceParametersHelper
         ConstantHelper::FIXED_ASSET_SPLIT => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_MERGER => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::FIXED_ASSET_REV_IMP => self::ASSET_POSTING_SERVICE_PARAMETERS,
-        ConstantHelper::MAINT_BOM =>self::MAINT_BOM_SERVICE_PARAMETERS,
+        ConstantHelper::MAINT_BOM => self::MAINT_BOM_SERVICE_PARAMETERS,
         ConstantHelper::PO_SERVICE_ALIAS => self::PO_SERVICE_PARAMETERS,
-        ConstantHelper::FIXEDASSET=> self::ASSET_POSTING_SERVICE_PARAMETERS,
+        ConstantHelper::FIXEDASSET => self::ASSET_POSTING_SERVICE_PARAMETERS,
         ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => self::GATE_ENTRY_SERVICE_PARAMETERS,
         ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS => self::SUPPLIER_INVOICE_SERVICE_PARAMETERS,
         ConstantHelper::MRN_SERVICE_ALIAS => self::MRN_SERVICE_PARAMETERS,
@@ -2756,22 +2792,21 @@ class ServiceParametersHelper
         ConstantHelper::LOAN_DISBURSEMENT => self::DIS_SERVICE_PARAMETERS,
         ConstantHelper::LOAN_RECOVERY => self::LOAN_RECOVERY_SERVICE_PARAMETERS,
         ConstantHelper::LOAN_SETTLEMENT => self::LOAN_SETTLEMENT_SERVICE_PARAMETERS,
-        ConstantHelper::LAND_LEASE=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::PURCHASE_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::SALES_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::RECEIPT_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::PAYMENT_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::DEBIT_Note=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::CREDIT_Note=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::JOURNAL_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::CONTRA_VOUCHER=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::OPENING_BALANCE=>self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME=>self::MI_SERVICE_PARAMTERS,
-        ConstantHelper::ITEM_SERVICE_ALIAS=>self::ITEM_SERVICE_PARAMETERS,
-        ConstantHelper::LEDGERS_SERVICE_ALIAS=>self::LEDGER_SERVICE_PARAMETERS,
-        ConstantHelper::VENDOR_SERVICE_ALIAS=>self::VENDOR_SERVICE_PARAMETERS,
-        ConstantHelper::CUSTOMER_SERVICE_ALIAS=>self::CUSTOMER_SERVICE_PARAMETERS,
-        ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME=>self::MR_SERVICE_PARAMETERS,
+        ConstantHelper::LAND_LEASE => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::PURCHASE_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::SALES_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::RECEIPT_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::PAYMENT_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::DEBIT_Note => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::CREDIT_Note => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::JOURNAL_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::CONTRA_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MI_SERVICE_PARAMTERS,
+        ConstantHelper::ITEM_SERVICE_ALIAS => self::ITEM_SERVICE_PARAMETERS,
+        ConstantHelper::LEDGERS_SERVICE_ALIAS => self::LEDGER_SERVICE_PARAMETERS,
+        ConstantHelper::VENDOR_SERVICE_ALIAS => self::VENDOR_SERVICE_PARAMETERS,
+        ConstantHelper::CUSTOMER_SERVICE_ALIAS => self::CUSTOMER_SERVICE_PARAMETERS,
+        ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => self::MR_SERVICE_PARAMETERS,
         PackingListConstants::SERVICE_ALIAS => PackingListConstants::PARAMETERS,
         ASNConstants::SERVICE_ALIAS => ASNConstants::PARAMETERS,
         RGRConstants::SERVICE_ALIAS => RGRConstants::PARAMETERS,
@@ -2782,21 +2817,21 @@ class ServiceParametersHelper
     const PARAMETER_TYPES = [self::COMMON_PARAMETERS, self::GL_PARAMETERS];
 
     /* Function to get book level parameters for configuration*/
-    public static function getBookLevelParameterValue(string $parameterName, int $bookId) : array
+    public static function getBookLevelParameterValue(string $parameterName, int $bookId): array
     {
         //Get raw book parameters from database
-        $bookParameter = OrganizationBookParameter::where('book_id', $bookId) -> where('parameter_name', $parameterName)
-        -> where('status', ConstantHelper::ACTIVE) -> first();
+        $bookParameter = OrganizationBookParameter::where('book_id', $bookId)->where('parameter_name', $parameterName)
+            ->where('status', ConstantHelper::ACTIVE)->first();
         $parameters = [];
         if (isset($bookParameter)) {
             //REFERENCE FROM CASE
             if ($parameterName === self::REFERENCE_FROM_SERVICE_PARAM) {
-                $services = Service::whereIn('id', $bookParameter -> parameter_value)->get();
+                $services = Service::whereIn('id', $bookParameter->parameter_value)->get();
                 foreach ($services as $service) {
-                    array_push($parameters, $service -> alias);
+                    array_push($parameters, $service->alias);
                 }
                 //Assign a Default D in values for Direct Doc creation
-                if (in_array(0, $bookParameter -> parameter_value)) {
+                if (in_array(0, $bookParameter->parameter_value)) {
                     array_push($parameters, 'd');
                 }
                 return [
@@ -2805,33 +2840,33 @@ class ServiceParametersHelper
                     'data' => $parameters
                 ];
             } else if ($parameterName === self::REFERENCE_FROM_SERIES_PARAM) {
-                $books = Book::withDefaultGroupCompanyOrg() -> whereIn('id', $bookParameter -> parameter_value) -> get();
+                $books = Book::withDefaultGroupCompanyOrg()->whereIn('id', $bookParameter->parameter_value)->get();
                 foreach ($books as $service) {
-                    array_push($parameters, $service -> book_code);
+                    array_push($parameters, $service->book_code);
                 }
                 return [
                     'status' => true,
                     'message' => 'Parameter found',
                     'data' => $parameters
                 ];
-            }else if ($parameterName === self::SERVICE_ITEM_PARAM) {
-                $books = Book::withDefaultGroupCompanyOrg() -> whereIn('id', $bookParameter -> parameter_value) -> get();
+            } else if ($parameterName === self::SERVICE_ITEM_PARAM) {
+                $books = Book::withDefaultGroupCompanyOrg()->whereIn('id', $bookParameter->parameter_value)->get();
                 foreach ($books as $service) {
-                    array_push($parameters, $service -> book_code);
+                    array_push($parameters, $service->book_code);
                 }
                 return [
                     'status' => true,
                     'message' => 'Parameter found',
                     'data' => $parameters
                 ];
-            }else {
+            } else {
                 return [
                     'status' => true,
                     'message' => 'Parameter found',
-                    'data' => $bookParameter -> parameter_value
+                    'data' => $bookParameter->parameter_value
                 ];
             }
-        //Parameters not Found
+            //Parameters not Found
         } else {
             return [
                 'status' => false,
@@ -2842,11 +2877,11 @@ class ServiceParametersHelper
     }
 
     /* Function to get book ids applicable for pulling in */
-    public static function getBookCodesForReferenceFromParam(int $bookId) : array
+    public static function getBookCodesForReferenceFromParam(int $bookId): array
     {
-        $bookParameter = OrganizationBookParameter::where('book_id', $bookId) -> where('parameter_name', self::REFERENCE_FROM_SERIES_PARAM) -> where('status', ConstantHelper::ACTIVE) -> first();
+        $bookParameter = OrganizationBookParameter::where('book_id', $bookId)->where('parameter_name', self::REFERENCE_FROM_SERIES_PARAM)->where('status', ConstantHelper::ACTIVE)->first();
         if (isset($bookParameter)) {
-            $books = Book::select('id') -> whereIn('id', $bookParameter -> parameter_value) -> get() -> pluck('id') -> toArray();
+            $books = Book::select('id')->whereIn('id', $bookParameter->parameter_value)->get()->pluck('id')->toArray();
             return $books;
         } else {
             return [];
@@ -2854,17 +2889,17 @@ class ServiceParametersHelper
     }
 
     /* Function to get service level parameters with their default and appliacable values converted in a useable format */
-    public static function getDefinedServiceLevelParameters(string $serviceAlias) : array
+    public static function getDefinedServiceLevelParameters(string $serviceAlias): array
     {
         $applicableParameters = isset(self::APPLICABLE_SERVICE_PARAMETERS[$serviceAlias]) ? self::APPLICABLE_SERVICE_PARAMETERS[$serviceAlias] : [];
-        $service = Service::where('alias', $serviceAlias) -> first();
+        $service = Service::where('alias', $serviceAlias)->first();
         //Loop through parameters and modify values
         foreach ($applicableParameters as &$parameter) {
             $parameter['type'] = isset($parameter['type']) ? $parameter['type'] : self::COMMON_PARAMETERS; //Assign type (GL or common)
             if ($parameter['name'] === self::REFERENCE_FROM_SERVICE_PARAM) {
                 //REFERENCE PARAMETER CASE (Get other services)
                 $serviceAliases = $parameter['applicable_values'];
-                $services = Service::select('id', 'alias', 'name') -> whereIn('alias', $serviceAliases) -> get();
+                $services = Service::select('id', 'alias', 'name')->whereIn('alias', $serviceAliases)->get();
                 $formattedValues = [];
                 //Assign a Direct Option
                 if (in_array("0", $serviceAliases)) {
@@ -2875,8 +2910,8 @@ class ServiceParametersHelper
                 }
                 foreach ($services as $serviceVal) {
                     array_push($formattedValues, [
-                        'label' => $serviceVal -> name,
-                        'value' => $serviceVal -> id
+                        'label' => $serviceVal->name,
+                        'value' => $serviceVal->id
                     ]);
                 }
                 $parameter['applicable_values'] = $formattedValues;
@@ -2894,32 +2929,32 @@ class ServiceParametersHelper
             $parameter['applicable_values_database'] = count($formattedValues) > 0 ? array_column($formattedValues, 'value') : [];
             //Assign Default parameter from database only if exists
             if (isset($service)) {
-                $serviceLevelParam = ServiceParameter::where('service_id', $service -> id) -> where('name', $parameter['name']) -> first();
+                $serviceLevelParam = ServiceParameter::where('service_id', $service->id)->where('name', $parameter['name'])->first();
                 if (isset($serviceLevelParam)) {
                     //Modify the default value for REFERENCE FROM Param only
                     if ($parameter['name'] === self::REFERENCE_FROM_SERVICE_PARAM) {
                         $formattedDefaultValue = [];
-                        $dFServices = Service::select('id', 'alias', 'name') -> whereIn('id', $serviceLevelParam -> default_value) -> get();
-                        if (in_array(0, $serviceLevelParam -> default_value)) {
+                        $dFServices = Service::select('id', 'alias', 'name')->whereIn('id', $serviceLevelParam->default_value)->get();
+                        if (in_array(0, $serviceLevelParam->default_value)) {
                             array_push($formattedDefaultValue, "0");
                         }
                         foreach ($dFServices as $dFService) {
-                            array_push($formattedDefaultValue, $dFService -> id);
+                            array_push($formattedDefaultValue, $dFService->id);
                         }
                         $parameter['default_value'] = $formattedDefaultValue;
                     } else {
-                        $parameter['default_value'] = $serviceLevelParam -> default_value;
+                        $parameter['default_value'] = $serviceLevelParam->default_value;
                     }
                 } else {
                     //Modify the default value for REFERENCE FROM Param only
                     if ($parameter['name'] === self::REFERENCE_FROM_SERVICE_PARAM) {
                         $formattedDefaultValue = [];
-                        $dFServices = Service::select('id', 'alias', 'name') -> whereIn('alias', $parameter['default_value']) -> get();
+                        $dFServices = Service::select('id', 'alias', 'name')->whereIn('alias', $parameter['default_value'])->get();
                         if (in_array(0, $parameter['default_value'])) {
                             array_push($formattedDefaultValue, "0");
                         }
                         foreach ($dFServices as $dFService) {
-                            array_push($formattedDefaultValue, $dFService -> id);
+                            array_push($formattedDefaultValue, $dFService->id);
                         }
                         $parameter['default_value'] = $formattedDefaultValue;
                     }
@@ -2933,7 +2968,7 @@ class ServiceParametersHelper
     Script Function to sync the service parameters at Organization level
     NOTE - Use within a Transaction
     */
-    public static function enableServiceParametersForOrganization(int $serviceId, int $organizationId) : array
+    public static function enableServiceParametersForOrganization(int $serviceId, int $organizationId): array
     {
         $service = Service::find($serviceId);
         if (!isset($service)) {
@@ -2943,7 +2978,7 @@ class ServiceParametersHelper
             ];
         }
         //Get Service Parameters from Database
-        $serviceParameters = $service -> parameters;
+        $serviceParameters = $service->parameters;
         $organization = Organization::find($organizationId);
         if (!isset($organization)) {
             return [
@@ -2956,76 +2991,75 @@ class ServiceParametersHelper
         //Create or Update Organization Service Parameter
         foreach ($serviceParameters as $serviceParam) {
             $orgServiceParameter = OrganizationServiceParameter::where([
-                ['group_id', $organization -> group_id],
-                ['service_id', $service -> id],
-                ['service_param_id', $serviceParam -> id],
-                ['parameter_name', $serviceParam -> name]
-            ]) -> first();
+                ['group_id', $organization->group_id],
+                ['service_id', $service->id],
+                ['service_param_id', $serviceParam->id],
+                ['parameter_name', $serviceParam->name]
+            ])->first();
             //Create
             if (!isset($orgServiceParameter)) {
                 $orgServiceParameter = OrganizationServiceParameter::create([
-                    'group_id' => $organization -> group_id,
+                    'group_id' => $organization->group_id,
                     'company_id' => null, // Need to change later
                     'organization_id' => null, // Need to change later
-                    'service_id' => $service -> id,
-                    'service_param_id' => $serviceParam -> id,
-                    'parameter_name' => $serviceParam -> name,
-                    'parameter_value' => $serviceParam -> default_value,
-                    'type' => $serviceParam -> type,
+                    'service_id' => $service->id,
+                    'service_param_id' => $serviceParam->id,
+                    'parameter_name' => $serviceParam->name,
+                    'parameter_value' => $serviceParam->default_value,
+                    'type' => $serviceParam->type,
                     'status' => ConstantHelper::ACTIVE,
                 ]);
             } else { // Update only parameter value and type
-                $orgServiceParameter -> parameter_value = $serviceParam -> default_value;
-                $orgServiceParameter -> type = $serviceParam -> type;
-                $orgServiceParameter -> service_param_id = $serviceParam -> id;
-                $orgServiceParameter -> save();
+                $orgServiceParameter->parameter_value = $serviceParam->default_value;
+                $orgServiceParameter->type = $serviceParam->type;
+                $orgServiceParameter->service_param_id = $serviceParam->id;
+                $orgServiceParameter->save();
             }
-            array_push($insertedOrgServiceParamIds, $orgServiceParameter -> id);
+            array_push($insertedOrgServiceParamIds, $orgServiceParameter->id);
         }
         //Delete the records which are not required
         OrganizationServiceParameter::where([
-            ['group_id', $organization -> group_id],
-            ['service_id', $service -> id],
-        ]) -> whereNotIn('id', $insertedOrgServiceParamIds) -> delete();
+            ['group_id', $organization->group_id],
+            ['service_id', $service->id],
+        ])->whereNotIn('id', $insertedOrgServiceParamIds)->delete();
         //Retrieve organization service if exists else create it
-        $orgService = OrganizationService::where('group_id', $organization -> group_id) -> where('service_id', $serviceId) -> first();
+        $orgService = OrganizationService::where('group_id', $organization->group_id)->where('service_id', $serviceId)->first();
         if (!isset($orgService)) {
             $orgService = OrganizationService::create([
                 'organization_id' => null,
                 'company_id' => null,
-                'group_id' => $organization -> group_id,
+                'group_id' => $organization->group_id,
                 'service_id' => $serviceId,
-                'name' => $service -> name,
-                'alias' => $service -> alias
+                'name' => $service->name,
+                'alias' => $service->alias
             ]);
-        }
-        else{
-            $orgService->name=$service->name;
-            $orgService->alias=$service->alias;
+        } else {
+            $orgService->name = $service->name;
+            $orgService->alias = $service->alias;
             $orgService->save();
         }
         //Check for any existing book in Group/ Organization
         $existingBook = Book::where([
-            ['group_id', $organization -> group_id],
-            ['org_service_id', $orgService -> id]
-        ]) -> first();
+            ['group_id', $organization->group_id],
+            ['org_service_id', $orgService->id]
+        ])->first();
         if (!isset($existingBook)) {
             //Assign a default Book with parameters and auto doc creation
             $book = Book::create([
-                'org_service_id' => $orgService -> id,
-                'service_id' => $orgService ?-> service ?-> id,
-                'book_code' => strtoupper($service -> alias), // CHECK AGAIN
-                'book_name' => $service -> name, // CHECK AGAIN
+                'org_service_id' => $orgService->id,
+                'service_id' => $orgService?->service?->id,
+                'book_code' => strtoupper($service->alias), // CHECK AGAIN
+                'book_name' => $service->name, // CHECK AGAIN
                 'status' => ConstantHelper::ACTIVE,
-                'group_id' => $organization -> group_id,
+                'group_id' => $organization->group_id,
                 'company_id' => null,
                 'organization_id' => null
             ]);
-            if ($service -> type === ConstantHelper::ERP_TRANSACTION_SERVICE_TYPE) {
+            if ($service->type === ConstantHelper::ERP_TRANSACTION_SERVICE_TYPE) {
                 NumberPattern::create([
-                    'book_id' => $book -> id,
-                    'company_id' => $organization -> company_id,
-                    'organization_id' => $organization -> id,
+                    'book_id' => $book->id,
+                    'company_id' => $organization->company_id,
+                    'organization_id' => $organization->id,
                     'series_numbering' => ConstantHelper::DOC_NO_TYPE_AUTO,
                     'reset_pattern' => ConstantHelper::DOC_RESET_PATTERN_NEVER,
                     'prefix' => null,
@@ -3034,45 +3068,45 @@ class ServiceParametersHelper
                     'current_no' => 0
                 ]);
             }
-             //Create Book Level Parmeters also
-            $orgServiceParams = OrganizationServiceParameter::where('group_id', $organization -> group_id) -> where('service_id', $service -> id) -> get();
+            //Create Book Level Parmeters also
+            $orgServiceParams = OrganizationServiceParameter::where('group_id', $organization->group_id)->where('service_id', $service->id)->get();
             foreach ($orgServiceParams as $orgServiceParam) {
-                if ($orgServiceParam -> parameter_name === self::REFERENCE_FROM_SERVICE_PARAM) {
-                    $serviceIds = Service::select('id', 'alias', 'name') -> whereIn('id', $orgServiceParam -> parameter_value) -> get() -> pluck('id') -> toArray();
+                if ($orgServiceParam->parameter_name === self::REFERENCE_FROM_SERVICE_PARAM) {
+                    $serviceIds = Service::select('id', 'alias', 'name')->whereIn('id', $orgServiceParam->parameter_value)->get()->pluck('id')->toArray();
                     $defaultVal = $serviceIds;
-                    if (in_array("0", $orgServiceParam -> parameter_value)) {
+                    if (in_array("0", $orgServiceParam->parameter_value)) {
                         array_push($defaultVal, "0");
                     }
-                } else if ($orgServiceParam -> parameter_name === self::REFERENCE_FROM_SERIES_PARAM) {
+                } else if ($orgServiceParam->parameter_name === self::REFERENCE_FROM_SERIES_PARAM) {
                     //Get Service Ids for getting referenced books
-                    $serviceIds = $orgServiceParams -> firstWhere('parameter_name', self::REFERENCE_FROM_SERVICE_PARAM);
+                    $serviceIds = $orgServiceParams->firstWhere('parameter_name', self::REFERENCE_FROM_SERVICE_PARAM);
                     if (isset($serviceIds)) {
-                        $serviceIds = $serviceIds -> parameter_value;
+                        $serviceIds = $serviceIds->parameter_value;
                     } else {
                         $serviceIds = [];
                     }
                     //Special Conditions for INVOICE, DELIVERY NOTE AND INVOICE CUM DELIVERY NOTE (More can be added here)
-                    $defaultVal = self::getAvailableReferenceSeries($orgServiceParam -> service_id, $serviceIds, 0, true);
+                    $defaultVal = self::getAvailableReferenceSeries($orgServiceParam->service_id, $serviceIds, 0, true);
                 } else {
-                    $defaultVal = $orgServiceParam -> parameter_value;
+                    $defaultVal = $orgServiceParam->parameter_value;
                 }
                 OrganizationBookParameter::create([
-                    'book_id' => $book -> id,
+                    'book_id' => $book->id,
                     'group_id' => $organization->group_id,
                     'company_id' => null,
                     'organization_id' => null,
-                    'org_service_id' => $orgService -> id,
-                    'service_param_id' => $orgServiceParam -> service_param_id,
-                    'parameter_name' =>  $orgServiceParam -> parameter_name,
+                    'org_service_id' => $orgService->id,
+                    'service_param_id' => $orgServiceParam->service_param_id,
+                    'parameter_name' =>  $orgServiceParam->parameter_name,
                     'parameter_value' => $defaultVal,
-                    'type' => $orgServiceParam -> type,
+                    'type' => $orgServiceParam->type,
                     'status' => ConstantHelper::ACTIVE,
                 ]);
             }
             //Financial Service Book Setup (If Required)
-            if ($service -> financial_service_alias) {
+            if ($service->financial_service_alias) {
                 //Check if the Financial Service Alias is setup or not
-                $financialService = Service::where('alias', $service -> financial_service_alias) -> first();
+                $financialService = Service::where('alias', $service->financial_service_alias)->first();
                 if (!isset($financialService)) {
                     return [
                         'status' => false,
@@ -3080,8 +3114,8 @@ class ServiceParametersHelper
                     ];
                 }
                 //Check if the financial service is assigned to the organization
-                $orgFinancialService = OrganizationService::where('alias', $service -> financial_service_alias)
-                -> where('group_id', $organization -> group_id) -> first();
+                $orgFinancialService = OrganizationService::where('alias', $service->financial_service_alias)
+                    ->where('group_id', $organization->group_id)->first();
                 if (!isset($orgFinancialService)) {
                     return [
                         'status' => false,
@@ -3090,12 +3124,12 @@ class ServiceParametersHelper
                 }
                 //Create Financial Book
                 Book::create([
-                    'org_service_id' => $orgFinancialService -> id,
-                    'service_id' => $financialService -> id,
-                    'book_code' => strtoupper($service -> alias), // CHECK AGAIN
-                    'book_name' => $service -> name, // CHECK AGAIN
+                    'org_service_id' => $orgFinancialService->id,
+                    'service_id' => $financialService->id,
+                    'book_code' => strtoupper($service->alias), // CHECK AGAIN
+                    'book_name' => $service->name, // CHECK AGAIN
                     'status' => ConstantHelper::ACTIVE,
-                    'group_id' => $organization -> group_id,
+                    'group_id' => $organization->group_id,
                     'company_id' => null,
                     'organization_id' => null,
                     'manual_entry' => 0
@@ -3103,53 +3137,50 @@ class ServiceParametersHelper
             }
         } else {
             //Update all existing books with new parameters (if addded)
-            $books = Book::withDefaultGroupCompanyOrg() -> where('org_service_id', $orgService -> id) -> get();
+            $books = Book::withDefaultGroupCompanyOrg()->where('org_service_id', $orgService->id)->get();
             foreach ($books as $book) {
-                $referenceFrom = $serviceParameters -> firstWhere('name', self::REFERENCE_FROM_SERVICE_PARAM) ?-> default_value;
+                $referenceFrom = $serviceParameters->firstWhere('name', self::REFERENCE_FROM_SERVICE_PARAM)?->default_value;
                 $insertedBookParameterIds = [];
                 foreach ($serviceParameters as $serviceParam) {
-                    $bookParam = OrganizationBookParameter::where('book_id', $book -> id) -> where('parameter_name', $serviceParam -> name) -> first();
-                    if (!isset($bookParam))
-                    {
-                        $defaultValue = $serviceParam -> default_value;
-                        if (isset($referenceFrom))
-                        {
-                            if ($serviceParam -> name === self::REFERENCE_FROM_SERIES_PARAM)
-                            {
+                    $bookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', $serviceParam->name)->first();
+                    if (!isset($bookParam)) {
+                        $defaultValue = $serviceParam->default_value;
+                        if (isset($referenceFrom)) {
+                            if ($serviceParam->name === self::REFERENCE_FROM_SERIES_PARAM) {
                                 foreach ($referenceFrom as $ref) {
                                     if ($ref != 0) {
                                         $service = Service::find($ref);
-                                        $referencedBook = Book::where('group_id', $organization -> group_id) -> where(DB::raw('UPPER(book_code)'), strtoupper($service ?-> alias)) -> first();
+                                        $referencedBook = Book::where('group_id', $organization->group_id)->where(DB::raw('UPPER(book_code)'), strtoupper($service?->alias))->first();
                                         if (isset($referencedBook)) {
-                                            array_push($defaultValue, $referencedBook -> id);
+                                            array_push($defaultValue, $referencedBook->id);
                                         }
                                     }
                                 }
                             }
                         }
                         $bookParam = OrganizationBookParameter::create([
-                            'group_id' => $organization -> group_id,
+                            'group_id' => $organization->group_id,
                             'company_id' => null,
                             'organization_id' => null,
-                            'book_id' => $book -> id,
-                            'org_service_id' => $orgService -> id,
-                            'service_param_id' => $serviceParam -> id,
-                            'parameter_name' => $serviceParam -> name,
+                            'book_id' => $book->id,
+                            'org_service_id' => $orgService->id,
+                            'service_param_id' => $serviceParam->id,
+                            'parameter_name' => $serviceParam->name,
                             'parameter_value' => $defaultValue,
-                            'type' => $serviceParam -> type,
+                            'type' => $serviceParam->type,
                             'status' => ConstantHelper::ACTIVE,
                         ]);
                     } else {
                         // Update only parameter value and type
-                        $bookParam -> type = $serviceParam -> type;
-                        $bookParam -> parameter_name = $serviceParam -> name;
-                        $bookParam -> save();
+                        $bookParam->type = $serviceParam->type;
+                        $bookParam->parameter_name = $serviceParam->name;
+                        $bookParam->save();
                     }
                     //Push the inserted or updated book param id
-                    array_push($insertedBookParameterIds, $bookParam -> id);
+                    array_push($insertedBookParameterIds, $bookParam->id);
                 }
                 //Delete the records which are not required now
-                OrganizationBookParameter::where('book_id', $book -> id) -> whereNotIn('id', $insertedBookParameterIds) -> delete();
+                OrganizationBookParameter::where('book_id', $book->id)->whereNotIn('id', $insertedBookParameterIds)->delete();
             }
         }
         return [
@@ -3159,13 +3190,13 @@ class ServiceParametersHelper
     }
 
     /*Return the series/ book available for pulling -> Only those series which have not been referenced in any book parameter will come*/
-    public static function getAvailableReferenceSeries(int $sourceServiceId, array $serviceIds, int $editBookId = 0, bool $pluck = false) : EloquentCollection|array
+    public static function getAvailableReferenceSeries(int $sourceServiceId, array $serviceIds, int $editBookId = 0, bool $pluck = false): EloquentCollection|array
     {
 
         //Get all bookIds according to service
-        $bookIds =  Book::withDefaultGroupCompanyOrg() -> whereHas('org_service', function ($serviceQuery) use($serviceIds) {
-            $serviceQuery -> whereIn('service_id', $serviceIds);
-        }) -> get() -> pluck('id') -> toArray();
+        $bookIds =  Book::withDefaultGroupCompanyOrg()->whereHas('org_service', function ($serviceQuery) use ($serviceIds) {
+            $serviceQuery->whereIn('service_id', $serviceIds);
+        })->get()->pluck('id')->toArray();
 
         $sourceService = Service::find($sourceServiceId);
         $nonReferencedBookIds = [];
@@ -3186,12 +3217,12 @@ class ServiceParametersHelper
                 //         array_push($sourceServiceIds, $serviceId);
                 //     }
                 // }
-                $isReferenced = OrganizationBookParameter::whereHas('org_service', function ($orgServiceQuery) use($sourceServiceIds) {
-                    $orgServiceQuery -> whereIn('service_id', $sourceServiceIds);
-                }) -> where('parameter_name', ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM)
-                -> when($editBookId, function ($editQuery) use($editBookId) {
-                    $editQuery -> where('book_id', '!=', $editBookId);
-                }) -> where('org_service_id', $sourceService -> id) -> whereJsonContains('parameter_value', (string)$bookId) -> first();
+                $isReferenced = OrganizationBookParameter::whereHas('org_service', function ($orgServiceQuery) use ($sourceServiceIds) {
+                    $orgServiceQuery->whereIn('service_id', $sourceServiceIds);
+                })->where('parameter_name', ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM)
+                    ->when($editBookId, function ($editQuery) use ($editBookId) {
+                        $editQuery->where('book_id', '!=', $editBookId);
+                    })->where('org_service_id', $sourceService->id)->whereJsonContains('parameter_value', (string)$bookId)->first();
                 if (!isset($isReferenced)) {
                     array_push($nonReferencedBookIds, $bookId);
                     //Check for sales invoice
@@ -3214,16 +3245,16 @@ class ServiceParametersHelper
             }
         }
         //return all the non referenced books
-        $books =  Book::withDefaultGroupCompanyOrg() -> whereIn('id', $nonReferencedBookIds);
+        $books =  Book::withDefaultGroupCompanyOrg()->whereIn('id', $nonReferencedBookIds);
         if ($pluck) {
-            $books = $books -> get() -> pluck('id') -> toArray();
+            $books = $books->get()->pluck('id')->toArray();
         } else {
-            $books = $books -> get();
+            $books = $books->get();
         }
         return $books;
     }
 
-    public static function getFinancialServiceAlias(string $serviceAlias) : string|null
+    public static function getFinancialServiceAlias(string $serviceAlias): string|null
     {
         if (isset(ConstantHelper::OPERATION_FINANCIAL_SERVICES_MAPPING[$serviceAlias])) {
             return ConstantHelper::OPERATION_FINANCIAL_SERVICES_MAPPING[$serviceAlias];
@@ -3231,13 +3262,13 @@ class ServiceParametersHelper
             return null;
         }
     }
-    public static function getFinancialService(string $serviceAlias) : string|null
+    public static function getFinancialService(string $serviceAlias): string|null
     {
         $financialServiceAlias = self::getFinancialServiceAlias($serviceAlias);
         if (isset($financialServiceAlias)) {
-            $financialService = Service::where('alias', $financialServiceAlias) -> first();
+            $financialService = Service::where('alias', $financialServiceAlias)->first();
             if (isset($financialService)) {
-                return $financialService -> name . " - " . $financialService -> alias;
+                return $financialService->name . " - " . $financialService->alias;
             } else {
                 return $financialServiceAlias;
             }

@@ -147,7 +147,7 @@ class Voucher extends Model
     }
     public function ledger_items()
     {
-        return $this->hasMany(ItemDetail::class)->select('credit_amt AS credit_amount', 'debit_amt AS debit_amount', 'ledger_parent_id', 'ledger_parent_id AS ledger_group_id', 'ledger_id', 'entry_type');
+        return $this->hasMany(ItemDetail::class)->select('credit_amt AS credit_amount', 'debit_amt AS debit_amount', 'ledger_parent_id', 'ledger_parent_id AS ledger_group_id', 'ledger_id', 'entry_type', 'due_date');
     }
 
     public function approvals()

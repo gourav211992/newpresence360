@@ -23,11 +23,13 @@ class UnloadingTaskController extends Controller
         $location = $request->input('store_id');
         $jobs = ErpWhmJob::with(['morphable.book' => function($q){
                             $q->select('id','book_code');
-                        }, 'morphable.erpStore' => function($q){
-                            $q->select('id','store_name');
                         }, 'itemUniqueCodes' => function($q){
                             $q->select('id','job_id','item_id');
-                        }])
+                        },'store' => function($q){
+                            $q->select('id','store_name');
+                        },'subStore' => function($q){
+                            $q->select('id','name');
+                    }])
                     ->where('morphable_type', 'App\Models\GateEntryHeader')
                     ->when($search, function ($query) use ($search) {
                         $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($search) {
