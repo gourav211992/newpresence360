@@ -46,8 +46,8 @@ class StockReservation
                     'stock_ledger_id' => $stkLdgr -> id,
                     'quantity' => $currentQty
                 ]);
-                $stockLedger -> reserved_qty += $currentQty;
-                $stockLedger -> save();
+                $stkLdgr -> reserved_qty += $currentQty;
+                $stkLdgr -> save();
                 $balanceQty -= $currentQty;
                 if ($balanceQty <= 0) {
                     break;
@@ -299,6 +299,7 @@ class StockReservation
         $receiveStockLedger->issue_qty=0;
         $receiveStockLedger->reserved_qty=0;
         $receiveStockLedger->receipt_qty=$issueStockLedger->issue_qty;
+        $receiveStockLedger->utilized_id=null;
         $receiveStockLedger->save();
 
         return ['status' => 'success', 'message' => 'Stock issued and received successfully'];

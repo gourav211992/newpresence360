@@ -143,7 +143,7 @@ class PicklistTaskController extends Controller
                             $q->where('store_id',$storeId);
                         })
                         ->where('id', $request->pl_item_id)
-                        ->select('id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
+                        ->select('id','pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),'attributes')
                         ->first();
 
         $plScannedItemUids = ErpItemUniqueCode::where('job_id',$request->job_id)->pluck('uid')->toArray(); 
@@ -236,7 +236,7 @@ class PicklistTaskController extends Controller
         ],[
             'job_id.required' => 'Job id is required',
             'pl_item_id.required' => 'Picklist item id is required',
-            'packet_ids.required' => 'Packet ids are required',
+            'packet_ids.required' => 'Scan a packet to draft the form',
             'storage_point_id.required' => 'Storage point id is required',
         ]);
 

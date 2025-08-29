@@ -131,7 +131,7 @@ class DispatchController extends Controller
             'packet_ids' => ['required', 'array'],
         ],[
             'job_id.required' => 'Job id is required',
-            'packet_ids.required' => 'Packet IDs are required',
+            'packet_ids.required' => 'Scan a packet to draft the form',
         ]);
 
         if ($validator->fails()) {

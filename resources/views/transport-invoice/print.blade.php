@@ -130,7 +130,7 @@
         @php
         $total += ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev;
         $totaldiscount += $discountAmtPrev;
-        $ordertaxcount = count($order->tax);
+        $ordertaxcount = is_array($order->tax) ? count($order->tax) : 0
         @endphp
         @endforeach
       <tr>
@@ -184,20 +184,22 @@
       </tr> -->
       @php
       $totaltax = 0;
+      
       @endphp
       @if(!empty($order->tax) && is_array($order->tax))
        
     @foreach($order->tax as $tax)
         <tr>
             <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-                {{ $tax['tax_type'] }}@{{ number_format($tax['tax_percentage'], 2) }}%
+                {{ $tax['tax_type'] }}{{'@'}}{{ number_format($tax['tax_percentage'], 2) }}%
+
             </td>
             <td style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-                {{ number_format(($order->total_amount * $tax['tax_percentage']) / 100, 2) }}
+                {{ number_format((($total * $tax['tax_percentage']) / 100), 2) }}
             </td>
         </tr>
       @php
-      $totaltax += ($order->total_amount * $tax['tax_percentage']) / 100;
+      $totaltax += ($total * $tax['tax_percentage']) / 100;
       @endphp
     @endforeach
 @endif

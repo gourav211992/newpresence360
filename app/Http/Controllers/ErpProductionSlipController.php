@@ -47,7 +47,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use App\Helpers\BookHelper;
 use App\Models\BomDetail;
-use PHPUnit\TextUI\Help;
 use Yajra\DataTables\DataTables;
 
 class ErpProductionSlipController extends Controller
@@ -149,8 +148,8 @@ class ErpProductionSlipController extends Controller
             }
         }
         $parentURL = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         $user = Helper::getAuthenticatedUser();
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL, '', $user);
         $groupAlias = $user?->auth_user?->group_alias ?? 'Staqo';
         $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
         return view('productionSlip.index', ['isWipQty' => $isWipQty, 'typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => count($servicesBooks['services'])]);
@@ -158,14 +157,14 @@ class ErpProductionSlipController extends Controller
 
     public function create(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
         $parentURL = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL, '', $user);
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
         $redirectUrl = route('production.slip.index');
         $firstService = $servicesBooks['services'][0];
-        $user = Helper::getAuthenticatedUser();
         $typeName = "Packing Slip";
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $currentBundleNo = ErpPslipItemDetail::orderByDesc('id')->first() ?-> bundle_no ?? 0;
@@ -174,10 +173,10 @@ class ErpProductionSlipController extends Controller
         if ($currentBundleNo > 0) {
             $editableBundle = false;
         }
-        $authUser = Helper::getAuthenticatedUser();
-        $organization = Organization::find($authUser ?->organization_id);
+        // $authUser = Helper::getAuthenticatedUser();
+        $organization = Organization::find($user ?->organization_id);
         $organizationId = $organization ?-> id ?? null;
-        $shifts = Shift::where('organization_id',$organizationId)->where("status", ConstantHelper::ACTIVE)->get();
+        $shifts = Shift::where('organization_id', $organizationId)->where("status", ConstantHelper::ACTIVE)->get();
         $machines = collect();
         $stationLines = collect();
         $groupAlias = $user?->auth_user?->group_alias ?? '';
@@ -207,9 +206,9 @@ class ErpProductionSlipController extends Controller
         $this->productionSlipId = $id;
 
         try {
+            $user = Helper::getAuthenticatedUser();
             $parentUrl = request() -> segments()[0];
             $redirect_url = route('production.slip.index');
-            $user = Helper::getAuthenticatedUser();
 
             $servicesBooks = [];
             if (isset($request -> revisionNumber))
@@ -243,7 +242,7 @@ class ErpProductionSlipController extends Controller
 
             $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
             if (isset($doc)) {
-                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
+                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $doc->book?->service?->alias, $user);
             }
             $revision_number = $doc->revision_number;
             $totalValue = 0;
