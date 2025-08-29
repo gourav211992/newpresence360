@@ -248,13 +248,13 @@ class WhmJob
 
         for ($i = 0; $i < $qty; $i++) {
             //Preserve the UID if present and qty is 1
-            if ($qty === 1 && isset($detail -> item_uid) && $detail -> item_uid) {
-                $uid = $detail -> item_uid;
-            } else {
-                $uid = $this -> generateUniqueUid();
-            }
+            // if ($qty === 1 && isset($detail -> item_uid) && $detail -> item_uid) {
+            //     $uid = $detail -> item_uid;
+            // } else {
+                // $uid = $this -> generateUniqueUid();
+            // }
             $records[] = [
-                'uid' => $uid,
+                'uid' => $this->generateUniqueUid(),
                 'job_id' => $job->id,
                 'organization_id' => $header->organization_id,
                 'group_id' => $header->group_id,
@@ -275,7 +275,7 @@ class WhmJob
                 'item_name' => $detail->item->item_name,
                 'item_code' => $detail->item_code,
                 'vendor_id' => $header->vendor_id,
-                'item_uid' => $uid,
+                'item_uid' => $this->generateUniqueUid(),
                 'batch_id' => $batch ? $batch->id : NULL,
                 'batch_number' => $batch ? $batch->batch_number : NULL,
                 'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
