@@ -2800,6 +2800,7 @@ class ServiceParametersHelper
         ConstantHelper::DEBIT_Note => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::CREDIT_Note => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::JOURNAL_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
+        ConstantHelper::OPENING_BALANCE => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::CONTRA_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MI_SERVICE_PARAMTERS,
         ConstantHelper::ITEM_SERVICE_ALIAS => self::ITEM_SERVICE_PARAMETERS,
