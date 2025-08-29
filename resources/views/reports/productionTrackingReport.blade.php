@@ -32,7 +32,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="datatables-basic table">
+                                        <table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed">
                                             <thead>
                                                 <tr>
                                                    

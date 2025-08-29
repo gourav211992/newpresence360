@@ -332,7 +332,7 @@
                                                 {{ $organization?->organization?->name }}
                                             </option>
                                         @empty
-                                            <option selected value="{{$organizationId??""}}">{{$organization??""}}</option>
+                                            <option value="{{$organizationId??""}}">{{$organization??""}}</option>
                                         @endforelse
 
                                 </select>

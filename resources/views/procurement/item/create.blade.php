@@ -139,6 +139,13 @@
                                                                     <label class="form-check-label" for="subType{{ $subType->id }}">{{ $subType->name }}</label>
                                                                 </div>
                                                             @endforeach
+
+                                                            {{-- Scrap --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                <input type="hidden" name="is_scrap" value="0">
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1">
+                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
+                                                            </div>
                                                             {{-- Traded Item --}}
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_traded_item" value="0">
@@ -147,17 +154,10 @@
                                                             </div>
 
                                                             {{-- Asset --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
                                                                 <input type="hidden" name="is_asset" value="0">
                                                                 <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1">
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
-                                                            </div>
-
-                                                            {{-- Scrap --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
-                                                                <input type="hidden" name="is_scrap" value="0">
-                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1">
-                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -440,12 +440,12 @@
                                                                 </div>
 
                                                                 <div class="col-md-3 mb-1">
-                                                                    <label class="form-label">Weight</label>
+                                                                    <label class="form-label">Weight (kg)</label>
                                                                     <input type="number" step="0.0001" name="storage_weight" class="form-control" placeholder="Enter Weight">
                                                                 </div>
 
                                                                 <div class="col-md-3 mb-1">
-                                                                    <label class="form-label">Volume</label>
+                                                                    <label class="form-label">Volume (cft)</label>
                                                                     <input type="number" step="0.0001" name="storage_volume" class="form-control" placeholder="Enter Volume">
                                                                 </div>
                                                             </div>
@@ -1993,7 +1993,7 @@ $(document).ready(function() {
 });
 </script>
 <script>
-    // storage-uom-start
+   // storage-uom-start
     $(document).ready(function () {
         function syncStorageFields() {
             const uomName = $('select[name="uom_id"] option:selected').text().trim().toUpperCase();
@@ -2001,24 +2001,35 @@ $(document).ready(function() {
             const storageUomValue = $('select[name="storage_uom_id"]').val();
             const $conversionInput = $('input[name="storage_uom_conversion"]');
             const $countInput = $('input[name="storage_uom_count"]');
+
             if (storageUomValue) {
-                $conversionInput.val(1);
-                $countInput.val(1);
+                if (uomName === storageUomName) {
+                    $conversionInput.val(1);
+                    $conversionInput.prop('readonly', true);
+
+                    $countInput.prop('readonly', false);
+                    if (!$countInput.val()) $countInput.val(1);
+
+                } else {
+                    $conversionInput.prop('readonly', false);
+                    if (!$conversionInput.val()) $conversionInput.val(1);
+
+                    $countInput.val(1);
+                    $countInput.prop('readonly', true);
+                }
             } else {
                 $conversionInput.val('');
                 $countInput.val('');
-            }
-            if (uomName == storageUomName) {
-                $conversionInput.prop('readonly', true);
-            } else {
                 $conversionInput.prop('readonly', false);
+                $countInput.prop('readonly', false);
             }
         }
         syncStorageFields();
         $('select[name="uom_id"], select[name="storage_uom_id"]').on('change', syncStorageFields);
     });
-  //storage-uom-end
 
+  // storage-uom-end
+  
   //Capslock-start
     $(document).ready(function() {
         function applyCapsLock() {

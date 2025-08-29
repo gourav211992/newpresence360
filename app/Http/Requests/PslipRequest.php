@@ -21,6 +21,7 @@ class PslipRequest extends FormRequest
     }
     public function rules(): array
     {
+        // dd($this->request->all());
         $rules = [
             'book_id' => 'required',
             'expiry_date' => 'nullable|date',
@@ -44,7 +45,7 @@ class PslipRequest extends FormRequest
 
         // Document date validation
 
-        if($this->input('document_status') == ConstantHelper::SUBMITTED || $this->input('document_status') == ConstantHelper::DRAFT)
+        if(!$this->input('id') && ($this->input('document_status') == ConstantHelper::SUBMITTED || $this->input('document_status') == ConstantHelper::DRAFT))
         {
             $today = now()->toDateString();
             $isPast = false;
@@ -121,8 +122,8 @@ class PslipRequest extends FormRequest
                 //     $selectedAttributeIds[] = $itemAttr['attribute_value'];
                 // }
 
-                $itemAttributes = $component['attribute_value'] 
-                    ?? $moBomMapping->attributes 
+                $itemAttributes = $component['attribute_value']
+                    ?? $moBomMapping->attributes
                     ?? [];
 
                 $itemAttributes = is_array($itemAttributes) ? $itemAttributes : [];

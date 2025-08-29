@@ -61,7 +61,7 @@
 						<div class="form-group breadcrumb-right" id = "buttonsDiv">
                         @if(!isset(request() -> revisionNumber))
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                            @if (isset($slip))
+                            @if (isset($slip) && !empty($slip))
                                 <a href="{{ route('production.slip.generate-pdf', $slip->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -72,11 +72,19 @@
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
                                 @if($buttons['submit'])
-                                    <button type="button" onclick = "submitForm('submitted');" name="action" value="submitted" class="btn btn-primary btn-sm" id="submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                    <button type="button" onclick = "submitForm('submitted');" name="action" value="submitted" class="btn btn-primary btn-sm" id="submit-button" name="action" value="submitted">
+                                        <i data-feather="check-circle"></i> Submit
+                                    </button>
                                 @endif
+
                                 @if($buttons['approve'])
-                                    <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setReject('reject');" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setApproval('approve');" ><i data-feather="check-circle"></i> Approve</button>
+                                    <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setReject('reject');" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <i data-feather="x-circle"></i>
+                                        Reject
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal" onclick = "setApproval('approve');" >
+                                        <i data-feather="check-circle"></i> Approve
+                                    </button>
                                 @endif
                                 @if($buttons['amend'])
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
@@ -95,11 +103,20 @@
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
                                 @endif
+                                @if($buttons['delete'])
+                                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                        data-url="{{ route('production.slip.destroy', [$slip->id, $buttons['amend'] ? $buttons['amend'] : 0]) }}"
+                                        data-redirect="{{ $redirect_url }}"
+                                        data-message="Are you sure you want to delete this record?">
+                                        <i data-feather="trash-2" class="me-50"></i> Delete
+                                    </button>
+                                @endif
                             @else
                                 <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>
-                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button>
+                                <button type = "button" name="action" value="submitted" id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button>
                             @endif
                             @endif
+
 						</div>
 					</div>
 				</div>
@@ -1577,9 +1594,8 @@
                     if(!currentRowcheckbox){
                         var currentRowcheckbox = document.getElementById('item_checkbox_' + currentRowIndex);
                     }
-                    // console.log(currentRowcheckbox);
                     if(currentRowcheckbox.checked){
-                        const inputElement = document.getElementById('items_dropdown_' + currentRowIndex);
+                        const inputElement = document.getElementById('item_row_' + currentRowIndex);
                         if (inputElement) {
                             const dataId = inputElement.getAttribute('data-id');
                             if (dataId) {
@@ -1590,6 +1606,7 @@
                     }
                 }
             }
+
             for (let index2 = 0; index2 < deleteableElementsId.length; index2++) {
                 let row = document.getElementById(deleteableElementsId[index2]);
                 if (row) {
@@ -1613,8 +1630,21 @@
                     const currentConcheckbox = document.getElementById('item_co_row_check_' + currentRowIndex);
 
                     if (currentConcheckbox && currentConcheckbox.checked) {
+
                         if (currentRow) {
                             const dataId = currentRow.getAttribute('data-id');
+                            const alternateId = currentRow.getAttribute('data-altr-id');
+
+                            if(!alternateId) {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Only alternate item can be deleted.',
+                                    icon: 'error',
+                                });
+
+                                return false;
+                            }
+
                             if (dataId) {
                                 deletedConsItemIds.push(dataId);
                             }
@@ -1634,12 +1664,13 @@
             }
             console.log(JSON.parse(localStorage.getItem('deletedSiItemIds')) || [])
             console.log(JSON.parse(localStorage.getItem('deletedConsItemIds')) || [])
-            const allRowsNew = document.querySelectorAll('#production-items .item_row_checks');
-            if (allRowsNew.length > 0) {
-                disableHeader();
-            } else {
-                enableHeader();
-            }
+            // const allRowsNew = document.querySelectorAll('#production-items .item_row_checks');
+
+            // if (allRowsNew.length > 0) {
+            //     disableHeader();
+            // } else {
+            //     enableHeader();
+            // }
         }
 
         function setItemRemarks(elementId) {

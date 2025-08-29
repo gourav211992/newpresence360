@@ -150,7 +150,7 @@ class PicklistTaskController extends Controller
         // dd($plScannedItemUids);
         
         $plItemId = $plItem->id;
-
+ 
         if($plItem){
             $reservedStock = $plItem->stockReservation()
                 ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
@@ -465,7 +465,7 @@ class PicklistTaskController extends Controller
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
             $pickList = ErpPlHeader::find($job->morphable_id);
-            if($pickList){
+            if($pickList && $job -> status == CommonHelper::CLOSED){
                 foreach ($pickList->inv_items as $plItem) {
                     $status = StockReservation::settlementOfReservedStocks(ConstantHelper::PL_SERVICE_ALIAS, $pickList->id, $plItem->id, $plItem->inventory_uom_qty, true);
                     if ($status['status'] == 'error') {

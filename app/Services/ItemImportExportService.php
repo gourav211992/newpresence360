@@ -259,41 +259,45 @@ class ItemImportExportService
     }
 
 
-    public function getLedgerAndGroupIds($ledgerCode, $ledgerGroupName)
+  public function getLedgerAndGroupIds($ledgerCode, $ledgerGroupName)
     {
         try {
             $ledger = Ledger::withDefaultGroupCompanyOrg()
-                        ->where('code', $ledgerCode)
-                        ->first();
+                ->where('code', $ledgerCode)
+                ->first();
+
             if (!$ledger) {
                 throw new Exception('Ledger not found for the given ledger code.');
             }
-            $ledgerGroup = Group::where('name', $ledgerGroupName)
-            ->first();
+
+            $ledgerGroup = Group::where('name', $ledgerGroupName)->first();
             if (!$ledgerGroup) {
                 throw new Exception('Ledger Group not found for the given ledger group name.');
             }
 
             $ledgerId = $ledger->id;
             $ledgerGroupId = $ledgerGroup->id;
-            $groupIds = json_decode($ledger->ledger_group_id, true); 
 
-            $groupExists = false;
-
-            if (is_array($groupIds)) {
-                $groupExists = in_array($ledgerGroupId, $groupIds); 
-            } elseif (is_numeric($ledger->ledger_group_id)) {
-                $groupExists = ($ledgerGroupId == $ledger->ledger_group_id);  
+            if (!$ledgerGroup->children->isEmpty()) {
+                throw new Exception("The given group '{$ledgerGroupName}' is not a last-level group.");
             }
 
-            if (!$groupExists) {
-                throw new Exception('Ledger Group not found in the associated Ledger.');
+            $exists = Ledger::where('id', $ledgerId)
+                ->where(function($q) use ($ledgerGroupId) {
+                    $q->orWhereJsonContains('ledger_group_id', (string)$ledgerGroupId)
+                    ->orWhereJsonContains('ledger_group_id', $ledgerGroupId);
+                })
+                ->exists();
+
+            if (!$exists) {
+                throw new Exception("Ledger is not linked with the given last-level group '{$ledgerGroupName}'.");
             }
 
             return [
                 'ledger_id' => $ledgerId,
-                'ledger_group_id' => $ledgerGroupId 
+                'ledger_group_id' => $ledgerGroupId
             ];
+
         } catch (Exception $e) {
             return [
                 'error' => $e->getMessage()

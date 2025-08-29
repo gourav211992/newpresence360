@@ -442,7 +442,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                 <div class="col-md-4">
                                                 <div class="mb-1">
                                                     <label class="form-label">Upload Document</label>
-                                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_preview')" max_file_count = "2" multiple>
+                                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_preview')" max_file_count = "10" multiple>
                                                     <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                                 </div>
                                             </div>
@@ -519,7 +519,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
            <i data-feather='alert-circle'></i>
            <h2>Are you sure?</h2>
            <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+           <button type="button" id="deleteCancel" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
            <button type="button" id="deleteConfirm" class="btn btn-primary" >Confirm</button>
          </div>
       </div>
@@ -662,6 +662,8 @@ setTimeout(() => {
     localStorage.removeItem('deletedBomItemIds');
     localStorage.removeItem('deletedProdItemIds');
     localStorage.removeItem('deletedInstructionItemIds');
+    localStorage.removeItem('itemIds');
+    localStorage.removeItem('editItemIds');
 },0);
 
 @if($buttons['amend'] && intval(request('amendment') ?? 0) || $buttons['approve'])
@@ -1368,6 +1370,24 @@ $(document).on('click','#deleteConfirm', (e) => {
         $("#itemTable > thead .form-check-input").prop('checked',false);
     }
 });
+$(document).on('click', '#deleteCancel', (e) => {
+    $('#itemTable > tbody .form-check-input:checked').each(function() {
+        let selectedId = $(this).attr('data-id');
+
+        if (selectedId) {
+           
+            let itemIds = JSON.parse(localStorage.getItem('itemIds')) || [];
+            let editItemIds = JSON.parse(localStorage.getItem('editItemIds')) || [];
+
+            itemIds = itemIds.filter(id => id != selectedId);
+            editItemIds = editItemIds.filter(id => id != selectedId);
+
+            localStorage.setItem('itemIds', JSON.stringify(itemIds));
+            localStorage.setItem('editItemIds', JSON.stringify(editItemIds));
+        }
+    });
+});
+
 
 $(document).on('click','#deleteProdConfirm', (e) => {
    let ids = e.target.getAttribute('data-ids');

@@ -118,7 +118,7 @@ class ItemRequest extends FormRequest
             'reorder_level' => 'nullable|integer|min:0',
             'minimum_order_qty' => 'nullable|integer|min:1',
             'lead_days' => 'nullable|integer|min:1|max:365|gte:safety_days',
-            'safety_days' => 'nullable|integer|min:1|max:365|lte:shelf_life_days',
+            'safety_days' => 'nullable|integer|min:1|max:365',
             'shelf_life_days' => 'nullable|integer|min:1|max:365',
             'po_positive_tolerance' => 'nullable|numeric|gt:0|max:100',
             'po_negative_tolerance' => 'nullable|numeric|gt:0|max:100',

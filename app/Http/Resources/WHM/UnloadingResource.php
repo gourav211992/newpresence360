@@ -16,6 +16,7 @@ class UnloadingResource extends JsonResource
     public function toArray(Request $request): array
     {
         $morphable = $this->whenLoaded('morphable'); // ensure it's loaded safely
+        dd($morphable);
         $itemUniqueCodes = $this->whenLoaded('itemUniqueCodes');
 
         return [

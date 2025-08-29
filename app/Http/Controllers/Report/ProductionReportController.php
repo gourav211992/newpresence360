@@ -387,13 +387,16 @@ class ProductionReportController extends Controller
 
         if ($request->ajax()) {
                 $query = DB::table('erp_pwo_so_mapping as a')
-                    ->leftJoin('erp_mfg_orders as b', 'b.id', '=', 'a.mo_id')
+                    ->Join('erp_mo_products as mp', 'mp.pwo_mapping_id', '=', 'a.id')
+                    ->Join('erp_mfg_orders as b', 'b.id', '=', 'mp.mo_id')
                     ->leftJoin('erp_production_slips as c', 'c.mo_id', '=', 'b.id')
                     ->leftJoin('erp_pslip_items as d', 'd.pslip_id', '=', 'c.id')
-                    ->leftJoin('erp_stations as e', 'e.id', '=', 'c.station_id')
-                    ->leftJoin('erp_sub_stores as f', 'f.id', '=', 'c.sub_store_id')
+                    ->leftJoin('erp_sub_stores as f', 'f.id', '=', 'b.sub_store_id')
+                    ->leftJoin('erp_stations as e', 'e.id', '=', 'b.station_id')
                     ->select([
                         'a.id as mapping_id',
+                        'a.mo_product_qty',
+                        'a.qty as pwo_qty',
 
                         'b.book_code',
                         'b.document_number',
@@ -412,6 +415,7 @@ class ProductionReportController extends Controller
                         'f.name as sub_store_name',
                         'f.code as sub_store_code'
                     ])->where('b.group_id', $groupId)
+                    ->where('a.id', $id)
                     ->where('b.company_id', $companyId)
                     ->where('b.organization_id', $organizationId)
                     ->orderByDesc('a.id');

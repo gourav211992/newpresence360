@@ -410,7 +410,7 @@ class WhmJob
 
         $namespace = get_class($detail);
         $storeId = $header->store_id;
-        $subStoreId = $header->sub_store_id;
+        $subStoreId = $header->main_sub_store_id;
         // if ($trnstype == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
         //     $storeId = $header -> to_store_id;
         //     $subStoreId = $header -> to_sub_store_id;

@@ -2503,6 +2503,7 @@ Route::middleware(['user.auth'])->group(function () {
     // Production Slip
     Route::get('/production-slip/posting/details', [ProductionSlipController::class, 'getPostingDetails'])->name('production.slip.get.posting.details');
     Route::post('/production-slip/post/voucher', [ProductionSlipController::class, 'postPslipVoucher'])->name('production.slip.post.voucher');
+    Route::delete('/production-slip/{erpProductionSlip}/{amendment}', [ProductionSlipController::class, 'destroy'])->name('production.slip.destroy');
 
     #get item detail for the consumption
     Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');

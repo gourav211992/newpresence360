@@ -259,7 +259,7 @@ class DispatchController extends Controller
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
             $saleInvoice = ErpSaleInvoice::find($job->morphable_id);
-            if($saleInvoice){
+            if($saleInvoice && $job -> status == CommonHelper::CLOSED){
                 foreach ($saleInvoice->items as $invItem) {
                     $status = StockReservation::settlementOfReservedStocks($saleInvoice -> document_type, $saleInvoice->id, $invItem->id, $invItem->inventory_uom_qty);
                     if ($status['status'] == 'error') {

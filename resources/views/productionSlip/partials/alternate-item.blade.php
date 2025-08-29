@@ -1,6 +1,6 @@
 
 
-<tr id="item_row_{{$rowIndex}}" class="item_header_rows" data-detail-id="{{$mo_bom_cons_id}}" data-id="{{$mo_bom_cons_id}}" data-index="{{ $rowIndex }}">
+<tr id="item_row_{{$rowIndex}}" class="item_header_rows" data-detail-id="{{$mo_bom_cons_id}}" data-id="{{$mo_bom_cons_id}}" data-index="{{ $rowIndex }}" data-altr-id="{{ $mo_bom_cons_id }}">
     <td class="consumption-form">
 
         <div class="form-check form-check-primary custom-checkbox">

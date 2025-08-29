@@ -509,39 +509,49 @@
                     </td>
                 </tr>
             @endif
+
+            {{-- Row for images --}}
+            @php
+                $images = $bom->getDocuments()->filter(fn($doc) => Str::contains($doc->mime_type, 'image'))->values();
+            @endphp
+
+            @foreach ($images as $index => $image)
+                @if ($index % 2 === 0)
+                    <tr>
+                @endif
+
+                @if (($index === $images->count() - 1) && ($images->count() % 2 !== 0))
+                    {{-- Last single image spans full row --}}
+                    <td colspan="2" style="padding: 3px; border: 1px solid #000; border-top: none; text-align: center; vertical-align: middle;">
+                        <img src="{{ $bom->getPdfDocumentUrl($image) }}"
+                            alt="Image : {{ $image->name }}"
+                            style="max-width: 100%; height: auto; max-height: 150px;">
+                    </td>
+                @else
+                    {{-- Normal two-per-row --}}
+                    <td style="padding: 3px; border: 1px solid #000; border-top: none; text-align: center; width: 50%; vertical-align: middle;">
+                        <img src="{{ $bom->getPdfDocumentUrl($image) }}"
+                            alt="Image : {{ $image->name }}"
+                            style="max-width: 100%; height: auto; max-height: 150px;">
+                    </td>
+                @endif
+
+                @if ($index % 2 === 1 || $index === $images->count() - 1)
+                    </tr>
+                @endif
+            @endforeach
+
+            {{-- Row for remarks --}}
             <tr>
-                <td colspan="1"
-                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
-                    <table style="width: 100%; height: 100px; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td align="center" valign="middle">
-                                @foreach ($bom->getDocuments() as $attachment)
-                                    @if (Str::contains($attachment->mime_type, 'image'))
-                                        <img src="{{ $bom->getPdfDocumentUrl($attachment) }}"
-                                            alt="Image : {{ $attachment->name }}"
-                                            style="max-width: 100%; max-height: 100px;">
-                                    @endif
-                                @endforeach
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td colspan="1"
-                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div style="min-height: 80px;">
-                                    {{ $bom->remarks }}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                <td colspan="2" style="padding: 5px; border: 1px solid #000; border-top: none; font-size: 13px;">
+                    <b>Remark :</b>
+                    <div style="min-height: 80px; margin-top: 5px; white-space: pre-wrap;">
+                        {{ $bom->remarks }}
+                    </div>
                 </td>
             </tr>
+
+
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">

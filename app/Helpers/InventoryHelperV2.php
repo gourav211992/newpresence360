@@ -352,6 +352,7 @@ class InventoryHelperV2
         // Clone query to avoid re-execution conflict
         $issueStock = (clone $baseQuery)
             ->first();
+
         $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
             ->where('utilized_id', $issueStock->id)
             ->get();
@@ -361,7 +362,7 @@ class InventoryHelperV2
             foreach ($utilizedStockLedger as $val) {
                 // $normalizedAttributes = self::normalizeJsonAttributes($val->item_attributes);
                 $stockQty += $val->receipt_qty;
-                $normalized = InventoryHelperV2::normalizeJsonAttributes($val->item_attributes);
+                // $normalized = InventoryHelperV2::normalizeJsonAttributes($val->item_attributes);
 
                 $potentialMatches = StockLedger::withDefaultGroupCompanyOrg()
                     ->where([

@@ -85,14 +85,15 @@
                                             <thead>
                                                 <tr>
                                                    
-                                                    <th>Sr. No.</th>
-                                                    <th>Date</th>
-                                                    <th>PSLIP No.</th>                              
-                                                    <th>Station</th>
-                                                    <th>Sub Store</th>
+                                                    <th>Sr. No.</th>                            
                                                     <th>MO No.</th>
                                                     <th>MO Date</th>
+                                                    <th>MO Qty</th>
+                                                    <th>Sub Store</th>
+                                                    <th>Station</th>
                                                     <th>TYPE</th>
+                                                    <th>PSLIP No.</th>  
+                                                    <th>PSLIP Date</th>
                                                     <th>Produced Qty</th>
                                                     <th>Accepted (A)</th>
                                                     <th>Sub Standard (B)</th>
@@ -145,46 +146,8 @@
                                     orderable: false,
                                     searchable: false,
                                     className: "text-center text-nowrap"
-                                },
-                                {
-                                    data: 'pslip_document_date',
-                                    name: 'c.document_date',
-                                    render: function (data, type, row) {
-                                        let raw = row.pslip_document_date;              // e.g. 2025-05-27
-                                        let formatted = formatDateDMY(raw);            // e.g. 27-05-2025
-
-                                        if (type === 'display') {
-                                            return formatted;
-                                        }
-                                        if (type === 'filter') {
-                                            // Make both formats searchable
-                                            return raw + ' ' + formatted;
-                                        }
-                                        return raw; // for sort
-                                    }
-                                },  
-                                {
-                                    data: 'pslip_document_number',
-                                    name: 'c.document_number',
-                                    render: function (data, type, row) {
-                                        return row.pslip_book_code+' - '+row.pslip_document_number;
-                                    }
-                                },            
-                                {
-                                    data: 'name',
-                                    name: 'e.name',
-                                    render: function (data, type, row) {
-                                        return row.name;
-                                    }
-                                },            
-                                {
-                                    data: 'sub_store_name',
-                                    name: 'f.name',
-                                    render: function (data, type, row) {
-                                        return row.sub_store_name;
-                                    }
-                                },  
-                                {
+                                }, 
+                                      {
                                     data: 'document_number',
                                     name: 'b.document_number',
                                     render: function (data, type, row) {
@@ -208,11 +171,55 @@
                                     }
                                 },
                                 {
+                                    data: 'mo_product_qty',
+                                    name: 'a.mo_product_qty',
+                                    render: function (data, type, row) {
+                                        return row.mo_product_qty;
+                                    }
+                                }, 
+                                {
+                                    data: 'sub_store_name',
+                                    name: 'f.name',
+                                    render: function (data, type, row) {
+                                        return row.sub_store_name;
+                                    }
+                                },          
+                                {
+                                    data: 'name',
+                                    name: 'e.name',
+                                    render: function (data, type, row) {
+                                        return row.name;
+                                    }
+                                },            
+                                {
                                     data: 'type',
                                     name: 'type',
                                     orderable: false,
                                     searchable: false,
-                                },  
+                                }, 
+                                {
+                                    data: 'pslip_document_number',
+                                    name: 'c.document_number',
+                                    render: function (data, type, row) {
+                                        return row.pslip_book_code+' - '+row.pslip_document_number;
+                                    }
+                                }, 
+                                {
+                                    data: 'pslip_document_date',
+                                    name: 'c.document_date',
+                                    render: function (data, type, row) {
+                                        let raw = row.pslip_document_date;              // e.g. 2025-05-27
+                                        let formatted = formatDateDMY(raw);            // e.g. 27-05-2025
+
+                                        if (type === 'display') {
+                                            return formatted;
+                                        }
+                                        if (type === 'filter') {
+                                            return raw + ' ' + formatted;
+                                        }
+                                        return raw; 
+                                    }
+                                },   
                                 {
                                     data: 'qty',
                                     name: 'd.qty'
@@ -255,7 +262,7 @@
                                     className: 'dropdown-item',
                                     title: 'pSlipReport',
                                     exportOptions: {
-                                        columns: [0,1,2,3,4,5,6,7,8,9,10]
+                                        columns: [0,1,2,3,4,5,6,7,8,9,10,11,12]
                                     }
                                 }
                             ],

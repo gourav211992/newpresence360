@@ -32,8 +32,11 @@ $(document).on('click', '#approved-button', (e) => {
 
 /*Delete Row*/
 $(document).on('click','#deleteBtn', (e) => {
-    let itemIds = [];
-    let editItemIds = [];
+    let itemIds =  JSON.parse(localStorage.getItem('itemIds')) || [];
+    let editItemIds = JSON.parse(localStorage.getItem('editItemIds')) || [];
+    
+    // let itemIds = [];
+    // let editItemIds = [];
     $('#itemTable > tbody .form-check-input').each(function() {
         if ($(this).is(":checked")) {
             if($(this).attr('data-id')) {
@@ -43,6 +46,7 @@ $(document).on('click','#deleteBtn', (e) => {
             }
         }
     });
+
     if (itemIds.length) {
         itemIds.forEach(function(item,index) {
             $(`#itemTable #row_${item}`).remove();
@@ -61,6 +65,15 @@ $(document).on('click','#deleteBtn', (e) => {
         $(".prSelect").prop('disabled',false);
     }
     let indexData = $("#itemTable #row_1").attr('data-index');
+
+   const uniqueItemIds = [...new Set(itemIds)];
+   const uniqueEditItemIds = [...new Set(editItemIds)];
+     
+
+    localStorage.setItem('itemIds', JSON.stringify(uniqueItemIds));
+    localStorage.setItem('editItemIds', JSON.stringify(uniqueEditItemIds));
+ 
+    console.log("editItemIds",editItemIds);
     totalCostEachRow(indexData);
 });
 

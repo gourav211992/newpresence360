@@ -30,9 +30,29 @@ class StockReservation
                 ];
             }
             //Reserve the stocks
+            $totalQtyToBeReserved = (float)$prepareDataForStock['requested_qty'];
+            $balanceQty = $totalQtyToBeReserved;
             foreach ($stockLedger['stockLedgers'] as $stockLedger) {
                 $stkLdgr = StockLedger::find($stockLedger -> id);
-                self::reserveStock($bookType, $headerId, $item -> id, $prepareDataForStock['requested_qty'], $stkLdgr);
+                $stockLedgerQty = (float)$stkLdgr -> receipt_qty - (float)$stkLdgr -> reserved_qty;
+                $currentQty = min($stockLedgerQty, $balanceQty);
+                $reservation = StockLedgerReservation::create([
+                    'issue_header_id' => $headerId,
+                    'receipt_header_id' => $stkLdgr -> document_header_id,
+                    'issue_detail_id' => $item -> id,
+                    'receipt_detail_id' => $stkLdgr -> document_detail_id,
+                    'issue_book_type' => $bookType,
+                    'receipt_book_type' => $stkLdgr -> book_type,
+                    'stock_ledger_id' => $stkLdgr -> id,
+                    'quantity' => $currentQty
+                ]);
+                $stockLedger -> reserved_qty += $currentQty;
+                $stockLedger -> save();
+                $balanceQty -= $currentQty;
+                if ($balanceQty <= 0) {
+                    break;
+                }
+                // self::reserveStock($bookType, $headerId, $item -> id, $prepareDataForStock['requested_qty'], $stkLdgr);
             }
         }
         //Final success message
@@ -129,13 +149,13 @@ class StockReservation
         return ['status' => 'success', 'message' => 'Reserved Stock found'];
     }
 
-    public static function dereserveStock(string $bookType, int $headerId, int $detailId, float $currentQty) : array
-    {
-        //Get all the reserved stocks
-        $stockReservations = StockLedgerReservation::where('book_type', $bookType) -> where('header_id', $headerId)
-            -> where('detail_id', $detailId) -> get();
+    // public static function dereserveStock(string $bookType, int $headerId, int $detailId, float $currentQty) : array
+    // {
+    //     //Get all the reserved stocks
+    //     $stockReservations = StockLedgerReservation::where('book_type', $bookType) -> where('header_id', $headerId)
+    //         -> where('detail_id', $detailId) -> get();
         
-    }
+    // }
 
     public static function settlementOfReservedStocks(string $bookType, int $headerId, int $detailId, float $totalQty, $recieve = false) : array
     {
@@ -151,102 +171,136 @@ class StockReservation
         if ($totalQty > $reservedStocksQty) {
             return ['status' => 'error', 'message' => 'Enough reserved stocks not available'];
         }
+        //Issue first
+        $stockLedgerId = $reservedStocks -> first() ?-> stock_ledger_id;
+        $mainStockLedger = StockLedger::find($stockLedgerId);
+
+        $issueStockLedger = $mainStockLedger -> replicate();
+
+        //Update required keys
+        $issueStockLedger->id = null;
+        $issueStockLedger->book_type = $bookType;
+        //Retrieve the header
+        $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$bookType]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$bookType] : null;
+        $model = resolve("App\\Models\\" . $modelName);
+        if (!$model) {
+            return ['status' => 'error', 'message' => 'Module not found'];
+        }
+        $header = $model::find($headerId);
+        if (!$header) {
+            return ['status' => 'error', 'message' => 'Module Record not found'];
+        }
+        //Update for issue case
+        $issueStockLedger->document_header_id = $headerId;
+        $issueStockLedger->document_detail_id = $detailId;
+        $issueStockLedger->book_id = $header -> book_id;
+        $issueStockLedger->book_code = $header -> book_code;
+        $issueStockLedger->document_number = $header -> document_number;
+        $issueStockLedger->document_date = $header -> document_date;
+        $issueStockLedger->transaction_type = 'issue';
+        $issueStockLedger->receipt_qty = 0;
+        $issueStockLedger->issue_qty = $totalQty;
+        $issueStockLedger->reserved_qty = 0;
+        $issueStockLedger->original_receipt_date = $mainStockLedger -> original_receipt_date;
+        // $issueStockLedger->lot_number = $mainStockLedger -> lot_number;
+        $issueStockLedger->created_at = Carbon::now() -> format('Y-m-d');
+        $issueStockLedger->updated_at = Carbon::now() -> format('Y-m-d');
+        $issueStockLedger->created_by = $authUser -> auth_user_id;
+        $issueStockLedger->updated_by = $authUser -> auth_user_id;
+        $issueStockLedger->save();
+        $lotNos = "";
+
         //Loop through the reserved stocks
         foreach ($reservedStocks as $reservedStock) {
-            //First issue these stocks
+            
             $stockLedger = StockLedger::find($reservedStock -> stock_ledger_id);
             if (!$stockLedger) {
                 return ['status' => 'error', 'message' => 'Stock Ledger record not found'];
             }
-            $issueStockLedger = $stockLedger -> replicate();
-            $receiveStockLedger = $stockLedger -> replicate();
-            //Update required keys
-            $issueStockLedger->id = null;
-            $issueStockLedger->book_type = $bookType;
-            //Retrieve the header
-            $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$bookType]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$bookType] : null;
-            $model = resolve("App\\Models\\" . $modelName);
-            if (!$model) {
-                return ['status' => 'error', 'message' => 'Module not found'];
+            //Add lot nos
+            $lotNos .= (", " . $stockLedger -> lot_number);
+
+            //Split receive
+            $remainingQty = (float)$stockLedger -> receipt_qty - (float)$stockLedger -> reserved_qty;
+            $remainingReservedQty = (float)$stockLedger -> reserved_qty - (float)$reservedStock -> quantity;
+            //Minus reserved stock
+            $stockLedger -> reserved_qty -= $reservedStock -> quantity;
+            $stockLedger -> save();
+
+            if ($remainingQty > 0) {
+                $newReceieveStockLedger = $stockLedger -> replicate();
+                $newReceieveStockLedger -> id = null;
+                $newReceieveStockLedger -> reserved_qty = $remainingReservedQty;
+                $newReceieveStockLedger -> receipt_qty = $remainingQty;
+                $newReceieveStockLedger -> issue_qty = 0;
+                $newReceieveStockLedger -> save();
+
+                //Update to stock reservations
+                StockLedgerReservation::where('id', '!=', $reservedStock -> id) -> where('stock_ledger_id', $stockLedger -> id) -> update([
+                    'stock_ledger_id' => $newReceieveStockLedger -> id
+                ]);
             }
-            $header = $model::find($headerId);
-            if (!$header) {
-                return ['status' => 'error', 'message' => 'Module Record not found'];
-            }
-            //Update for issue case
-            $issueStockLedger->document_header_id = $headerId;
-            $issueStockLedger->document_detail_id = $detailId;
-            $issueStockLedger->book_id = $header -> book_id;
-            $issueStockLedger->book_code = $header -> book_code;
-            $issueStockLedger->document_number = $header -> document_number;
-            $issueStockLedger->document_date = $header -> document_date;
-            $issueStockLedger->transaction_type = 'issue';
-            $issueStockLedger->receipt_qty = 0;
-            $issueStockLedger->issue_qty = $stockLedger -> reserved_qty;
-            $issueStockLedger->reserved_qty = 0;
-            $issueStockLedger->original_receipt_date = $stockLedger -> original_receipt_date;
-            $issueStockLedger->created_at = Carbon::now() -> format('Y-m-d');
-            $issueStockLedger->updated_at = Carbon::now() -> format('Y-m-d');
-            $issueStockLedger->created_by = $authUser -> auth_user_id;
-            $issueStockLedger->updated_by = $authUser -> auth_user_id;
-            $issueStockLedger->save();
-            //Now update main Stock ledger
+
+            //Update utilized ID
             $stockLedger -> utilized_id = $issueStockLedger -> id;
             $stockLedger -> save();
 
-            //Now receive (if required)
-            if (!$recieve) {
-                return ['status' => 'success', 'message' => 'Stock issued successfully'];
-            }
-            $receiveStockLedger->id = null;
-            $receiveStockLedger->book_type = $bookType;
-
-            $receiveStockLedger->store_id=null;
-            $receiveStockLedger->sub_store_id=null;
-            $receiveStockLedger->station_id=null;
-            $receiveStockLedger->wip_station_id=null;
-            $receiveStockLedger->store=null;
-            $receiveStockLedger->sub_store=null;
-
-            if ($bookType === ConstantHelper::PL_SERVICE_ALIAS) {
-                $receiveStockLedger->store_id =  $header -> store_id;
-                $receiveStockLedger->store =  $header -> store ?-> store_name;
-                $receiveStockLedger->sub_store_id =  $header -> staging_sub_store_id;
-                $receiveStockLedger->sub_store =  $header -> staging_sub_store ?-> name;
-            }
-            if ($bookType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
-                $receiveStockLedger->store_id =  $header -> to_store_id;
-                $receiveStockLedger->store =  $header -> to_store ?-> store_name;
-                $receiveStockLedger->sub_store_id =  $header -> to_sub_store_id;
-                $receiveStockLedger->sub_store =  $header -> to_sub_store ?-> name;
-                $receiveStockLedger->stock_type =  $issueStockLedger -> stock_type;
-                $receiveStockLedger->station_id =  $header -> to_station_id;
-                $receiveStockLedger->wip_station_id =  $header -> wip_station_id;
-            }
-
-            $receiveStockLedger->document_header_id = $headerId;
-            $receiveStockLedger->document_detail_id = $detailId;
-            $receiveStockLedger->book_id = $header -> book_id;
-            $receiveStockLedger->book_code = $header -> book_code;
-            $receiveStockLedger->document_number = $header -> document_number;
-            $receiveStockLedger->document_date = $header -> document_date;
-            $receiveStockLedger->transaction_type = 'receipt';
-            $receiveStockLedger->lot_number = $issueStockLedger->lot_number;
-            $receiveStockLedger->document_status=$header->document_status;
-            $receiveStockLedger->issue_qty=0;
-            $receiveStockLedger->reserved_qty=0;
-            $receiveStockLedger->receipt_qty=$issueStockLedger->issue_qty;
-            $receiveStockLedger->save();
-
             //Remove the reserved stocks (dereserve the stocks)
-            $updatedeReservedQty = $reservedStock -> quantity - $issueStockLedger->issue_qty;
-            if ($updatedeReservedQty <= 0) {
-                $reservedStock -> delete();
-            } else {
-                $reservedStock -> quantity = $updatedeReservedQty;
-                $reservedStock -> save();
-            }
+            $reservedStock -> save();
+        
         }
+
+        //Update Issue ledger lot nos
+        $issueStockLedger -> lot_number = $lotNos;
+        $issueStockLedger -> save();
+
+        //Now receive (if required)
+        if (!$recieve) {
+            return ['status' => 'success', 'message' => 'Stock issued successfully'];
+        }
+
+        //Now receive
+        $receiveStockLedger = $stockLedger -> replicate();
+        $receiveStockLedger->id = null;
+        $receiveStockLedger->book_type = $bookType;
+
+        $receiveStockLedger->store_id=null;
+        $receiveStockLedger->sub_store_id=null;
+        $receiveStockLedger->station_id=null;
+        $receiveStockLedger->wip_station_id=null;
+        $receiveStockLedger->store=null;
+        $receiveStockLedger->sub_store=null;
+
+        if ($bookType === ConstantHelper::PL_SERVICE_ALIAS) {
+            $receiveStockLedger->store_id =  $header -> store_id;
+            $receiveStockLedger->store =  $header -> store ?-> store_name;
+            $receiveStockLedger->sub_store_id =  $header -> staging_sub_store_id;
+            $receiveStockLedger->sub_store =  $header -> staging_sub_store ?-> name;
+        }
+        if ($bookType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $receiveStockLedger->store_id =  $header -> to_store_id;
+            $receiveStockLedger->store =  $header -> to_store ?-> store_name;
+            $receiveStockLedger->sub_store_id =  $header -> to_sub_store_id;
+            $receiveStockLedger->sub_store =  $header -> to_sub_store ?-> name;
+            $receiveStockLedger->stock_type =  $issueStockLedger -> stock_type;
+            $receiveStockLedger->station_id =  $header -> to_station_id;
+            $receiveStockLedger->wip_station_id =  $header -> wip_station_id;
+        }
+
+        $receiveStockLedger->document_header_id = $headerId;
+        $receiveStockLedger->document_detail_id = $detailId;
+        $receiveStockLedger->book_id = $header -> book_id;
+        $receiveStockLedger->book_code = $header -> book_code;
+        $receiveStockLedger->document_number = $header -> document_number;
+        $receiveStockLedger->document_date = $header -> document_date;
+        $receiveStockLedger->transaction_type = 'receipt';
+        $receiveStockLedger->lot_number = $issueStockLedger->lot_number;
+        $receiveStockLedger->document_status=$header->document_status;
+        $receiveStockLedger->issue_qty=0;
+        $receiveStockLedger->reserved_qty=0;
+        $receiveStockLedger->receipt_qty=$issueStockLedger->issue_qty;
+        $receiveStockLedger->save();
+
         return ['status' => 'success', 'message' => 'Stock issued and received successfully'];
     }
 

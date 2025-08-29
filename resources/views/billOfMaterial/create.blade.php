@@ -370,7 +370,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             <label class="form-label">
                                                 <strong>Upload Document</strong>
                                             </label>
-                                            <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" max_file_count = "2" multiple>
+                                            <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" max_file_count = "10" multiple>
                                             <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                             </div>
                                         </div>

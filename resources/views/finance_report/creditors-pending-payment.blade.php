@@ -404,7 +404,6 @@
                     details_id: details
                 },
                 success: response => {
-                    let num=0;
                     console.log("Voucher Response:", response);
                     const table = $('.datatables-basic').DataTable();
                     table.clear().draw(); // Always clear
@@ -419,8 +418,7 @@
                                 const items = voucher.items || [];
 
                                 items.forEach(function(item, i) {
-                                    num++;
-                                    const uniqueKey = `${voucher.id}_${num}`;
+                                    const uniqueKey = `${voucher.id}_${i}`;
                                     voucherMap[uniqueKey] = {
                                         ...voucher,
                                         item: item // Also attach the specific item

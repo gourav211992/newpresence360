@@ -210,6 +210,7 @@ class ErpProductionSlipController extends Controller
             $parentUrl = request() -> segments()[0];
             $redirect_url = route('production.slip.index');
             $user = Helper::getAuthenticatedUser();
+
             $servicesBooks = [];
             if (isset($request -> revisionNumber))
             {
@@ -234,6 +235,10 @@ class ErpProductionSlipController extends Controller
                 })->find($id);
 
                 $ogDoc = $doc;
+            }
+
+            if(!$doc) {
+                return back()->with('error', 'The provided documnet id is invalid.');
             }
 
             $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -313,19 +318,19 @@ class ErpProductionSlipController extends Controller
 
             return view('productionSlip.create_edit', $data);
         } catch(Exception $ex) {
-            dd($ex -> getMessage());
+            // dd($ex -> getMessage());
+            return back()->with('error', 'Error: '.$ex -> getMessage());
         }
     }
 
     public function store(PslipRequest $request)
     {
-        // dd($request->all());
-        $assignedLotNumber = null;
         $consuptions = $request->cons;
-        if(!$consuptions)
+        $productionSlipId = isset($request->id) ? $request->id : null;
+        if(!$productionSlipId && !$consuptions)
         {
             return response()->json([
-                'message' => 'Atleast one line item must be there.',
+                'message' => 'Atleast one consuption line item must be there.',
                 'error' => "MO items are missing, please pull.",
             ], 422);
         }
@@ -453,21 +458,103 @@ class ErpProductionSlipController extends Controller
 
                 // }
 
-                $keys = ['deletedSiItemIds', 'deletedAttachmentIds'];
-                $deletedData = [];
 
-                foreach ($keys as $key) {
-                    $deletedData[$key] = json_decode($request->input($key, '[]'), true);
+                // ---------------------------------------------------------------
+                // Handle Deletion of Items and Manage Production Slip Stocks
+                // ---------------------------------------------------------------
+
+                // Define the keys we expect from the request for deleted records
+                $keys = ['deletedSiItemIds', 'deletedAttachmentIds', 'deletedConsItemIds'];
+
+                // Decode deleted items from request JSON into PHP arrays
+                // Example: request('deletedSiItemIds') = "[1,2,3]" -> [1,2,3]
+                $deletedData = collect($keys)->mapWithKeys(function ($key) use ($request) {
+                    return [$key => json_decode($request->input($key, '[]'), true)];
+                })->toArray();
+
+                // Initialise the deletion service
+                $pslipDeleteService = new PslipDeleteService();
+
+                // Centralised helper to handle service deletion responses
+                $deletion = function ($response) {
+                    if ($response['status'] === 'error') {
+                        \DB::rollBack(); // Revert DB changes if error occurs
+                        return response()->json([
+                            'message' => $response['message'],
+                            'error'   => ''
+                        ], 422);
+                    }
+                    return null; // Continue if success
+                };
+
+                // ---------------------------------------------------------------
+                // Delete Production Items
+                // ---------------------------------------------------------------
+                if ($result = $deletion($pslipDeleteService->deleteProductionItems($deletedData, $productionSlip))) {
+                    return $result;
                 }
-                $deleteService = new PslipDeleteService();
-                $deleteResponse = $deleteService->deleteByRequest($deletedData, $productionSlip);
-                if($deleteResponse['status'] === 'error') {
-                    \DB::rollBack();
-                    return response()->json([
-                        'message' => $deleteResponse['message'],
-                        'error' => ''
-                    ], 422);
+
+                // ---------------------------------------------------------------
+                // Delete Consumption Items
+                // ---------------------------------------------------------------
+                if ($result = $deletion($pslipDeleteService->deleteConsumptionItems($deletedData, $productionSlip))) {
+                    return $result;
                 }
+
+                // ---------------------------------------------------------------
+                // If no items remain in production slip, reset slip properties
+                // ---------------------------------------------------------------
+                if ($productionSlip->fresh()->items->isEmpty()) {
+                    $productionSlip->update([
+                        'mo_id'          => null,
+                        'is_last_station'=> 0,
+                        'station_id'     => null,
+                        'fg_sub_store_id'=> null,
+                        'rg_sub_store_id'=> null,
+                    ]);
+                }
+
+
+                // // Handle Delete Items and Manage Stocks
+
+                // $deletedData = [];
+                // $keys = ['deletedSiItemIds', 'deletedAttachmentIds', 'deletedConsItemIds'];
+
+                // foreach ($keys as $key) {
+                //     $deletedData[$key] = json_decode($request->input($key, '[]'), true);
+                // }
+
+                // $pslipDeleteService = new PslipDeleteService();
+                // // Delete Production Items
+                // $deleteProductionItems = $pslipDeleteService->deleteProductionItems($deletedData, $productionSlip);
+                // if($deleteProductionItems['status'] === 'error') {
+                //     \DB::rollBack();
+                //     return response()->json([
+                //         'message' => $deleteProductionItems['message'],
+                //         'error' => ''
+                //     ], 422);
+                // }
+
+                // // Delete Consumption Items
+                // $deleteConsumptionItems = $pslipDeleteService->deleteConsumptionItems($deletedData, $productionSlip);
+                // if($deleteConsumptionItems['status'] === 'error') {
+                //     \DB::rollBack();
+                //     return response()->json([
+                //         'message' => $deleteConsumptionItems['message'],
+                //         'error' => ''
+                //     ], 422);
+                // }
+
+                // //Remove deleted items from production slip
+                // if(!$productionSlip->fresh()->items->count()) {
+                //     $productionSlip->mo_id = null;
+                //     $productionSlip->is_last_station = 0;
+                //     $productionSlip->station_id = null;
+                //     $productionSlip->fg_sub_store_id = null;
+                //     $productionSlip->rg_sub_store_id = null;
+                //     $productionSlip->save();
+                // }
+
             } else { //Create
                 $productionSlip = ErpProductionSlip::create([
                     'organization_id' => $organizationId,
@@ -512,7 +599,10 @@ class ErpProductionSlipController extends Controller
                     'group_currency_exg_rate' => $currencyExchangeData['data']['group_currency_exg_rate'],
                 ]);
             }
+
                 $productionSlip -> save();
+
+
                 //Seperate array to store each item calculation
                 $itemsData = array();
                 if ($request -> item_id && count($request -> item_id) > 0) {
@@ -622,7 +712,6 @@ class ErpProductionSlipController extends Controller
                             : [];
 
                         $itemCheck = Item::find($psItem->item_id);
-                        // dd($itemCheck->loadInspectionChecklists());
 
                         if($inspectionReqired && $itemCheck && count($itemCheck->loadInspectionChecklists())) {
                             $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $itemCheck);
@@ -656,7 +745,6 @@ class ErpProductionSlipController extends Controller
                         // foreach ($bomDetails as $bomDetailKey => $bomDetail) {
                         $alternateId = null;
                         $consArr = [];
-                        // dd($consuptions);
                         foreach ($consuptions as $consuption) {
 
                             $alternateId = $consuption['alternate_id'] ?? null;
@@ -678,9 +766,6 @@ class ErpProductionSlipController extends Controller
                                 ], 422);
                             }
 
-
-
-                            // dd("attachments");
 
                             $bomDetail = MoBomMapping::find($consuption['mo_bom_cons_id']);
                             $item = Item::find($consuption['item_id']);
@@ -851,26 +936,16 @@ class ErpProductionSlipController extends Controller
                         // }
                     }
                 } else {
-                    if($request -> pslip_id && $request->document_status == ConstantHelper::SUBMITTED) {
+
+                    // If no production slip ID and request has slip ID with "SUBMITTED" status
+                    if (!$productionSlipId && $request->pslip_id && $request->document_status == ConstantHelper::SUBMITTED) {
                         DB::rollBack();
                         return response()->json([
-                            'message' => 'Please add atleast one row in product table.',
-                            'error' => "",
+                            'message' => 'Please add at least one row in product table.',
+                            'error'   => '',
                         ], 422);
                     }
                 }
-
-                //Remove deleted items from production slip
-                if(!$productionSlip->fresh()->items->count()) {
-                    $productionSlip->mo_id = null;
-                    $productionSlip->is_last_station = 0;
-                    $productionSlip->station_id = null;
-                    $productionSlip->fg_sub_store_id = null;
-                    $productionSlip->rg_sub_store_id = null;
-                    $productionSlip->save();
-                }
-
-
 
                 //Approval check
                 if ($request -> pslip_id)
@@ -953,6 +1028,8 @@ class ErpProductionSlipController extends Controller
                         } else {
                             $productionSlip->document_status = $request->document_status ?? ConstantHelper::DRAFT;
                         }
+
+
                     }
                 } else
                 { //Create condition
@@ -979,6 +1056,7 @@ class ErpProductionSlipController extends Controller
                     $productionSlip -> save();
                 }
                 $productionSlip -> save();
+
                 //Media
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $singleFile) {
@@ -988,6 +1066,7 @@ class ErpProductionSlipController extends Controller
 
                 # Issue Raws Materials
                 if($productionSlip->fresh()->items->count()) {
+
                     $maintainStockLedger = self::maintainStockLedger($productionSlip);
                     if($maintainStockLedger['status'] == 'error') {
                         DB::rollBack();
@@ -1034,6 +1113,7 @@ class ErpProductionSlipController extends Controller
                 }
 
                 if($productionSlip->fresh()->items->count()){
+
                     $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
                     if($moProdItemReceipt['status'] == 'error') {
                         DB::rollBack();
@@ -1075,9 +1155,6 @@ class ErpProductionSlipController extends Controller
                         }
                     }
                 }
-
-                // $checkPslipBomConsumption = PslipBomConsumption::where('pslip_id', $productionSlip?->id)->get();
-                // dd('checkPslipBomConsumption',$checkPslipBomConsumption, 'consArr', $consArr);
 
                 DB::commit();
 
@@ -1283,7 +1360,6 @@ class ErpProductionSlipController extends Controller
         // $user = Helper::getAuthenticatedUser();
         $detailIds = $pslip->fresh()->consumptions->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($pslip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $pslipStatus, 'issue');
-        // dd('issue', $issueRecords);
         // if(isset($issueRecords['message']) && $issueRecords['message'] != 'Success') {
         //     return $issueRecords['message'];
         // }
@@ -1316,7 +1392,6 @@ class ErpProductionSlipController extends Controller
                                 ->groupBy('document_detail_id')
                                 ->get();
 
-            // dd($stockLedgers->toArray());
 
             foreach($stockLedgers as $stockLedger) {
                 // $a = PslipBomConsumption::where('id',$stockLedger?->document_detail_id)->first();
@@ -1576,6 +1651,11 @@ class ErpProductionSlipController extends Controller
         $uom_id = $request->uom_id ?? null;
         $moBomMappingId = $request->mo_bom_mapping_id;
         $moBomMapping = MoBomMapping::find($moBomMappingId);
+
+        if(!$moBomMapping) {
+            return response()->json(['status' => 500, 'message' => "Errors: Mo Bom Mapping not found."], 500);
+        }
+
         $rm_type = 'R';
         $itemWipStationId = null;
         if($moBomMapping->rm_type =='sf') {
@@ -1584,14 +1664,14 @@ class ErpProductionSlipController extends Controller
         }
         $soItemId = null;
         $stocks = InventoryHelper::totalInventoryAndStock(
-            $request->item_id, 
-            $itemAttributes, 
-            $uom_id, 
+            $request->item_id,
+            $itemAttributes,
+            $uom_id,
             $storeId,
             $subStoreId,
             $soItemId,
-            $stationId, 
-            $rm_type, 
+            $stationId,
+            $rm_type,
             $itemWipStationId
         );
 
@@ -1603,6 +1683,6 @@ class ErpProductionSlipController extends Controller
         return $stockBalanceQty;
     }
 
- 
+
 
 }

@@ -209,6 +209,15 @@
                                                                 <label class="form-check-label" for="subType{{ $subType->id }}">{{ $subType->name }}</label>
                                                             </div>
                                                         @endforeach
+
+                                                          {{-- Scrap Checkbox --}}
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                <input type="hidden" name="is_scrap" value="0">
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1" 
+                                                                    {{ isset($item) && $item->is_scrap ? 'checked' : '' }} 
+                                                                    {{ $isItemReferenced ? 'disabled' : '' }}>
+                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
+                                                            </div>
                                                            {{-- Traded Item Checkbox --}}
                                                            
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
@@ -218,19 +227,10 @@
                                                             </div>
 
                                                             {{-- Asset Checkbox --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
                                                                 <input type="hidden" name="is_asset" value="0">
                                                                 <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }} {{ $isItemReferenced  ? 'disabled' : '' }}>
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
-                                                            </div>
-
-                                                            {{-- Scrap Checkbox --}}
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
-                                                                <input type="hidden" name="is_scrap" value="0">
-                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1" 
-                                                                    {{ isset($item) && $item->is_scrap ? 'checked' : '' }} 
-                                                                    {{ $isItemReferenced ? 'disabled' : '' }}>
-                                                                <label class="form-check-label" for="scrapCheckbox">Scrap</label>
                                                             </div>
                                                     </div>
                                                 </div>
@@ -791,24 +791,33 @@
                                                                     </select>
                                                                 </div>
 
-                                                                <div class="col-md-3 mb-1">
+                                                               <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Conversion</label>
-                                                                    <input type="text" name="storage_uom_conversion" class="form-control" placeholder="Enter Conversion" value="{{ $item->storage_uom_conversion ?? '' }}"{{ (isset($item) && $item->uom_id == $item->storage_uom_id) ? 'readonly' : '' }}>
+                                                                    <input type="text" name="storage_uom_conversion" class="form-control" 
+                                                                        placeholder="Enter Conversion"
+                                                                        value="{{ isset($item->storage_uom_conversion) ? number_format($item->storage_uom_conversion, 2, '.', '') : '' }}"
+                                                                        {{ (isset($item) && $item->uom_id == $item->storage_uom_id) ? 'readonly' : '' }}>
                                                                 </div>
 
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">No of Pack</label>
-                                                                    <input type="number" name="storage_uom_count" class="form-control" placeholder="Enter No of Pack" value="{{ $item->storage_uom_count ?? '' }}">
+                                                                    <input type="number" name="storage_uom_count" class="form-control" 
+                                                                        placeholder="Enter No of Pack"
+                                                                        value="{{ isset($item->storage_uom_count) ? number_format($item->storage_uom_count, 2, '.', '') : '' }}">
                                                                 </div>
 
                                                                 <div class="col-md-3 mb-1">
-                                                                    <label class="form-label">Storage Weight</label>
-                                                                    <input type="number" step="0.0001" name="storage_weight" class="form-control" placeholder="Enter Storage Weight in KG" value="{{ $item->storage_weight ?? '' }}">
+                                                                    <label class="form-label">Weight (kg)</label>
+                                                                    <input type="number" step="0.01" name="storage_weight" class="form-control" 
+                                                                        placeholder="Enter Storage Weight in KG"
+                                                                        value="{{ isset($item->storage_weight) ? number_format($item->storage_weight, 2, '.', '') : '' }}">
                                                                 </div>
 
                                                                 <div class="col-md-3 mb-1">
-                                                                    <label class="form-label">Storage Volume</label>
-                                                                    <input type="number"  step="0.0001" name="storage_volume" class="form-control" placeholder="Enter Storage Volume in CUM" value="{{ $item->storage_volume ?? '' }}">
+                                                                    <label class="form-label">Volume (cft)</label>
+                                                                    <input type="number" step="0.01" name="storage_volume" class="form-control" 
+                                                                        placeholder="Enter Storage Volume in CFT"
+                                                                        value="{{ isset($item->storage_volume) ? number_format($item->storage_volume, 2, '.', '') : '' }}">
                                                                 </div>
                                                             </div>
 
@@ -2766,7 +2775,7 @@
     });
 </script>
 <script>
- // storage-uom-start
+    // storage-uom-start
     $(document).ready(function () {
         function syncStorageFields() {
             const uomName = $('select[name="uom_id"] option:selected').text().trim().toUpperCase();
@@ -2774,22 +2783,31 @@
             const storageUomValue = $('select[name="storage_uom_id"]').val();
             const $conversionInput = $('input[name="storage_uom_conversion"]');
             const $countInput = $('input[name="storage_uom_count"]');
+
             if (storageUomValue) {
-                $conversionInput.val(1);
-                $countInput.val(1);
+                if (uomName === storageUomName) {
+                    $conversionInput.val(1);   
+                    $conversionInput.prop('readonly', true);
+                    $countInput.prop('readonly', false);
+                } else {
+                    $conversionInput.prop('readonly', false);
+                    $countInput.val(1);  
+                    $countInput.prop('readonly', true);
+                }
+                if (!$conversionInput.val()) $conversionInput.val(1);
+                if (!$countInput.val()) $countInput.val(1);
+
             } else {
                 $conversionInput.val('');
                 $countInput.val('');
-            }
-            if (uomName == storageUomName) {
-                $conversionInput.prop('readonly', true);
-            } else {
                 $conversionInput.prop('readonly', false);
+                $countInput.prop('readonly', false);
             }
         }
         syncStorageFields();
         $('select[name="uom_id"], select[name="storage_uom_id"]').on('change', syncStorageFields);
     });
+    
     // storage-uom-end
 
     //CapsLock-start
