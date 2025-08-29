@@ -8726,7 +8726,8 @@ class FinancialPostingHelper
             self::VENDOR_ACCOUNT => [],
         );
         $orgVendor = Vendor::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-            ->where('organization_id', $partyOrg->id)
+            ->where('group_id', $partyOrg->group_id)
+            ->where('company_id', $partyOrg->company_id)
             ->where('enter_company_org_id', $organization->id)
             ->where('company_name', $organization->name)->first();
 
@@ -8807,4 +8808,5 @@ class FinancialPostingHelper
         ]);
         return $postingArray;
     }
+    
 }

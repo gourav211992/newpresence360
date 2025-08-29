@@ -326,12 +326,14 @@
                                     <label class="form-label">Organization</label>
                                     <select id="organization_id" class="form-select select2" multiple>
                                         <option value="" disabled>Select</option>
-                                        @foreach ($organizations as $organization)
-                                        <option value="{{ $organization->organization->id }}"
-                                            {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
-                                            {{ $organization->organization->name }}
-                                        </option>
-                                    @endforeach
+                                        @forelse ($organizations ?? [] as $organization)
+                                            <option value="{{ $organization?->organization?->id }}"
+                                                {{ $organization?->organization?->id == $organizationId ? 'selected' : '' }}>
+                                                {{ $organization?->organization?->name }}
+                                            </option>
+                                        @empty
+                                            <option selected value="{{$organizationId??""}}">{{$organization??""}}</option>
+                                        @endforelse
 
                                 </select>
                                 </div>
