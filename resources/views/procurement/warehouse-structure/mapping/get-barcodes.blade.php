@@ -105,6 +105,14 @@
             if (window.feather) feather.replace({ width: 14, height: 14 });
         });
 
+        // Keep this near your DataTable code
+        const selectedSet = new Set(); // stores selected IDs
+
+        function updatePrintButtonState() {
+            const anySelected = selectedSet.size > 0;
+            $('#printBarcodesBtn').prop('disabled', !anySelected);
+        }
+
         $(function () {
             // Initialize DataTable
             const table = $('#wh-details-table').DataTable({
@@ -120,7 +128,10 @@
             });
 
             // Persist selected IDs across paging/search
-            const selectedSet = new Set(); // string IDs
+            selectedSet.clear();
+            $('#checkAll').prop('checked', false);
+            $('#wh-details-table tbody .row-check').prop('checked', false);
+            updatePrintButtonState(); // disables button on load
 
             function syncHeaderCheckbox() {
                 const $enabledOnPage = $('#wh-details-table tbody .row-check:enabled');
@@ -133,31 +144,33 @@
             // Restore checks on redraw
             table.on('draw.dt', function () {
                 $('#wh-details-table tbody .row-check').each(function () {
-                    const id = String($(this).val());
-                    $(this).prop('checked', selectedSet.has(id));
+                    const id = String(this.value);
+                    this.checked = selectedSet.has(id);
                 });
                 syncHeaderCheckbox();
+                updatePrintButtonState(); // keep button state correct after paging/search
             });
 
             // Row checkbox toggle
             $(document).on('change', '#wh-details-table tbody .row-check', function () {
                 const id = String($(this).val());
-                if ($(this).is(':checked')) selectedSet.add(id);
+                if (this.checked) selectedSet.add(id);
                 else selectedSet.delete(id);
 
-                $('#printBarcodesBtn').prop('disabled', false);
                 syncHeaderCheckbox();
+                updatePrintButtonState(); // enable if >0, disable if 0
             });
 
             // Select All (current page enabled rows only)
             $(document).on('change', '#checkAll', function () {
-                const checked = $(this).is(':checked');
+                const checked = this.checked;
                 $('#wh-details-table tbody .row-check:enabled').each(function () {
-                    const id = String($(this).val());
-                    $(this).prop('checked', checked);
+                    const id = String(this.value);
+                    this.checked = checked;
                     if (checked) selectedSet.add(id); else selectedSet.delete(id);
                 });
-                $('#printBarcodesBtn').prop('disabled', false);
+
+                updatePrintButtonState(); // enable if >0, disable if 0
             });
 
             // Print

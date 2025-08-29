@@ -88,6 +88,7 @@ class UserAuthenticate
         $user->db_name = $dbName;
         $request->merge(['db_name' => $dbName]);
         $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn() => $user);
 
         return $next($request);
     }
@@ -97,6 +98,7 @@ class UserAuthenticate
     {
 
         $tokenRow = PassportToken::dirtyDecode($token);
+
 
         $dbName = @$_COOKIE['sso_instance'];
         if ($dbName) {
@@ -121,6 +123,11 @@ class UserAuthenticate
             } else {
                 $authType = 'employee';
                 $user = Employee::find($authUser->authenticable_id);
+                $user->auth_user_id = $authUser->id;
+                $user->authenticable_type = $authUser->authenticable_type;
+                $user->auth_type = $authType;
+                $user->db_name = $dbName;
+                // Auth::guard('web2')->login($user);
                 $user->auth_user_id = $authUser->id;
                 $user->authenticable_type = $authUser->authenticable_type;
                 $user->auth_type = $authType;

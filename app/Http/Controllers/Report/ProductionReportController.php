@@ -175,11 +175,11 @@ class ProductionReportController extends Controller
                 fputcsv($handle, [
                     $row->pslip_book_code,
                     $row->pslip_document_number,
-                    $row->pslip_document_date,
+                    date('d-m-Y', strtotime($row->pslip_document_date)),
                     $row->mo_document_number,
-                    $row->mo_document_date,
+                    date('d-m-Y', strtotime($row->mo_document_date)),
                     $row->so_document_number,
-                    $row->so_document_date,
+                    date('d-m-Y', strtotime($row->so_document_date)),
                     $row->store_name,
                     $row->sub_store_name,
                     $row->pslip_item_code,
@@ -233,14 +233,15 @@ class ProductionReportController extends Controller
                     }
                 }
              
-                if ($request->filled('so_document_number')) {
-                    $so = explode('-', $request->so_document_number);
-                    $so_number=isset($so[1])?$so[1]:$request->so_document_number;
+                if ($request->filled('so_number')) {
+                    $so = explode('-', $request->so_number);
+                 
+                    $so_number=isset($so[1])?$so[1]:$request->so_number;
                     $query->where('so_document_number', 'like', '%' . $so_number . '%');
                 }
 
-                if ($request->filled('pwo_document_number')) {
-                    $pwo = explode('-', $request->pwo_document_number);
+                if ($request->filled('pwo_number')) {
+                    $pwo = explode('-', $request->pwo_number);
                     $pwo_number=isset($pwo[1])?$pwo[1]:'';
                     $query->where('pwo_document_number', 'like', '%' . $pwo_number . '%');
                 }
@@ -291,8 +292,38 @@ class ProductionReportController extends Controller
         $query = ProductionTracking::where('group_id', $groupId)
             ->where('company_id', $companyId)
             ->where('organization_id', $organizationId)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->get();
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                if ($request->filled('date_range')) {
+                    $dates = explode(' to ', $request->date_range);
+
+                    if (count($dates) === 2) {
+                        $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay()->format('Y-m-d');
+                        $endDate   = \Carbon\Carbon::parse($dates[1])->endOfDay()->format('Y-m-d');
+
+                        $query->whereDate('pwo_document_date', '>=', $startDate)
+                            ->whereDate('pwo_document_date', '<=', $endDate);
+                    }
+                }
+        
+
+                if ($request->filled('so_number')) {
+                    $so = explode('-', $request->so_number);
+                  
+                    $so_number=isset($so[1])?$so[1]:$request->so_number;
+                    $query->where('so_document_number', 'like', '%' . $so_number . '%');
+                }
+
+                if ($request->filled('pwo_number')) {
+                    $pwo = explode('-', $request->pwo_number);
+                    $pwo_number=isset($pwo[1])?$pwo[1]:'';
+                    $query->where('pwo_document_number', 'like', '%' . $pwo_number . '%');
+                }
+
+                if ($request->filled('item_code')) {
+                      
+                    $query->where('item_code', 'like', '%' . $request->item_code . '%');
+                }
+            $result = $query->get();
 
         $handle = fopen($localFilePath, 'w');
 
@@ -313,9 +344,9 @@ class ProductionReportController extends Controller
         ]);
 
        
-        foreach ($query as $row) {
+        foreach ($result as $row) {
             fputcsv($handle, [
-                $row->pwo_document_date,
+                date('d-m-Y', strtotime($row->pwo_document_date)),
                 $row->pwo_book_code . '-' . $row->pwo_document_number,
                 $row->item_code,
                 $row->item_name,
@@ -329,7 +360,7 @@ class ProductionReportController extends Controller
                 $row->so_book_code 
                     ? $row->so_book_code . '-' . $row->so_document_number 
                     : '-',
-                $row->so_document_date,
+                date('d-m-Y', strtotime($row->so_document_date)),
                 ]);
         }
 
@@ -338,7 +369,7 @@ class ProductionReportController extends Controller
         return response()->download($localFilePath)->deleteFileAfterSend(true);
     }
 
-    public function productionTrackingDetails($id)
+    public function productionTrackingDetails(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser(); 
         $organizationId = $user->organization_id;
@@ -353,6 +384,54 @@ class ProductionReportController extends Controller
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->where('id', $id)
                 ->first();
+
+        if ($request->ajax()) {
+                $query = DB::table('erp_pwo_so_mapping as a')
+                    ->leftJoin('erp_mfg_orders as b', 'b.id', '=', 'a.mo_id')
+                    ->leftJoin('erp_production_slips as c', 'c.mo_id', '=', 'b.id')
+                    ->leftJoin('erp_pslip_items as d', 'd.pslip_id', '=', 'c.id')
+                    ->leftJoin('erp_stations as e', 'e.id', '=', 'c.station_id')
+                    ->leftJoin('erp_sub_stores as f', 'f.id', '=', 'c.sub_store_id')
+                    ->select([
+                        'a.id as mapping_id',
+
+                        'b.book_code',
+                        'b.document_number',
+                        'b.document_date',
+
+                        DB::raw("CASE WHEN b.is_last_station = 1 THEN 'FINAL' ELSE 'WIP' END as type"),
+
+                        'c.book_code as pslip_book_code',
+                        'c.document_number as pslip_document_number',
+                        'c.document_date as pslip_document_date',
+                        'd.qty',
+                        'd.accepted_qty',
+                        'd.subprime_qty',
+                        'd.rejected_qty',
+                        'e.name',
+                        'f.name as sub_store_name',
+                        'f.code as sub_store_code'
+                    ])->where('b.group_id', $groupId)
+                    ->where('b.company_id', $companyId)
+                    ->where('b.organization_id', $organizationId)
+                    ->orderByDesc('a.id');
+                return DataTables::of($query)
+                ->addIndexColumn() 
+                ->filterColumn('document_date', function($query, $keyword) {
+                        // Match both Y-m-d and d-m-Y
+                        $query->where(function($q) use ($keyword) {
+                            $q->whereRaw("DATE_FORMAT(b.document_date, '%Y-%m-%d') like ?", ["%{$keyword}%"])
+                            ->orWhereRaw("DATE_FORMAT(b.document_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
+                        });
+                    })
+                ->filterColumn('pslip_document_date', function($query, $keyword) {
+                        $query->where(function($q) use ($keyword) {
+                            $q->whereRaw("DATE_FORMAT(c.document_date, '%Y-%m-%d') like ?", ["%{$keyword}%"])
+                            ->orWhereRaw("DATE_FORMAT(c.document_date, '%d-%m-%Y') like ?", ["%{$keyword}%"]);
+                        });
+                    })
+                ->make(true);
+        }
 
         return view('reports.productionDetails', compact('details'));
     }

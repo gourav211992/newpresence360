@@ -1847,24 +1847,6 @@ class InspectionController extends Controller
                         }
                     }
 
-                    // Ted History
-                    $inspectionTed = InspectionTed::where('header_id', $inspectionHeader->id)
-                        ->where('detail_id', $detail->id)
-                        ->where('ted_level', '=', 'D')
-                        ->get();
-
-                    if (!empty($inspectionTed)) {
-                        foreach ($inspectionTed as $key4 => $extraAmount) {
-                            $extraAmountData = $extraAmount->toArray();
-                            unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                            $extraAmountData['source_id'] = $extraAmount->id;
-                            $extraAmountData['header_id'] = $headerHistoryId;
-                            $extraAmountData['detail_id'] = $detailHistoryId;
-                            $extraAmountDataHistory = InspectionTedHistory::create($extraAmountData);
-                            $extraAmountDataId = $extraAmountDataHistory->id;
-                        }
-                    }
-
                     // Batch History
                     $inspectionBatch = InspBatchDetail::where('header_id', $inspectionHeader->id)
                         ->where('detail_id', $detail->id)
@@ -1918,22 +1900,6 @@ class InspectionController extends Controller
                             $checkListDataId = $checkListDataHistory->id;
                         }
                     }
-                }
-            }
-
-            // InspectionTed Header History
-            $inspectionTed = InspectionTed::where('header_id', $inspectionHeader->id)
-                ->where('ted_level', '=', 'H')
-                ->get();
-
-            if (!empty($inspectionTed)) {
-                foreach ($inspectionTed as $key4 => $extraAmount) {
-                    $extraAmountData = $extraAmount->toArray();
-                    unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                    $extraAmountData['pr_ted_id'] = $extraAmount->id;
-                    $extraAmountData['header_id'] = $headerHistoryId;
-                    $extraAmountDataHistory = InspectionTedHistory::create($extraAmountData);
-                    $extraAmountDataId = $extraAmountDataHistory->id;
                 }
             }
 

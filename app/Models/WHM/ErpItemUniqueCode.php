@@ -54,6 +54,9 @@ class ErpItemUniqueCode extends Model
         'manufacturing_year',
         'expiry_date',
         'serial_no',
+        'reference_type',
+        'reference_detail_id',
+        'reference_no',
     ];
 
     // protected  $casts = [

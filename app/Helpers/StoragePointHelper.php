@@ -357,7 +357,7 @@ class StoragePointHelper
     }
 
     // Save Storage Points
-    public static function saveStoragePoints($documentHeader, $documentDetailId = NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
+    public static function saveStoragePoints($documentHeader, $documentDetailId = NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL, $subStoreId = NULL)
     {
         $data = array();
         try{
@@ -367,16 +367,17 @@ class StoragePointHelper
                 return $data;
             }
 
+            // dd($documentHeader->id,$documentDetailId, $documentHeader->store_id, $documentHeader->sub_store_id,$bookType);
             $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('document_header_id',$documentHeader->id)
                 ->whereIn('document_detail_id',$documentDetailId)
                 ->where('store_id',$documentHeader->store_id)
-                ->where('sub_store_id',$documentHeader->sub_store_id)
+                ->where('sub_store_id',$subStoreId)
                 ->where('book_type','=',$bookType)
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereNull('utilized_id')
                 ->get();
-
+            
             if(empty($stockLedger)){
                 $message = "Stock Ledger not found.";
                 $data = self::errorResponse($message);

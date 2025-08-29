@@ -8581,7 +8581,7 @@ class FinancialPostingHelper
                     'debit_amt_group' => $debitAmtGroup,
                     'credit_amt_group' => $creditAmtGroup,
                     'entry_type' => $entryType,
-                    'due_date' => isset($post['due_date']) ? $post['due_date'] : $document->{$documentDateKey}
+                    'due_date' => isset($post['due_date']) ? $post['due_date'] : null
                 ]);
             }
         }

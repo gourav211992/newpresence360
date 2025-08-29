@@ -222,7 +222,7 @@ class InspectionHeaderHistory extends Model
 
     public function items()
     {
-        return $this->hasMany(InspectionDetail::class, 'header_id');
+        return $this->hasMany(InspectionDetailHistory::class, 'header_id');
     }
 
     public function ship_address()

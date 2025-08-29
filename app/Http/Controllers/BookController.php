@@ -1540,7 +1540,7 @@ class BookController extends Controller
                     return response()->json(['data' => [], 'message' => $docNum['error'], 'status' => 500]);
                 }
 
-                $lotNumber = InventoryHelper::generateLotNumber($request->document_date, $book->book_code, $docNum['document_number']);
+                $lotNumber = InventoryHelper::generateLotNumber($request->document_date, $book->book_code, $docNum['document_number'] ?? "");
                 $selectedDynamicFields = $book -> dynamic_fields() -> pluck('dynamic_field_id') -> toArray();
                 $dynamicFields = DynamicFieldDetail::select('id', 'header_id', 'name', 'data_type') -> whereIn('header_id', $selectedDynamicFields) -> whereHas('header') -> get();
                 $dynamicFieldsHTML = "";

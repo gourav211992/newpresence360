@@ -7,11 +7,11 @@
             <div class="content-header pocreate-sticky">
                 <div class="row">
                     <div class="content-header-left col-md-6 mb-2">
-                        <h2 class="content-header-title float-start mb-0">Production Tracking Report</h2>
+                        <h2 class="content-header-title float-start mb-0">Production Tracking</h2>
                         <div class="breadcrumb-wrapper">
                             <ol class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="{{ url('/') }}">Home</a></li>
-                                <li class="breadcrumb-item active">Production Tracking Report</li>
+                                <li class="breadcrumb-item active">Production Tracking</li>
                             </ol>
                         </div>
                     </div>
@@ -19,7 +19,7 @@
                         <button class="btn btn-dark btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                                     data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
 
-                        <a href="{{ route('productionTracking.download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                        <a href="{{ route('productionTracking.download', request()->all()) }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
                                 data-feather="download"></i> Export CSV
                         </a>
                     </div>
@@ -131,8 +131,8 @@
                             url: '{{ route('productionTracking.report') }}',
                             data: function(d) {
                                 d.date_range          = $('#fp-range').val();
-                                d.so_document_number  = $('#so_number').val();
-                                d.pwo_document_number  = $('#pwo_number').val();
+                                d.so_number  = $('#so_number').val();
+                                d.pwo_number  = $('#pwo_number').val();
                                 d.consumed_item_code  = $('#consumed_item_code').val();
                             }
                         },
@@ -147,7 +147,7 @@
                                     data: 'pwo_document_date',
                                     name: 'pwo_document_date',
                                     render: function (data, type, row) {
-                                        return row.pwo_document_date;
+                                        return formatDateDMY(row.pwo_document_date);
                                     }
                                 },
                                 {
@@ -204,7 +204,10 @@
                                 }, 
                                 {
                                     data: 'so_document_date',
-                                    name: 'so_document_date'
+                                    name: 'so_document_date',
+                                    render: function (data, type, row) {
+                                        return formatDateDMY(row.so_document_date);
+                                    }
                                 }, 
                                 {
                                     data: 'a.id',
@@ -214,41 +217,13 @@
                                     render: function (data, type, row) {
                                          let baseUrl = "{{ route('productionTracking.details', ':id') }}"; 
                                          baseUrl = baseUrl.replace(':id', row.id);
-                                        return '<a href="' + baseUrl + '" target="_blank" class="btn btn-sm btn-primary">' +
+                                    return '<a href="' + baseUrl + '" target="_blank" class="btn btn-sm btn-primary">' +
                                     '<i class="fa fa-external-link-alt"></i> ' +
                                     '</a>';
                                     }
                                 }                          
                         ],
-                        dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-                        buttons: [{
-                            extend: 'collection',
-                            className: 'btn btn-outline-secondary dropdown-toggle',
-                            text: feather.icons['share'].toSvg({
-                                class: 'font-small-4 mr-50'
-                            }) + 'Export',
-                            buttons: [
-                                {
-                                    extend: 'csv',
-                                    text: feather.icons['file-text'].toSvg({
-                                        class: 'font-small-4 mr-50'
-                                    }) + 'Csv',
-                                    className: 'dropdown-item',
-                                    title: 'pSlipReport',
-                                    exportOptions: {
-                                        columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-                                    }
-                                }
-                            ],
-                            init: function(api, node, config) {
-                                $(node).removeClass('btn-secondary');
-                                $(node).parent().removeClass('btn-group');
-                                setTimeout(function() {
-                                    $(node).closest('.dt-buttons').removeClass('btn-group')
-                                        .addClass('d-inline-flex');
-                                }, 50);
-                            }
-                        }],
+                      
                         drawCallback: function() {
                             feather.replace();
                         },
@@ -264,5 +239,16 @@
                     });
             }
         });
+
+        // Reusable function
+        function formatDateDMY(dateStr) {
+            if (!dateStr) return '';
+            let date = new Date(dateStr);
+            let day = String(date.getDate()).padStart(2, '0');
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
     </script>
 @endsection

@@ -30,6 +30,9 @@
                                     @endif">
                                 <i data-feather="plus-circle"></i> Add New
                             </a>
+                            <a href="{{ route('inspection-checklists.show.import') }}" class="btn btn-secondary btn-sm mb-50 me-1 mb-sm-0">
+                                <i data-feather="upload"></i> Import
+                            </a>
                     </div>
                 </div>
             </div>

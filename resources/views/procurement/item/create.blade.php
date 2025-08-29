@@ -717,7 +717,7 @@
                                                                     <select id="asset_category" name="asset_category_id" class="form-select mw-100 select2">
                                                                         <option value="">Select</option>
                                                                         @foreach($fixedAssetCategories as $fixedAssetCategory)
-                                                                            <option value="{{ $fixedAssetCategory->id }}">
+                                                                            <option value="{{ $fixedAssetCategory->asset_category_id }}">
                                                                                 {{ $fixedAssetCategory->assetCategory->name ?? 'N/A' }}
                                                                             </option>
                                                                         @endforeach

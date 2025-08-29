@@ -2,81 +2,83 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\ConstantHelper;
-use App\Helpers\Helper;
-use App\Helpers\InventoryHelper;
-use App\Helpers\ItemHelper;
-use App\Helpers\PackingList\Constants as PackingListConstants;
-use App\Helpers\SubStore\Constants as SubStoreConstants;
-use App\Helpers\ServiceParametersHelper;
-use App\Models\AuthUser;
-use App\Models\Book;
-use App\Models\CashCustomerDetail;
-use App\Models\Category;
-use App\Models\Customer;
-use App\Models\DiscountMaster;
-use App\Models\Employee;
-use App\Models\ErpBin;
-use App\Models\ErpMaterialIssueHeader;
-use App\Models\ErpMaterialReturnHeader;
-use App\Models\ErpMiItem;
-use App\Models\ErpProductionWorkOrder;
-use App\Models\ErpPsvHeader;
-use App\Models\ErpRack;
-use App\Models\ErpRfqHeader;
-use App\Models\ErpSaleInvoice;
-use App\Models\ErpSaleOrder;
-use App\Models\ErpShelf;
-use App\Models\ErpSoItem;
-use App\Models\ErpStore;
-use App\Models\ErpSubStore;
-use App\Models\ErpTransaction;
-use App\Models\ExpenseMaster;
+use DB;
+use Auth;
+use Carbon\Carbon;
+use App\Models\Bom;
 use App\Models\Hsn;
+use App\Models\Book;
 use App\Models\Item;
-use App\Models\JobOrder\JobOrder;
-use App\Models\LandLease;
-use App\Models\LandParcel;
-use App\Models\LandPlot;
-use App\Models\Ledger;
 use App\Models\Group;
-use App\Models\MfgOrder;
+use App\Models\ErpBin;
+use App\Models\Ledger;
 use App\Models\MoItem;
-use App\Models\Organization;
-use App\Models\OrganizationCompany;
-use App\Models\OrganizationService;
-use App\Models\PackingList;
-use App\Models\ProductSection;
-use App\Models\ProductSectionDetail;
-use App\Models\ProductSpecification;
-use App\Models\PurchaseIndent;
-use App\Models\PurchaseOrder;
-use App\Models\Scopes\DefaultGroupCompanyOrgScope;
+use App\Models\PiItem;
+use App\Models\Vendor;
+use App\Helpers\Helper;
+use App\Models\ErpRack;
 use App\Models\Service;
 use App\Models\Station;
 use App\Models\SubType;
-use App\Models\TermsAndCondition;
-use App\Models\Vendor;
-use App\Models\VendorItem;
-use App\Models\Department;
-use App\Models\Bom;
-use App\Models\MrnHeader;
-use App\Models\ProductionRoute;
-use App\Models\UnitMaster;
-use App\Models\HsnMaster;
+use App\Models\AuthUser;
+use App\Models\Category;
+use App\Models\Customer;
+use App\Models\Employee;
+use App\Models\ErpShelf;
+use App\Models\ErpStore;
+use App\Models\LandPlot;
+use App\Models\MfgOrder;
 use App\Models\Overhead;
-use App\Models\PiItem;
-use App\Models\ErpSubStoreParent;
-use App\Models\ItemAttribute;
-use App\Models\InspectionChecklist;
 use App\Models\Attribute;
-use App\Models\GateEntryHeader;
+use App\Models\ErpMiItem;
+use App\Models\ErpSoItem;
+use App\Models\HsnMaster;
+use App\Models\LandLease;
+use App\Models\MrnHeader;
 use App\Models\VendorAsn;
-use Auth;
-use Carbon\Carbon;
-use DB;
-use Illuminate\Console\Events\CommandStarting;
+use App\Models\Department;
+use App\Models\LandParcel;
+use App\Models\UnitMaster;
+use App\Models\VendorItem;
+use App\Helpers\ItemHelper;
+use App\Models\ErpSubStore;
+use App\Models\PackingList;
+use App\Models\ErpPslipItem;
+use App\Models\ErpPsvHeader;
+use App\Models\ErpRfqHeader;
+use App\Models\ErpSaleOrder;
+use App\Models\Organization;
 use Illuminate\Http\Request;
+use App\Models\ExpenseMaster;
+use App\Models\ItemAttribute;
+use App\Models\PurchaseOrder;
+use App\Models\DiscountMaster;
+use App\Models\ErpSaleInvoice;
+use App\Models\ErpTransaction;
+use App\Models\ProductSection;
+use App\Models\PurchaseIndent;
+use App\Helpers\ConstantHelper;
+use App\Models\GateEntryHeader;
+use App\Models\ProductionRoute;
+use App\Helpers\InventoryHelper;
+use App\Helpers\CostCenterHelper;
+use App\Models\ErpSubStoreParent;
+use App\Models\JobOrder\JobOrder;
+use App\Models\TermsAndCondition;
+use App\Models\CashCustomerDetail;
+use App\Models\InspectionChecklist;
+use App\Models\OrganizationCompany;
+use App\Models\OrganizationService;
+use App\Models\ProductSectionDetail;
+use App\Models\ProductSpecification;
+use App\Models\ErpMaterialIssueHeader;
+use App\Models\ErpProductionWorkOrder;
+use App\Models\ErpMaterialReturnHeader;
+use App\Helpers\ServiceParametersHelper;
+use Illuminate\Console\Events\CommandStarting;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
+use App\Helpers\SubStore\Constants as SubStoreConstants;
+use App\Helpers\PackingList\Constants as PackingListConstants;
 
 class AutocompleteController extends Controller
 {
@@ -444,7 +446,7 @@ class AutocompleteController extends Controller
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code','uom_id']);
-            }  elseif ($type === 'pi_comp_item') {
+            } elseif ($type === 'pi_comp_item') {
                 // $subTypeIds = SubType::whereNotIn('name', [ConstantHelper::FINISHED_GOODS])
                 // ->pluck('id');
                 // whereHas('subTypes', function ($query) use ($subTypeIds) {
@@ -453,6 +455,55 @@ class AutocompleteController extends Controller
                 //     ->
                 $results = Item::searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
+                    ->with([
+                    'itemAttributes:id',
+                    'uom:id,name'
+                    ])
+                    ->withCount('itemAttributes')
+                    ->limit(10)
+                    ->get(['id', 'item_name', 'item_code', 'uom_id']);
+            } elseif ($type === 'ps_comp_item') {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id ?? 0);
+                $results = ErpPslipItem::query()
+                    ->when(
+                        filled($request->selectedAllItemIds),
+                        fn($q) => $q->whereIn('id', $request->selectedAllItemIds)
+                    )
+                    ->whereHas('pslip', function ($pslip) use ($applicableBookIds, $request) {
+                        $pslip->whereIn('document_status', [
+                            ConstantHelper::APPROVED,
+                            ConstantHelper::APPROVAL_NOT_REQUIRED,
+                        ])
+                            ->when(
+                                filled($applicableBookIds),
+                                fn($q) => $q->whereIn('book_id', $applicableBookIds)
+                            )
+                            ->when(
+                                filled($request->store_id),
+                                fn($q) => $q->where('store_id', $request->store_id)
+                            )
+                            ->when(
+                                filled($request->sub_store_id),
+                                fn($q) => $q->where('rg_sub_store_id', $request->sub_store_id)
+                            )
+                            ->when(
+                                filled($request->pslip_id),
+                                fn($q) => $q->where('id', $request->pslip_id)
+                            );
+                    })
+                    ->when(
+                        filled($term),
+                        fn($q) => $q->whereHas('item', fn($item) => $item->searchByKeywords($term))
+                    )
+                    ->when(
+                        $request->type === 'scrap',
+                        fn($q) => $q->whereNull('erp_scrap_id')
+                            ->where('rejected_qty', '>', 0)
+                    );
+            } elseif ($type === 'scrap_comp_item') {
+                $results = Item::searchByKeywords($term)
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->where('is_scrap', '0')
                     ->with([
                     'itemAttributes:id',
                     'uom:id,name'
@@ -763,6 +814,7 @@ class AutocompleteController extends Controller
                     ->with(['uom:id,name'])
                     ->with(['hsn:id,code'])
                     ->with(['alternateUOMs.uom'])
+                    ->with(['assetCategory:id,name'])
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code', 'uom_id','hsn_id'])
@@ -1259,7 +1311,12 @@ class AutocompleteController extends Controller
                 if ($results->isEmpty()) {
                     $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0);
                 }
-            } elseif ($type === 'specification') {
+
+            } else if ($type === 'cost_center') {
+                $storeId = $request->store_id ?? 0;
+                $subStoreId = $request->sub_store_id ?? 0;
+                $results = CostCenterHelper::getAccessibleCostCenters($storeId ?? 0);
+            }  elseif ($type === 'specification') {
                 $results = ProductSpecification::where('name', 'LIKE', "%$term%")
                     ->where('status', ConstantHelper::ACTIVE)
                     ->get(['id', 'name', 'description']);

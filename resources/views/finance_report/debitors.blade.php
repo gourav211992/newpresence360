@@ -359,22 +359,6 @@
                                     </div>
                                 </div>
                                 <div class="row sortable">
-                                    <div class="col-md-12">
-                                    
-                                        <div class="demo-inline-spacing">
-                                            <div class="form-check form-check-primary mt-0">
-                                                <input type="radio" id="customColorRadio1" name="d"
-                                                    value="invoice" class="form-check-input" checked="">
-                                                <label class="form-check-label fw-bolder" for="customColorRadio1">Invoice Date</label>
-                                            </div>
-                                            <div class="form-check form-check-primary mt-0">
-                                                <input type="radio" id="service" name="d" value="due"
-                                                    class="form-check-input">
-                                                <label class="form-check-label fw-bolder" for="service">Due Date</label>
-                                            </div>
-                                        </div>
-                                    
-                                        </div>
                                     <!-- New input fields for days -->
                                     <div class="col-md-4">
                                         <div class="form-group">
@@ -839,7 +823,6 @@
             let cost_center = $('#cost_center_id').val();
             let cost_group = $('#cost_group_id').val();
             let organization = $('#organization_id').val();
-            let dueDate = $('input[name="d"]:checked').val();
             let range = $('#fp-range').val();
             let ages = [];
             let isAgingChecked = $('#selectAllInputAging').prop('checked'); // Check if the aging checkbox is checked
@@ -887,8 +870,6 @@
                 currentUrl.searchParams.set('cost_group_id', cost_group);
             else
                 currentUrl.searchParams.delete('cost_group_id');
-
-            if (dueDate) currentUrl.searchParams.set('d', dueDate); else currentUrl.searchParams.delete('d');
 
             // Add age values to the URL only if aging checkbox is checked
             if (isAgingChecked) {

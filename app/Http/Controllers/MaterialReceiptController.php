@@ -867,12 +867,13 @@ class MaterialReceiptController extends Controller
 
                         if (is_array($batchDetails)) {
                             foreach ($batchDetails as $i => $val) {
-                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                                // $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
                                 $batchDetail = new MrnBatchDetail();
                                 $batchDetail->header_id = $mrn->id;
                                 $batchDetail->detail_id = $mrnDetail->id;
                                 $batchDetail->item_id = $mrnDetail->item_id;
-                                $batchDetail->batch_number = $batchNo;
+                                // $batchDetail->batch_number = $batchNo;
+                                $batchDetail->batch_number = $val['batch_number'];
                                 $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
                                 $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
                                 $batchDetail->quantity = $val['quantity'] ?? null;
@@ -1905,12 +1906,13 @@ class MaterialReceiptController extends Controller
                             : $component['batch_details'];
                         if (is_array($batchDetails)) {
                             foreach ($batchDetails as $i => $val) {
-                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                                // $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
                                 $batchDetail = MrnBatchDetail::find($val['id'] ?? new MrnBatchDetail());
                                 $batchDetail->header_id = $mrn->id;
                                 $batchDetail->detail_id = $mrnDetail->id;
                                 $batchDetail->item_id = $mrnDetail->item_id;
-                                $batchDetail->batch_number = $batchNo;
+                                // $batchDetail->batch_number = $batchNo;
+                                $batchDetail->batch_number = $val['batch_number'];
                                 $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
                                 $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : null;
                                 $batchDetail->quantity = $val['quantity'] ?? null;

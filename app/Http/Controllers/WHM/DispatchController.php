@@ -24,11 +24,13 @@ class DispatchController extends Controller
         $subLocation = $request->input('sub_store_id');
         $jobs = ErpWhmJob::with(['morphable.book' => function($q){
                             $q->select('id','book_code');
-                        }, 'morphable.erpStore' => function($q){
-                            $q->select('id','store_name');
                         }, 'itemUniqueCodes' => function($q){
                             $q->select('id','job_id','item_id');
-                        }])
+                        },'store' => function($q){
+                            $q->select('id','store_name');
+                        },'subStore' => function($q){
+                            $q->select('id','name');
+                    }])
                     ->where('type', CommonHelper::DISPATCH)
                     ->when($search, function ($query) use ($search) {
                         $query->whereHasMorph('morphable', ['App\Models\ErpSaleInvoice'], function ($q) use ($search) {

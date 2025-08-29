@@ -51,7 +51,6 @@ class InspectionHelper
                 // Update quantities
                 $mrnItem->accepted_qty += $item->accepted_qty;
                 $mrnItem->rejected_qty += $item->rejected_qty;
-                $mrnItem->inventory_uom_qty += $item->inventory_uom_qty;
                 $mrnItem->accepted_inv_uom_id = $item->accepted_inv_uom_id;
                 $mrnItem->accepted_inv_uom_code = $item->accepted_inv_uom_code;
                 $mrnItem->accepted_inv_uom_qty += $item->accepted_inv_uom_qty;
@@ -383,13 +382,13 @@ class InspectionHelper
             // 3) If is_batch_no == 1 → manufacturing_year required, and
             //    if item->is_expiry_date == 1 → expiry_date required (Y-m-d)
             if ($isBatchNoEnabled) {
-                $manufacturing_year = $row['manufacturing_year'] ?? null;
-                if (!$isValidYear($manufacturing_year)) {
-                    return [
-                        'status'  => false,
-                        'message' => "Manufacturing year is required/invalid (row {$n}) for item: " . ($item->item_name ?? ''),
-                    ];
-                }
+                // $manufacturing_year = $row['manufacturing_year'] ?? null;
+                // if (!$isValidYear($manufacturing_year)) {
+                //     return [
+                //         'status'  => false,
+                //         'message' => "Manufacturing year is required/invalid (row {$n}) for item: " . ($item->item_name ?? ''),
+                //     ];
+                // }
 
                 if ($isExpiryDateNeeded) {
                     $expiry_date = $row['expiry_date'] ?? null;

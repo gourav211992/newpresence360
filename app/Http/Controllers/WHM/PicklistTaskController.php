@@ -14,9 +14,6 @@ use App\Http\Resources\WHM\PicklistResource;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\ErpPlHeader;
 use App\Models\ErpPlItem;
-use App\Models\InspectionDetail;
-use App\Models\InspectionHeader;
-use App\Models\MrnHeader;
 use App\Models\StockLedgerReservation;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
@@ -31,8 +28,10 @@ class PicklistTaskController extends Controller
         $search = $request->input('search');
         $location = $request->input('store_id');
         $subLocation = $request->input('sub_store_id');
-        $jobs = ErpWhmJob::with(['morphable.store' => function($q){
+        $jobs = ErpWhmJob::with(['store' => function($q){
                         $q->select('id','store_name');
+                    },'subStore' => function($q){
+                        $q->select('id','name');
                     }, 'morphable.items' => function($q){
                         $q->select('id','pl_header_id','picked_qty');
                     }])
@@ -164,22 +163,6 @@ class PicklistTaskController extends Controller
             $mrnIds = $reservedStock->pluck('receipt_detail_id')
                 ->toArray();
 
-            if(in_array($transType, [ConstantHelper::MRN_SERVICE_ALIAS])){
-                $mrnHeaderIds = $reservedStock->pluck('receipt_header_id')
-                ->toArray();
-
-                $inspIds = InspectionHeader::whereIn('mrn_header_id',$mrnHeaderIds)
-                    ->pluck('id')
-                    ->toArray();
-
-                if(!empty($inspIds)){
-                    $mrnIds = InspectionDetail::where('mrn_header_id',$mrnHeaderIds)
-                        ->where('header_id',$inspIds)
-                        ->pluck('id')
-                        ->toArray();
-                }
-            }
-
             $itemId = $plItem->item_id;
             
             // STEP 1: Fetch quantities grouped by storage_point_id
@@ -290,22 +273,6 @@ class PicklistTaskController extends Controller
         $mrnIds = $reservedStock->pluck('receipt_detail_id')
             ->toArray();
 
-        if(in_array($transType, [ConstantHelper::MRN_SERVICE_ALIAS])){
-            $mrnHeaderIds = $reservedStock->pluck('receipt_header_id')
-            ->toArray();
-
-            $inspIds = InspectionHeader::whereIn('mrn_header_id',$mrnHeaderIds)
-                ->pluck('id')
-                ->toArray();
-
-            if(!empty($inspIds)){
-                $mrnIds = InspectionDetail::where('mrn_header_id',$mrnHeaderIds)
-                    ->where('header_id',$inspIds)
-                    ->pluck('id')
-                    ->toArray();
-            }
-        }
-            
         $packets = ErpItemUniqueCode::whereIn('item_uid', $request->packet_ids)
             ->where('storage_point_id',$request->storage_point_id)
             ->where('item_id',$detail->item_id)
@@ -418,7 +385,7 @@ class PicklistTaskController extends Controller
 
             $mrnDetail = ErpItemUniqueCode::where('item_uid', $request->packet_id)
                 ->where('storage_point_id',$request->storage_point_id)
-                ->whereIn('morphable_type', ['App\Models\MrnDetail','App\Models\InspectionDetail'])
+                ->where('morphable_type', 'App\Models\MrnDetail')
                 ->where('status',CommonHelper::SCANNED)
                 ->where('utilized_id',$uniqueCode->uid)
                 ->first();
@@ -552,22 +519,6 @@ class PicklistTaskController extends Controller
         $mrnIds = $reservedStock->pluck('receipt_detail_id')
             ->toArray();
 
-        if(in_array($transType, [ConstantHelper::MRN_SERVICE_ALIAS])){
-            $mrnHeaderIds = $reservedStock->pluck('receipt_header_id')
-            ->toArray();
-
-            $inspIds = InspectionHeader::whereIn('mrn_header_id',$mrnHeaderIds)
-                ->pluck('id')
-                ->toArray();
-
-            if(!empty($inspIds)){
-                $mrnIds = InspectionDetail::where('mrn_header_id',$mrnHeaderIds)
-                    ->where('header_id',$inspIds)
-                    ->pluck('id')
-                    ->toArray();
-            }
-        }
-
         $scannedPacketsUids = ErpItemUniqueCode::where('job_id', $request->job_id)
                 ->where('morphable_id',$request->pl_item_id)
                 ->where('job_type',CommonHelper::PICKING)
@@ -669,22 +620,6 @@ class PicklistTaskController extends Controller
 
         $mrnIds = $reservedStock->pluck('receipt_detail_id')
             ->toArray();
-
-        if(in_array($transType, [ConstantHelper::MRN_SERVICE_ALIAS])){
-            $mrnHeaderIds = $reservedStock->pluck('receipt_header_id')
-            ->toArray();
-
-            $inspIds = InspectionHeader::whereIn('mrn_header_id',$mrnHeaderIds)
-                ->pluck('id')
-                ->toArray();
-
-            if(!empty($inspIds)){
-                $mrnIds = InspectionDetail::where('mrn_header_id',$mrnHeaderIds)
-                    ->where('header_id',$inspIds)
-                    ->pluck('id')
-                    ->toArray();
-            }
-        }
 
         $packets = ErpItemUniqueCode::where('storage_point_id',$storagePointId)
             ->where('item_id',$detail->item_id)

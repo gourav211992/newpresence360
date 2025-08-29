@@ -1405,7 +1405,8 @@
                                     brand_name: item.brand_name,
                                     model_no: item.model_no,
                                     estimated_life: item.expected_life,
-                                    salvage_percentage: item.getSalvagePercentage ?? 0,
+                                    salvage_percentage: item.salvage_percentage?? 0,
+                                    salvage_value: 0,
                                     procurement_type: 'BUY',
                                     is_batch_number: item.is_batch_no,
                                     is_expiry : item.is_expiry,
@@ -1461,7 +1462,6 @@
                             model_no: ui.item.model_no ?? '',
                             estimated_life: ui.item.estimated_life ?? '',
                             salvage_percentage: ui.item.salvage_percentage ?? 0,
-                            salvage_value: ui.item.salvage_percentage ?? 0,
                             procurement_type: ui.item.procurement_type ?? null,
                             capitalization_date: new Date().toISOString().split('T')[0]
                         };
