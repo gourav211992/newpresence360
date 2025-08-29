@@ -504,6 +504,7 @@ class ConstantHelper
         self::MATERIAL_RETURN_SERVICE_NAME => "Material Return",
         self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",
         self::JOURNAL_VOUCHER => "Journal Voucher",
+        self::OPENING_BALANCE => "Opening Balance",
         self::PRODUCTION_SLIP_SERVICE_ALIAS => "Production Slip",
         self::RFQ_SERVICE_ALIAS => "Request For Quotation",
         self::PQ_SERVICE_ALIAS => "Purchase Quotation",
