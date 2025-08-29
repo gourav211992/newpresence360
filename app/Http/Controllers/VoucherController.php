@@ -762,15 +762,18 @@ class VoucherController extends Controller
 
         $serviceAlias = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $fy_months = Helper::getCurrentFinancialYearMonths();
-        // dd($fy_months);
-        // if (count($serviceAlias['services']) == 0) {
-        //     return redirect()->route('/');
-        // }
+      
 
 
         $bookTypes = $serviceAlias['services'];
-        $bookTypes = collect($bookTypes)->whereIn('alias', [ConstantHelper::CONTRA_VOUCHER,ConstantHelper::JOURNAL_VOUCHER,ConstantHelper::OPENING_BALANCE])->values()??[];
-
+        $bookTypes = collect($bookTypes)
+            ->whereIn('alias', [
+                ConstantHelper::CONTRA_VOUCHER,
+                ConstantHelper::JOURNAL_VOUCHER,
+                ConstantHelper::OPENING_BALANCE
+            ])
+            ->unique('alias')  
+            ->values() ?? [];
         
 
         $lastVoucher = Voucher::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->select('book_type_id', 'book_id')->first();

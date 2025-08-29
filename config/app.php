@@ -178,7 +178,7 @@ return [
         App\Providers\ViewServiceProvider::class,
 
         // P360 Packages
-        P360\ClientConfig\P360ClientConfigServiceProvider::class,
+        //P360\ClientConfig\P360ClientConfigServiceProvider::class,
     ])->toArray(),
 
     /*

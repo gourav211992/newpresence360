@@ -90,6 +90,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Invoice Date</th>
+                                                <th>Due Date</th>
                                                 <th>Invoice No.</th>
                                                 <th>Voucher No.</th>
                                                 <th>O/S Days</th>
@@ -106,6 +107,7 @@
                                                 $i = 0;
                                                 $runningBalTotal = 0;
                                                 $runningOverDueTotal = 0;
+                                           
                                             @endphp
                                             @foreach ($data as $index => $d)
                                                 @if ($d->total_outstanding != 0)
@@ -120,6 +122,9 @@
                                                         <td>{{ $i }}</td>
                                                         <td class="fw-bolder text-dark">
                                                             <div data-bs-placement="top">{{ $d->document_date }}</div>
+                                                        </td>
+                                                          <td class="fw-bolder text-dark">
+                                                            <div data-bs-placement="top">{{ $d?->due_date ? \Carbon\Carbon::parse($d->due_date)->format('d-m-Y') : '' }}</div>
                                                         </td>
                                                         <td>{{ $d->bill_no }}</td>
                                                         <td>{{ $d->voucher_no }}</td>

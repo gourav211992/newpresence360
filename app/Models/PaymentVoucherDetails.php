@@ -61,5 +61,15 @@ class PaymentVoucherDetails extends Model
     {
         return $this->hasMany(VoucherReference::class, 'voucher_details_id');
     }
-
+    public function getOrganizationAttribute()
+    {
+        return $this->invoice()
+            ->with([
+                'voucher' => function ($query) {
+                    $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                        ->withoutGlobalScope('defaultLocation');
+                }
+            ])
+            ->first()?->voucher?->organization;
+    }
 }

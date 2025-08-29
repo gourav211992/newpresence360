@@ -32,10 +32,6 @@ Homestead.yaml
 
 # Composer dependencies
 composer.lock
-<<<<<<< HEAD
-=======
-composer.json
->>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
 auth.json
 
 # npm/Yarn error files
@@ -75,15 +71,6 @@ Thumbs.db
 
 # Ignore Laravel Telescope entries (if you use it)
 /telescope
-<<<<<<< HEAD
-=======
-.env
-
-# Do not track Composer files
-composer.json
-composer.lock
-
-# Ignore Composer files
-composer.json
-composer.lock
->>>>>>> 5140be1000e40c773569b4e3c3091c79e58e86d3
+config/app.php
+app/Http/Middleware/UserAuthenticate.php
+.gitignore
