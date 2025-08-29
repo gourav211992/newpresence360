@@ -1875,6 +1875,8 @@ class CrDrReportController extends Controller
         }
         else 
             $organizations = [Helper::getAuthenticatedUser()->organization_id];
+        
+        
         $cus_type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
         $ledger_account = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
         $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
@@ -1886,7 +1888,8 @@ class CrDrReportController extends Controller
         $ledger_ids = Ledger::where(function ($query) use ($group_id, $request) {
                 $query->where(function ($q) use ($group_id, $request) {
                     foreach ($group_id as $id) {
-                        $q->orWhereJsonContains('ledger_group_id', (string) $id)->orWhereJsonContains('ledger_group_id', $id);
+                        $q->orWhereJsonContains('ledger_group_id', (string) $id)
+                        ->orWhereJsonContains('ledger_group_id', $id);
                     }
 
                     $q->orWhereIn('ledger_group_id', $group_id);
@@ -1927,7 +1930,7 @@ class CrDrReportController extends Controller
             })
             ->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
-                        })->with([ 'ErpLocation' => function ($query) use ($request) {
+        })->with([ 'ErpLocation' => function ($query) use ($request) {
         $query->when(function () use ($request) {
             return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
         }, function ($q) {
@@ -1978,6 +1981,8 @@ class CrDrReportController extends Controller
                 ->groupBy('id')
                 ->orderBy('document_date', 'asc')
                 ->orderBy('created_at', 'asc');
+                //dd($data->orderByDesc('voucher_no')->get()->pluck('voucher_no'));
+           
 
             if ($request->filled('date')) {
                 // [$startDate, $endDate] = explode(' to ', $request->date);

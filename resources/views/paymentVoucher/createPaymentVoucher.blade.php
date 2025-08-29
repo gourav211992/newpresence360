@@ -121,7 +121,8 @@
                                                         <select class="form-select" id="book_id" name="book_id"
                                                             required onchange="getDocNumberByBookId()">
                                                             @foreach ($books as $book)
-                                                                <option value="{{ $book->id }}" {{ old('book_id') == $book->id ? 'selected' : '' }}>
+                                                                <option value="{{ $book->id }}"
+                                                                    {{ old('book_id') == $book->id ? 'selected' : '' }}>
                                                                     {{ strtoupper($book->book_code) }}
                                                                 </option>
                                                             @endforeach
@@ -140,7 +141,8 @@
                                                             name="voucher_no" required value="{{ old('voucher_no') }}"
                                                             readonly />
                                                         @error('voucher_no')
-                                                            <span class="text-danger" style="font-size:12px">{{ $message }}</span>
+                                                            <span class="text-danger"
+                                                                style="font-size:12px">{{ $message }}</span>
                                                         @enderror
                                                     </div>
                                                 </div>
@@ -153,9 +155,10 @@
 
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="date"
-                                                            id="date" required value="{{ old('document_date') ?? date('Y-m-d') }}"
+                                                            id="date" required
+                                                            value="{{ old('document_date') ?? date('Y-m-d') }}"
                                                             min="{{ $fyear['start_date'] }}"
-                                                        max="{{ $fyear['end_date'] }}" />
+                                                            max="{{ $fyear['end_date'] }}" />
                                                     </div>
 
                                                 </div>
@@ -167,21 +170,23 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                    <div class="demo-inline-spacing">
-                                                        <div class="form-check form-check-primary mt-25">
-                                                            <input type="radio" id="Bank" value="Bank"
-                                                                name="payment_type" class="form-check-input"
-                                                                {{ old('payment_type', 'Bank') == 'Bank' ? 'checked' : '' }}>
-                                                            <label class="form-check-label fw-bolder" for="Bank">Bank</label>
-                                                        </div>
-                                                        <div class="form-check form-check-primary mt-25">
-                                                            <input type="radio" id="Cash" value="Cash"
-                                                                name="payment_type" class="form-check-input"
-                                                                {{ old('payment_type') == 'Cash' ? 'checked' : '' }}>
-                                                            <label class="form-check-label fw-bolder" for="Cash">Cash</label>
+                                                        <div class="demo-inline-spacing">
+                                                            <div class="form-check form-check-primary mt-25">
+                                                                <input type="radio" id="Bank" value="Bank"
+                                                                    name="payment_type" class="form-check-input"
+                                                                    {{ old('payment_type', 'Bank') == 'Bank' ? 'checked' : '' }}>
+                                                                <label class="form-check-label fw-bolder"
+                                                                    for="Bank">Bank</label>
+                                                            </div>
+                                                            <div class="form-check form-check-primary mt-25">
+                                                                <input type="radio" id="Cash" value="Cash"
+                                                                    name="payment_type" class="form-check-input"
+                                                                    {{ old('payment_type') == 'Cash' ? 'checked' : '' }}>
+                                                                <label class="form-check-label fw-bolder"
+                                                                    for="Cash">Cash</label>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
                                                 </div>
 
@@ -192,9 +197,10 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="date" class="form-control" name="payment_date"
-                                                            id="payment_date" required value="{{ old('payment_date') ??date('Y-m-d') }}"
+                                                            id="payment_date" required
+                                                            value="{{ old('payment_date') ?? date('Y-m-d') }}"
                                                             min="{{ $fyear['start_date'] }}"
-                                                        max="{{ $fyear['end_date'] }}" />
+                                                            max="{{ $fyear['end_date'] }}" />
                                                     </div>
                                                 </div>
 
@@ -209,7 +215,8 @@
                                                         <select class="form-control select2 bankInput" name="bank_id"
                                                             id="bank_id" onchange="getAccounts()" required>
                                                             @foreach ($banks as $bank)
-                                                                <option value="{{ $bank->id }}" {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
+                                                                <option value="{{ $bank->id }}"
+                                                                    {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
                                                                     {{ $bank->bank_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -272,7 +279,7 @@
                                                             <option>Select Currency</option>
                                                             @foreach ($currencies as $currency)
                                                                 <option value="{{ $currency->id }}"
-                                                                    @if (old('currency_id') ?? $orgCurrency == $currency->id) selected @endif>
+                                                                    @if ($orgCurrency == $currency->id) selected @endif>
                                                                     {{ $currency->name . ' (' . $currency->short_name . ')' }}
                                                                 </option>
                                                             @endforeach
@@ -345,8 +352,8 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="locations" class="form-select"
-                                                            name="location" required>
+                                                        <select id="locations" class="form-select" name="location"
+                                                            required>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -357,12 +364,15 @@
                                                 </div>
                                                 {{-- @if (count($cost_centers) > 0) --}}
 
-                                                <div class="row align-items-center mb-1" id="costCenterRow" style="display: none;">
+                                                <div class="row align-items-center mb-1" id="costCenterRow"
+                                                    style="display: none;">
                                                     <div class="col-md-2">
-                                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Cost Center <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                        <select class="costCenter form-control select2"
+                                                            name="cost_center_id" id="cost_center_id">
                                                             {{-- options will be appended dynamically --}}
                                                         </select>
                                                     </div>
@@ -414,26 +424,34 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            @php $totalAmount = 0; $totalExcAmount = 0; @endphp
+                                                            @php
+                                                                $totalAmount = 0;
+                                                                $totalExcAmount = 0;
+                                                            @endphp
                                                             @if (isset($selectedRows) && !empty($selectedRows))
                                                                 @foreach ($selectedRows as $index => $voucher)
-                                                                @php $partyVoucher=[]; @endphp
-                                                                @foreach ($voucher['items'] as $i => $item)
+                                                                    @php $partyVoucher=[]; @endphp
+                                                                    @foreach ($voucher['items'] as $i => $item)
+                                                                        @php
 
-                                                                 @php
-                                                              
-                                                                $partyVoucher[] = [
-                                                                            'party_id' => (string) $item['ledger_id'],
-                                                                            'voucher_id' => (string) $item['voucher_id'],
-                                                                            'amount' => number_format((float) $item['settle_amt'], 2, '.', ''),
-                                                                        ];
-                                                                    @endphp
-
-                                                                @endforeach
+                                                                            $partyVoucher[] = [
+                                                                                'party_id' =>
+                                                                                    (string) $item['ledger_id'],
+                                                                                'voucher_id' =>
+                                                                                    (string) $item['voucher_id'],
+                                                                                'amount' => number_format(
+                                                                                    (float) $item['settle_amt'],
+                                                                                    2,
+                                                                                    '.',
+                                                                                    '',
+                                                                                ),
+                                                                            ];
+                                                                        @endphp
+                                                                    @endforeach
 
                                                                     @php $no = $index + 1;
-                                                                    $totalAmount += $voucher['amount'];
-                                                                    $totalExcAmount += $voucher['amount'];
+                                                                        $totalAmount += $voucher['amount'];
+                                                                        $totalExcAmount += $voucher['amount'];
                                                                     @endphp
 
                                                                     <tr class="approvlevelflow" id="{{ $no }}">
@@ -451,7 +469,8 @@
 
                                                                             <input type="hidden" name="party_vouchers[]"
                                                                                 id="party_vouchers{{ $no }}"
-                                                                                class="party_vouchers" value="{{ json_encode($partyVoucher) }}"/>
+                                                                                class="party_vouchers"
+                                                                                value="{{ json_encode($partyVoucher) }}" />
                                                                         </td>
 
                                                                         <td class="poprod-decpt">
@@ -507,8 +526,7 @@
                                                                             <input type="number"
                                                                                 class="form-control mw-100 text-end amount"
                                                                                 name="amount[]"
-                                                                                id="excAmount{{ $no }}"
-                                                                                readonly
+                                                                                id="excAmount{{ $no }}" readonly
                                                                                 value="{{ $voucher['amount'] }}"
                                                                                 required />
                                                                         </td>
@@ -520,11 +538,15 @@
                                                                                 value="{{ $voucher['amount'] }}"
                                                                                 required />
                                                                         </td>
-                                                                         <td>
-                                                                            <input type="number" class="form-control mw-100  bankInput reference_no" 
-                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
-                                                                                 />
-                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
+                                                                        <td>
+                                                                            <input type="number"
+                                                                                class="form-control mw-100  bankInput reference_no"
+                                                                                name="reference_no[]"
+                                                                                data-row="{{ $no }}"
+                                                                                id="reference_no{{ $no }}" />
+                                                                            <span class="text-danger bankInput"
+                                                                                id="reference_error{{ $no }}"
+                                                                                style="font-size:12px"></span>
                                                                         </td>
 
                                                                         <td>
@@ -567,8 +589,7 @@
                                                                         <input type="text" disabled
                                                                             placeholder="Select"
                                                                             class="form-control mw-100 mb-25 organization"
-                                                                            id="organization1"
-                                                                                />
+                                                                            id="organization1" />
                                                                     </td>
                                                                     <td>
 
@@ -598,9 +619,13 @@
                                                                             class="form-control mw-100 text-end amount_exc excAmount1"
                                                                             name="amount_exc[]" required /></td>
                                                                     <td>
-                                                                        <input type="number" class="form-control mw-100 bankInput reference_no" 
-                                                                            name="reference_no[]" data-row="1" id="reference_no1" />
-                                                                        <span class="text-danger bankInput" id="reference_error1" style="font-size:12px"></span>
+                                                                        <input type="number"
+                                                                            class="form-control mw-100 bankInput reference_no"
+                                                                            name="reference_no[]" data-row="1"
+                                                                            id="reference_no1" />
+                                                                        <span class="text-danger bankInput"
+                                                                            id="reference_error1"
+                                                                            style="font-size:12px"></span>
                                                                     </td>
                                                                     <td></td>
                                                                 </tr>
@@ -609,8 +634,12 @@
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
                                                                 <td colspan="7" class="text-end">Total</td>
-                                                                    <td class="text-end currentCurrencySum">{{ App\Helpers\Helper::formatIndianNumber($totalAmount) }}</td>
-                                                                    <td class="text-end orgCurrencySum">{{ App\Helpers\Helper::formatIndianNumber($totalExcAmount) }}</td>
+                                                                <td class="text-end currentCurrencySum">
+                                                                    {{ App\Helpers\Helper::formatIndianNumber($totalAmount) }}
+                                                                </td>
+                                                                <td class="text-end orgCurrencySum">
+                                                                    {{ App\Helpers\Helper::formatIndianNumber($totalExcAmount) }}
+                                                                </td>
                                                                 <td></td>
                                                             </tr>
                                                         </tfoot>
@@ -748,7 +777,7 @@
 
 @section('scripts')
     <script>
-        const token = "{{request('token')  }}";
+        const token = "{{ request('token') }}";
         let groupedData = @json([]);
         let rawItemData = @json([]);
     </script>
@@ -758,19 +787,24 @@
         var orgCurrency = {{ $orgCurrency }};
         var count = 2;
         var orgCurrencyName = '';
+
         function getMonthName(ym) {
             // ym = '2024-07'
             const [year, month] = ym.split('-');
             const d = new Date(year, parseInt(month) - 1);
-            return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+            return d.toLocaleString('default', {
+                month: 'long',
+                year: 'numeric'
+            });
         }
-        
+
         document.getElementById('date').addEventListener('input', function() {
-             if (!isDateAuthorized(this.value)) {
+            if (!isDateAuthorized(this.value)) {
                 this.value = '';
                 this.focus();
             }
         });
+
         function setAmount() {
             let isValid = true;
 
@@ -788,7 +822,7 @@
                     input.addClass('is-invalid');
                     input.after(
                         '<span class="invalid-feedback d-block" style="font-size:12px">Settle amount cannot be greater than balance.</span>'
-                        );
+                    );
                     isValid = false;
                 } else {
                     input.removeClass('is-invalid');
@@ -827,7 +861,7 @@
         function processVoucherRowsAndUpdateCache(deleteFlag = false, ledgerId = null) {
             let selectedFullVouchers = [];
 
-            $('.voucherRows').each(function () {
+            $('.voucherRows').each(function() {
                 const checkbox = $(this).find('.vouchers');
                 if (checkbox.is(':checked')) {
                     const voucherDataStr = $(this).attr('data-voucher');
@@ -859,8 +893,8 @@
                 },
                 body: JSON.stringify({
                     token: token,
-                    delete:deleteFlag,
-                    ledger_id:ledgerId,
+                    delete: deleteFlag,
+                    ledger_id: ledgerId,
                     rows: selectedFullVouchers
                 })
             }).then(res => {
@@ -945,38 +979,41 @@
                         $.each(response.data, function(index, val) {
                             console.log(val);
                             if (!preSelected.includes(val['id'].toString())) {
-                                $.each(val.items || [], function (i, item) {
+                                $.each(val.items || [], function(i, item) {
 
-                                var amount = 0.00;
-                                var checked = "";
-                                var dataAmount = parseFloat(val['balance']).toFixed(2);
+                                    var amount = 0.00;
+                                    var checked = "";
+                                    var dataAmount = parseFloat(val['balance']).toFixed(2);
 
-                                if (partyData != "" && partyData != undefined) {
-                                    $.each(JSON.parse(partyData), function(indexP, valP) {
-                                        if (valP['voucher_id'].toString() == val['id']) {
-                                            amount = (parseFloat(valP['amount'])).toFixed(2);
-                                            checked = "checked";
-                                            dataAmount = (parseFloat(valP['amount'])).toFixed(2);
-                                        }
-                                    });
-                                }
-
-                                const match = rawItemData.find(item =>
-                                    item.voucher_id == val.id &&
-                                    item.ledger_id == ledgerId
-                                );
-                                if (match) {
-                                    amount = parseFloat(match.settle_amt).toFixed(2);
-                                    if (parseFloat(amount) > 0) {
-                                        checked = "checked";
-                                        dataAmount = amount;
+                                    if (partyData != "" && partyData != undefined) {
+                                        $.each(JSON.parse(partyData), function(indexP, valP) {
+                                            if (valP['voucher_id'].toString() == val[
+                                                    'id']) {
+                                                amount = (parseFloat(valP['amount']))
+                                                    .toFixed(2);
+                                                checked = "checked";
+                                                dataAmount = (parseFloat(valP[
+                                                    'amount'])).toFixed(2);
+                                            }
+                                        });
                                     }
-                                }
 
-                                if (val['balance'] < 1 && checked == "") {
-                                    console.log('hii' + val['id']);
-                                } else {
-                                    html += `<tr id="${val['id']}" class="voucherRows" data-voucher='${JSON.stringify(val)}'>
+                                    const match = rawItemData.find(item =>
+                                        item.voucher_id == val.id &&
+                                        item.ledger_id == ledgerId
+                                    );
+                                    if (match) {
+                                        amount = parseFloat(match.settle_amt).toFixed(2);
+                                        if (parseFloat(amount) > 0) {
+                                            checked = "checked";
+                                            dataAmount = amount;
+                                        }
+                                    }
+
+                                    if (val['balance'] < 1 && checked == "") {
+                                        console.log('hii' + val['id']);
+                                    } else {
+                                        html += `<tr id="${val['id']}" class="voucherRows" data-voucher='${JSON.stringify(val)}'>
                                         <td>${index + 1}</td>
                                         <td>${val['date']}</td>
                                         <td class="fw-bolder text-dark">${val['series']?.book_code?.toUpperCase() ?? '-'}</td>
@@ -996,7 +1033,7 @@
                                                 <input type="hidden" class="ledger-id" value="${item.ledger_id}">
                                                 <input type="hidden" class="item-id" value="${item.id}">
                                         </tr>`;
-                                }
+                                    }
                                 });
                             }
                         });
@@ -1130,34 +1167,34 @@
                 return false;
             }
 
-             if ($("#Bank").is(":checked")) {
-                    let refError = false;
-                     // First check for empty references
-                    $('.reference_no').each(function() {
-                        const refNo = $(this).val().trim();
-                        const row = $(this).data('row');
-                        
-                        // if (refNo === '') {
-                        //     $(this).addClass('is-invalid');
-                        //     $('#reference_error' + row).text('Reference number is required');
-                        //     refError = true;
-                        // }
-                    });
-                    // Then check for duplicates
-                    if (!validateReferenceNumbers()) {
-                        refError = true;
-                    }
-                    
-                    if (refError) {
-                        $('.preloader').hide();
-                        showToast('error', 'Please fix reference number errors');
-                        $('#draft').attr('disabled', false);
-                        $('#submitted').attr('disabled', false);
-                        return false;
-                    }
+            if ($("#Bank").is(":checked")) {
+                let refError = false;
+                // First check for empty references
+                $('.reference_no').each(function() {
+                    const refNo = $(this).val().trim();
+                    const row = $(this).data('row');
+
+                    // if (refNo === '') {
+                    //     $(this).addClass('is-invalid');
+                    //     $('#reference_error' + row).text('Reference number is required');
+                    //     refError = true;
+                    // }
+                });
+                // Then check for duplicates
+                if (!validateReferenceNumbers()) {
+                    refError = true;
                 }
-                
-                return true;
+
+                if (refError) {
+                    $('.preloader').hide();
+                    showToast('error', 'Please fix reference number errors');
+                    $('#draft').attr('disabled', false);
+                    $('#submitted').attr('disabled', false);
+                    return false;
+                }
+            }
+
+            return true;
 
             //  $('input[name="reference_no[]"]').each(function () {
             //     if (!$(this).is(':visible')) {
@@ -1223,7 +1260,7 @@
             let hasNonInvoiceSelected = false;
             let allInvoice = true;
 
-            rows.each(function () {
+            rows.each(function() {
                 const value = $(this).val();
                 if (value !== 'Invoice') {
                     hasNonInvoiceSelected = true;
@@ -1256,7 +1293,7 @@
         $(document).on('change', '.invoiceDrop', function() {
             const rowId = $(this).attr('data-id');
             const selectedValue = $(this).val();
-            
+
             if (selectedValue == "Invoice") {
                 $('.invoice' + rowId).attr('disabled', false);
                 $('#excAmount' + rowId).attr('readonly', true).val('0.00');
@@ -1268,12 +1305,12 @@
                 $('.excAmount' + rowId).val('0.00'); // Set to 0.00 initially
                 $('#party_vouchers' + rowId).val('[]');
             }
-            
+
             // Trigger amount calculation if amount is not 0
             if (parseFloat($('#excAmount' + rowId).val())) {
                 $('#excAmount' + rowId).trigger('keyup');
             }
-            
+
             calculateTotal();
         });
 
@@ -1307,7 +1344,7 @@
                 input.addClass('is-invalid');
                 input.after(
                     '<span class="invalid-feedback d-block" style="font-size:12px">Settle amount cannot be greater than balance.</span>'
-                    );
+                );
             } else {
                 input.removeClass('is-invalid');
             }
@@ -1317,7 +1354,7 @@
         $(function() {
             function updateTotalColspan() {
                 const isBank = $("#Bank").is(":checked");
-                $(".totalsubheadpodetail td:first-child").attr("colspan","6");
+                $(".totalsubheadpodetail td:first-child").attr("colspan", "6");
             }
 
             // Initial update
@@ -1479,7 +1516,7 @@
             $('.mrntableselectexcel').on('click', '.deleteRow', function(e) {
                 e.preventDefault();
                 let row = $(this).closest('tr');
-                 let partyId = row.find('.ledgers').val(); // or use row.find('[id^="party_id"]').val();
+                let partyId = row.find('.ledgers').val(); // or use row.find('[id^="party_id"]').val();
 
                 // console.log('Party ID (ledger ID):', partyId);
 
@@ -1489,8 +1526,8 @@
                 // console.log(row)
                 // const ledgerId = row.find('.ledger-id').val();
                 if (token && token.trim() !== "") {
-                   processVoucherRowsAndUpdateCache(true, partyId);
-               }
+                    processVoucherRowsAndUpdateCache(true, partyId);
+                }
                 row.remove();
                 updateLevelNumbers();
                 // processVoucherRowsAndUpdateCache();
@@ -1551,19 +1588,19 @@
                         <input type="hidden" class="item-id">
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
-                
+
                 // Initialize reference tracking for the new row
                 $(`#reference_no${rowCount}`).on('input', function() {
                     validateReferenceNumbers();
                 });
-                
+
                 // Set visibility based on payment type
                 if ($("#Bank").is(":checked")) {
                     $(`#reference_no${rowCount}`).prop('required', true).closest('td').show();
                 } else {
                     $(`#reference_no${rowCount}`).prop('required', false).closest('td').hide();
                 }
-                
+
                 bind();
                 initializeAutocomplete();
                 updateLevelNumbers();
@@ -1616,11 +1653,13 @@
             var selectedMonth = dateValue.substring(0, 7);
             if (unauthorizedMonths.includes(selectedMonth)) {
                 var monthLabel = getMonthName(selectedMonth);
-                showToast('error', 'You are not authorized to select dates from ' + monthLabel + '. Please select another month.');
+                showToast('error', 'You are not authorized to select dates from ' + monthLabel +
+                    '. Please select another month.');
                 return false;
             }
             return true;
         }
+
         function submitForm(status) {
             var dateInput = document.getElementById('date');
             if (dateInput && !isDateAuthorized(dateInput.value)) {
@@ -1712,12 +1751,12 @@
             }
         }
         $(document).ready(function() {
-            if($('#bank_id').val() != "") {
-          getAccounts();
+            if ($('#bank_id').val() != "") {
+                getAccounts();
             }
-            if($('#locations').val() != "") {
+            if ($('#locations').val() != "") {
                 $('#locations').trigger('change');
-            
+
             }
             bind();
             // evaluateCostCenterVisibility();
@@ -1789,18 +1828,18 @@
         function calculateTotal() {
             let currentCurrencySum = 0;
             let orgCurrencySum = 0;
-            
+
             $('.amount').each(function() {
                 const value = parseFloat($(this).val()) || 0;
                 currentCurrencySum = parseFloat(parseFloat(currentCurrencySum + value).toFixed(2));
-                
+
                 // Calculate amount_exc for each row
                 const rowId = $(this).attr('id').replace('excAmount', '');
                 const excValue = value * parseFloat($('#orgExchangeRate').val() || 1);
                 $('.excAmount' + rowId).val(excValue.toFixed(2));
                 orgCurrencySum = parseFloat(parseFloat(orgCurrencySum + excValue).toFixed(2));
             });
-            
+
             $('.currentCurrencySum').text(formatIndianNumber(currentCurrencySum));
             $('.orgCurrencySum').text(formatIndianNumber(orgCurrencySum));
             $('#totalAmount').val(orgCurrencySum);
@@ -2009,9 +2048,9 @@
         function renderCostCentersForLocation(selectedLocationId) {
             const costCenterSet = locationCostCentersMap.filter(center => {
                 if (!center.location) return false;
-                const locationArray = Array.isArray(center.location)
-                    ? center.location.flatMap(loc => loc.split(','))
-                    : [];
+                const locationArray = Array.isArray(center.location) ?
+                    center.location.flatMap(loc => loc.split(',')) :
+                    [];
                 return locationArray.includes(String(selectedLocationId));
             });
 
@@ -2030,7 +2069,7 @@
                 $dropdown.empty();
             }
         }
-        let timer;
+       
 
         // Global variable to track reference numbers
         let referenceNumbers = {};
@@ -2040,28 +2079,28 @@
         function validateReferenceNumbers() {
             let duplicatesFound = false;
             let hasEmptyFields = false;
-            
+
             // Reset local duplicate tracking but keep server errors
-            referenceNumbers = {}; 
+            referenceNumbers = {};
 
             $('.reference_no').each(function() {
                 const $input = $(this);
                 const refNo = $input.val().trim();
                 const row = $input.data('row');
                 const $errorSpan = $('#reference_error' + row);
-                
+
                 // Clear previous local errors but preserve server errors
                 if (!serverValidationErrors[row]) {
                     $input.removeClass('is-invalid');
                     $errorSpan.text('');
                 }
-                
-                
+
+
                 // Skip empty references for duplicate check
                 if (refNo === '') {
                     return;
                 }
-                
+
                 // Track reference numbers and their rows
                 if (!referenceNumbers[refNo]) {
                     referenceNumbers[refNo] = [row];
@@ -2069,7 +2108,7 @@
                     referenceNumbers[refNo].push(row);
                 }
             });
-            
+
             // Highlight duplicates
             Object.entries(referenceNumbers).forEach(([refNo, rows]) => {
                 if (rows.length > 1) {
@@ -2083,63 +2122,84 @@
                     });
                 }
             });
-            
+
             return !duplicatesFound && !hasEmptyFields;
         }
 
 
 
         // Update the input event handler
-       $(document).on('input', '.reference_no', function() {
-       clearTimeout(timer);
-    
-            const $input = $(this);
-            const refNo = $input.val().trim();
-            const row = $input.data('row');
-            const $errorSpan = $('#reference_error' + row);
-            
-            // Clear server error if it exists for this field
-            if (serverValidationErrors[row]) {
-                delete serverValidationErrors[row];
-            }
-            
-            // Clear previous validation
-            $input.removeClass('is-invalid');
-            $errorSpan.text('');
-            
-            // First validate locally
-            validateReferenceNumbers();
-            
-            // Only check with server if reference is not empty and no local duplicates
-            if (refNo.length > 0) {
-                timer = setTimeout(function() {
-                    $.ajax({
-                        url: '{{ route('voucher.checkReference') }}',
-                        method: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}',
-                            reference_no: refNo,
-                            // Include all other reference numbers in the form
-                            otherRefs: Object.keys(referenceNumbers).filter(r => r !== refNo),
-                        },
-                        success: function(response) {
-                            if (response.exists) {
+        $(document).on('input', '.reference_no', function() {
+            //clearTimeout(timer);
+            triggerAllReferenceInputs();
+
+        });
+
+        function triggerAllReferenceInputs() {
+            $('.reference_no').each(function() {
+                const $input = $(this);
+                const refNo = $input.val().trim();
+                const row = $input.data('row');
+                const $errorSpan = $('#reference_error' + row);
+
+                // Clear server error if it exists for this field
+                if (serverValidationErrors[row]) {
+                    delete serverValidationErrors[row];
+                }
+
+                // Clear previous validation
+                $input.removeClass('is-invalid');
+                $errorSpan.text('');
+
+                // First validate locally
+                validateReferenceNumbers();
+                let otherRefs = $('.reference_no').map(function() {
+                        return $(this).val().trim();
+                }).get();
+
+                // Only check with server if reference is not empty and no local duplicates
+                if (refNo.length > 0) {
+                    timer = setTimeout(function() {
+                        $.ajax({
+                            url: '{{ route('voucher.checkReference') }}',
+                            method: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                reference_no: refNo,
+                                // Include all other reference numbers in the form
+                                otherRefs: otherRefs,
+                            },
+                            success: function(response) {
+                                let $matchedElements = $('.reference_no').filter(function() {
+                                    return $(this).val().trim() === refNo;
+                                });
+
+                                // Remove error text and invalid class for all matched elements
+                                $matchedElements.each(function() {
+                                    const row = $(this).data('row'); // assuming each input has data-row attribute
+                                    $(this).removeClass('is-invalid');
+                                    $('#reference_error' + row).text('');
+                                });
+                                if (response.exists) {
+                                    // Track this as a server validation error
+                                    serverValidationErrors[row] = true;
+                                    $errorSpan.text(response.message ||
+                                        'This reference number already exists.');
+                                    $input.addClass('is-invalid');
+                                }
+                            },
+                            error: function(xhr) {
                                 // Track this as a server validation error
                                 serverValidationErrors[row] = true;
-                                $errorSpan.text(response.message || 'This reference number already exists.');
+                                const errorMessage = xhr.responseJSON?.message ||
+                                    'Error validating reference number.';
+                                $errorSpan.text(errorMessage);
                                 $input.addClass('is-invalid');
                             }
-                        },
-                        error: function(xhr) {
-                            // Track this as a server validation error
-                            serverValidationErrors[row] = true;
-                            const errorMessage = xhr.responseJSON?.message || 'Error validating reference number.';
-                            $errorSpan.text(errorMessage);
-                            $input.addClass('is-invalid');
-                        }
-                    });
-                }, 500);
-            }
-        });
+                        });
+                    }, 500);
+                }
+            });
+        }
     </script>
 @endsection

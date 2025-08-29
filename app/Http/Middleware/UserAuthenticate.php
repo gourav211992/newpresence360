@@ -22,7 +22,7 @@ class UserAuthenticate
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $id = 8;
+        $id = 1;
         if (app()->environment('local')) {
             $authUser = AuthUser::find($id);
             Auth::guard('web')->login(Employee::find($id));

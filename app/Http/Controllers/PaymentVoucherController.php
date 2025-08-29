@@ -1731,12 +1731,18 @@ class PaymentVoucherController extends Controller
     }
     public function checkReference(Request $request)
     {
-        if (in_array($request->reference_no, $request->otherRefs ?? [])) {
+        $unique = count($request->otherRefs) === count(array_unique($request->otherRefs));
+        if(!$unique)
             return response()->json(['exists' => true]);
-        }
-        if ($request->edit_id)
+        
+        
+        if ($request->edit_id){
+            if (in_array($request->reference_no, $request->otherRefs ?? [])) {
+            return response()->json(['exists' => true]);
+            }
             $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)
                 ->where('payment_voucher_id', '!=', $request->edit_id)->exists();
+            }
         else
             $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)->exists();
 
