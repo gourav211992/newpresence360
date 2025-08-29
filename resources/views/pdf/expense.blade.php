@@ -384,7 +384,7 @@
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{@$val->accepted_qty}}
+                        {{number_format(@$val->accepted_qty, 2)}}
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
@@ -392,7 +392,7 @@
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{@$val->rate}}
+                        {{number_format(@$val->rate, 2)}}
                     </td>
                     @php
                         $total = $val->accepted_qty * $val->rate;

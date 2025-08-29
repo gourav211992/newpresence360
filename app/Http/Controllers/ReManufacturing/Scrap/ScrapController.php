@@ -89,7 +89,7 @@ class ScrapController extends Controller
         $selecteduserId = $user->auth_user_id;
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
 
-        return view('remanufacturing.scrap.create', [
+        return view('remanufacturing.scrap.create_edit', [
             'books' => $books,
             'users' => $users['data'],
             'locations' => $locations,
@@ -108,39 +108,39 @@ class ScrapController extends Controller
         $user = Helper::getAuthenticatedUser();
         $serviceAlias = ConstantHelper::SCRAP_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
-        $erpScrap = ErpScrap::find($id);
-        $createdBy = $erpScrap->created_by;
-        $revision_number = $erpScrap->revision_number ?? 0;
+        $scrap = ErpScrap::find($id);
+        $createdBy = $scrap->created_by;
+        $revision_number = $scrap->revision_number ?? 0;
         $creatorType = Helper::userCheck()['type'];
-        $buttons = Helper::actionButtonDisplay($erpScrap->book_id, $erpScrap->document_status, $erpScrap->id, 0, $erpScrap->approval_level, $erpScrap->created_by ?? 0, $creatorType, $revision_number);
+        $buttons = Helper::actionButtonDisplay($scrap->book_id, $scrap->document_status, $scrap->id, 0, $scrap->approval_level, $scrap->created_by ?? 0, $creatorType, $revision_number);
 
-        $revNo = $erpScrap->revision_number;
+        $revNo = $scrap->revision_number;
         if ($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
-            $revNo = $erpScrap->revision_number;
+            $revNo = $scrap->revision_number;
         }
 
-        $selectedfyYear = Helper::getFinancialYear($erpScrap->document_date ?? Carbon::now()->format('Y-m-d'));
-        $approvalHistory = Helper::getApprovalHistory($erpScrap->book_id, $erpScrap->id, $revNo, 0, $createdBy);
+        $selectedfyYear = Helper::getFinancialYear($scrap->document_date ?? Carbon::now()->format('Y-m-d'));
+        $approvalHistory = Helper::getApprovalHistory($scrap->book_id, $scrap->id, $revNo, 0, $createdBy);
 
-        $view = 'remanufacturing.scrap.edit';
-        if ($request->has('revisionNumber') && $request->revisionNumber != $erpScrap->revision_number) {
-            $erpScrap = $erpScrap->source()->where('revision_number', $request->revisionNumber)->first();
+        $view = 'remanufacturing.scrap.create_edit';
+        if ($request->has('revisionNumber') && $request->revisionNumber != $scrap->revision_number) {
+            $scrap = $scrap->source()->where('revision_number', $request->revisionNumber)->first();
             $view = 'remanufacturing.scrap.view';
         }
 
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$erpScrap->document_status] ?? '';
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$scrap->document_status] ?? '';
         $departmentsData = UserHelper::getDepartments($user->auth_user_id ?? 0);
         $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
-        $selecteduserId = $erpScrap?->user_id;
+        $selecteduserId = $scrap?->user_id;
         $isEdit = $buttons['submit'];
         if (!$isEdit) {
             $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true : false;
         }
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $parameters = [];
-        $response = BookHelper::fetchBookDocNoAndParameters($erpScrap->book_id, $erpScrap->document_date);
+        $response = BookHelper::fetchBookDocNoAndParameters($scrap->book_id, $scrap->document_date);
         if ($response['status'] === 200) {
             $parameters = json_decode(json_encode($response['data']['parameters']), true);
         }
@@ -148,7 +148,7 @@ class ScrapController extends Controller
         return view($view, [
             'isEdit' => $isEdit,
             'books' => $books,
-            'erpScrap' => $erpScrap,
+            'scrap' => $scrap,
             'buttons' => $buttons,
             'approvalHistory' => $approvalHistory,
             'docStatusClass' => $docStatusClass,

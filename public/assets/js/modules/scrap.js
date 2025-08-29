@@ -693,16 +693,16 @@ function setServiceParameters(parameters) {
         docDateInput.removeAttr("max");
     }
     /*Reference from*/
-    let reference_from_service = parameters.reference_from_service;
+    let reference_type_service = parameters.reference_type_service;
 
-    if (reference_from_service.length) {
+    if (reference_type_service.length) {
         let scrap = "{{ AppHelpersConstantHelper::SCRAP_SERVICE_ALIAS }}";
-        if (reference_from_service.includes(scrap)) {
-            $("#reference_from").removeClass("d-none");
+        if (reference_type_service.includes(scrap)) {
+            $("#reference_type").removeClass("d-none");
         } else {
-            $("#reference_from").addClass("d-none");
+            $("#reference_type").addClass("d-none");
         }
-        if (reference_from_service.includes("d")) {
+        if (reference_type_service.includes("d")) {
             $("#addNewItemBtn").removeClass("d-none");
         } else {
             $("#addNewItemBtn").addClass("d-none");
@@ -871,6 +871,8 @@ function getDynamicParams() {
 }
 
 function getProductionSlips() {
+    console.log(type);
+
     const ajaxUrl = getPsRoute.replace(":type", type);
     var columns = [
         {

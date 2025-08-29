@@ -237,41 +237,41 @@ class Helper
             'type' => $user->authenticable_type ?? null,
             'full_user' => $user
         ]);
-    
+
         $startDate = request()->cookie('fyear_start_date') ?? date('Y-m-d');
         $endDate = request()->cookie('fyear_end_date') ?? date('Y-m-d');
-    
+
         \Log::info('Cookies for Financial Year:', [
             'startDate' => $startDate,
             'endDate'   => $endDate,
         ]);
-    
+
         if (!$startDate || !$endDate) {
             \Log::warning('Missing financial year start/end date cookies.');
             return [];
         }
-    
+
         // 1. Find current financial year
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
         \Log::info('Financial Year from Helper:', $financialYear);
-    
+
         if (!$financialYear['authorized']) {
             \Log::warning('User not authorized for current financial year', [
                 'financialYear' => $financialYear
             ]);
             return [];
         }
-    
+
         // 2. Get all ErpFyMonth for this financial year
         $months = ErpFyMonth::where('fy_id', $financialYear['id'])
             ->orderBy('start_date')
             ->get();
-    
+
         \Log::info('Fetched months:', $months->toArray());
-    
+
         $currentUserId = $user->auth_user_id;
         $currentUserType = $user->authenticable_type;
-    
+
         $result = [];
         foreach ($months as $month) {
             $authorized = true;
@@ -281,11 +281,11 @@ class Helper
                 'end_date'   => $month->end_date,
                 'access_by'  => $month->access_by,
             ]);
-    
+
             if (is_array($month->access_by)) {
                 foreach ($month->access_by as $entry) {
                     \Log::debug('Access check entry:', $entry);
-    
+
                     if (
                         isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
                         $entry['user_id'] == $currentUserId &&
@@ -306,14 +306,14 @@ class Helper
                     }
                 }
             }
-    
+
             $monthData = $month->toArray();
             $monthData['authorized'] = $authorized;
             $result[] = $monthData;
         }
-    
+
         \Log::info('Final month result:', $result);
-    
+
         return $result;
     }
 
@@ -3122,9 +3122,9 @@ class Helper
         return $html;
     }
 
-    public static function getAccessibleServicesFromMenuAlias(string $menuAlias, string $selectedServiceAlias = ''): array
+    public static function getAccessibleServicesFromMenuAlias(string $menuAlias, string $selectedServiceAlias = '', $authUser = null): array
     {
-        $authUser = Helper::getAuthenticatedUser();
+        $authUser = $authUser ?: Helper::getAuthenticatedUser();
         $organizationMenu = OrganizationMenu::withDefaultGroupCompanyOrg()->where([
             ['alias', $menuAlias]
         ])->first();
@@ -3262,9 +3262,11 @@ class Helper
         }
     }
 
-    public static function getPolicyByServiceId($serviceId)
+    public static function getPolicyByServiceId($serviceId, $authUser = null)
     {
-        $authUser = Helper::getAuthenticatedUser();
+
+        $authUser = $authUser ?: Helper::getAuthenticatedUser();
+
         if (!$authUser) {
             return [
                 'error' => 'User not authenticated.'
@@ -3502,13 +3504,13 @@ class Helper
 
         $parentUrl = $parentUrlAlias ?? '';
 
-        $services = self::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services = self::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
 
         if ($services && $services['services'] && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
 
-            $policyData = self::getPolicyByServiceId($serviceId);
+            $policyData = self::getPolicyByServiceId($serviceId, $user);
 
             if ($policyData && isset($policyData['policyLevelData'])) {
                 $policyLevelData = $policyData['policyLevelData'];
@@ -4075,10 +4077,10 @@ class Helper
                         ->doesntHave('asset'); // must not have linked asset
                 })
                 ->exists();
-            
+
             $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
 
-            
+
             if ($assets && !$mrn_assets->isEmpty()) {
                 $mrn = MrnHeader::find($mrn_id);
                 if (empty($mrn)) {
@@ -4115,7 +4117,7 @@ class Helper
 
                 $glPostingBookId = $glPostingBookParam->parameter_value[0];
 
-                
+
                 foreach ($mrn_assets as $mrn_asset) {
                     $category_id = $mrn_asset->asset_category_id;
                     $asset_name = $mrn_asset->asset_name;
@@ -4277,7 +4279,7 @@ class Helper
                     $mrn_asset->save();
                     $asset->updateUniqueCodes();
                 }
-                
+
 
                 DB::commit();
 
@@ -4309,7 +4311,7 @@ class Helper
     public static function access_org(){
         $user = Helper::getAuthenticatedUser();
         $companies = $user?->access_rights_org;
-        
+
         $companies = ($companies && $companies->isNotEmpty())
     ? $companies
     : collect([$user]);

@@ -56,7 +56,7 @@
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
       </td>
-      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" readonly /></td>
+      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" readonly step="any"/></td>
       <td>
          <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->accepted_qty*$item->rate)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
       </td>

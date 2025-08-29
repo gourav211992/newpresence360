@@ -128,7 +128,7 @@
                                                         <label class="form-label">Location <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select header_store_id" id="header_store_id" readonly>
+                                                        <select class="form-select header_store_id" id="header_store_id" name="header_store_id" readonly>
                                                             @foreach($locations as $erpStore)
                                                                 <option value="{{$erpStore->id}}"
                                                                     {{ $mrn->store_id == $erpStore->id ? 'selected' : '' }}>

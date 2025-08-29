@@ -69,7 +69,7 @@
             value="{{$availableQty}}" step="any" />
         </td>
         <td>
-            <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
+            <input type="number" step="any"  name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
         </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{$availableQty*$item->rate}}"  class="form-control text-end mw-100 basic_value checkNegativeVal" readonly step="any" />

@@ -390,7 +390,7 @@ class ExpenseAdviseController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
                 foreach ($request->all()['exp_summary'] as $expValue) {
-                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                    $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
                 }
 
             if (isset($request->all()['components'])) {
@@ -690,6 +690,9 @@ class ExpenseAdviseController extends Controller
                             $ted = new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
                             $ted->expense_detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup  =  $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -1090,7 +1093,7 @@ class ExpenseAdviseController extends Controller
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
                 foreach ($request->all()['exp_summary'] as $expValue) {
-                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                    $totalHeaderExpense += floatval($expValue['total'] ?? $expValue['e_amnt']) ?? 0.00;
                 }
 
             if (isset($request->all()['components'])) {
@@ -1376,6 +1379,9 @@ class ExpenseAdviseController extends Controller
                             $ted = ExpenseTed::find($expenseAmountId) ?? new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
                             $ted->expense_detail_id = null;
+                            $ted->hsn_id = $dis['hsn_id'] ?? null;
+                            $ted->tax_amount = $dis['tax_amount'] ?? 0.00;
+                            $ted->tax_breakup  =  $dis['tax_breakup'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -2647,11 +2653,10 @@ class ExpenseAdviseController extends Controller
 
                 $discounts->push($headerDiscount);
             }
-
             foreach ($po->headerExpenses as $headerExpense) {
-                $headerExpense['ted_perc'] = intval($headerExpense->ted_perc)
-                    ? $headerExpense->ted_perc
-                    : (floatval($headerExpense->ted_amount) / floatval($headerExpense->assesment_amount)) * 100;
+                // $headerExpense['ted_perc'] = intval($headerExpense->ted_perc)
+                //     ? $headerExpense->ted_perc
+                //     : (floatval($headerExpense->ted_amount) / floatval($headerExpense->assesment_amount)) * 100;
 
                 $expenses->push($headerExpense);
             }

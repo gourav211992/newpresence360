@@ -594,6 +594,7 @@
     <script type="text/javascript">
         let actionUrlTax = '{{route("expense-adv.tax.calculation")}}';
         var qtyChangeUrl = '{{ route("expense-adv.get.validate-quantity") }}';
+        let taxCalUrl = '{{ route('tax.group.calculate') }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -2142,6 +2143,13 @@
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
             $("#" + selector).autocomplete({
                 source: function(request, response) {
+                    let ids = [];
+                    $('.modal.show').find("tbody tr").each(function(index, item) {
+                        let tedId = $(item).find("input[name*='ted_']").val();
+                        if (tedId) {
+                            ids.push(tedId);
+                        }
+                    });
                     $.ajax({
                         url: '/search',
                         method: 'GET',
@@ -2149,6 +2157,7 @@
                         data: {
                             q: request.term,
                             type:type,
+                            ids: JSON.stringify(ids)
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -2156,6 +2165,7 @@
                                     id: item.id,
                                     label: `${item.name}`,
                                     percentage: `${item.percentage}`,
+                                    hsn_id: item.hsn_id,
                                 };
                             }));
                         },
@@ -2167,12 +2177,14 @@
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
-                    var itemName = ui.item.label;
                     var itemId = ui.item.id;
+                    var hsnId = ui?.item?.hsn_id;
+                    var itemName = ui.item.label;
                     var itemPercentage = ui.item.percentage;
 
                     $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
+
+                    $("#" + idSelector).val(itemId).attr("data-hsn-id", hsnId);
                     $("#" + nameSelector).val(itemName);
                     $("#" + percentageVal).val(itemPercentage).trigger('keyup');
                     return false;
@@ -2180,7 +2192,7 @@
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
-                        $("#" + idSelector).val("");
+                        $("#" + idSelector).val("").attr("data-hsn-id", "");
                         $("#" + nameSelector).val("");
                     }
                 }
@@ -2422,27 +2434,63 @@
                             index = index + 1;
                             rows+=`<tr class="display_summary_exp_row">
                                     <td>${index}</td>
-                                    <td>${item.ted_name}
-                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                    </td>
-                                    <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                        <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                                        <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                    <td class="text-right">
+                                        ${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][hsn_id]" value="${item.hsn_id}">
+                                        <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
                                     </td>
                                     <td class="text-end">
-                                    <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                        ${parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][e_amnt]"
+                                            value="${(item.ted_amount ?? "0").toString().replace(/,/g, '')}">
+                                    </td>
+                                    <td class="text-end">
+                                        ${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][tax_amount]"
+                                            value="${parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, '')).toFixed(2)}">
+                                    </td>
+                                    <td class="text-end">
+                                        ${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}
+                                        <input type="hidden"
+                                            name="exp_summary[${index}][total]"
+                                            value="${(parseFloat((item.ted_amount ?? "0").toString().replace(/,/g, '')) +
+                                                        parseFloat((item.tax_amount ?? "0").toString().replace(/,/g, ''))).toFixed(2)}">
                                     </td>
                                     <td>
-                                        <a href="javascript:;" class="text-danger deleteExpRow">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                        </a>
+                                        ${item.tax_breakup ? formatTaxBreakup(item.tax_breakup) : ''}
+                                        <input type="hidden" name="exp_summary[${index}][tax_breakup]" value='${item.tax_breakup ?? ''}'>
+                                    </td>
+                                    <td>
+                                        <!-- <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a> -->
                                     </td>
                                 </tr>`;
                         });
-                        $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                        $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                        if (!$(".display_summary_exp_row").length) {
+                            $("#summaryExpTable #expSummaryFooter").before(rows);
+                        } else {
+                            $(".display_summary_exp_row:last").after(rows);
+                        }
+                        $("#f_header_expense_hidden").removeClass('d-none');
+                        $("#new_exp_name_select").val("");
+                        $("#new_exp_id").val("");
+                        $("#new_exp_name").val("");
+                        $("#new_exp_perc").val("").prop("readonly", false);
+                        $("#new_exp_value").val("").prop("readonly", false);
+                        let total_head_exp = 0;
+                        $("[name*='[total]']").each(function (index, item) {
+                            total_head_exp += Number($(item).val());
+                        });
+
+                        $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
+
+                        summaryExpTotal();
                     }
 
                     setTimeout(() => {

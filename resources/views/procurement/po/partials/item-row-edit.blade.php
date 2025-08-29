@@ -21,15 +21,15 @@
          <label class="form-check-label" for="Email_{{$rowCount}}"></label>
      </div>
  </td>
- <td class="poprod-decpt"> 
+ <td class="poprod-decpt">
     <input type="text" {{$po_item?->pi_item_mappings?->count() ? 'readonly' : ''}} name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$po_item->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$po_item->item_id}}" />
-    <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$po_item->item_code}}" /> 
+    <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$po_item->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->name}}" />
-    <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{$po_item->hsn_id}}" /> 
+    <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{$po_item->hsn_id}}" />
     <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$po_item->hsn_code}}" />
     @php
-      $selectedAttr = $po_item->attributes ? $po_item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : []; 
+      $selectedAttr = $po_item->attributes ? $po_item->attributes()->whereNotNull('attribute_value')->pluck('attribute_value')->all() : [];
       @endphp
       @foreach($po_item->attributes as $attributeHidden)
          <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
@@ -50,7 +50,7 @@
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
 </td>
-<td class="poprod-decpt attributeBtn" {{$po_item->pi_item_mappings?->count() ? 'data-disabled="true"' : ''}} id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}"> 
+<td class="poprod-decpt attributeBtn" {{$po_item->pi_item_mappings?->count() ? 'data-disabled="true"' : ''}} id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}">
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$po_item->inventoty_uom_id}}">
@@ -62,7 +62,7 @@
       </select>
 </td>
 <td><input type="number" class="form-control mw-100 text-end" value="{{$po_item->order_qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>
-<td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$po_item->rate}}" class="form-control mw-100 text-end" /></td> 
+<td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$po_item->rate}}" class="form-control mw-100 text-end" /></td>
 <td><input type="number" readonly value="{{$po_item->order_qty*$po_item->rate}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" step="any" /></td>
 <td>
     <div class="position-relative d-flex align-items-center">

@@ -192,12 +192,12 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
     const dataIndex = $tr.attr('data-index');
     const itemId = $tr.find("[name*='item_id']").val();
 
-    $qtyInput.val(orderQty.toFixed(2));
+    $qtyInput.val(orderQty.toFixed(6));
     checkDuplicateObjects($qtyInput);
 
     if (orderQty <= 0) {
         Swal.fire({ title: 'Error!', text: 'Qty. cannot be zero.', icon: 'error' });
-        $qtyInput.val(orderQty.toFixed(2));
+        $qtyInput.val(orderQty.toFixed(6));
         return;
     }
 
@@ -213,7 +213,7 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
     safeSet('mrn_header_id', getVal("[name*='[mrn_header_id]']"));
     safeSet('mrn_detail_id', getVal("[name*='[mrn_detail_id]']"));
     safeSet('detail_id', getVal("[name*='[detail_id]']"));
-    safeSet('qty', orderQty.toFixed(2));
+    safeSet('qty', orderQty.toFixed(6));
     safeSet('type', currentProcessType);
 
     try {
@@ -221,13 +221,13 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
         const result = await response.json();
 
         const resultQty = parseFloat(result.order_qty) || 0;
-        const finalQty = resultQty.toFixed(2);
+        const finalQty = resultQty.toFixed(6);
         $qtyInput.val(finalQty);
         let acceptedQty = resultQty;
 
         if (Number($itemCost.val())) {
             let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
-            $itemValue.val(totalValue.toFixed(2));
+            $itemValue.val(totalValue.toFixed(6));
         } else {
             $itemValue.val('');
         }
@@ -257,8 +257,8 @@ $(document).on('blur',"[name*='rate']",(e) => {
         let itemRate = parseFloat(rate.value);
         let totalItemValue = (itemRate) * (parseFloat(acceptedQuantity.val()));
         totalItemValue = parseFloat(totalItemValue);
-        orderRate.val(itemRate.toFixed(2));
-        itemValue.val(totalItemValue.toFixed(2));
+        orderRate.val(itemRate.toFixed(6));
+        itemValue.val(totalItemValue.toFixed(6));
     } else {
         itemValue.val('');
     }

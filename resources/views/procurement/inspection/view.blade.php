@@ -212,9 +212,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                        {{$mrn->latestBillingAddress()->display_address}}
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                        {{$mrn->bill_address?->display_address}}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -229,7 +229,7 @@
                                                                     <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>
+                                                                    <div class="mrnaddedd-prim org_address">{{$deliveryAddress}}</div>
                                                                 </div>
                                                             </div>
                                                         </div>

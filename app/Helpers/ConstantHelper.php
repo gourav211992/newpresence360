@@ -518,6 +518,7 @@ class ConstantHelper
     const BOM_SERVICE_ALIAS = 'bom';
     const PO_SERVICE_ALIAS = 'po';
     const JO_SERVICE_ALIAS = 'jo';
+    const OPENING_BALANCE = 'ob';
     const RFQ_SERVICE_ALIAS = 'rfq';
     const PQ_SERVICE_ALIAS = 'pq';
     const PQC_SERVICE_ALIAS = 'pqc';
@@ -762,6 +763,7 @@ class ConstantHelper
         self::JOURNAL_VOUCHER => 'Voucher',
         self::CONTRA_VOUCHER => 'Voucher',
         self::PAYMENT_VOUCHER_RECEIPT => 'PaymentVoucher',
+        self::OPENING_BALANCE=>'Voucher',
         self::PAYMENTS_SERVICE_ALIAS => 'PaymentVoucher',
         self::RECEIPTS_SERVICE_ALIAS => 'PaymentVoucher',
         self::LEGAL_FILE => 'FileTracking',
@@ -1020,6 +1022,7 @@ class ConstantHelper
         self::EQPT=>ConstantHelper::ERP_MASTER_SERVICE_TYPE
 
     ];
+    const DUE_DATE_ALIAS = [self::MRN_SERVICE_ALIAS,self::PB_SERVICE_ALIAS,self::SI_SERVICE_ALIAS,self::SERVICE_INV_SERVICE_ALIAS,self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
     const DOC_APPROVAL_STATUS_MAPPING = [
         ConstantHelper::SUBMITTED => 'submit',
         ConstantHelper::APPROVED => 'approve',

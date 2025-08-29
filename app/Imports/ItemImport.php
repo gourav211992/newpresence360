@@ -3,9 +3,9 @@
 namespace App\Imports;
 
 use App\Models\Item;
-use App\Models\UploadItemMaster; 
+use App\Models\UploadItemMaster;
 use App\Models\ItemSubType;
-use App\Helpers\Helper; 
+use App\Helpers\Helper;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ConstantHelper;
@@ -23,14 +23,16 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
     protected $successfulItems = [];
     protected $failedItems = [];
     protected $service;
+    protected $user;
 
     public function chunkSize(): int
     {
-        return 500; 
+        return 500;
     }
 
-    public function __construct(ItemImportExportService $service)
+    public function __construct(ItemImportExportService $service, $user)
     {
+        $this->user = $user;
         $this->service = $service;
     }
 
@@ -48,7 +50,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
             'item_remark' => $row->remarks,
         ];
     }
-    
+
     public function onFailure($uploadedItem)
     {
         $errorDetails = $uploadedItem->remarks;
@@ -128,11 +130,11 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
         if (empty($rows) || count($rows) == 0) {
             return;
         }
-        $user = Helper::getAuthenticatedUser();
+        $user = $this->user ?: Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $batchNo = $this->service->generateBatchNo($organization->id, $organization->group_id, $organization->company_id, $user->id);
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
-        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         $serviceData = $this->getServiceData($organization, $services);
         $validatedData = $serviceData['validatedData'];
         $itemCodeType = $serviceData['itemCodeType'];
@@ -148,7 +150,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
             $errorMessages = [];
             $itemCode = null;
             $subCategory = null;
-            $skipRow = false; 
+            $skipRow = false;
 
             try {
                 $attributes = [];
@@ -216,7 +218,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 $isTradedItem = 0;
                 $isAsset = 0;
                 $isScrap = 0;
-                 
+
 
                 if (!empty($subTypeRaw)) {
                     try {
@@ -234,7 +236,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                  // Apply asset validation only when the type is 'G' (Goods)
                 if ($itemType === 'Goods' && $isAsset == 1) {
                     $assetCategory = $row['assetcategory'] ?? null;
-               
+
                     $brandName = $row['brand'] ?? null;
                     $modelNo = $row['modelno'] ?? null;
 
@@ -256,7 +258,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
                 } elseif ($itemCodeType === 'Auto') {
                     try {
-                        if (!$skipRow) { 
+                        if (!$skipRow) {
                             $subCategory = $this->service->getSubCategory($row['group']);
 
                             if ($subCategory) {
@@ -270,7 +272,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     } catch (Exception $e) {
                         $errorMessages[] = "Error fetching category: " . $e->getMessage();
                         Log::error("Error fetching category: " . $e->getMessage());
-                        $skipRow = true; 
+                        $skipRow = true;
                     }
 
                     if (!$skipRow && !empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
@@ -289,14 +291,14 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                         'remarks' => implode(', ', $errorMessages),
                         'status' => 'Failed',
                     ]);
-                    continue; 
+                    continue;
                 }
-         
+
 
                 if ($itemType === 'Service') {
                     $attributes = [];
                     $alternateUoms = [];
-                } 
+                }
 
                 $subTypeValue = ($itemType === 'Goods') ? ($row['sub_type'] ?? null) : null;
 
@@ -320,7 +322,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'sub_type' => $subTypeValue,
                     'is_traded_item' => $isTradedItem,
                     'is_asset' => $isAsset,
-                    'is_scrap' => $isScrap, 
+                    'is_scrap' => $isScrap,
                     'asset_category_id' => $row['assetcategory'] ?? null,
                     'brand_name' => $row['brand'] ?? null,
                     'model_no' => $row['modelno'] ?? null,
@@ -369,9 +371,9 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
     private function processItemFromUpload($uploadedItems)
     {
 
-        $user = Helper::getAuthenticatedUser();
+        $user = $this->user ?: Helper::getAuthenticatedUser();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
-        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         $bookId = null;
         if ($services && isset($services['current_book'])) {
             $book = $services['current_book'];
@@ -389,14 +391,14 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
 
         foreach ($uploadedItems as $uploadedItem) {
             $errors = [];
-            $subTypeId = null;  
-            $hsnCodeId = null;  
+            $subTypeId = null;
+            $hsnCodeId = null;
             $category=null;
-            $subCategory = null;  
-            $uomId = null;  
-            $currencyId = null;  
-            $attributes = [];  
-            $specifications = []; 
+            $subCategory = null;
+            $uomId = null;
+            $currencyId = null;
+            $attributes = [];
+            $specifications = [];
             $alternateUoms = [];
             $isTradedItem = 0;
             $isAsset = 0;
@@ -430,15 +432,15 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 } catch (Exception $e) {
                     $errors[] = $e->getMessage();
                 }
-            } 
+            }
             if (!empty($uploadedItem->sell_price_currency)) {
                 try {
                     $sellPriceCurrencyId = $this->service->getCurrencyId($uploadedItem->sell_price_currency);
                 } catch (Exception $e) {
                     $errors[] = $e->getMessage();
                 }
-            } 
-        
+            }
+
             if (!empty($uploadedItem->sub_type)) {
                 try {
                     $subTypes = array_map('trim', explode(',', $uploadedItem->sub_type));
@@ -446,7 +448,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $subTypeId = $subTypeData['sub_type_id'] ?? null;
                     $isTradedItem = $subTypeData['is_traded_item'] ?? 0;
                     $isAsset = $subTypeData['is_asset'] ?? 0;
-                    $isScrap = $subTypeData['is_scrap'] ?? 0;  
+                    $isScrap = $subTypeData['is_scrap'] ?? 0;
                 } catch (Exception $e) {
                     $errors[] = $e->getMessage();
                 }
@@ -608,7 +610,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'integer' => 'The :attribute must be an integer.',
                     'subcategory_id.required' => 'The group field is required.',
                 ];
-    
+
                 $validator = Validator::make($item->toArray(), $rules, $customMessages);
                 $validationMessages = $validator->errors()->all();
                 if (!empty($validationMessages) || !empty($errors)) {
@@ -620,10 +622,10 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $this->onFailure($uploadedItem);
                     continue;
                 }
-                $item->document_status = ConstantHelper::DRAFT; 
-                $item->status = ConstantHelper::DRAFT; 
+                $item->document_status = ConstantHelper::DRAFT;
+                $item->status = ConstantHelper::DRAFT;
                 $item->save();
-            
+
                 $docId = $item->id;
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $document_status = $approveDocument['approvalStatus'];
@@ -640,7 +642,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 if (!empty($subTypeId)) {
                     ItemSubType::create([
                         'item_id' => $item->id,
-                        'sub_type_id' => $subTypeId,  
+                        'sub_type_id' => $subTypeId,
                     ]);
                 }
                 $uploadedItem->update([
@@ -663,4 +665,4 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
         }
     }
 }
- 
+

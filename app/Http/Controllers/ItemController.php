@@ -279,7 +279,7 @@ class ItemController extends Controller
                     $q->orWhere('is_asset', 1);
                 }
                 elseif (strpos($searchLower, 'scrap') !== false) {
-                    $q->orWhere('is_scrap', 1);  
+                    $q->orWhere('is_scrap', 1);
                 }
             });
         }
@@ -293,12 +293,12 @@ class ItemController extends Controller
 
     public function create()
     {
+        $user = Helper::getAuthenticatedUser();
         $urlSegmentAlias = request()->segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias, '', $user);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
         $subTypes = SubType::where('status', ConstantHelper::ACTIVE)->get();
@@ -317,7 +317,7 @@ class ItemController extends Controller
         $options = ConstantHelper::STOP_OPTIONS;
         $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
-        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $itemCodeType ='Manual';
         if ($services && $services['current_book']) {
@@ -414,7 +414,7 @@ class ItemController extends Controller
         $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
         $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
         $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
-        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0; 
+        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0;
 
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;
@@ -423,11 +423,11 @@ class ItemController extends Controller
 
         $orgGroup = OrganizationGroup::find($organization->group_id);
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
-        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
-            $policyData = Helper::getPolicyByServiceId($serviceId);
+            $policyData = Helper::getPolicyByServiceId($serviceId, $user);
             if ($policyData && isset($policyData['policyLevelData'])) {
                 $policyLevelData = $policyData['policyLevelData'];
                 $validatedData['group_id'] = $policyLevelData['group_id'];
@@ -675,7 +675,7 @@ class ItemController extends Controller
             $deleteQuery = UploadItemMaster::where('user_id', $user->id);
             $deleteQuery->delete();
 
-            $import = new ItemImport($this->itemImportExportService);
+            $import = new ItemImport($this->itemImportExportService, $user);
             Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
@@ -739,8 +739,9 @@ class ItemController extends Controller
 
     public function edit(Request $request,$id)
     {
+        $user = Helper::getAuthenticatedUser();
         $urlSegmentAlias = request()->segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias, '', $user);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
@@ -756,7 +757,6 @@ class ItemController extends Controller
                 ->findOrFail($id);
             $ogItem = $item;
         }
-        $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
         $subTypes = $item->subTypes;
@@ -804,7 +804,7 @@ class ItemController extends Controller
         $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->get();
         $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
-        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         $bomCheckResult = ItemHelper::checkBomForItem($item->id);
         $isBomExists = $bomCheckResult['status'] === 'bom_exists';
         $itemCodeType ='Manual';
@@ -884,7 +884,7 @@ class ItemController extends Controller
         $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
         $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
         $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
-        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0; 
+        $validatedData['is_scrap']         = $request->input('is_scrap') === '1' ? 1 : 0;
 
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;
@@ -894,11 +894,11 @@ class ItemController extends Controller
 
         $orgGroup = OrganizationGroup::find($organization->group_id);
 
-        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl, '', $user);
         if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
-            $policyData = Helper::getPolicyByServiceId($serviceId);
+            $policyData = Helper::getPolicyByServiceId($serviceId, $user);
             if ($policyData && isset($policyData['policyLevelData'])) {
                 $policyLevelData = $policyData['policyLevelData'];
                 $validatedData['group_id'] = $policyLevelData['group_id'];

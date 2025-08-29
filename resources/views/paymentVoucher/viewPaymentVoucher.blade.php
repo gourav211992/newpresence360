@@ -623,7 +623,7 @@
                                                                             placeholder="Select"
                                                                             class="form-control mw-100 mb-25 organization"
                                                                             id="organization{{ $no }}"
-                                                                            value="{{ $item?->party?->organization?->name?? $item?->ledger?->organization?->name }}" />
+                                                                            value="{{ $item?->organization?->name ?? $item?->party?->organization?->name ?? $item?->ledger?->organization?->name }}" />
                                                                     </td>
                                                                     <td>
                                                                         <div
