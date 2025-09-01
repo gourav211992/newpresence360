@@ -62,12 +62,29 @@ class LorryReceiptRequest extends FormRequest
             
 
             // Dynamic locations
-            'locations' => 'required|array|min:1',
-            'locations.*.location_id'    => 'required|numeric|exists:erp_logistics_route_masters,id',
-            'locations.*.type'           => 'required|in:Pick Up,Drop Off',
-            'locations.*.no_of_articles' => 'required|numeric|min:1',
-            'locations.*.weight'         => 'required|numeric|min:0.01',
-            'locations.*.freight'        => 'required|numeric|min:0',
+          'locations'                  => 'required|array|min:1',
+'locations.*.location_id'    => 'nullable|numeric|exists:erp_logistics_route_masters,id',
+
+'locations.*.type' => [
+    function ($attribute, $value, $fail) {
+        $index = explode('.', $attribute)[1]; // index निकाल लो (0,1,...)
+        $locationId = request()->input("locations.$index.location_id");
+
+        if ($locationId) {
+            if (!$value) {
+                $fail("The type field is required when location is selected.");
+            } elseif (!in_array($value, ['Pick Up', 'Drop Off'])) {
+                $fail("The type must be Pick Up or Drop Off.");
+            }
+        }
+    },
+],
+'locations.*.no_of_articles' => 'nullable|required_with:locations.*.location_id|integer|min:1',
+'locations.*.weight'         => 'nullable|required_with:locations.*.location_id|numeric|min:0.01',
+'locations.*.freight'        => 'nullable|required_with:locations.*.location_id|numeric|min:0',
+
+
+
         ];
     }
 
@@ -150,19 +167,25 @@ class LorryReceiptRequest extends FormRequest
             'lr_charges.min' => 'LR charges must be at least 0.',
 
             'locations.required' => 'At least one location entry is required.',
-            'locations.*.location_id.required' => 'Each location is required.',
+
+            'locations.*.location_id.numeric' => 'Each location must be a valid number.',
             'locations.*.location_id.exists' => 'The selected location is invalid.',
-            'locations.*.type.required' => 'The type (Pick Up/Drop Off) is required.',
+
+            'locations.*.type.required_with' => 'The type (Pick Up/Drop Off) is required when location is selected.',
             'locations.*.type.in' => 'The type must be Pick Up or Drop Off.',
-            'locations.*.no_of_articles.required' => 'Article count is required.',
+
+            'locations.*.no_of_articles.required_with' => 'Article count is required when location is selected.',
             'locations.*.no_of_articles.numeric' => 'Articles must be a number.',
             'locations.*.no_of_articles.min' => 'Articles must be at least 1.',
-            'locations.*.weight.required' => 'Weight is required for each location.',
+
+            'locations.*.weight.required_with' => 'Weight is required when location is selected.',
             'locations.*.weight.numeric' => 'Weight must be a number.',
             'locations.*.weight.min' => 'Weight must be greater than 0.',
-            'locations.*.freight.required' => 'Freight amount is required.',
+
+            'locations.*.freight.required_with' => 'Freight amount is required when location is selected.',
             'locations.*.freight.numeric' => 'Freight must be a number.',
             'locations.*.freight.min' => 'Freight must be at least 0.',
+
 
             'lorry_file.file' => 'The uploaded file must be a valid file.',
             'lorry_file.mimes' => 'File must be a type: jpg, jpeg, png, pdf.',

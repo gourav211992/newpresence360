@@ -1,5 +1,7 @@
 @extends('layouts.app')
+
 @section('content')
+
 <form class="ajax-input-form" method="POST" action="{{ route('logistics.lorry-receipt.update', $lr->id) }}"  data-redirect="{{ route('logistics.lorry-receipt.index') }}" id="lorry_receipt_form" enctype='multipart/form-data'>
     @csrf
     @method('PUT')
@@ -379,6 +381,9 @@
                                           <label class="form-label" for="no_of_bundles">No of Article/Bundles <span class="text-danger">*</span></label>
                                           <input type="number" class="form-control editable-field" id="no_of_bundles" name="no_of_bundles"
                                              placeholder="Enter No of Article/Bundles" value="{{ old('no_of_bundles', @$lr->no_of_bundles) }}" />
+                                            <input type="hidden" class="form-control" id="per_bundles"  placeholder="Enter No of Article/Bundles" />
+                                            <input type="hidden" class="form-control" id="no_bundles"  placeholder="Enter No of Article/Bundles" />
+                                            <input type="hidden" class="form-control" id="no_bundles_amount"  placeholder="Enter No of Article/Bundles" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -398,7 +403,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="gst_paid_by">GST Paid By <span class="text-danger">*</span></label>
-                                          <select class="form-select select2 editable-field" id="gst_paid_by" name="gst_paid_by" >
+                                          <select class="form-select editable-field" id="gst_paid_by" name="gst_paid_by" >
                                              <option value="">Select</option>
                                              <option value="Consignor" {{ old('gst_paid_by', @$lr->gst_paid_by) == 'Consignor' ? 'selected' : '' }}>Consignor</option>
                                              <option value="Consignee" {{ old('gst_paid_by', @$lr->gst_paid_by) == 'Consignee' ? 'selected' : '' }}>Consignee</option>
@@ -409,7 +414,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="lr_type">LR Type <span class="text-danger">*</span></label>
-                                          <select class="form-select select2 editable-field" id="lr_type" name="lr_type" >
+                                          <select class="form-select editable-field" id="lr_type" name="lr_type" >
                                              <option value="">Select</option>
                                              <option value="Inward" {{ old('lr_type', @$lr->lr_type) == 'Inward' ? 'selected' : '' }}>Inward</option>
                                              <option value="Outward" {{ old('lr_type', @$lr->lr_type) == 'Outward' ? 'selected' : '' }}>Outward</option>
@@ -419,7 +424,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="billing_type">Billed or Pay <span class="text-danger">*</span></label>
-                                          <select class="form-select select2 editable-field" id="billing_type" name="billing_type" >
+                                          <select class="form-select editable-field" id="billing_type" name="billing_type" >
                                              <option value="">Select</option>
                                              <option value="To be Billed" {{ old('billing_type', @$lr->billing_type) == 'To be Billed' ? 'selected' : '' }}>To be Billed</option>
                                              <option value="To Pay" {{ old('billing_type', @$lr->billing_type) == 'To Pay' ? 'selected' : '' }}>To Pay</option>
@@ -1189,6 +1194,30 @@ $(document).ready(function () {
 </script>
 
 <script>
+    $(document).on('change', '#no_of_bundles', function () {
+    var perbundle = parseFloat($("#per_bundles").val()) || 0;
+    var nobundle = parseFloat($("#no_bundles").val()) || 0;
+    var changenobundle = parseFloat($(this).val()) || 0;
+    var nobundleamount = parseFloat($("#no_bundles_amount").val()) || 0;
+
+    console.log("Per bundle:", perbundle);
+    console.log("No of bundles:", nobundle);
+    console.log("change bundles:", changenobundle);
+    console.log("No bundle amount:", nobundleamount);
+
+    if (nobundle > changenobundle) {
+        console.log("👉 IF chal gaya");
+        $('#freight_charges').val(nobundleamount);
+    } else {
+        console.log("👉 ELSE chal gaya");
+        var valuecal = changenobundle - nobundle;
+        console.log(valuecal);
+        var bundleamount = (perbundle * valuecal) + nobundleamount;
+         console.log(bundleamount);
+        $('#freight_charges').val(bundleamount);
+    }
+});
+
    function getDocNumberByBookId(element = null, reset = true) {
     let bookId = element ? element.value : $('#series_id_input').val();
 
@@ -1522,6 +1551,13 @@ $('.vehicle-number-autocomplete').each(function () {
             $('#distanceInput').val(response.distance);
             $('#freight_charges').val(response.freight_charges);
             $('#freightCharges').val(response.freight_charges);
+            if($('#no_of_bundles').val() != '')
+            {
+                $('#no_of_bundles').val(response.no_bundle);
+            }
+            $('#per_bundles').val(response.per_bundle);
+            $('#no_bundles').val(response.no_bundle);
+            $('#no_bundles_amount').val(response.freight_charges);
 
             // Set labels
             $('#routeVehicle').text(response.vehicle_type_name);
@@ -1534,12 +1570,12 @@ $('.vehicle-number-autocomplete').each(function () {
             }
         },
         error: function () {
-            $('#vehicle_type_name').val('');
-            $('.vehicle-type-id').val('');
-            $('#distance').val('');
-            $('#distanceInput').val('');
-            $('#freight_charges').val('');
-            $('#freightCharges').val('');
+            // $('#vehicle_type_name').val('');
+            // $('.vehicle-type-id').val('');
+            // $('#distance').val('');
+            // $('#distanceInput').val('');
+            // $('#freight_charges').val('');
+            // $('#freightCharges').val('');
 
             if (formStatus !== 'submitted' && formStatus !== 'approved') {
                 $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', false);
@@ -1548,7 +1584,52 @@ $('.vehicle-number-autocomplete').each(function () {
     });
 }
 
+
+let oldSource = $('input[name="source_name"]').val();
+let oldDestination = $('input[name="destination_name"]').val();
+
 $('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]').on('blur', function () {
+    
+    let newSource = $('input[name="source_name"]').val();
+        let newDestination = $('input[name="destination_name"]').val();
+
+        // अगर source या destination बदली है तो tbody reset कर दो
+        if (oldSource !== newSource || oldDestination !== newDestination) {
+            
+            let defaultRow = `
+                <tr>
+                    <td class="customernewsection-form">
+                        <div class="form-check form-check-primary custom-checkbox">
+                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
+                            <label class="form-check-label" for="row_0"></label>
+                        </div> 
+                    </td>
+                    <td class="poprod-decpt">
+                        <input type="text" name="locations[0][location_name]" placeholder="Select" 
+                               class="form-control mw-100 location-update route-master-autocomplete" 
+                               data-type="location" />
+                        <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="location" />
+                    </td>
+                    <td>
+                        <select class="form-select mw-100" name="locations[0][type]">
+                            <option value="">Select</option>
+                            <option value="Pick Up">Pick Up</option>
+                            <option value="Drop Off" selected>Drop Off</option>
+                        </select> 
+                    </td>
+                    <td><input type="text" name="locations[0][no_of_articles]"  class="form-control mw-100" /></td>
+                    <td><input type="text" name="locations[0][weight]"  class="form-control mw-100" /></td>
+                    <td><input type="text" name="locations[0][freight]"  class="form-control mw-100 text-end" /></td>
+                </tr>
+            `;
+
+            $("#item-table-body").html(defaultRow);
+
+            // पुरानी values update कर दो
+            oldSource = newSource;
+            oldDestination = newDestination;
+        }
+
     const sourceId = $('input[name="source_id"]').val();
     const destId = $('input[name="destination_id"]').val();
     const vehicleId = $('input[name="vehicle_number_id"]').val();
@@ -1583,6 +1664,7 @@ $('input[name="source_name"], input[name="destination_name"], input[name="vehicl
         $('#freightCharges').val(charges);
          calculateTotals(); 
     });
+    fetchFreightCharge(); 
 });
 
 </script>
@@ -1866,46 +1948,59 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
 </script>
 <script>
     $(document).ready(function () {
-        $('#revokeButton').on('click', function () {
-            const lrId = "{{ isset($lr) ? $lr->id : null }}";
+       $('#revokeButton').on('click', function () {
+        const lrId = "{{ isset($lr) ? $lr->id : null }}";
 
-            if (lrId) {
-                $.ajax({
-                    url: "{{ route('logistics.lorry-receipt.revoke') }}",
-                    method: 'POST',
-                    dataType: 'json',
-                    data: {
-                        id: lrId,
-                        _token: "{{ csrf_token() }}"
-                    },
-                    success: function (data) {
-                        if (data.status === 'success') {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: data.message,
-                                icon: 'success',
-                            });
-                            location.reload();
-                        } else {
+        if (lrId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to revoke this Lorry Receipt?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Revoke it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('logistics.lorry-receipt.revoke') }}",
+                        method: 'POST',
+                        dataType: 'json',
+                        data: {
+                            id: lrId,
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function (data) {
+                            if (data.status === 'success') {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: data.message,
+                                    icon: 'success',
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message,
+                                    icon: 'error',
+                                }).then(() => {
+                                    window.location.href = "{{ route('logistics.lorry-receipt.index') }}";
+                                });
+                            }
+                        },
+                        error: function (xhr) {
+                            console.error('Error:', xhr.responseText);
                             Swal.fire({
                                 title: 'Error!',
-                                text: data.message,
+                                text: 'Some internal error occurred',
                                 icon: 'error',
                             });
-                            window.location.href = "{{ route('logistics.lorry-receipt.index') }}";
                         }
-                    },
-                    error: function (xhr) {
-                        console.error('Error:', xhr.responseText);
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occurred',
-                            icon: 'error',
-                        });
-                    }
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
+    });
     });
 
       function setApproval() {

@@ -52,15 +52,21 @@ class VoucherController extends Controller
 
         if ($request->partyID && $request->ledgerGroup) {
             $ledger = (int) $request->partyID;
-            $accessibleLocations = InventoryHelper::getAccessibleLocations();
-            $locationIds = $accessibleLocations->pluck('id')->toArray();
-            $ledger_group = (int)$request->ledgerGroup;
-         if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
-                $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
-                $orgs = $orgs->isEmpty() ? [Helper::getAuthenticatedUser()->organization_id] : $orgs->toArray();
-            } else {
-                $orgs = [Helper::getAuthenticatedUser()->organization_id];
-            }
+            $accessibleLocations = collect(InventoryHelper::getAccessibleLocations());
+            $locationIds = $accessibleLocations->pluck('id')->all();
+            $ledger_group = (int) $request->ledgerGroup;
+            $user = Helper::getAuthenticatedUser();
+            if ($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS) 
+            {
+            $orgsFromAccess = collect(optional($user)->access_rights_org)->pluck('organization_id');
+            $orgs = $orgsFromAccess->isEmpty()
+                ? [optional($user)->organization_id]
+                : $orgsFromAccess->all();
+           } 
+           else 
+           {
+            $orgs = [optional($user)->organization_id];
+          }
 
 
             $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){

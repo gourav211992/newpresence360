@@ -37,7 +37,6 @@ class ErpFreightChargesController extends Controller
         $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $freightCharges = ErpFreightCharge::withDefaultGroupCompanyOrg()->get();
         
-
         return view('logistics.freight-charges.index', compact('customers', 'vehicleTypes', 'states', 'freightCharges','routeMasters'));
     }
 
@@ -87,7 +86,9 @@ class ErpFreightChargesController extends Controller
                     'destination_route_id'  => $charge['destination_route_id'],
                     'distance'              => $charge['distance'],
                     'vehicle_type_id'       => $charge['vehicle_type_id'],
+                    'no_bundle'             => $charge['no_bundle'],
                     'amount'                => $charge['amount'],
+                    'per_bundle'            => $charge['per_bundle'],
                     'customer_id'           => $charge['customer_id'] ?? null,
                 ];
 
@@ -186,6 +187,8 @@ class ErpFreightChargesController extends Controller
             'vehicle_type_name' => optional($freightCharge->vehicleType)->name,
             'distance' => $freightCharge->distance,
             'freight_charges' => $freightCharge->amount,
+            'no_bundle' => $freightCharge->no_bundle,
+            'per_bundle' => $freightCharge->per_bundle,
             'vehicle_type_capacity'   => $freightCharge->vehicleType->capacity ?? '',
             'vehicle_type_unit_name'  => optional($freightCharge->vehicleType->unit)->name ?? '',
             'source_name'             => optional($freightCharge->sourceRoute)->name ?? '',

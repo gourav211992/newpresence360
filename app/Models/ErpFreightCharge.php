@@ -21,7 +21,9 @@ class ErpFreightCharge extends Model
         'destination_route_id',
         'distance',
         'vehicle_type_id',
+        'no_bundle',
         'amount',
+        'per_bundle',
         'customer_id',
         'status'
     ];

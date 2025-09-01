@@ -41,12 +41,14 @@
                                     <thead>
                                         <tr>
                                             <th>S.NO</th>
+                                            <th>Series</th>
                                             <th>Document No</th>
                                             <th>Document Date</th>
                                             <th>Source</th>
                                             <th>Destination</th>
                                             <th>Driver</th>
                                             <th>Vehicle No.</th>
+                                            <th>Total Charges</th>
                                             <th>Status</th>
                                             <th>Created By</th>
                                             <th>Action</th>
@@ -139,12 +141,14 @@ $(document).ready(function () {
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { data: 'series' },
                 { data: 'document_number' },
                 { data: 'document_date' },
                 { data: 'source_name' },
                 { data: 'destination_name' },
                 { data: 'driver_name' },
                 { data: 'vehicle_no' },
+                { data: 'total_charges' },
                 {
                 data: 'document_status',
                 render: function(data, type, row) {

@@ -102,6 +102,8 @@ class ErpLorryReceiptController extends Controller
             ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
             ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
             ->addColumn('vehicle_no', fn($row) => $row->vehicle->lorry_no ?? '-')
+            ->addColumn('total_charges', fn($row) => $row->total_charges ?? '-')
+            ->addColumn('series', fn($row) => $row->book->book_name ?? '-')
             
             ->editColumn('created_by', function ($row) {
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
@@ -277,7 +279,7 @@ class ErpLorryReceiptController extends Controller
         );
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
-
+        
         return view('logistics.lorry-receipt.edit', compact(
             'lr',
             'series',

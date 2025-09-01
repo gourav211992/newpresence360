@@ -63,7 +63,9 @@
                                                             <th >Destination <span class="text-danger">*</span></th>
                                                             <th width="100px">Distance (KM) <span class="text-danger">*</span></th>  
                                                             <th width="300px">Vehicle Type <span class="text-danger">*</span></th>
-                                                            <th width="100px">Freight (Rs) <span class="text-danger">*</span></th>  
+                                                            <th width="100px">Bundle (No) <span class="text-danger">*</span></th>
+                                                            <th width="100px">Freight (Rs) <span class="text-danger">*</span></th>
+                                                            <th width="100px">Per Bundle (Rs)<span class="text-danger">*</span></th>
                                                             <th width="300px">Customer</th>  
                                                         </tr>
                                                     </thead>
@@ -128,7 +130,13 @@
 
                                                                 </td>
                                                                 <td>
+                                                                    <input type="text" name="freight_charges[{{ $rowIndex }}][no_bundle]" class="form-control mw-100" value="{{ $charges->no_bundle ?? 0 }}">
+                                                                </td>
+                                                                <td>
                                                                     <input type="text" name="freight_charges[{{ $rowIndex }}][amount]" class="form-control mw-100" value="{{ $charges->amount ?? 0 }}">
+                                                                </td>
+                                                                 <td>
+                                                                    <input type="text" name="freight_charges[{{ $rowIndex }}][per_bundle]" class="form-control mw-100" value="{{ $charges->per_bundle ?? 0 }}">
                                                                 </td>
                                                                 <td>
                                                                    <input type="text"
@@ -201,12 +209,28 @@
                                                                         class="vehicle-type-id" />
                                                                 </td>
 
+                                                                {{-- Bundle --}}
+                                                                <td>
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][no_bundle]"
+                                                                        class="form-control mw-100"
+                                                                        placeholder="Enter No of Bundle">
+                                                                </td>
+
                                                                 {{-- Amount --}}
                                                                 <td>
                                                                     <input type="text"
                                                                         name="freight_charges[0][amount]"
                                                                         class="form-control mw-100"
                                                                         placeholder="Enter Amount">
+                                                                </td>
+
+                                                                {{-- Per Bundle --}}
+                                                                <td>
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][per_bundle]"
+                                                                        class="form-control mw-100"
+                                                                        placeholder="Enter Per Bundle Amount">
                                                                 </td>
 
                                                                 {{-- Customer Select --}}
@@ -265,8 +289,10 @@
                 row.querySelector('.route-master-autocomplete[data-type="source"]'),
                 row.querySelector('.route-master-autocomplete[data-type="destination"]'),
                 row.querySelector('.vehicle-type-autocomplete'),
-                 row.querySelector('input[name*="[distance]"]'),
-                row.querySelector('input[name*="[amount]"]')
+                row.querySelector('input[name*="[distance]"]'),
+                row.querySelector('input[name*="[amount]"]'),
+                row.querySelector('input[name*="[no_bundle]"]'),
+                row.querySelector('input[name*="[per_bundle]"]')
             ];
 
             for (const field of requiredFields) {
@@ -345,9 +371,23 @@
 
             <td>
                 <input type="text"
+                    name="freight_charges[${newIndex}][no_bundle]"
+                    class="form-control mw-100"
+                    placeholder="Enter No of Bundle" />
+            </td>
+
+            <td>
+                <input type="text"
                     name="freight_charges[${newIndex}][amount]"
                     class="form-control mw-100"
                     placeholder="Enter Amount" />
+            </td>
+
+            <td>
+                <input type="text"
+                    name="freight_charges[${newIndex}][per_bundle]"
+                    class="form-control mw-100"
+                    placeholder="Enter Per Bundle Amount" />
             </td>
 
             <td>

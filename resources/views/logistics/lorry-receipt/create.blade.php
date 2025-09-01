@@ -352,6 +352,9 @@
                                                         <div class="mb-1">
                                                             <label class="form-label" for="no_of_bundles">No of Article/Bundles <span class="text-danger">*</span></label>
                                                             <input type="number" class="form-control" id="no_of_bundles" name="no_of_bundles" placeholder="Enter No of Article/Bundles" />
+                                                            <input type="hidden" class="form-control" id="per_bundles"  placeholder="Enter No of Article/Bundles" />
+                                                            <input type="hidden" class="form-control" id="no_bundles"  placeholder="Enter No of Article/Bundles" />
+                                                            <input type="hidden" class="form-control" id="no_bundles_amount"  placeholder="Enter No of Article/Bundles" />
                                                         </div>
                                                     </div>
 
@@ -372,7 +375,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="gst_paid_by">GST Paid By <span class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="gst_paid_by" name="gst_paid_by">
+                                                            <select class="form-select" id="gst_paid_by" name="gst_paid_by">
                                                                 <option value="">Select</option>
                                                                 <option value="Consignor">Consignor</option>
                                                                 <option value="Consignee">Consignee</option>
@@ -384,7 +387,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="lr_type">LR Type <span class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="lr_type" name="lr_type">
+                                                            <select class="form-select" id="lr_type" name="lr_type">
                                                                 <option value="">Select</option>
                                                                 <option value="Inward">Inward</option>
                                                                 <option value="Outward">Outward</option>
@@ -395,7 +398,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="billing_type">Billed or Pay <span class="text-danger">*</span></label>
-                                                            <select class="form-select select2" id="billing_type" name="billing_type">
+                                                            <select class="form-select" id="billing_type" name="billing_type">
                                                                 <option value="">Select</option>
                                                                 <option value="To be Billed">To be Billed</option>
                                                                 <option value="To Pay">To Pay </option>
@@ -1178,6 +1181,33 @@ const vehicleNumbers = [
 
 <script>
 
+    $(document).on('change', '#no_of_bundles', function () {
+    var perbundle = parseFloat($("#per_bundles").val()) || 0;
+    var nobundle = parseFloat($("#no_bundles").val()) || 0;
+    var changenobundle = parseFloat($(this).val()) || 0;
+    var nobundleamount = parseFloat($("#no_bundles_amount").val()) || 0;
+
+    console.log("Per bundle:", perbundle);
+    console.log("No of bundles:", nobundle);
+    console.log("change bundles:", changenobundle);
+    console.log("No bundle amount:", nobundleamount);
+
+    if (nobundle > changenobundle) {
+        console.log("👉 IF chal gaya");
+        $('#freight_charges').val(nobundleamount);
+    } else {
+        console.log("👉 ELSE chal gaya");
+        var valuecal = changenobundle - nobundle;
+        console.log(valuecal);
+        var bundleamount = (perbundle * valuecal) + nobundleamount;
+         console.log(bundleamount);
+        $('#freight_charges').val(bundleamount);
+    }
+});
+
+
+
+
 $('.vehicle-number-autocomplete').each(function () {
     $(this).autocomplete({
         source: function (request, response) {
@@ -1235,6 +1265,10 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#freight_charges').val(response.freight_charges).prop('disabled', true);
                 $('#distanceInput').val(response.distance);
                 $('#freightCharges').val(response.freight_charges);
+                $('#no_of_bundles').val(response.no_bundle);
+                $('#per_bundles').val(response.per_bundle);
+                $('#no_bundles').val(response.no_bundle);
+                $('#no_bundles_amount').val(response.freight_charges);
 
                 // ✅ Set text content for display
                 $('#routeVehicle').text(response.vehicle_type_name);
@@ -1258,9 +1292,9 @@ $('.vehicle-number-autocomplete').each(function () {
 
             },
             error: function () {
-                $('#distance, #freight_charges').val('').prop('disabled', false);
-                $('#freight_charges').val('').prop('disabled', false);
-                $('#distanceInput').val('');
+                // $('#distance, #freight_charges').val('').prop('disabled', false);
+                // s
+                // $('#distanceInput').val('');
                 $('#freightCharges').val('');
 
                 // ✅ Set text content for display
@@ -1271,8 +1305,51 @@ $('.vehicle-number-autocomplete').each(function () {
             }
         });
     }
+let oldSource = $('input[name="source_name"]').val();
+let oldDestination = $('input[name="destination_name"]').val();
+
 $('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]')
-    .on('autocompleteselect autocompletechange', function () {
+    .on('autocompleteselect autocompletechange change', function () {
+
+        let newSource = $('input[name="source_name"]').val();
+        let newDestination = $('input[name="destination_name"]').val();
+
+        // अगर source या destination बदली है तो tbody reset कर दो
+        if (oldSource !== newSource || oldDestination !== newDestination) {
+            
+            let defaultRow = `
+                <tr>
+                    <td class="customernewsection-form">
+                        <div class="form-check form-check-primary custom-checkbox">
+                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
+                            <label class="form-check-label" for="row_0"></label>
+                        </div> 
+                    </td>
+                    <td class="poprod-decpt">
+                        <input type="text" name="locations[0][location_name]" placeholder="Select" 
+                               class="form-control mw-100 location-update route-master-autocomplete" 
+                               data-type="location" />
+                        <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="location" />
+                    </td>
+                    <td>
+                        <select class="form-select mw-100" name="locations[0][type]">
+                            <option value="">Select</option>
+                            <option value="Pick Up">Pick Up</option>
+                            <option value="Drop Off" selected>Drop Off</option>
+                        </select> 
+                    </td>
+                    <td><input type="text" name="locations[0][no_of_articles]"  class="form-control mw-100" /></td>
+                    <td><input type="text" name="locations[0][weight]"  class="form-control mw-100" /></td>
+                    <td><input type="text" name="locations[0][freight]"  class="form-control mw-100 text-end" /></td>
+                </tr>
+            `;
+
+            $("#item-table-body").html(defaultRow);
+
+            // पुरानी values update कर दो
+            oldSource = newSource;
+            oldDestination = newDestination;
+        }
         
         const sourceId = $('input[name="source_id"]').val();
         const destId = $('input[name="destination_id"]').val();
