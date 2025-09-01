@@ -51,48 +51,99 @@
 												<th>Action</th>
 											  </tr>
 											</thead>
-											<tbody>
-                                                @foreach($equipments as $index => $equipment)
-                                                    <tr>
-                                                        <td>{{ $index + 1 }}</td>
-                                                        <td class="fw-bolder text-dark">{{ $equipment->name ?? '' }}</td>
-                                                        <td>{{ $equipment->organization->name ?? '' }}</td>
-                                                        <td>
-                                                            <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
-                                                                {{ $equipment->location->store_name ?? '' }}
-                                                            </div>
-                                                        </td>
-                                                        <td>{{ $equipment->alias ?? '' }}</td>
-                                                        <td>{{ $equipment->category->name ?? '' }}</td>
-                                                         <td>
+                      
+										  <tbody>
+@foreach($equipments as $index => $equipment)
+    <tr>
+        <td>{{ $index + 1 }}</td>
+        <td class="fw-bolder text-dark">{{ $equipment->name ?? '' }}</td>
+        <td>{{ $equipment->organization->name ?? '' }}</td>
+        <td>
+            <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
+                {{ $equipment->location->store_name ?? '' }}
+            </div>
+        </td>
+        <td>{{ $equipment->alias ?? '' }}</td>
+        <td>{{ $equipment->category->name ?? '' }}</td>
+        <td>
             {{ $equipment->maintenanceDetails->flatMap->checklists->pluck('name')->implode(', ') }}
         </td>
-        <td>{{ $equipment->maintenanceDetails->last()?->created_at?->format('Y-m-d') ?? '' }}</td>
-                                                        <td>{{ $equipment->maint_due_date ?? '' }}</td>
-                                                        <td class="tableactionnew">
-                                                            <div class="dropdown">
-                                                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                                                    <i data-feather="more-vertical"></i>
-                                                                </button>
-                                                                <div class="dropdown-menu dropdown-menu-end">
-                                                                    {{-- <a class="dropdown-item" href="#">
-                                                                        <i data-feather="edit" class="me-50"></i>
-                                                                        <span>View Detail</span>
-                                                                    </a> --}}
-                                                                    <a class="dropdown-item" href="{{ route('equipment.edit', $equipment->id) }}">
-                                                                        <i data-feather="edit-3" class="me-50"></i>
-                                                                        <span>Edit</span>
-                                                                    </a>
-                                                                    {{-- <a class="dropdown-item" href="#">
-                                                                        <i data-feather="trash-2" class="me-50"></i>
-                                                                        <span>Delete</span>
-                                                                    </a> --}}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-											</tbody>
+
+        {{-- Last Maint Date --}}
+        <td>
+            @php
+                $lastMaintDate = null;
+                $dueDate = null;
+
+                $first = $equipment->maintenanceDetails->sortBy('start_date')->first();
+        
+                if ($equipment->document_status === 'approved') {
+                 
+                    $approvedDetail = $equipment->maintenanceDetails->sortByDesc('start_date')->first();
+                    
+                    if ($approvedDetail) {
+                        $lastMaintDate = \Carbon\Carbon::parse($approvedDetail->start_date);
+                        $base = $lastMaintDate->copy();
+                        $freqType = $approvedDetail->frequency ?? '';
+                        
+
+                        switch ($freqType) {
+                            case 'Daily':
+                                $dueDate = $base->copy()->addDay();
+                                break;
+                            case 'Weekly':
+                                $dueDate = $base->copy()->addWeek();
+                                break;
+                            case 'Monthly':
+                                $dueDate = $base->copy()->addMonth();
+                                break;
+                            case 'Quarterly':
+                                $dueDate = $base->copy()->addMonths(3);
+                                break;
+                            case 'Semi-Annually':
+                                $dueDate = $base->copy()->addMonths(6);
+                                break;
+                            case 'Annually':
+                                $dueDate = $base->copy()->addYear();
+                                break;
+                            case 'Yearly':
+                                $dueDate = $base->copy()->addYear();
+                                break;
+                            default:
+                                $dueDate = $base;
+                        }
+                    }
+                } else {
+                    $lastMaintDate = null;
+                    $dueDate = $first ? \Carbon\Carbon::parse($first->start_date) : null;
+                }
+            @endphp
+
+            {{ $lastMaintDate ? $lastMaintDate->format('Y-m-d') : '' }}
+        </td>
+
+        {{-- Maint Due Date --}}
+        <td>
+            {{ $dueDate ? $dueDate->format('Y-m-d') : '' }}
+        </td>
+
+        <td class="tableactionnew">
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                    <i data-feather="more-vertical"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="{{ route('equipment.edit', $equipment->id) }}">
+                        <i data-feather="edit-3" class="me-50"></i>
+                        <span>Edit</span>
+                    </a>
+                </div>
+            </div>
+        </td>
+    </tr>
+@endforeach
+</tbody>
+
 									</table>
 								</div>
                             </div>

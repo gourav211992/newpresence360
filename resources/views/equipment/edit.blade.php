@@ -150,6 +150,24 @@
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
+                                                        <label class="form-label">Asset Code</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" id="asset_code_id" name="asset_code_id">
+                                                            <option value="">Select</option>
+                                                            @if(isset($fixedAssetRegistration))
+                                                                @foreach($fixedAssetRegistration as $assetCode)
+                                                                    <option value="{{ $assetCode->id }}" {{ (old('asset_code_id', $equipment->asset_code_id ?? '') == $assetCode->id) ? 'selected' : '' }}>
+                                                                        {{ $assetCode->asset_code }}
+                                                                    </option>
+                                                                @endforeach
+                                                            @endif
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
                                                         <label class="form-label">Category <span
                                                                 class="text-danger">*</span></label>
                                                     </div>

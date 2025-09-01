@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
+use App\Models\ErpEquipment;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -53,10 +54,13 @@ class PlantMaintWo extends Model
         'deleted_at'
     ];
 
+
     // Relationships
     public function book()
     {
         return $this->belongsTo(Book::class, 'book_id');
     }
+
+
 
 }

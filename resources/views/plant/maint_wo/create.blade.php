@@ -423,18 +423,32 @@
                                           <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Part Details</strong></h6>
                                         </td>
                                       </tr>
-                                      <tr>
+                                      <tr id="current_part_name_row">
                                         <td class="poprod-decpt">
-                                          <span class="poitemtxt mw-100"><strong>Name</strong>: <span id="part_name"></span></span>
+                                          <div id="current_part_name">
+                                            
+                                          </div>
                                         </td>
                                       </tr>
-                                      <tr>
-                                        <td class="poprod-decpt" id="attributes_badges"></td>
-                                      </tr>
-                                      <tr>
+                                      <tr id="current_part_uom_row">
                                         <td class="poprod-decpt">
-                                          <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: <span id="uom"></span></span>
-                                          <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>: <span id="qty"></span></span>
+                                          <div id="current_part_uom">
+                                            
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      <tr id="current_part_qty_row">
+                                        <td class="poprod-decpt">
+                                          <div id="current_part_qty">
+                                            
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      <tr id="current_part_attributes_row">
+                                        <td class="poprod-decpt">
+                                          <div id="current_part_attributes">
+                                            
+                                          </div>
                                         </td>
                                       </tr>
                                     </table>
@@ -611,6 +625,7 @@
                             <th>BOM</th>
                             <th>Series</th>
                             <th>Doc No</th>
+							<th>Due Date</th>
                           </tr>
                         </thead>
                         <tbody id="eqptTable">
@@ -829,10 +844,12 @@
 @section('scripts')
 	<script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     @include('plant.maint_wo.common-js-route',["wo" => isset($wo) ? $wo : null, "route_prefix" => "maint-wo"])
-    <script src="{{ asset("assets\\js\\modules\\maint-wo\\common-script.js") }}"></script>
-  	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script src="{{ asset('assets/js/modules/maint-wo/common-script.js')}}"></script>
+  	
 	<script>
 		const itemsData = @json($items);
+		
+		
 		let rowCount = 1;
 		$(window).on('load', function () {
 			if (feather) {
@@ -857,11 +874,7 @@
 			$('html, body').scrollTop($('.trselected').offset().top - 200);
 			updateFooterFromSelected();
 		});
-		$(document).on('click', 'tbody tr', function () {
-			$(this).addClass('trselected').siblings().removeClass('trselected');
-			$('html, body').scrollTop($(this).offset().top - 200);
-			updateFooterFromSelected();
-		});
+	
 		function updateFooterFromSelected() {
 			let $selected = $('.trselected');
 			if ($selected.length) {
@@ -869,47 +882,9 @@
 				$('#part_name').text($selected.find('.item_name').val());
 				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
-				let $selectElement = $selected.find('.item_code');
-				let $badgesContainer = $('#attributes_badges'); // container for badges
-
-				if ($selectElement.val() !== "") {
-					let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
-					let $hiddenInput = $selected.find('.attribute');
-					let existingAttributes = $hiddenInput.length && $hiddenInput.val()
-						? JSON.parse($hiddenInput.val())
-						: [];
-
-					if (!attributesJSON.length) {
-						$badgesContainer.html('<span>No attributes available</span>');
-						return;
-					}
-
-					let badgesHtml = '';
-
-					$.each(attributesJSON, function (index, element) {
-						// Find selected value from existingAttributes
-						let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
-						let selectedVal = selectedValObj ? selectedValObj.value_id : '';
-
-						// Find text for selected value
-						let selectedText = '';
-						if (selectedVal) {
-							let valObj = element.values_data.find(v => v.id === selectedVal);
-							selectedText = valObj ? valObj.value : '';
-						}
-
-						badgesHtml += `
-					<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
-						<strong>${element.group_name}</strong>: <span>${selectedText}</span>
-					</span>
-				`;
-					});
-
-					$badgesContainer.html(badgesHtml);
-
-				} else {
-					$badgesContainer.html('');
-				}
+				
+				// Update attribute badges for selected row
+				updateAttributeBadges($selected);
 
 			}
 		}
@@ -932,20 +907,18 @@
 																</div>
 															</td>
 															<td class="poprod-decpt">
-																<input type="hidden" class="item_id">
-																<input required type="text" placeholder="Select" name="item[]"
-																	class="item_code form-control mw-100 ledgerselecct mb-25" />
-															</td>
-															<td required class="poprod-decpt">
-																<input type="text" placeholder="Select"
-																	class="item_name form-control mw-100 ledgerselecct mb-25" />
-															</td>
-
-															<td class="poprod-decpt">
-																<input type="hidden" class="attribute">
-																<button data-bs-toggle="modal" data-bs-target="#attribute"
-																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</button>
+								<input type="hidden" class="item_id">
+								<input required type="text" placeholder="Select" name="item[]"
+					class="item_code form-control mw-100 ledgerselecct mb-25" />
+							</td>
+							<td class="poprod-decpt">
+								<input type="text" placeholder="Select" class="item_name form-control mw-100 ledgerselecct mb-25" />
+							</td>
+							<td class="poprod-decpt">
+				<input type="hidden" class="attribute">
+				<button data-bs-toggle="modal" data-bs-target="#attribute"
+					class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+					style="font-size: 10px">Attributes</button>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -992,12 +965,15 @@
 			$('.mrntableselectexcel tr').each(function () {
 				const row = $(this);
 				const itemId = row.find('.item_id').val();
+				const itemCode = row.find('.item_code').val();
+				const itemName = row.find('.item_name').val();
 
-				if (itemId) { // skip empty rows
+				// Include row if it has item_id OR if it has item_code/item_name (for newly added rows)
+				if (itemId || itemCode || itemName) {
 					const rowData = {
-						item_id: itemId,
-						item_code: row.find('.item_code').val() || '',
-						item_name: row.find('.item_name').val() || '',
+						item_id: itemId || '',
+						item_code: itemCode || '',
+						item_name: itemName || '',
 						attribute: row.find('.attribute').val() || '',
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
@@ -1142,11 +1118,11 @@
 			updateFooterFromSelected();
 		});
 
-		$(document).on('click', '.submitAttributeBtn', (e) => {
-			$("#attribute").modal('hide');
-		});
+
 		
 		function initAutoForItem(selector, type) {
+			console.log("check the seelector and type",selector,type);
+			
 			$(selector).autocomplete({
 				minLength: 0,
 				source: function (request, response) {
@@ -1158,6 +1134,7 @@
 						let val = $(this).val();
 						if (val) selectedItemIds.push(val);
 					});
+					console.log("check the selectedItemIds",selectedItemIds);
 
 					// Filter itemsData by search term AND exclude already selected items
 					let filtered = itemsData.filter(item => {
@@ -1174,6 +1151,8 @@
 							(!isSelectedElsewhere || item.id.toString() === currentItemId);
 					});
 
+					console.log("check the filtered",filtered);
+					
 					let results = filtered.map(item => ({
 						id: item.id,
 						label: `${item.item_code} - ${item.item_name}`,
@@ -1182,11 +1161,14 @@
 						item_name: item.item_name,
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
-						attr: item.item_attributes,
+						attr: item.item_attributes || []
 					}));
 
+					console.log("check the results",results);
+					
 					response(results);
 				},
+				minLength: 2,
 				select: function (event, ui) {
 					let $input = $(this);
 					let itemCode = ui.item.code;
@@ -1281,7 +1263,9 @@
 					if (!isNaN(attributeId) && !isNaN(selectedVal) && selectedVal > 0) {
 						selectedAttributes.push({
 							item_attribute_id: attributeId,
-							value_id: selectedVal
+							value_id: selectedVal,
+							attribute_name: attributeName,
+							attribute_value: selectedValueText
 						});
 					}
 				}
@@ -1839,6 +1823,53 @@
 					feather.replace(); // Re-initialize feather icons
 				}
 			});
+		});
+
+		// Function to update attribute badges display
+		function updateAttributeBadges($row) {
+			if (!$row) return;
+
+			let $selectElement = $row.find('.item_code');
+			let $badgesContainer = $('#attributes_badges');
+
+			if ($selectElement.val() !== "") {
+				let $hiddenInput = $row.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
+
+				if (!existingAttributes.length) {
+					$badgesContainer.html('');
+					return;
+				}
+
+				let badgesHtml = '';
+
+				// Display badges for each selected attribute
+				$.each(existingAttributes, function (index, attr) {
+					if (attr.attribute_name && attr.attribute_value) {
+						badgesHtml += `
+							<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+								<strong>${attr.attribute_name}</strong> : ${attr.attribute_value}
+							</span>
+						`;
+					}
+				});
+
+				$badgesContainer.html(badgesHtml);
+
+			} else {
+				$badgesContainer.html('');
+			}
+		}
+
+		// Update badges when modal is closed
+		$(document).on('click', '.submitAttributeBtn', (e) => {
+			let $currentRow = $('#attribute_table').data('currentRow');
+			if ($currentRow) {
+				updateAttributeBadges($currentRow);
+			}
+			$("#attribute").modal('hide');
 		});
 
 		});

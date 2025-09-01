@@ -1557,16 +1557,29 @@ class DocumentApprovalController extends Controller
             $docValue =$lr->total_charges ??  0;
             $remarks = $request->remarks;
             $attachments = $request->file('attachment');
-            $currentLevel = $lr->approval_level ?? 1;
+            $currentLevel = $lr->approval_level;
             $revisionNumber = $lr->revision_number ?? 0;
             $actionType = $request->action_type;
 
             $modelName = get_class($lr);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
-            $lr->approval_level = $approveDocument['nextLevel'] ?? 1;
-            $approvalStatus = $approveDocument['approvalStatus'];
-            $lr->document_status = $approvalStatus;
+            if ($approveDocument['message']) 
+            {
 
+                DB::rollBack();
+
+                return response()->json([
+
+                    'message' => $approveDocument['message'],
+
+                    $approveDocument['message'],
+
+                ], 500);
+
+            }
+            $lr->approval_level = $approveDocument['nextLevel'];
+
+            $lr->document_status = $approveDocument['approvalStatus'];
 
             $lr->save();
 

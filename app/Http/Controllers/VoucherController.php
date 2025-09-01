@@ -772,6 +772,7 @@ class VoucherController extends Controller
 
 
         $bookTypes = $serviceAlias['services'];
+
         $bookTypes = collect($bookTypes)
             ->whereIn('alias', [
                 ConstantHelper::CONTRA_VOUCHER,
@@ -780,6 +781,11 @@ class VoucherController extends Controller
             ])
             ->unique('alias')  
             ->values() ?? [];
+
+        // $bookTypes = collect($bookTypes)->whereIn('alias', [ConstantHelper::CONTRA_VOUCHER,ConstantHelper::JOURNAL_VOUCHER,ConstantHelper::OPENING_BALANCE])->values()??[];
+       
+
+
         
 
         $lastVoucher = Voucher::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->select('book_type_id', 'book_id')->first();

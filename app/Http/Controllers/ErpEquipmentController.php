@@ -12,7 +12,7 @@ use App\Models\ErpEquipMaintenanceDetail;
 use App\Models\ErpMaintenanceType;
 use App\Models\ErpEquipment;
 use App\Models\ErpEquipmentHistory;
-
+use App\Models\InspectionChecklistDetail;
 use App\Models\InspectionChecklist;
 use App\Models\Item;
 use Illuminate\Http\Request;
@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\ConstantHelper;
 use App\Models\PlantMaintBom;
+use App\Models\FixedAssetRegistration;
 
 class ErpEquipmentController extends Controller
 {
@@ -31,7 +32,7 @@ class ErpEquipmentController extends Controller
     public function create()
     {
         $parentURL = request()->segments()[0];
-
+        $fixedAssetRegistration = FixedAssetRegistration::select('id', 'asset_name','asset_code')->get();
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
@@ -39,6 +40,7 @@ class ErpEquipmentController extends Controller
         $organization = Helper::getAuthenticatedUser()->organization;
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+        $dataTypes = ConstantHelper::DATA_TYPES;
         
         $user = Helper::getAuthenticatedUser();
         $userOrganizations = Helper::access_org();
@@ -51,11 +53,11 @@ class ErpEquipmentController extends Controller
         $maintenanceTypes = ErpMaintenanceType::all(['id', 'name']);
         $maintenanceBOM = PlantMaintBom::all(['id', 'bom_name as name']);
 
-        $checklists = InspectionChecklist::get();
+        $checklists = InspectionChecklist::where('type','maintenance')->get();
 
         $items = Item::get();
         $categories = Category::where('type', 'Equipment')->get();
-        return view('equipment.create', compact('maintenanceBOM','series', 'organizationId', 'userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'items', 'checklists'));
+        return view('equipment.create', compact('maintenanceBOM','series', 'organizationId', 'userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'items', 'checklists', 'fixedAssetRegistration','dataTypes'));
     }
 
     public function store(ErpEquipmentRequest $request)
@@ -90,6 +92,7 @@ class ErpEquipmentController extends Controller
                 'book_id' => $book_id, // Or get from elsewhere
                 'document_status' => $request->status, // From request
                 'created_by' => $user->auth_user_id,
+                'asset_code_id' => $request->asset_code_id,
             ]);
             if ($equipment->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($equipment->book_id, $equipment->id, 0, $request->remarks, null, 1, 'submit', 0, get_class($equipment));
@@ -127,16 +130,18 @@ class ErpEquipmentController extends Controller
                     if (!empty($mRow['checklists']) && is_array($mRow['checklists'])) {
                         foreach ($mRow['checklists'] as $check) {
                             // Skip if no ID or name
-                            if (empty($check['id']) && empty($check['name'])) {
+                            if (empty($check['checklist_id'])) {
                                 continue;
                             }
 
+                            $checkListName = InspectionChecklist::where('id', $check['checklist_id'])->select('id','name','description','type')->first();
+
                             ErpEquipMaintenanceChecklist::create([
                                 'erp_equip_maintenance_id' => $maintenance_detail_item->id,
-                                'checklist_id' => $check['id'] ?? null,
-                                'name' => $check['name'],
-                                'description' => $check['description'] ?? null,
-                                'type' => $check['type'] ?? null,
+                                'checklist_id' => $checkListName->id ?? null,
+                                'name' => $checkListName->name,
+                                'description' => $checkListName->description,
+                                'type' => $checkListName->type,
                                 'created_by' => $user->auth_user_id,
                             ]);
                         }
@@ -223,6 +228,8 @@ class ErpEquipmentController extends Controller
             
         }
 
+       
+
         $userType = Helper::userCheck();
 
         $buttons = Helper::actionButtonDisplay(
@@ -247,7 +254,10 @@ class ErpEquipmentController extends Controller
             $approvalHistory = Helper::getApprovalHistory($equipment->book_id, $equipment->id, $revNo, 0, $equipment->created_by);
 
 
-        $checklists = InspectionChecklist::get();
+        $checklists = InspectionChecklist::where('type','maintenance')->get();
+        
+
+        $fixedAssetRegistration = FixedAssetRegistration::select('id', 'asset_name','asset_code')->get();
 
         return view('equipment.edit', compact(
             'equipment',
@@ -261,7 +271,8 @@ class ErpEquipmentController extends Controller
             'buttons',
             'docStatusClass',
             'items',
-            'checklists'
+            'checklists',
+            'fixedAssetRegistration'
         ));
     }
 
@@ -472,6 +483,129 @@ class ErpEquipmentController extends Controller
                 "message" => "An unexpected error occurred. Please try again.",
                 "status" => 500,
             ]);
+        }
+    }
+
+    /**
+     * Get fixed asset codes by book ID via AJAX
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFixedAssetCodesByBookId(Request $request)
+    {
+        try {
+            $bookId = $request->book_id;
+            
+            if (!$bookId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Book ID is required',
+                    'data' => []
+                ], 400);
+            }
+
+            // Import the FixedAssetRegistration model at the top if not already imported
+            $assetCodes = \App\Models\FixedAssetRegistration::where('book_id', $bookId)
+                        ->whereNotNull('asset_code')
+                        ->where('asset_code', '!=', '')
+                        ->select('id', 'asset_code', 'asset_name', 'status')
+                        ->orderBy('asset_code')
+                        ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fixed asset codes fetched successfully',
+                'data' => $assetCodes
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("Get Fixed Asset Codes Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while fetching asset codes',
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get checklist details by checklist ID via AJAX
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getChecklistDetails(Request $request)
+    {
+        // try {
+            $checklistId = $request->checklist_id;
+            
+            if (!$checklistId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Checklist ID is required',
+                    'data' => []
+                ], 400);
+            }
+
+            // Get checklist with its details
+            $checklist = InspectionChecklistDetail::where('header_id', $checklistId)
+                        ->first();
+
+            if (!$checklist) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Checklist not found',
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist details fetched successfully',
+                'data' => [
+                    'checklist' => $checklist,
+                    'details' => $checklist->checklistDetails
+                ]
+            ], 200);
+
+        // } catch (\Exception $e) {
+        //     Log::error("Get Checklist Details Error: " . $e->getMessage());
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'An error occurred while fetching checklist details',
+        //         'data' => []
+        //     ], 500);
+        // }
+    }
+
+    /**
+     * Search checklists via AJAX
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchChecklists(Request $request)
+    {
+        try {
+            // Get all checklists (you can add search filters here if needed)
+            $checklists = \App\Models\InspectionChecklist::select('id', 'name', 'description', 'type')
+                        ->orderBy('name')
+                        ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklists found successfully',
+                'data' => $checklists
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("Search Checklists Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching checklists',
+                'data' => []
+            ], 500);
         }
     }
 

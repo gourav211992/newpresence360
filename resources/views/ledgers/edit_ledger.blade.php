@@ -326,17 +326,6 @@
                                                             pattern="^\d+(\.\d{1,2})?$"/>
                                                         </div>
                                                     </div>
-                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
-                                                        <div class="col-md-2">
-                                                            <label class="form-label"> TDS Capping <span
-                                                                    class="text-danger">*</span></label>
-                                                        </div>
-
-                                                        <div class="col-md-3">
-                                                            <input type="number" class="form-control"
-                                                                id="tds_capping" name="tds_capping" step="any" value="{{ $data->tds_capping }}" />
-                                                        </div>
-                                                    </div>
                                                     <div class="row align-items-center mb-1" id="tds_percentage_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label"> % TDS Without PAN <span
@@ -367,9 +356,20 @@
                                                             </select>
                                                         </div>
                                                     </div>
+                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TDS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_capping" name="tds_capping" step="any" value="{{ $data->tds_capping }}" />
+                                                        </div>
+                                                    </div>
                                                     <div class="row align-items-center mb-1" id="tcs_percentage_label">
                                                         <div class="col-md-2">
-                                                            <label class="form-label">% TCS Calculation <span
+                                                            <label class="form-label">% TCS With PAN <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-3">
@@ -391,6 +391,7 @@
                                                             pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
+                                                   
                                                     <div class="row align-items-center mb-1" id="tcs_capping_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label"> TCS Capping <span
@@ -402,6 +403,7 @@
                                                                 id="tcs_capping" name="tcs_capping"  step="any" value="{{ $data->tcs_capping }}" />
                                                         </div>
                                                     </div>
+                                                    
                                                 </div>
                                             </div>
                                         </div>
@@ -732,7 +734,7 @@
             .hide();
                 $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required', false)
                     .hide();
-                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required', false)
+                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label,#tcs_without_pan_label,#tcs_without_pan').attr('required', false)
                     .hide();
 
                 // Check which special group is selected (only one can be selected)
@@ -746,12 +748,12 @@
                         true).show();
                 } else if ({{ $tcs_group_id }} != null && selectedOptions.includes("{{ $tcs_group_id }}")) {
                     showGst = true;
-                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required',
+                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label,#tcs_without_pan_label,#tcs_without_pan').attr('required',
                         true).show();
                 }
 
                 // Toggle the GST section visibility
-                if (showGst) {
+                if (showGst) {  
                     $('#gst').show();
                 } else {
                     $('#gst').hide();

@@ -115,6 +115,25 @@
                           <h4 class="card-title text-theme">Basic Information</h4>
                           <p class="card-text">Fill the details</p>
                         </div>
+                        <div class="header-right">
+                          @php
+                              use App\Helpers\Helper;
+                          @endphp
+                          <div class="col-md-6 text-sm-end">
+                              <span
+                                  class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
+                                  <span class="text-dark">Status</span>
+                                  : <span
+                                      class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                      @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                          Approved
+                                      @else
+                                          {{ ucfirst($data->document_status) }}
+                                      @endif
+                                  </span>
+                              </span>
+                          </div>
+                      </div>
                       </div>
                     </div>
 

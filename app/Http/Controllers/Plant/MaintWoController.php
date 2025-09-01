@@ -18,6 +18,7 @@ use App\Models\ErpEquipment;
 use App\Models\ErpMaintenanceType;
 use App\Models\ErpDefectType;
 use App\Models\ErpItem;
+use Carbon\Carbon;
 use App\Models\ErpEquipMaintenanceChecklist;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -26,9 +27,31 @@ class MaintWoController extends Controller
 {
     public function index()
     {
-        $data = PlantMaintWo::all();
+        $data = PlantMaintWo::select('id', 'equipment_details','document_number','document_date','document_status','book_id')
+            ->get()
+            ->map(function ($row) {
+                $details = $row->equipment_details;
+
+                if (is_string($details)) {
+                    $details = json_decode($details, true);
+                }
+
+                // Default values
+                $row->equipment_category = $details['equipment_category'] ?? null;
+                $row->equipment_defect_type = $details['equipment_defect_type'] ?? null;
+
+                $row->equipment_name = null;
+                if (!empty($details['equipment_id'])) {
+                    $row->equipment_name = ErpEquipment::where('id', $details['equipment_id'])
+                        ->value('name');
+                }
+
+                return $row;
+            });
+
         return view('plant.maint_wo.index', compact('data'));
     }
+
 
     public function show(Request $request, string $id)
     {
@@ -861,11 +884,12 @@ class MaintWoController extends Controller
             });
         } elseif ($type == 'eqpt') {
             $query = ErpEquipMaintenanceDetail::with([
+                'equipment',
                 'bom.book',
                 'maintenanceType',
                 'checklists',
                 'equipment.book',
-                'equipment.location',
+                'equipment.location',   
                 'equipment.category',
                 'equipment.spareParts'
             ])
@@ -878,11 +902,49 @@ class MaintWoController extends Controller
             });
 
             $equipmentData = $query->get();
-            // dd($equipmentData);
-
-           
+            //Need to optimize this query acording to only requied field for each relation
 
             foreach ($equipmentData as $eqpt) {
+
+                $dueDate = null;
+
+                if ($eqpt->equipment && $eqpt->equipment->document_status === 'approved') {
+                    $base = $eqpt->start_date ? Carbon::parse($eqpt->start_date) : null;
+                    if ($base) {
+                        $freqType = $eqpt->frequency ?? '';
+            
+                        switch ($freqType) {
+                            case 'Daily':
+                                $dueDate = $base->copy()->addDay();
+                                break;
+                            case 'Weekly':
+                                $dueDate = $base->copy()->addWeek();
+                                break;
+                            case 'Monthly':
+                                $dueDate = $base->copy()->addMonth();
+                                break;
+                            case 'Quarterly':
+                                $dueDate = $base->copy()->addMonths(3);
+                                break;
+                            case 'Semi-Annually':
+                                $dueDate = $base->copy()->addMonths(6);
+                                break;
+                            case 'Annually':
+                                $dueDate = $base->copy()->addYear();
+                                break;
+                            case 'Yearly':
+                                $dueDate = $base->copy()->addYear();
+                                break;
+                            default:
+                                $dueDate = $base;
+                        }
+                    }
+                } else {
+                    $dueDate = $eqpt->start_date ? Carbon::parse($eqpt->start_date) : null;
+                }
+            
+                $eqpt->due_date = $dueDate ? $dueDate->format('Y-m-d') : null;
+
                 $maintenance_type_id = $eqpt->maintenance_type_id;
 
                 $maintenanceChecklists = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $eqpt->id)
@@ -938,6 +1000,7 @@ class MaintWoController extends Controller
                 $eqpt->checklistsData = $checklistsData;
                 $eqpt->checklistsIdsName = $maintenanceChecklists;
             }
+           
          
             
 
@@ -949,6 +1012,7 @@ class MaintWoController extends Controller
 
                     $equipment = $detail->equipment;
                     $equipment->checklists_data = $checklistsData;
+                    $equipment->due_date = $detail->due_date;
 
                     $data[] = [
                         'equipment' => $equipment,
@@ -1145,24 +1209,6 @@ class MaintWoController extends Controller
                 'completed_at' => now()->toDateTimeString(),
             ]);
 
-            /*
-            foreach ($checklistData as $group) {
-                foreach ($group['checklist'] as $item) {
-                    DB::table('maint_wo_checklist_responses')->insert([
-                        'work_order_id' => $workOrderId,
-                        'checklist_group'  => $group['main_name'],
-                        'checklist_name'   => $item['name'],
-                        'data_type'        => $item['data_type'],
-                        'value'            => $item['value'],
-                        'mandatory'        => $item['mandatory'],
-                        'completed_at'     => $item['completed_at'],
-                        'completed_by'     => $item['completed_by'],
-                        'created_at'       => now(),
-                        'updated_at'       => now(),
-                    ]);
-                }
-            }
-            */
         } catch (\Exception $e) {
             \Log::error('Error saving checklist records: ' . $e->getMessage());
         }
@@ -1196,15 +1242,16 @@ class MaintWoController extends Controller
                 $rawSparePartsData = json_decode($bomData->spare_parts, true);
                 
                 foreach ($rawSparePartsData as $sparePart) {
-                    $item = ErpItem::find($sparePart['item_id']);
+                    // $item = ErpItem::find($sparePart['item_id']);
+                    // dd($sparePart);
                     
                     $sparePartData = [
                         'item_id' => $sparePart['item_id'],
-                        'item_code' => $item ? $item->item_code : 'N/A',
-                        'item_name' => $item ? $item->item_name : 'N/A',
+                        'item_code' => $sparePart['item_code'] ?? 'N/A',
+                        'item_name' => $sparePart['item_name'] ?? 'N/A',
                         'qty' => $sparePart['qty'] ?? 0,
-                        'uom' => $item && $item->uom ? $item->uom->name : 'N/A',
-                        'uom_id' => $item ? $item->uom_id : null,
+                        'uom' => $sparePart['uom_name'] ?? 'N/A',
+                        'uom_id' => $sparePart['uom_id'] ?? null,
                         'attribute' => $sparePart['attribute'] ?? '[]',
                         'attributes' => []
                     ];
@@ -1347,19 +1394,17 @@ class MaintWoController extends Controller
 
         $maintenanceDetails = $query->get();
 
-        // If no data found, return empty array for modal
         if ($maintenanceDetails->isEmpty()) {
             return response()->json([]);
         }
 
-        // Process data similar to populateModal method
         $data = [];
         $equipmentGroups = $maintenanceDetails->groupBy('erp_equipment_id');
 
         foreach ($equipmentGroups as $equipmentId => $details) {
             $firstDetail = $details->first();
             if ($firstDetail->equipment) {
-                // Get maintenance types for this equipment
+                // Maintenance types for this equipment
                 $maintenanceTypes = $details->map(function ($detail) {
                     return [
                         'id' => $detail->maintenanceType->id,
@@ -1367,7 +1412,55 @@ class MaintWoController extends Controller
                     ];
                 })->unique('id')->values();
 
-                // Get checklists data for the first maintenance type
+                // ✅ Due date & Last Maint Date logic
+                $dueDate = null;
+                $lastMaintDate = null;
+                // dd($firstDetail->equipment->document_status);
+                if ($firstDetail->equipment->document_status === 'approved') {
+                    if ($firstDetail->start_date) {
+                        $lastMaintDate = Carbon::parse($firstDetail->start_date);
+                        $base = $lastMaintDate->copy();
+                        $freqType = trim($firstDetail->frequency ?? '');
+
+                        switch ($freqType) {
+                            case 'Daily':
+                                $dueDate = $base->copy()->addDay();
+                                break;
+
+                            case 'Weekly':
+                                $dueDate = $base->copy()->addWeek();
+                                break;
+
+                            case 'Monthly':
+                                $dueDate = $base->copy()->addMonth();
+                                break;
+
+                            case 'Quarterly':
+                                $dueDate = $base->copy()->addMonths(3);
+                                break;
+
+                            case 'Semi-Annually':
+                            case 'Semi Annually':
+                            case 'Semi Annualy':
+                                $dueDate = $base->copy()->addMonths(6);
+                                break;
+
+                            case 'Annually':
+                            case 'Annualy':
+                            case 'Yearly':
+                                $dueDate = $base->copy()->addYear();
+                                break;
+
+                            default:
+                                $dueDate = $base;
+                        }
+                    }
+                } else {
+                    $lastMaintDate = null;
+                    $dueDate = $firstDetail->start_date ? Carbon::parse($firstDetail->start_date) : null;
+                }
+
+                // Checklists logic
                 $maintenance_type_id = $firstDetail->maintenance_type_id;
                 $maintenanceChecklists = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $maintenance_type_id)
                     ->select('erp_equip_maintenance_id', 'name')
@@ -1416,6 +1509,8 @@ class MaintWoController extends Controller
 
                 $equipment = $firstDetail->equipment;
                 $equipment->checklists_data = $checklistsData;
+                $equipment->last_maint_date = $lastMaintDate ? $lastMaintDate->format('Y-m-d') : null;
+                $equipment->due_date = $dueDate ? $dueDate->format('Y-m-d') : null;
 
                 $data[] = [
                     'equipment' => $equipment,

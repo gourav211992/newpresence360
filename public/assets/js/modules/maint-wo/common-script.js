@@ -506,6 +506,7 @@ function loadModal(type) {
               <td>${eqpt?.bom?.bom_name ?? 'N/A'}</td>
               <td>${eqpt?.bom?.book?.book_code ?? 'N/A'}</td>
               <td>${eqpt?.bom?.document_number ?? 'N/A'}</td>
+              <td>${eqpt?.equipment?.due_date ?? 'N/A'}</td>
             </tr>`;
           $("#eqptTable").append(row);
         });
@@ -518,6 +519,8 @@ function loadModal(type) {
 function populateEquipmentModal(response) {
   // Clear existing table
   $("#eqptTable").empty();
+  console.log("chck the response here", response);
+  
   
   // Store data globally for later use
   window.equipmentModalData = response;
@@ -548,6 +551,7 @@ function populateEquipmentModal(response) {
           <td>${eqpt.bom?.bom_name ?? 'N/A'}</td>
           <td><span class="badge badge-info">MAINT_BOM</span> ${eqpt.bom?.book?.book_code ?? 'N/A'}</td>
           <td>${eqpt.bom?.document_number ?? 'N/A'}</td>
+          <td>${eqpt.equipment?.due_date ?? 'N/A'}</td>
         </tr>`;
       $("#eqptTable").append(row);
     });
@@ -555,7 +559,7 @@ function populateEquipmentModal(response) {
     // Show empty state
     $("#eqptTable").append(`
       <tr>
-        <td colspan="6" class="text-center text-muted">
+        <td colspan="7" class="text-center text-muted">
           No equipment found for the selected criteria.
         </td>
       </tr>
@@ -628,10 +632,11 @@ function createChecklistInputField(checklistItem, groupIndex, itemIndex) {
     case 'boolean':
     case 'checkbox':
       inputField = `
-        <div class="form-check form-check-primary custom-checkbox ms-50">
-          <input type="checkbox" class="mt-25 form-check-input" name="${fieldName}" id="${fieldId}" value="1" ${currentValue === '1' || currentValue === 'true' ? 'checked' : ''} ${isRequired}>
-          <label class="mb-50 mt-25 form-check-label" for="${fieldId}">Yes/No</label>
-        </div>`;
+         <select class="form-control mw-100" name="${fieldName}" id="${fieldId}" ${isRequired}>
+              <option value="">Select an option</option>
+              <option value="1" ${currentValue == 1 ? 'selected' : ''}>Yes</option>
+              <option value="0" ${currentValue == 0 ? 'selected' : ''}>No</option>
+            </select>`;
       break;
     case 'date':
       inputField = `<input type="date" class="form-control mw-100" name="${fieldName}" id="${fieldId}" value="${currentValue}" ${isRequired}>`;
@@ -682,6 +687,8 @@ function fetchEquipmentSpareParts(equipmentId, maintenanceTypeId) {
   });
 }
 function populateSparePartsTable(sparePartsData) {
+  
+  console.log("check the spare parts", sparePartsData);
   const tableBody = $('#spareParts');
   tableBody.empty();
   if (!sparePartsData || sparePartsData.length === 0) {
@@ -708,6 +715,15 @@ function populateSparePartsTable(sparePartsData) {
           <input type="hidden" class="attribute" value='${JSON.stringify(convertToSimpleFormat(part.attributes || []))}'>
           <input type="hidden" class="attribute-enriched" value='${JSON.stringify(part.attributes || [])}'>
           <button type="button" data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" style="font-size:10px">Attributes</button>
+          <div class="d-flex flex-wrap gap-1 mt-1" id="attribute-badges-${index}">
+            ${
+              (part.attributes || []).map(attr => {
+                return `<span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
+                          <strong>${attr.group_name || attr.type || 'Type'}</strong>: ${attr.selected_value_name || attr.value || ''}
+                        </span>`;
+              }).join('')
+            }
+          </div>
         </td>
         <td>
           <select class="uom form-select mw-100" name="uom[]" required>
@@ -720,33 +736,114 @@ function populateSparePartsTable(sparePartsData) {
       </tr>`;
     tableBody.append(row);
   });
+
   $('#spareParts tr[data-index]').off('click').on('click', function () {
     const index = $(this).data('index');
     const partData = sparePartsData[index];
     if (partData) populatePartDetails(partData);
   });
 }
+
+// Event delegation for all spare parts rows (including newly added ones)
+$(document).on('click', '#spareParts tr', function () {
+  const $row = $(this);
+  
+  // Skip if it's a header row or doesn't have form inputs
+  if ($row.find('.item_code').length === 0) return;
+  
+  // Get data from the row inputs
+  const partData = {
+    item_name: $row.find('.item_name').val() || 'N/A',
+    item_code: $row.find('.item_code').val() || '',
+    uom_name: $row.find('.uom option:selected').text() || 'N/A',
+    uom: $row.find('.uom').val() || '',
+    qty: $row.find('.qty').val() || '0',
+    attributes: []
+  };
+  
+  // Get attributes if available
+  const attributeInput = $row.find('.attribute');
+  if (attributeInput.length && attributeInput.val()) {
+    try {
+      const attributes = JSON.parse(attributeInput.val());
+      partData.attributes = attributes.map(attr => ({
+        group_name: attr.attribute_name || 'Attribute',
+        selected_value_name: attr.attribute_value || 'N/A'
+      }));
+    } catch (e) {
+      console.error('Error parsing attributes:', e);
+    }
+  }
+  
+  // Populate part details
+  populatePartDetails(partData);
+});
+
 function convertToSimpleFormat(attributesDetailed) {
   if (!attributesDetailed || !Array.isArray(attributesDetailed)) return [];
   return attributesDetailed.map(function (attr) {
     return { item_attribute_id: attr.item_attribute_id, value_id: attr.selected_value_id };
   });
 }
+
 function populatePartDetails(partData) {
-  $('#part_name').text(partData.item_name || '');
-  $('#uom').text(partData.uom_name || partData.uom || '');
-  $('#qty').text(partData.qty || '0');
-  const attributesBadges = $('#attributes_badges');
-  attributesBadges.empty();
-  if (partData.attributes && partData.attributes.length > 0) {
-    partData.attributes.forEach(function (attr) {
-      const badge = `<span class="badge rounded-pill badge-light-info me-1 mb-1"><strong>${attr.group_short_name}</strong>: ${attr.selected_value_name}</span>`;
-      attributesBadges.append(badge);
-    });
-  } else {
-    attributesBadges.append('<span class="badge rounded-pill badge-light-secondary"></span>');
-  }
+  return `
+  <tr>
+    <td class="customernewsection-form">
+      <div class="form-check form-check-primary custom-checkbox">
+        <input type="checkbox" class="form-check-input row-check">
+        <label class="form-check-label"></label>
+      </div>
+    </td>
+
+    <td class="poprod-decpt">
+      <input type="hidden" class="item_id" value="${partData.item_id || ''}">
+      <input required type="text" placeholder="Select" name="item[]"
+        class="item_code form-control mw-100 ledgerselecct mb-25"
+        value="${partData.item_code || ''}" />
+    </td>
+
+    <td class="poprod-decpt">
+      <input type="text" placeholder="Select"
+        class="item_name form-control mw-100 ledgerselecct mb-25"
+        value="${partData.item_name || ''}" />
+    </td>
+
+    <td class="poprod-decpt">
+      <input type="hidden" class="attribute" value='${JSON.stringify(partData.attributes || [])}'>
+      <button data-bs-toggle="modal" data-bs-target="#attribute"
+        class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+        style="font-size: 10px">Attributes</button>
+    </td>
+
+    <td>
+      <select class="uom form-select mw-100" name="uom[]" required>
+        ${buildUomOptions(partData)}
+      </select>
+    </td>
+
+    <td>
+      <input type="number" class="qty form-control mw-100" name="qty[]"
+        value="${partData.qty || 0}" required />
+    </td>
+  </tr>
+`;
 }
+
+function buildUomOptions(partData) {
+  let html = '';
+  if (Array.isArray(partData.uoms) && partData.uoms.length > 0) {
+    partData.uoms.forEach(u => {
+      html += `<option value="${u.id}" ${u.id == partData.uom_id ? 'selected' : ''}>${u.name}</option>`;
+    });
+  } else if (partData.uom_id && partData.uom_name) {
+    html = `<option value="${partData.uom_id}" selected>${partData.uom_name}</option>`;
+  } else if (partData.uom) {
+    html = `<option value="${partData.uom}" selected>${partData.uom}</option>`;
+  }
+  return html;
+}
+
 function showLoadingIndicator() {
   if ($('#loading-indicator').length === 0) $('body').append('<div id="loading-indicator" class="loading-overlay">Loading spare parts...</div>');
   $('#loading-indicator').show();
@@ -870,3 +967,216 @@ $(document).on('submit', '#maint-wo-form', function () {
 
 // === Misc ===
 function onDocDateChange() {} // kept for compatibility if referenced elsewhere
+
+// === Attribute Badge Functions ===
+// Handle attribute button click
+$(document).on('click', '.attributeBtn', function (e) {
+  let $tr = $(this).closest('tr');
+  let $selectElement = $tr.find('.item_code');
+  let $attributesTable = $('#attribute_table'); // modal table
+  $attributesTable.data('currentRow', $tr);
+
+  if ($selectElement.val() !== "") {
+    let $hiddenInput = $tr.find('.attribute-enriched');
+    let attributesJSON = [];
+    let existingAttributes = [];
+
+    // Scenario 1: Existing row with enriched attribute data
+    if ($hiddenInput.length && $hiddenInput.val()) {
+      try {
+        let attributeData = JSON.parse($hiddenInput.val());
+        // Convert from all_values structure to values_data structure
+        attributesJSON = attributeData.map(function(attr) {
+          return {
+            id: attr.item_attribute_id,
+            group_name: attr.group_name,
+            values_data: attr.all_values || []
+          };
+        });
+        existingAttributes = attributeData.map(function(attr) {
+          return {
+            item_attribute_id: attr.item_attribute_id,
+            value_id: attr.selected_value_id,
+            attribute_name: attr.group_name,
+            attribute_value: attr.selected_value_name
+          };
+        });
+      } catch (e) {
+        console.error('Error parsing enriched attribute data:', e);
+      }
+    }
+    
+    // Scenario 2: New row addition (uses data-attr attribute with values_data structure)
+    if (!attributesJSON.length && $selectElement.val() !== "") {
+      try {
+        attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+        let $hiddenInputSimple = $tr.find('.attribute');
+        existingAttributes = $hiddenInputSimple.length && $hiddenInputSimple.val()
+          ? JSON.parse($hiddenInputSimple.val())
+          : [];
+      } catch (e) {
+        console.error('Error parsing data-attr:', e);
+      }
+    }
+
+    if (!attributesJSON.length) {
+      $attributesTable.html(`
+        <tr>
+          <td colspan="2" class="text-center">No attributes available</td>
+        </tr>
+      `);
+      return;
+    }
+
+    let innerHtml = ``;
+
+    $.each(attributesJSON, function (index, element) {
+      let optionsHtml = ``;
+
+      $.each(element.values_data, function (i, value) {
+        let isSelected = existingAttributes.some(attr =>
+          attr.item_attribute_id === element.id && attr.value_id === value.id
+        );
+
+        optionsHtml += `
+          <option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
+        `;
+      });
+
+      innerHtml += `
+        <tr>
+          <td>
+            ${element.group_name}
+            <input type="hidden" name="id" value="${element.id}">
+          </td>
+          <td>
+            <select class="form-select" onchange="changeAttributeVal($(this).closest('tr').closest('table').data('currentRow'));">
+              <option value="">Select Value</option>
+              ${optionsHtml}
+            </select>
+          </td>
+        </tr>
+      `;
+    });
+
+    $attributesTable.html(innerHtml);
+  } else {
+    $attributesTable.html(`
+      <tr>
+        <td colspan="2" class="text-center">Please select an item first</td>
+      </tr>
+    `);
+  }
+});
+
+// Function to handle attribute value changes
+function changeAttributeVal($row) {
+  let hiddenInput = $row.find('.attribute');
+  let hiddenInputEnriched = $row.find('.attribute-enriched');
+
+  if (!hiddenInput) return;
+
+  // Find the attributes table and tbody
+  const attributesTable = document.getElementById("attribute_table");
+  const tbody = attributesTable;
+
+  let selectedAttributes = [];
+  let selectedAttributesEnriched = [];
+
+  Array.from(tbody.rows).forEach(row => {
+    const hiddenInputAttr = row.querySelector('input[type="hidden"][name="id"]');
+    const selectElement = row.querySelector("select");
+
+    if (hiddenInputAttr && selectElement) {
+      const attributeId = parseInt(hiddenInputAttr.value, 10);
+      const selectedVal = parseInt(selectElement.value, 10);
+      
+      // Get the attribute name from the row
+      const attributeNameCell = row.querySelector('td:first-child');
+      const attributeName = attributeNameCell ? attributeNameCell.textContent.trim() : '';
+      
+      // Get the selected value text
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
+      const selectedValueText = selectedOption ? selectedOption.textContent.trim() : '';
+
+      if (!isNaN(attributeId) && !isNaN(selectedVal) && selectedVal > 0) {
+        // Simple format for backend
+        selectedAttributes.push({
+          item_attribute_id: attributeId,
+          value_id: selectedVal,
+          attribute_name: attributeName,
+          attribute_value: selectedValueText
+        });
+
+        // Enriched format for UI
+        selectedAttributesEnriched.push({
+          item_attribute_id: attributeId,
+          selected_value_id: selectedVal,
+          group_name: attributeName,
+          selected_value_name: selectedValueText
+        });
+      }
+    }
+  });
+
+  // Update hidden inputs with JSON
+  hiddenInput.val(JSON.stringify(selectedAttributes));
+  if (hiddenInputEnriched.length) {
+    hiddenInputEnriched.val(JSON.stringify(selectedAttributesEnriched));
+  }
+  
+  console.log('Selected attributes:', selectedAttributes);
+}
+
+// Function to update attribute badges display
+function updateAttributeBadges($row) {
+  if (!$row) return;
+
+  let $selectElement = $row.find('.item_code');
+  let rowIndex = $row.data('index') || $row.index();
+  let $badgesContainer = $(`#attribute-badges-${rowIndex}`);
+  
+  // Fallback if specific container not found
+  if (!$badgesContainer.length) {
+    $badgesContainer = $row.find('.d-flex.flex-wrap.gap-1');
+  }
+
+  if ($selectElement.val() !== "") {
+    let $hiddenInput = $row.find('.attribute');
+    let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+      ? JSON.parse($hiddenInput.val())
+      : [];
+
+    if (!existingAttributes.length) {
+      $badgesContainer.html('');
+      return;
+    }
+
+    let badgesHtml = '';
+
+    // Display badges for each selected attribute
+    $.each(existingAttributes, function (index, attr) {
+      if (attr.attribute_name && attr.attribute_value) {
+        badgesHtml += `
+          <span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+            <strong>${attr.attribute_name}</strong> : ${attr.attribute_value}
+          </span>
+        `;
+      }
+    });
+
+    $badgesContainer.html(badgesHtml);
+
+  } else {
+    $badgesContainer.html('');
+  }
+}
+
+// Update badges when modal is closed
+$(document).on('click', '.submitAttributeBtn', (e) => {
+  let $currentRow = $('#attribute_table').data('currentRow');
+  if ($currentRow) {
+    updateAttributeBadges($currentRow);
+  }
+  $("#attribute").modal('hide');
+});
