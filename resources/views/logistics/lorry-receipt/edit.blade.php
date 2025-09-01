@@ -1181,15 +1181,15 @@ $(document).on('click', '#deleteSelected', function (e) {
     });
 });
 
-$(document).ready(function () {
-    $('#item-table-body tr').each(function () {
-        const $row = $(this);
-        const locationId = $row.find('input[name*="[location_id]"]').val();
-        if (locationId && globalSourceId) {
-            checkFreePoint(locationId, globalSourceId, $row, true); 
-        }
-    });
-});
+// $(document).ready(function () {
+//     $('#item-table-body tr').each(function () {
+//         const $row = $(this);
+//         const locationId = $row.find('input[name*="[location_id]"]').val();
+//         if (locationId && globalSourceId) {
+//             checkFreePoint(locationId, globalSourceId, $row, true); 
+//         }
+//     });
+// });
 
 </script>
 
