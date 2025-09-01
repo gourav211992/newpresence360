@@ -14,6 +14,9 @@
                                 <input type="hidden" name="doc_prefix" id="doc_prefix">
                                 <input type="hidden" name="doc_suffix" id="doc_suffix">
                                 <input type="hidden" name="doc_no" id="doc_no">
+                                
+                                <!-- Hidden inputs for checklist data -->
+                                <div id="checklistDataInputs"></div>
                 <div class="content-header pocreate-sticky">
                     <div class="row">
                         <div class="content-header-left col-md-6 mb-2">
@@ -117,6 +120,20 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="location_id" name="location_id">
                                                             {{-- Populated by JS --}}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Asset Code</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" id="asset_code_id" name="asset_code_id">
+                                                            <option value="">Select Asset Code</option>
+                                                            @foreach($fixedAssetRegistration as $asset)
+                                                                <option value="{{ $asset->id }}">{{ $asset->asset_code }} - {{ $asset->asset_name }}</option>
+                                                            @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
@@ -522,7 +539,7 @@
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" id="checkListPortion">
                     <div class="row">
 
                         <div class="col-md-4">
@@ -530,6 +547,9 @@
                                 <label class="form-label">Checklist <span class="text-danger">*</span></label>
                                 <select class="form-select select2">
                                     <option>Select</option>
+                                    @foreach($checklists as $checklist)
+                                    <option value="{{ $checklist->id }}">{{ $checklist->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -541,6 +561,8 @@
 
                         <div class="col-md-12">
                             <div class="table-responsive">
+                                Select Checklist
+                                <div class="text-end" style="margin-top: -30px"><a href="#" class="text-primary add-contactpeontxt mt-50" onclick="addPortion()"><i data-feather='plus'></i> Add Checklist</a></div>
                                 <table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
                                     <thead>
                                         <tr>
@@ -556,22 +578,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($checklists as $checklist)
-                                            <tr class="trail-bal-tabl-none">
-                                                <td class="customernewsection-form">
-                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                        <input type="checkbox" value="{{ $checklist->id }}"
-                                                            class="form-check-input" id="Email">
-                                                        <label class="form-check-label" for="Email"></label>
-                                                    </div>
-                                                </td>
-                                                <td>{{ $checklist->name }}</td>
-                                                <td>{{ $checklist->description }}</td>
-                                                <td><span
-                                                        class="badge rounded-pill badge-light-secondary">{{ $checklist->type }}</span>
-                                                </td>
-                                            </tr>
-                                        @endforeach
+                                       
                                     </tbody>
                                 </table>
                             </div>
@@ -812,6 +819,310 @@
                 }
             }
         });
+
+        // Track selected checklist IDs across all sections
+        let selectedChecklistIds = [];
+
+        // Handle search button click for checklist details
+        $(document).on('click', '.btn-warning', function(e) {
+            e.preventDefault();
+            
+            // Find the dropdown in the same row
+            const dropdown = $(this).closest('.row').find('select');
+            const checklistId = dropdown.val();
+            
+            if (!checklistId) {
+                alert('Please select a checklist first');
+                return;
+            }
+            
+            // Check if this checklist is already selected in another section
+            if (selectedChecklistIds.includes(checklistId)) {
+                alert('This checklist is already selected in another section. Please choose a different checklist.');
+                // Clear the dropdown value
+                dropdown.val('');
+                return;
+            }
+            
+            console.log('Selected Checklist ID:', checklistId);
+            
+            // AJAX call to get checklist details
+            $.ajax({
+                url: '{{ route("equipment.get-checklist-details") }}',
+                method: 'POST',
+                data: {
+                    checklist_id: checklistId,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    console.log('AJAX Success Response:', response);
+                    
+                    if (response.success) {
+                        console.log('Checklist Data:', response.data);
+                        
+                        // Find the table tbody in the same row
+                        const tbody = $(this).closest('.row').find('tbody');
+                        
+                        // Clear existing data
+                        tbody.empty();
+                        
+                        if (response.data && response.data.checklist) {
+                            const checklist = response.data.checklist;
+                            
+                            // Add to selected list
+                            selectedChecklistIds.push(checklistId);
+                            
+                            // Create table row with checklist data
+                            const tableRow = `
+                                <tr>
+                                    <td class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input" value="${checklist.id}">
+                                            <label class="form-check-label"></label>
+                                        </div>
+                                    </td>
+                                    <td>${checklist.name || ''}</td>
+                                    <td>${checklist.description || ''}</td>
+                                    <td>
+                                        <span class="badge rounded-pill badge-light-info">${checklist.data_type || ''}</span>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            tbody.append(tableRow);
+                            console.log('Table populated with checklist data');
+                            
+                            // Update all dropdowns to exclude selected checklists
+                            updateAllDropdowns();
+                        } else {
+                            tbody.html('<tr><td colspan="4" class="text-center text-muted">No checklist data found</td></tr>');
+                        }
+                    } else {
+                        console.log('Error Message:', response.message);
+                        
+                        // Show error in table
+                        const tbody = $(this).closest('.row').find('tbody');
+                        tbody.html(`<tr><td colspan="4" class="text-center text-danger">${response.message}</td></tr>`);
+                    }
+                }.bind(this),
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', error);
+                    console.log('Status:', status);
+                    console.log('Response:', xhr.responseText);
+                }
+            });
+        });
+
+        // Update all dropdowns to exclude selected checklists
+        function updateAllDropdowns() {
+            $('#checkListPortion select').each(function() {
+                const currentDropdown = $(this);
+                const currentValue = currentDropdown.val();
+                
+                // Show all options first
+                currentDropdown.find('option').show();
+                
+                // Hide selected options (except current selection)
+                selectedChecklistIds.forEach(function(selectedId) {
+                    if (selectedId !== currentValue) {
+                        console.log(selectedId);
+                        currentDropdown.find(`option[value="${selectedId}"]`).hide();
+                    }
+                });
+            });
+        }
+
+        // Add new checklist portion function
+        function addPortion(){
+            const portionId = 'portion_' + Date.now(); // Unique ID for each portion
+            const newPortionHtml = `
+                <div class="row checklist-portion" id="${portionId}">
+                    <div class="col-md-4">
+                        <div class="mb-1">
+                            <label class="form-label">Checklist <span class="text-danger">*</span></label>
+                            <select class="form-select select2">
+                                <option>Select</option>
+                                @foreach($checklists as $checklist)
+                                <option value="{{ $checklist->id }}">{{ $checklist->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-1">
+                        <label class="form-label">&nbsp;</label><br />
+                        <button class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="table-responsive">
+                            Select Checklist
+                            <div class="text-end" style="margin-top: -30px">
+                                <a href="#" class="text-primary add-contactpeontxt mt-50 me-2" onclick="addPortion()"><i data-feather='plus'></i> Add Checklist</a>
+                                <a href="#" class="text-danger remove-contactpeontxt mt-50" onclick="removePortion('${portionId}')"><i data-feather='minus'></i> Remove Checklist</a>
+                            </div>
+                            <table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
+                                <thead>
+                                    <tr>
+                                        <th width="40px" class="customernewsection-form">
+                                            <div class="form-check form-check-primary custom-checkbox">
+                                                <input type="checkbox" class="form-check-input">
+                                                <label class="form-check-label"></label>
+                                            </div>
+                                        </th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                   
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add the new portion to checkListPortion container
+            $('#checkListPortion').append(newPortionHtml);
+            
+            // Re-initialize feather icons for new elements
+            feather.replace();
+            
+            // Update all dropdowns to hide already selected checklists
+            updateAllDropdowns();
+        }
+
+        // Remove checklist portion function
+        function removePortion(portionId) {
+            // Get the selected checklist ID from this portion before removing
+            const portion = $('#' + portionId);
+            const selectedValue = portion.find('select').val();
+            
+            // Remove the selected checklist ID from selectedChecklistIds array
+            if (selectedValue && selectedValue !== 'Select') {
+                const index = selectedChecklistIds.indexOf(selectedValue);
+                if (index > -1) {
+                    selectedChecklistIds.splice(index, 1);
+                }
+            }
+            
+            // Remove the portion from DOM
+            portion.remove();
+            
+            // Update all remaining dropdowns to show the previously selected option
+            updateAllDropdowns();
+        }
+
+        // Collect checklist data and associate with maintenance rows
+        function collectChecklistData() {
+            let checklistData = [];
+            let detailIdCounter = 1;
+            
+            // Loop through all checklist portions
+            $('#checkListPortion .row').each(function(index) {
+                const portion = $(this);
+                const checklistId = portion.find('select').val();
+                const checklistName = portion.find('select option:selected').text();
+                
+                // Only include if a checklist is selected
+                if (checklistId && checklistId !== 'Select') {
+                    // Add all items from this checklist
+                    portion.find('tbody tr').each(function(itemIndex) {
+                        const row = $(this);
+                        checklistData.push({
+                            checklist_id: checklistId,
+                            checklist_detail_id: detailIdCounter,
+                            name: row.find('td:nth-child(2)').text().trim(),
+                            description: row.find('td:nth-child(3)').text().trim(),
+                            type: row.find('td:nth-child(4)').text().trim()
+                        });
+                        detailIdCounter++;
+                    });
+                }
+            });
+            
+            return checklistData;
+        }
+
+        // Update maintenance rows with checklist data
+        function updateChecklistInputs() {
+            const checklistData = collectChecklistData();
+            console.log('Collected Checklist Data:', checklistData);
+            
+            // Find the first maintenance row (assuming checklists belong to first maintenance)
+            const firstMaintenanceRow = $('#maintenanceRows tr').first();
+            console.log('First Maintenance Row Found:', firstMaintenanceRow.length > 0);
+            
+            if (firstMaintenanceRow.length > 0) {
+                // Try different ways to find row ID
+                let rowId = firstMaintenanceRow.find('input').first().attr('name');
+                if (!rowId) {
+                    rowId = firstMaintenanceRow.find('select').first().attr('name');
+                }
+                if (!rowId) {
+                    rowId = firstMaintenanceRow.find('input, select').first().attr('name');
+                }
+                
+                console.log('Row ID:', rowId);
+                console.log('All inputs in row:', firstMaintenanceRow.find('input, select').length);
+                
+                // If still no rowId, let's try to find it from any element with name attribute
+                if (!rowId) {
+                    firstMaintenanceRow.find('[name]').each(function() {
+                        const elementName = $(this).attr('name');
+                        console.log('Found element with name:', elementName);
+                        if (elementName && elementName.includes('maintenance[')) {
+                            rowId = elementName;
+                            return false; // Break the loop
+                        }
+                    });
+                }
+                
+                if (rowId) {
+                    const rowKeyMatch = rowId.match(/maintenance\[(.*?)\]/);
+                    if (rowKeyMatch) {
+                        const rowKey = rowKeyMatch[1];
+                        console.log('Row Key:', rowKey);
+                        
+                        // Clear existing checklist inputs for this maintenance row
+                        $(`input[name^="maintenance[${rowKey}][checklists]"]`).remove();
+                        
+                        // Add checklist data to this maintenance row
+                        checklistData.forEach(function(item, index) {
+                            const checklistIdInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][checklist_id]" value="${item.checklist_id}">`;
+                            const checklistDetailIdInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][checklist_detail_id]" value="${item.checklist_detail_id}">`;
+                            const nameInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][name]" value="${item.name}">`;
+                            const descriptionInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][description]" value="${item.description}">`;
+                            const typeInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][type]" value="${item.type}">`;
+                            
+                            firstMaintenanceRow.append(checklistIdInput);
+                            firstMaintenanceRow.append(checklistDetailIdInput);
+                            firstMaintenanceRow.append(nameInput);
+                            firstMaintenanceRow.append(descriptionInput);
+                            firstMaintenanceRow.append(typeInput);
+                            
+                            console.log(`Added checklist item ${index}:`, item);
+                        });
+                        
+                        console.log('Total checklist items added:', checklistData.length);
+                    } else {
+                        console.log('No valid maintenance row key found in:', rowId);
+                    }
+                } else {
+                    console.log('No row ID found in maintenance row');
+                }
+            } else {
+                console.log('No maintenance rows found');
+            }
+        }
+
+        // Make functions globally accessible
+        window.addPortion = addPortion;
+        window.removePortion = removePortion;
+        window.collectChecklistData = collectChecklistData;
+        window.updateChecklistInputs = updateChecklistInputs;
 
         // Template row for Spare Part
         // function getSparePartRow() {
@@ -1148,6 +1459,9 @@
                 });
                 return false;
             }
+
+            // Collect and update checklist data before submission
+            updateChecklistInputs();
 
             // If draft, confirm with user
             if (status === 'draft') {
