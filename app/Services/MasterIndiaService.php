@@ -9,6 +9,7 @@ use App\Models\ErpEinvoiceLog;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Log;
 
 class MasterIndiaService
 {
@@ -16,16 +17,16 @@ class MasterIndiaService
     private $baseURL; // Base URL for the API
     private $eInvoice; // API request logs
     private $requestUid; // Request UID
-    private $authDetails; // Auth Credentials
+    // private $authDetails; // Auth Credentials
 
     // Constructor to initialize the client, base URL, and authentication credentials
-    public function __construct($authDetails,$requestUid)
+    public function __construct($requestUid)
     {
         $this->requestUid = $requestUid;
         $this->eInvoice = false;
         $this->client = new Client(); // Initialize the HTTP client
         $this->baseURL = config('app.masterindia.base_url'); // Set the base URL
-        $this->authDetails = $authDetails; // Set the base URL
+        // $this->authDetails = $authDetails; // Set the base URL
     }
 
     private function returnResponse($message)
@@ -108,14 +109,13 @@ class MasterIndiaService
                     "Accept: application/json",
                     "Content-Type: application/json"
             );
-
-            $response = $this->client->request('POST', $this->baseURL . $endpoint, [
+            $einvoiceBaseUrl = config('app.masterindia.e_invoice_base_url');
+            $response = $this->client->request('POST', $einvoiceBaseUrl . $endpoint, [
                 'headers' => $requestHeader,
                 'json' => $invoiceData,
             ]);
-
             $result =  json_decode($response->getBody(), true);
-            $this->createApiLog($endpoint, 'POST', $requestHeader, ConstantHelper::MASTERINDIA, $result);
+            $this->createApiLog($endpoint, 'POST', $invoiceData, ConstantHelper::MASTERINDIA, $result);
             return $result;
         } catch (\Exception $e) {
             $errorMsg = "ERROR: Invoice generation failed: " . $e->getMessage();
@@ -132,13 +132,14 @@ class MasterIndiaService
             $requestHeader = array(
                 "Content-Type:application/json",
             );
-            $response = $this->client->request('POST', $this->baseURL . $endpoint, [
+            $ewaybillUrl = config('app.masterindia.e_invoice_base_url');
+            $response = $this->client->request('POST', $ewaybillUrl . $endpoint, [
                 'headers' => $requestHeader,
                 'json' => $ewaybillData,
             ]);
 
             $output =  json_decode($response->getBody(), true);
-            $this->createApiLog($endpoint, 'POST', $requestHeader, ConstantHelper::MASTERINDIA, $output);
+            $this->createApiLog($endpoint, 'POST', $ewaybillData, ConstantHelper::MASTERINDIA, $output);
             return $output;
         } catch (\Exception $e) {
             $errorMsg = "ERROR: Waybill generation failed: {$e->getMessage()}";

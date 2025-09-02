@@ -9,9 +9,7 @@
     </style>
 @endsection
 @section('content')
-    <form id="poEditForm" data-module="po" class="ajax-input-form"
-        action="{{ route('po.update', ['type' => request()->route('type'), 'id' => $po->id]) }}" method="POST"
-        data-redirect="/{{ request()->route('type') }}" enctype="multipart/form-data">
+    <form id="poEditForm" data-module="po" class="ajax-input-form" action="{{ route('po.update', ['type' => request()->route('type'), 'id' => $po->id]) }}" method="POST" data-redirect="/{{ request()->route('type') }}" enctype="multipart/form-data">
         @csrf
         @php
             $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
@@ -34,69 +32,51 @@
                         ])
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="{{ $po->document_status }}"
-                                    id="document_status">
-                                <button type="button" onClick="javascript: history.go(-1)"
-                                    class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
+                                <input type="hidden" name="document_status" value="{{ $po->document_status }}" id="document_status">
+                                <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
                                     Back</button>
                                 @if ($buttons['draft'])
-                                    <button type="submit"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
-                                        value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
                                 @if (
                                     !intval(request('amendment') ?? 0) &&
                                         // $po->document_status != \App\Helpers\ConstantHelper::DRAFT &&
                                         // $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
                                         $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
-                                    <a href="{{ url(request()->route('type')) }}/{{ $po->id }}/pdf" target="_blank"
-                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                    <a href="{{ url(request()->route('type')) }}/{{ $po->id }}/pdf" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                             <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                            <path
-                                                d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
                                             </path>
                                             <rect x="6" y="14" width="12" height="8"></rect>
                                         </svg> Print
                                     </a>
-                                    <button type = "button" onclick = "sendMailTo();"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
-                                            data-feather="mail"></i> E-Mail</button>
+                                    <button type = "button" onclick = "sendMailTo();" class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
                                 @endif
                                 @if ($buttons['submit'])
-                                    <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
-                                        value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                    <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                                 @endif
                                 @if ($buttons['approve'])
-                                    <button type="button" id="reject-button"
-                                        class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
-                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                                    <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <line x1="15" y1="9" x2="9" y2="15"></line>
                                             <line x1="9" y1="9" x2="15" y2="15"></line>
                                         </svg> Reject</button>
-                                    <button type="button" class="btn btn-primary btn-sm" id="approved-button"
-                                        name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                 @endif
 
                                 @if ($buttons['amend'] && intval(request('amendment') ?? 0))
-                                    <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i
-                                            data-feather="check-circle"></i> Submit</button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
                                 @else
                                     @if ($buttons['amend'])
-                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</button>
                                     @endif
                                 @endif
 
                                 @if ($buttons['revoke'])
-                                    <button id = "revokeButton" type="button"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
+                                    <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
                                         Revoke</button>
                                 @endif
 
@@ -112,8 +92,7 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div
-                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
@@ -122,51 +101,41 @@
                                             </div>
                                             <div class="col-md-6 text-sm-end">
                                                 <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                    Status : <span
-                                                        class="{{ $docStatusClass }}">{{ $po->display_status }}</span>
+                                                    Status : <span class="{{ $docStatusClass }}">{{ $po->display_status }}</span>
                                                 </span>
                                             </div>
                                             <div class="col-md-8 basic-information">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Series <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="hidden" name="book_id" value="{{ $po->book_id }}">
-                                                        <select class="form-select" disabled id="book_id"
-                                                            name="book_id" readonly>
+                                                        <select class="form-select" disabled id="book_id" name="book_id" readonly>
                                                             @foreach ($books as $book)
-                                                                <option value="{{ $book->id }}"
-                                                                    {{ $book->id == $po->book_id ? 'selected' : '' }}>
+                                                                <option value="{{ $book->id }}" {{ $book->id == $po->book_id ? 'selected' : '' }}>
                                                                     {{ $book->book_code }}</option>
                                                             @endforeach
                                                         </select>
-                                                        <input type="hidden" name="book_code"
-                                                            id="{{ $po->book->book_code }}" id="book_code">
+                                                        <input type="hidden" name="book_code" id="{{ $po->book->book_code }}" id="book_code">
                                                     </div>
                                                 </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">{{ $short_title }} No <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">{{ $short_title }} No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" readonly name="document_number"
-                                                            id="document_number" value="{{ $po->document_number }}"
-                                                            class="form-control">
+                                                        <input type="text" readonly name="document_number" id="document_number" value="{{ $po->document_number }}" class="form-control">
                                                     </div>
                                                 </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">{{ $short_title }} Date <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">{{ $short_title }} Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control"
-                                                            value="{{ $po->document_date }}" name="document_date">
+                                                        <input type="date" class="form-control" value="{{ $po->document_date }}" name="document_date">
                                                     </div>
                                                 </div>
 
@@ -176,22 +145,19 @@
                                                             <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="procurement_type"
-                                                            id="procurement_type">
+                                                        <select class="form-select" name="procurement_type" id="procurement_type">
                                                         </select>
                                                     </div>
                                                 </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Location <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="store_id" name="store_id">
                                                             @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}"
-                                                                    {{ $po->store_id == $location->id ? 'selected' : '' }}>
+                                                                <option value="{{ $location->id }}" {{ $po->store_id == $location->id ? 'selected' : '' }}>
                                                                     {{ $location?->store_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -203,8 +169,7 @@
                                                             <label class="form-label">Sales Order</label>
                                                         </div>
                                                         <div class="col-md-5">
-                                                            <input type="text" readonly class="form-control"
-                                                                value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
+                                                            <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
                                                         </div>
                                                     </div>
                                                 @endif
@@ -214,10 +179,7 @@
                                                         <label class="form-label">Reference from</label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button"
-                                                            @if (!$isEdit) disabled @endif
-                                                            class="btn btn-outline-primary btn-sm mb-0 prSelect"><i
-                                                                data-feather="plus-square"></i>
+                                                        <button type="button" @if (!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect"><i data-feather="plus-square"></i>
                                                             {{ $reference_from_title }}</button>
                                                     </div>
                                                 </div>
@@ -242,60 +204,33 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Vendor <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select"
-                                                                class="form-control mw-100 ledgerselecct" id="vendor_name"
-                                                                name="vendor_name" readonly
-                                                                value="{{ $po->vendor->company_name }}" />
-                                                            <input type="hidden" value="{{ $po->vendor_id }}"
-                                                                id="vendor_id" name="vendor_id" />
-                                                            <input type="hidden" value="{{ $po->vendor_code }}"
-                                                                id="vendor_code" name="vendor_code" />
+                                                            <label class="form-label">Vendor <span class="text-danger">*</span></label>
+                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly value="{{ $po->vendor->company_name }}" />
+                                                            <input type="hidden" value="{{ $po->vendor_id }}" id="vendor_id" name="vendor_id" />
+                                                            <input type="hidden" value="{{ $po->vendor_code }}" id="vendor_code" name="vendor_code" />
 
-                                                            <input type="hidden" id="vendor_address_id"
-                                                                name="vendor_address_id"
-                                                                value="{{ $po->latestShippingAddress()?->id }}" />
-                                                            <input type="hidden" id="billing_address_id"
-                                                                name="billing_address_id"
-                                                                value="{{ $po->latestBillingAddress()?->id }}" />
-                                                            <input type="hidden" id="delivery_address_id"
-                                                                name="delivery_address_id"
-                                                                value="{{ $po->latestDeliveryAddress()?->id }}" />
+                                                            <input type="hidden" id="vendor_address_id" name="vendor_address_id" value="{{ $po->latestShippingAddress()?->id }}" />
+                                                            <input type="hidden" id="billing_address_id" name="billing_address_id" value="{{ $po->latestBillingAddress()?->id }}" />
+                                                            <input type="hidden" id="delivery_address_id" name="delivery_address_id" value="{{ $po->latestDeliveryAddress()?->id }}" />
 
-                                                            <input type="hidden" value="{{ $fromCountry }}"
-                                                                id="country_id" name="country_id" />
-                                                            <input type="hidden" value="{{ $fromState }}"
-                                                                id="state_id" name="state_id" />
+                                                            <input type="hidden" value="{{ $fromCountry }}" id="country_id" name="country_id" />
+                                                            <input type="hidden" value="{{ $fromState }}" id="state_id" name="state_id" />
 
-                                                            <input type="hidden" value="" id="party_country_id"
-                                                                name="party_country_id" />
-                                                            <input type="hidden" value="" id="party_state_id"
-                                                                name="party_state_id" />
+                                                            <input type="hidden" value="" id="party_country_id" name="party_country_id" />
+                                                            <input type="hidden" value="" id="party_state_id" name="party_state_id" />
 
-
-                                                            <input type="hidden"
-                                                                value="{{ $po->latestShippingAddress()?->state?->id }}"
-                                                                id="hidden_state_id" name="hidden_state_id" />
-                                                            <input type="hidden"
-                                                                value="{{ $po->latestShippingAddress()?->country?->id }}"
-                                                                id="hidden_country_id" name="hidden_country_id" />
-                                                            <input type="hidden" id="delivery_country_id"
-                                                                name="delivery_country_id" />
-                                                            <input type="hidden" id="delivery_state_id"
-                                                                name="delivery_state_id" />
-                                                            <input type="hidden" id="delivery_city_id"
-                                                                name="delivery_city_id" />
-                                                            <input type="hidden" id="delivery_pincode"
-                                                                name="delivery_pincode" />
-                                                            <input type="hidden" id="delivery_address"
-                                                                name="delivery_address" />
+                                                            <input type="hidden" value="{{ $po->latestShippingAddress()?->state?->id }}" id="hidden_state_id" name="hidden_state_id" />
+                                                            <input type="hidden" value="{{ $po->latestShippingAddress()?->country?->id }}" id="hidden_country_id" name="hidden_country_id" />
+                                                            <input type="hidden" id="delivery_country_id" name="delivery_country_id" />
+                                                            <input type="hidden" id="delivery_state_id" name="delivery_state_id" />
+                                                            <input type="hidden" id="delivery_city_id" name="delivery_city_id" />
+                                                            <input type="hidden" id="delivery_pincode" name="delivery_pincode" />
+                                                            <input type="hidden" id="delivery_address" name="delivery_address" />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Currency <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Currency <span class="text-danger">*</span></label>
                                                             <select disabled class="form-select" name="currency_id">
                                                                 <option value="{{ $po->currency_id }}">
                                                                     {{ $po->currency?->name }}</option>
@@ -304,8 +239,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Payment Terms <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
                                                             <select disabled class="form-select" name="payment_term_id">
                                                                 <option value="{{ $po->payment_term_id }}">
                                                                     {{ $po->paymentTerm->name }}</option>
@@ -314,32 +248,29 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Credit Days <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control mw-100"
-                                                                id="credit_days" name="credit_days"
-                                                                value="{{ $po->credit_days }}" />
+                                                            <label class="form-label">Credit Days <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control mw-100" id="credit_days" name="credit_days" value="{{ $po->credit_days }}" />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Exchange Rate <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text"
-                                                                class="form-control mw-100 {{ $isDifferentCurrency ? '' : 'disabled-input' }}"
-                                                                value="{{ $po->org_currency_exg_rate }}"
-                                                                id="exchange_rate" name="exchange_rate" />
+                                                            <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control mw-100 {{ $isDifferentCurrency ? '' : 'disabled-input' }}" value="{{ $po->org_currency_exg_rate }}" id="exchange_rate" name="exchange_rate" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-3 gstin_no_div @if ($po?->vendor?->compliances?->gstin_no) d-block @else d-none @endif">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">GSTIN No. </label>
+                                                            <input type="text" class="form-control mw-100" id="gstin_no" value="{{ @$po?->vendor?->compliances->gstin_no }}" disabled />
                                                         </div>
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Consignee Name </label>
-                                                                {{-- <span class="text-danger">*</span> --}}
-                                                            <input type="text"
-                                                                class="form-control mw-100 @if (!$buttons['submit'] || !$buttons['draft']) disabled-input @endif"
-                                                                id="consignee_name" name="consignee_name"
-                                                                value="{{ $po->consignee_name }}" />
+                                                            {{-- <span class="text-danger">*</span> --}}
+                                                            <input type="text" class="form-control mw-100 @if (!$buttons['submit'] || !$buttons['draft']) disabled-input @endif" id="consignee_name" name="consignee_name" value="{{ $po->consignee_name }}" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -350,12 +281,8 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Vendor Address <span
-                                                                            class="text-danger">*</span>
-                                                                        <a href="javascript:;"
-                                                                            class="float-end font-small-2 editAddressBtn d-none {{ $po->po_items->count() ? 'd-none' : '' }}"
-                                                                            data-type="vendor_address"><i
-                                                                                data-feather='edit-3'></i> Edit</a>
+                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span>
+                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none {{ $po->po_items->count() ? 'd-none' : '' }}" data-type="vendor_address"><i data-feather='edit-3'></i> Edit</a>
                                                                     </label>
                                                                     <div class="mrnaddedd-prim vendor_address">
                                                                         {{ $po->latestShippingAddress()->display_address }}
@@ -369,8 +296,7 @@
                                                             <p>Billing Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Billing Address <span
-                                                                            class="text-danger">*</span>
+                                                                    <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                     </label>
                                                                     <div class="mrnaddedd-prim billing_address">
                                                                         {{ $po?->latestBillingAddress()?->display_address }}
@@ -384,12 +310,8 @@
                                                             <p>Delivery Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Delivery Address <span
-                                                                            class="text-danger">*</span>
-                                                                        <a href="javascript:;"
-                                                                            class="float-end font-small-2 editAddressBtn d-none"
-                                                                            data-type="delivery_address"><i
-                                                                                data-feather='edit-3'></i> Edit</a>
+                                                                    <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
+                                                                        <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="delivery_address"><i data-feather='edit-3'></i> Edit</a>
                                                                     </label>
                                                                     <div class="mrnaddedd-prim delivery_address">
                                                                         {{ $po?->latestDeliveryAddress()?->display_address }}
@@ -416,22 +338,16 @@
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
                                                     @if ($shortClose && $buttons['amend'])
-                                                        <a href="javascript:;" id="shortCloseBtn"
-                                                            class="btn btn-sm btn-outline-danger me-50">
+                                                        <a href="javascript:;" id="shortCloseBtn" class="btn btn-sm btn-outline-danger me-50">
                                                             <i data-feather="x-circle"></i> Short Close</a>
                                                     @else
-                                                        <a href="javascript:;" id="deleteBtn"
-                                                            class="btn btn-sm btn-outline-danger me-50">
+                                                        <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                             <i data-feather="x-circle"></i> Delete</a>
                                                     @endif
-                                                    <a href="javascript:;" id="addNewItemBtn"
-                                                        class="btn btn-sm btn-outline-primary d-none">
+                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary d-none">
                                                         <i data-feather="plus"></i> Add Item</a>
                                                     @if ($buttons['submit'] || $buttons['draft'])
-                                                        <a href="#" onclick = "copyItemRow();"
-                                                            id = "copy_item_section"
-                                                            style = "{{ isset($po->po_items) && count($po->po_items) ? '' : 'display:none;' }}"
-                                                            class="btn btn-sm btn-outline-primary">
+                                                        <a href="#" onclick = "copyItemRow();" id = "copy_item_section" style = "{{ isset($po->po_items) && count($po->po_items) ? '' : 'display:none;' }}" class="btn btn-sm btn-outline-primary">
                                                             <i data-feather="copy"></i> Copy Item</a>
                                                     @endif
                                                 </div>
@@ -440,19 +356,13 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable"
-                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                                        data-json-key="components_json"
-                                                        data-row-selector="tr[id^='row_']">
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" data-json-key="components_json" data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="Email">
+                                                                        <label class="form-check-label" for="Email"></label>
                                                                     </div>
                                                                 </th>
                                                                 <th width="150px">Item Code</th>
@@ -485,8 +395,7 @@
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
                                                                                 <td class="p-0">
-                                                                                    <h6
-                                                                                        class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
                                                                                         <strong>Item Details</strong>
                                                                                     </h6>
                                                                                 </td>
@@ -507,21 +416,15 @@
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
-                                                                                <h6
-                                                                                    class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
+                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
                                                                                     <strong>{{ $short_title }}
                                                                                         Summary</strong>
                                                                                     <div class="addmendisexpbtn">
-                                                                                        <button type="button"
-                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}}
+                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}}
                                                                                             Tax</button>
-                                                                                        <button type="button"
-                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i
-                                                                                                data-feather="plus"></i>
+                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i>
                                                                                             Discount</button>
-                                                                                        <button type="button"
-                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i
-                                                                                                data-feather="plus"></i>
+                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i>
                                                                                             Expenses</button>
                                                                                     </div>
                                                                                 </h6>
@@ -541,23 +444,19 @@
                                                                         @if ($po->headerDiscount())
                                                                             <tr id="f_header_discount_hidden">
                                                                                 <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end"
-                                                                                    id="f_header_discount">
+                                                                                <td class="text-end" id="f_header_discount">
                                                                                     {{ $po->headerDiscount()->sum('ted_amount') }}
                                                                                 </td>
                                                                             </tr>
                                                                         @else
-                                                                            <tr class="d-none"
-                                                                                id="f_header_discount_hidden">
+                                                                            <tr class="d-none" id="f_header_discount_hidden">
                                                                                 <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end"
-                                                                                    id="f_header_discount">0.00</td>
+                                                                                <td class="text-end" id="f_header_discount">0.00</td>
                                                                             </tr>
                                                                         @endif
                                                                         <tr class="totalsubheadpodetail">
                                                                             <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value"
-                                                                                amount="">0.00</td>
+                                                                            <td class="text-end" id="f_taxable_value" amount="">0.00</td>
                                                                         </tr>
 
                                                                         <tr>
@@ -579,19 +478,16 @@
                                                                             <td class="text-primary"><strong>Grand
                                                                                     Total</strong></td>
                                                                             <td>
-                                                                                <div
-                                                                                    class="quottotal-bg justify-content-end">
+                                                                                <div class="quottotal-bg justify-content-end">
                                                                                     <h5 id="f_total_after_exp">0.00</h5>
                                                                                 </div>
                                                                             </td>
                                                                         </tr>
-                                                                        <tr class="voucher-tab-foot {{ $isDifferentCurrency ? '' : 'd-none' }}"
-                                                                            id="exchangeDiv">
+                                                                        <tr class="voucher-tab-foot {{ $isDifferentCurrency ? '' : 'd-none' }}" id="exchangeDiv">
                                                                             <td class="text-primary"><strong>Grand Total
                                                                                     ({{ $currencyName }})</strong></td>
                                                                             <td>
-                                                                                <div
-                                                                                    class="quottotal-bg justify-content-end">
+                                                                                <div class="quottotal-bg justify-content-end">
                                                                                     <h5 id="f_total_after_exp_rate">0.00
                                                                                     </h5>
                                                                                 </div>
@@ -608,9 +504,7 @@
                                                         <label class="form-label">Terms & Conditions</label>
                                                         <select class="form-select select2" name="term_id[]" multiple>
                                                             @foreach ($termsAndConditions as $termsAndCondition)
-                                                                <option value="{{ $termsAndCondition->id }}"
-                                                                    {{ in_array($termsAndCondition->id, $po->terms->pluck('id')->toArray()) ? 'selected' : '' }}
-                                                                    data-detail="{{ $termsAndCondition->term_detail }}">
+                                                                <option value="{{ $termsAndCondition->id }}" {{ in_array($termsAndCondition->id, $po->terms->pluck('id')->toArray()) ? 'selected' : '' }} data-detail="{{ $termsAndCondition->term_detail }}">
                                                                     {{ $termsAndCondition->term_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -618,16 +512,12 @@
                                                 </div>
 
                                                 <div class="col-md-12">
-                                                    <textarea name="terms_data" id="summernote" class="form-control "
-                                                        {{ $po->document_status != \App\Helpers\ConstantHelper::DRAFT ? 'disabled' : '' }} placeholder="Enter Terms"
-                                                        maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : '' }}</textarea>
+                                                    <textarea name="terms_data" id="summernote" class="form-control " {{ $po->document_status != \App\Helpers\ConstantHelper::DRAFT ? 'disabled' : '' }} placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : '' }}</textarea>
                                                     <small class="text-muted d-block text-end">
                                                         <span id="termsCharCount">0</span>/250 characters
                                                     </small>
-                                                    <input type="hidden" name="tnc" id="tnc"
-                                                        value="{{ isset($po->tnc) ? $po->tnc : '' }}">
-                                                    <input type="hidden" id="customer_terms_id" value=""
-                                                        name="terms_id" />
+                                                    <input type="hidden" name="tnc" id="tnc" value="{{ isset($po->tnc) ? $po->tnc : '' }}">
+                                                    <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -635,12 +525,8 @@
                                                             <div class="col-md-4">
                                                                 <div class="mb-1">
                                                                     <label class="form-label">Upload Document</label>
-                                                                    <input type="file" name="attachment[]"
-                                                                        class="form-control"
-                                                                        onchange = "addFiles(this,'main_po_preview')"
-                                                                        multiple>
-                                                                    <span
-                                                                        class = "text-primary small">{{ __('message.attachment_caption') }}</span>
+                                                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_po_preview')" multiple>
+                                                                    <span class = "text-primary small">{{ __('message.attachment_caption') }}</span>
                                                                 </div>
                                                             </div>
                                                             @include('partials.document-preview', [
@@ -653,8 +539,7 @@
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
                                                             <label class="form-label">Final Remarks</label>
-                                                            <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control"
-                                                                placeholder="Enter Remarks here...">{!! $po->remarks !!}</textarea>
+                                                            <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $po->remarks !!}</textarea>
 
                                                         </div>
                                                     </div>
@@ -720,8 +605,7 @@
     </div>
 
     {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle"
-        aria-hidden="true">
+    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -738,22 +622,18 @@
                                 <td>
                                 <td>
                                     <label class="form-label">Type<span class="text-danger">*</span></label>
-                                    <input type="text" id="new_item_dis_name_select" placeholder="Select"
-                                        class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                        value="">
+                                    <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                                     <input type = "hidden" id = "new_item_discount_id" />
                                     <input type = "hidden" id = "new_item_dis_name" />
                                 </td>
                                 </td>
                                 <td>
                                     <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_perc"
-                                        class="form-control mw-100" />
+                                    <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
                                 </td>
                                 <td>
                                     <label class="form-label">Value <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_value"
-                                        class="form-control mw-100" />
+                                    <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
                                 </td>
                                 <td>
                                     <a href="javascript:;" id="add_new_item_dis" class="text-primary can_hide">
@@ -764,8 +644,7 @@
                         </thead>
                     </table>
                     <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable"
-                            class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                             <thead>
                                 <tr>
                                     <th>S.No</th>
@@ -796,8 +675,7 @@
     </div>
 
     {{-- Delivery schedule --}}
-    <div class="modal fade" id="deliveryScheduleModal" tabindex="-1" aria-labelledby="shareProjectTitle"
-        aria-hidden="true">
+    <div class="modal fade" id="deliveryScheduleModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -807,13 +685,11 @@
                     <h1 class="text-center mb-1" id="shareProjectTitle">Delivery Schedule</h1>
                     {{-- <p class="text-center">Enter the details below.</p> --}}
 
-                    <div class="text-end"> <a href="javascript:;"
-                            class="text-primary add-contactpeontxt mt-50 addTaxItemRow"><i data-feather='plus'></i> Add
+                    <div class="text-end"> <a href="javascript:;" class="text-primary add-contactpeontxt mt-50 addTaxItemRow"><i data-feather='plus'></i> Add
                             Schedule</a></div>
 
                     <div class="table-responsive-md customernewsection-form">
-                        <table id="deliveryScheduleTable"
-                            class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                        <table id="deliveryScheduleTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                             <thead>
                                 <tr>
                                     <th>S.No</th>
@@ -867,8 +743,7 @@
     </div>
 
     {{-- Delete component modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -904,8 +779,7 @@
  </div> --}}
 
     {{-- Delete Item discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -923,8 +797,7 @@
     </div>
 
     {{-- Delete Item discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -942,8 +815,7 @@
     </div>
 
     {{-- Delete header exp modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -961,8 +833,7 @@
     </div>
 
     {{-- Delete item delivery modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteDeliveryModal" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteDeliveryModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -986,8 +857,7 @@
     @include('procurement.po.partials.tax-detail-modal')
 
     {{-- Amendment Modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
-        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -1029,8 +899,7 @@
                         <div class="col-md-12">
                             <div class="mb-1">
                                 <label class="form-label">Email To</label>
-                                <input type="text" id='cust_mail' name="email_to"
-                                    class="form-control mail_modal cannot_disable">
+                                <input type="text" id='cust_mail' name="email_to" class="form-control mail_modal cannot_disable">
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -1038,8 +907,7 @@
                                 <label class="form-label">CC To</label>
                                 <select name="cc_to[]" class="select2 form-control mail_modal cannot_disable" multiple>
                                     @foreach ($users as $index => $user)
-                                        <option value="{{ $user->email }}"
-                                            {{ $user->id == $po->created_by ? 'selected' : '' }}>
+                                        <option value="{{ $user->email }}" {{ $user->id == $po->created_by ? 'selected' : '' }}>
                                             {{ $user->name }}
                                         </option>
                                     @endforeach
@@ -1055,15 +923,13 @@
                         </div>
                     </div>
                     <div class="modal-footer justify-content-center">
-                        <button type="reset" class="btn btn-outline-secondary me-1"
-                            onclick = "closeModal('sendMail');">Cancel</button>
+                        <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('sendMail');">Cancel</button>
                         <button type="submit" id="mail_submit" class="btn btn-primary">Submit</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 
     {{-- Purchase Model --}}
     @include('procurement.po.partials.pr-modal')
@@ -1352,7 +1218,7 @@
             /* Procurement Type */
             const $procurementTypeSelect = $('#procurement_type');
             const poProcurementType = @json($po->procurement_type ?? '') || parameters?.po_procurement_type || '';
-            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\CommonHelper::PO_PROCUREMENT_TYPE_VALUES);
 
             if (poProcurementType === 'All') {
                 $procurementTypeSelect.empty();

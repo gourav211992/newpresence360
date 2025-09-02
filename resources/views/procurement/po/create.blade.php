@@ -211,6 +211,14 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="col-md-3 gstin_no_div d-none">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">GSTIN No. </label>
+                                                            <input type="text" class="form-control mw-100"
+                                                                id="gstin_no" disabled/>
+                                                        </div>
+                                                    </div>
+
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Consignee Name </label>
@@ -960,7 +968,7 @@
             /* Procurement Type */
             const poProcurementType = parameters?.po_procurement_type || '';
             const $procurementTypeSelect = $('#procurement_type');
-            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+            const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\CommonHelper::PO_PROCUREMENT_TYPE_VALUES);
 
             if (poProcurementType[0] === 'All') {
                 $procurementTypeSelect.empty();

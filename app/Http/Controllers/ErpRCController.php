@@ -26,6 +26,7 @@ use App\Models\EwayBillMaster;
 use App\Models\Item;
 use App\Models\Organization;
 use App\Models\PaymentTerm;
+use App\Models\TermsAndCondition;
 use App\Models\Unit;
 use App\Models\Vendor;
 use DB;
@@ -134,13 +135,14 @@ class ErpRCController extends Controller
         $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
 
         $type = ConstantHelper::RC_SERVICE_ALIAS;
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL,"",$user);
+        $termsAndConditions = TermsAndCondition::where('status',ConstantHelper::ACTIVE)->get();
         $firstService = $servicesBooks['services'][0];
         $bookType = $type;
         $typeName = "Rate Contract";
         // $stores = ErpStore::withDefaultGroupCompanyOrg()->where('store_location_type', ConstantHelper::STOCKK)->get();
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-        $organization = Organization::where('id', $user->organization_id)->first();
+        // $organization = Organization::where('id', $user->organization_id)->first();
         $userOrgs = $user->organizations->pluck('id')->toArray();
         array_push($userOrgs,$user->organization_id);
         $organizations = Organization::whereIn('id',$userOrgs)->where('status', ConstantHelper::ACTIVE)->get();
@@ -166,6 +168,7 @@ class ErpRCController extends Controller
             'countries' => $countries,
             'type' => $type,
             'typeName' => $typeName,
+            'termsAndConditions' => $termsAndConditions,
             'redirect_url' => $redirectUrl,
             'transportationModes' => $transportationModes,
             'einvoice' => null
@@ -200,9 +203,10 @@ class ErpRCController extends Controller
                 $ogReturn = $order;
             }
             $parentURL = request()->segments()[0];
+            $termsAndConditions = TermsAndCondition::where('status',ConstantHelper::ACTIVE)->get();
             $redirectUrl = route('rate.contract.index');
             if (isset($order)) {
-                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL, $order?->book?->service?->alias);
+                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL, $order?->book?->service?->alias,$user);
                 $firstService = $servicesBooks['services'][0];
                 foreach ($order->items as &$siItem) {
                         $siItem->max_attribute = 999999;
@@ -255,6 +259,7 @@ class ErpRCController extends Controller
                 'order' => $order,
                 'countries' => $countries,
                 'buttons' => $buttons,                
+                'termsAndConditions' => $termsAndConditions,
                 'dynamicFieldsUi' => $dynamicFieldsUI,
                 'approvalHistory' => $approvalHistory,
                 'type' => $type,
@@ -326,6 +331,8 @@ class ErpRCController extends Controller
                 $rateContract -> document_date = $request -> document_date ?? $rateContract -> document_date;
                 $rateContract -> start_date = $request -> start_date ?? $rateContract -> start_date;
                 $rateContract -> end_date = $request -> end_date ?? $rateContract -> end_date;
+                $rateContract ->tnc = $request -> tnc ?? $rateContract -> tnc;
+                $rateContract ->tnc_id = $request -> tnc_id ?? $rateContract -> tnc_id;
                 $rateContract -> payment_term_id = isset($request -> payment_terms_id) ? $request->payment_terms_id : $rateContract -> payment_term_id;
                 if($request->party_type == "customer")
                 {
@@ -409,6 +416,8 @@ class ErpRCController extends Controller
                     'approval_level' => 1,
                     'applicable_organizations' => json_encode($request->organization_id),
                     'payment_term_id' => isset($request->payment_terms_id) ? $request->payment_terms_id : null,
+                    'tnc' => isset($request->tnc) ? $request->tnc : null,
+                    'tnc_id' => isset($request->term_id) ? $request->term_id : null,
                     'remarks' => $request->final_remarks,
                 ]);
             }

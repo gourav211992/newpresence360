@@ -2668,8 +2668,9 @@ class PurchaseBillController extends Controller
                     $query->whereNotIn('erp_mrn_details.id',$selected_mrn_ids);
                 }
                 $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$mrnDocNumber, $vendorId) {
-                    $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                    ->where('is_inspection_completion', 1);
+                    $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED])
+                    ->where('is_inspection_completion', 1)
+                    ->where('bill_to_follow', 'yes');
                     if(count($applicableBookIds)) {
                         $mrnHeader->whereIn('book_id',$applicableBookIds);
                     }

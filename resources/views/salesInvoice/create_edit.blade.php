@@ -94,7 +94,7 @@
                                 @if($buttons['amend'])
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                                 @endif
-                                @if($buttons['post'])
+                                @if(($buttons['post'] && $enableEinvoice && isset($einvoice)) || ($buttons['post'] && !$enableEinvoice))
                                     <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                                         Post
@@ -4781,6 +4781,7 @@ function resetPostVoucher()
 
 function onPostVoucherOpen(type = "not_posted")
 {
+    document.getElementById('erp-overlay-loader').style.display = "flex";
     resetPostVoucher();
     const apiURL = "{{route('sale.invoice.posting.get')}}";
     $.ajax({
@@ -4788,6 +4789,8 @@ function onPostVoucherOpen(type = "not_posted")
         type: "GET",
         dataType: "json",
         success: function(data) {
+            document.getElementById('erp-overlay-loader').style.display = "none";
+
             if (!data.data.status) {
                 Swal.fire({
                     title: 'Error!',
@@ -4838,6 +4841,7 @@ function onPostVoucherOpen(type = "not_posted")
 
 function postVoucher(element)
 {
+    document.getElementById('erp-overlay-loader').style.display = "flex";
     const bookId = "{{isset($order) ? $order -> book_id : ''}}";
     const documentId = "{{isset($order) ? $order -> id : ''}}";
     const postingApiUrl = "{{route('sale.invoice.post')}}"
@@ -4860,8 +4864,10 @@ function postVoucher(element)
                         text: response.message,
                         icon: 'success',
                     });
+                    document.getElementById('erp-overlay-loader').style.display = "none";
                     location.reload();
                 } else {
+                    document.getElementById('erp-overlay-loader').style.display = "none";
                     Swal.fire({
                         title: 'Error!',
                         text: response.message,
@@ -4870,6 +4876,8 @@ function postVoucher(element)
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
+                document.getElementById('erp-overlay-loader').style.display = "none";
+
                 let errorReponse = jqXHR.responseJSON;
                 if (errorReponse?.data?.message) {
                     Swal.fire({

@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\ErpItemAttribute;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Str;
 
 class ErpRateContractRequest extends FormRequest
 {
@@ -38,11 +39,11 @@ class ErpRateContractRequest extends FormRequest
             'reference_no' => 'nullable|string',
 
             // Either vendor or customer pair is required
-            'vendor_id' => 'required_without:customer_id|nullable|numeric|integer|exists:erp_vendors,id',
-            'vendor_code' => 'required_with:vendor_id|required_without:customer_id|nullable|string|max:50',
+            'vendor_id' => 'nullable|numeric|integer|exists:erp_vendors,id',
+            'vendor_code' => 'required_with:vendor_id|nullable|string|max:50',
 
-            'customer_id' => 'required_without:vendor_id|nullable|numeric|integer|exists:erp_customers,id',
-            'customer_code' => 'required_with:customer_id|required_without:vendor_id|nullable|string|max:50',
+            'customer_id' => 'nullable|numeric|integer|exists:erp_customers,id',
+            'customer_code' => 'required_with:customer_id|nullable|string|max:50',
 
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -64,6 +65,27 @@ class ErpRateContractRequest extends FormRequest
 
             'item_lead' => 'array',
             'item_lead.*' => 'numeric',
+            
+            'tnc' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Remove HTML tags
+                    $plainText = strip_tags($value);
+
+                    // Decode HTML entities (&nbsp;, &amp;, etc.)
+                    $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+                    // Remove extra whitespace/newlines
+                    $plainText = preg_replace('/\s+/', ' ', trim($plainText));
+
+                    // Count visible characters
+                    if (Str::length($plainText) > 1000) {
+                        $fail('The ' . $attribute . ' may not exceed 1000 visible characters.');
+                    }
+                },
+            ],
+
 
             'effective_from' => 'required|array',
             'effective_from.*' => 'required|date',
@@ -96,7 +118,11 @@ class ErpRateContractRequest extends FormRequest
             $start_date = $this->input('start_date');
             $end_date = $this->input('end_date');
             $itemAttributesCombination = [];
-
+            $vendorId   = $this->input('vendor_id');
+            $customerId = $this->input('customer_id');
+            if (empty($vendorId) && empty($customerId)) {
+                $validator->errors()->add('vendor_customer', 'Please select either a vendor or a customer.');
+            }
             foreach ($itemIds as $itemKey => $itemId) {
                 $attributes = [];
                 $requestAttributesForHelper = json_decode($this->item_attributes[$itemKey], true);

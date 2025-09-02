@@ -2651,7 +2651,7 @@
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {
                             setAttributesUIHelper(index + 1, "#itemTable");
                         });
-                    }, 500);
+                    }, 3000);
                     const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
                         ? asnData.payment_ids[0]
                         : '';

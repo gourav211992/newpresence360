@@ -1312,17 +1312,17 @@ class ErpMaterialIssueController extends Controller
                         $request->store_id_from,
                         $request->sub_store_id_from ?? null,
                         $request->station_id_from ?? null
-                    ),2);
+                    ),6);
                 })
                 ->editColumn('qty', function ($item) use ($request) {
                     if ($request->mi_type === ConstantHelper::TYPE_JOB_ORDER) {
-                        return number_format($item->order_qty, 2);
+                        return number_format($item->order_qty, 6);
                     } else {
-                        return (number_format($item->qty,2));
+                        return (number_format($item->qty,6));
                     }
                 })
                 ->editColumn('mi_balance_qty', function ($item) use ($request) {
-                    return (number_format($item->mi_balance_qty,2));
+                    return (number_format($item->mi_balance_qty,6));
                 })
                 ->addColumn('attributes_array', function ($item) use ($request) {
                     if(in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])){
@@ -1351,40 +1351,69 @@ class ErpMaterialIssueController extends Controller
         try {
             $headers = collect([]);
             if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
-                $headers = MfgOrder::with(['items' => function ($mappingQuery) use($request) {
-                    $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                    }]);
-                }]) -> get();
+                $headers = MfgOrder::whereHas('items', function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id);
+                })
+                ->with(['items' => function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id)
+                        ->with(['item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                }])
+                ->get();
+
             } else if ($request -> doc_type === ConstantHelper::PWO_SERVICE_ALIAS) {
-                $headers = ErpProductionWorkOrder::with(['items' => function ($mappingQuery) use($request) {
-                    $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                    }]);
-                }]) -> get();
+                $headers = ErpProductionWorkOrder::whereHas('items', function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id);
+                })
+                ->with(['items' => function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id)
+                        ->with(['item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                }])
+                ->get();
+
             } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
-                if ($request -> mi_type === "Sub Contracting") {
-                    $headers = JobOrder::with(['joItems' => function ($mappingQuery) use($request) {
-                        $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
-                            $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                        }]);
-                    }]) -> get();
-                } else if ($request -> mi_type === ConstantHelper::TYPE_JOB_ORDER) {
-                    $headers = JobOrder::with(['joProducts' => function ($mappingQuery) use($request) {
-                        $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
-                            $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                        }]);
-                    }]) -> get();
-                } else {
+                if ($request->mi_type === "Sub Contracting") {
+                    $headers = JobOrder::whereHas('joItems', function ($mappingQuery) use ($request) {
+                            $mappingQuery->whereIn('id', $request->items_id);
+                        })
+                        ->with(['joItems' => function ($mappingQuery) use ($request) {
+                            $mappingQuery->whereIn('id', $request->items_id)
+                                ->with(['item' => function ($itemQuery) {
+                                    $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                                }]);
+                        }])
+                        ->get();
+
+                } else if ($request->mi_type === ConstantHelper::TYPE_JOB_ORDER) {
+                    $headers = JobOrder::whereHas('joProducts', function ($mappingQuery) use ($request) {
+                            $mappingQuery->whereIn('id', $request->items_id);
+                        })
+                        ->with(['joProducts' => function ($mappingQuery) use ($request) {
+                            $mappingQuery->whereIn('id', $request->items_id)
+                                ->with(['item' => function ($itemQuery) {
+                                    $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                                }]);
+                        }])
+                        ->get();
+                }
+                else {
                     $headers = [];
                 }
                 
             } else if ($request -> doc_type === ConstantHelper::PI_SERVICE_ALIAS || $request -> doc_type === "pi") {
-                $headers = PurchaseIndent::with(['items' => function ($mappingQuery) use($request) {
-                    $mappingQuery -> whereIn('id', $request -> items_id) -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                    }]);
-                }]) -> get();
+                $headers = PurchaseIndent::whereHas('items', function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id);
+                })
+                ->with(['items' => function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id)
+                        ->with(['item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                }])
+                ->get();
             }
             foreach ($headers as &$header) {
                 if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {

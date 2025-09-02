@@ -1063,23 +1063,58 @@ class ErpProductionSlipController extends Controller
                     }
                 }
 
-                # Issue Raws Materials
-                if($productionSlip->fresh()->items->count()) {
+                // Issue Raw Materials
+                if ($productionSlip->fresh()->items->count()) {
 
-                    $maintainStockLedger = self::maintainStockLedger($productionSlip);
-                    if($maintainStockLedger['status'] == 'error') {
-                        DB::rollBack();
-                        return response()->json([
-                            'message' => $maintainStockLedger['message'],
-                            'error' => ''
-                        ], 422);
+                    // Check if there are any consumptions with qty > 0
+                    $hasValidConsumption = $productionSlip->consumptions
+                        ->where('consumption_qty', '>', 0)
+                        ->isNotEmpty();
+
+                    if ($hasValidConsumption) {
+                        // Maintain stock ledger once (no need to call it in a loop)
+                        $maintainStockLedger = self::maintainStockLedger($productionSlip);
+
+                        if ($maintainStockLedger['status'] === 'error') {
+                            DB::rollBack();
+                            return response()->json([
+                                'message' => $maintainStockLedger['message'],
+                                'error'   => 'ERR_maintainStockLedger'
+                            ], 422);
+                        }
                     }
 
-                    // Call static method to assign inherited Lot Numbers to items in $productionSlip.
+                    // Assign inherited Lot Numbers to items in $productionSlip
                     // Returns ['status' => bool, 'message' => string]
                     self::assignInheritedLotNumber($productionSlip);
-
                 }
+
+                // # Issue Raws Materials
+                // if($productionSlip->fresh()->items->count()) {
+
+                //     if($productionSlip->consumptions->count()) {
+                //         foreach($productionSlip->consumptions as $consumption)
+                //         {
+                //             if($consumption->consumption_qty >0) {
+                //                 $maintainStockLedger = self::maintainStockLedger($productionSlip);
+                //                 if($maintainStockLedger['status'] == 'error') {
+                //                     DB::rollBack();
+                //                     return response()->json([
+                //                         'message' => $maintainStockLedger['message'],
+                //                         'error' => ''
+                //                     ], 422);
+                //                 }
+
+                //             }
+
+                //         }
+                //     }
+
+                //     // Call static method to assign inherited Lot Numbers to items in $productionSlip.
+                //     // Returns ['status' => bool, 'message' => string]
+                //     self::assignInheritedLotNumber($productionSlip);
+
+                // }
 
                 # Update rate in  Pslip Item & insert in Pslip Item Location
                 $moProdItems = ErpPslipItem::where('pslip_id', $productionSlip->id)->get();

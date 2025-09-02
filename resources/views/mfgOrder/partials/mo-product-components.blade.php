@@ -46,7 +46,6 @@
                                 $selectedAttr,
                                 $bomDetail->uom_id,
                                 $storeId,
-                                $subStoreId
                             );
                         @endphp
                         <td class="text-end {{ $bomDetail->qty > $availableStocks['confirmedStocks'] ? 'text-danger' : 'text-success'}}">

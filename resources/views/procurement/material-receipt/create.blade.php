@@ -3563,6 +3563,8 @@
 
                     $(".module_type").val(modelType);
                     $("#itemTable .mrntableselectexcel").append(pos);
+                    console.log('step 1');
+                    
                     initializeAutocomplete2(".comp_item_code");
 
                     $("#poModal, #joModal").modal('hide');
@@ -3701,7 +3703,6 @@
                     }
 
                     setTimeout(() => {
-                        setTableCalculation();
                         if(idsLength > 1)
                         {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
@@ -3715,7 +3716,8 @@
                         }
                         currentIndex = tableRowCount + 1;
                         setAttributesUIHelper(currentIndex,"#itemTable");
-                    }, 500);
+                        setTableCalculation();
+                    }, 3000);
                     const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
                         ? asnData.payment_ids[0]
                         : '';

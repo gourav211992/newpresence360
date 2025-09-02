@@ -392,7 +392,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wit
     
     public function chunkSize(): int
     {
-        return 500; // or 1000 based on system capacity
+        return 100; // or 1000 based on system capacity
     }
 
     private function validateAttribute($item, $prodAttribute, int $index, $label): array

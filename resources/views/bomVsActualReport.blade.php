@@ -19,7 +19,7 @@
                         <button class="btn btn-dark btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                                     data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
 
-                        <a href="{{ route('bomVsActual.download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                        <a href="{{ route('bomVsActual.download', request()->all()) }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
                                 data-feather="download"></i> Export CSV
                         </a>
                     </div>

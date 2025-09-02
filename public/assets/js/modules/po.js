@@ -1795,6 +1795,15 @@ function vendorOnChange(vendorId) {
                 } else {
                     $("#credit_days").prop("readonly", true);
                 }
+
+                if (data?.data?.vendor?.compliances?.gstin_no) {
+                    $(".gstin_no_div").removeClass("d-none");
+                    $("#gstin_no").val(data?.data?.vendor?.compliances?.gstin_no);
+                } else {
+                    $(".gstin_no_div").addClass("d-none");
+                    $("#gstin_no").val('');
+                }
+
                 $("#vendor_id").val(data?.data?.vendor?.id);
                 $("#vendor_code").val(data?.data?.vendor?.vendor_code);
                 $('[name="currency_id"]').empty().append(curOption);
@@ -2201,22 +2210,12 @@ function getTaxParams(el = null) {
     let hsn_id = $row.find("[id='new_exp_id']").attr("data-hsn-id") || 0;
     let transactionDate = $("input[name='document_date']").val();
 
-    // console.log({
-    //     hsn_id: hsn_id || 0,
-    //     price: parseFloat(price) || 0,
-    //     from_country: Number($("#country_id").val()) || 0,
-    //     from_state: Number($("#state_id").val()) || 0,
-    //     party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
-    //     party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
-    //     transaction_type: $("#transaction_type").val() || "purchase",
-    //     date: "",
-    // });
-
     return {
         hsn_id: hsn_id || 0,
         price: parseFloat(price) || 0,
-        from_country: Number($("#country_id").val()) || 0,
+        store_id: Number($("#store_id").val()) || 0,
         from_state: Number($("#state_id").val()) || 0,
+        from_country: Number($("#country_id").val()) || 0,
         party_country_id: Number($("#party_country_id").val()) || Number($("#hidden_country_id").val()),
         party_state_id: Number($("#party_state_id").val()) || Number($("#hidden_state_id").val()),
         transaction_type: $("#transaction_type").val() || "purchase",

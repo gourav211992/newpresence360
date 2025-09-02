@@ -596,6 +596,14 @@ class ErpSaleInvoiceController extends Controller
             if (in_array($type, [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])) {
                 $subStore = ErpSubStore::find($request -> sub_store_id);
             }
+            if (in_array($type, [ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::SERVICE_INV_SERVICE_ALIAS])) {
+                $termsConditions = $request -> terms;
+                if (!$termsConditions) {
+                    return response()->json([
+                        'message' => 'Please specify Terms and Conditions'
+                    ], 422);
+                }
+            }
             //Auth credentials
             $organization = Organization::find($user -> organization_id);
             $organizationId = $organization ?-> id ?? null;
@@ -1658,22 +1666,22 @@ class ErpSaleInvoiceController extends Controller
                         ], 422);
                     }                    
                 }
-                $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
-                if ($saleInvoice -> document_status === ConstantHelper::POSTED){
-                    if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
-                        SaleModuleHelper::updateEInvoiceDataFromHelper($saleInvoice);
-                        $data = EInvoiceHelper::saveGstIn($saleInvoice);
-                        if (isset($data) && $data['status'] == 'error') {
-                            DB::rollBack();
-                            return response()->json([
-                                'message' => $data['message'],
-                                'error' => $data['message'],
-                            ], 500);
-                        } else {
-                            $saleInvoice->save();
-                        }
-                    }
-                }
+                // $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
+                // if ($saleInvoice -> document_status === ConstantHelper::POSTED){
+                //     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
+                //         SaleModuleHelper::updateEInvoiceDataFromHelper($saleInvoice);
+                //         $data = EInvoiceHelper::saveGstIn($saleInvoice);
+                //         if (isset($data) && $data['status'] == 'error') {
+                //             DB::rollBack();
+                //             return response()->json([
+                //                 'message' => $data['message'],
+                //                 'error' => $data['message'],
+                //             ], 500);
+                //         } else {
+                //             $saleInvoice->save();
+                //         }
+                //     }
+                // }
                 $saleInvoice -> e_invoice_status = EInvoiceHelper::getEInvoicePendingDocumentStatus($saleInvoice, $saleInvoice -> gst_invoice_type);
                 $saleInvoice -> save();
                 SaleModuleHelper::cashCustomerMasterData($saleInvoice);
@@ -3055,6 +3063,7 @@ class ErpSaleInvoiceController extends Controller
         }
         $id = $request -> id;
         try{
+            $authUser = Helper::getAuthenticatedUser();
             $documentHeader = ErpSaleInvoice::find($id);
             $documentHeader = SaleModuleHelper::updateEInvoiceDataFromHelper($documentHeader);
             $documentDetails = ErpInvoiceItem::where('sale_invoice_id', $id)->get();
@@ -3068,7 +3077,7 @@ class ErpSaleInvoiceController extends Controller
             //     $data = EInvoiceHelper::saveGstIn($documentHeader);
             $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> customer_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'customer');
             if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
-                $data = MasterIndiaHelper::saveGstIn($documentHeader);
+                $data = MasterIndiaHelper::saveGstIn($documentHeader, $authUser);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
                         'status' => 'error',
@@ -3317,18 +3326,19 @@ class ErpSaleInvoiceController extends Controller
             ], 422);
         }
         try{
+            $authUser = Helper::getAuthenticatedUser();
             $documentHeader = ErpSaleInvoice::find($request->id);
             $transportationMode = EwayBillMaster::find($request->transporter_mode);
             $documentHeader->transporter_name=$request->transporter_name;
             $documentHeader->transportation_mode=$transportationMode?->description ?? null;
             $documentHeader->eway_bill_master_id=$transportationMode?->id ?? null;
             $documentHeader->vehicle_no=$request->vehicle_no;
-            $data = MasterIndiaHelper::generateEwayBill($documentHeader);
+            $data = MasterIndiaHelper::generateEwayBill($documentHeader, $authUser);
             if (isset($data) && (isset($data['results']) && ($data['results']['status'] != 'Success'))) {
                 return response()->json([
                     'status' => 'error',
                     'error' => 'error',
-                    'message' => $data['results'],
+                    'message' => $data['results']['message'],
                 ], 500);
             } else{
                 $message = $data['results']['message'];

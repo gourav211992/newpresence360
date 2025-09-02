@@ -849,7 +849,7 @@
                                                                     <input type="number" id="credit_days" name="credit_days" value="{{ $vendor->credit_days ?? '' }}" class="form-control" placeholder="Enter credit days" min="0" />
                                                                     <input type="hidden" name="credit_days_editable" value="0">
                                                                     <div class="form-check form-check-primary mt-25 custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input" id="credit_days_allowed_checkbox" name="credit_days_allowed" value="1" {{ isset($vendor) && $vendor->credit_days_editable == 1 ? 'checked' : '' }}>
+                                                                        <input type="checkbox" class="form-check-input" id="credit_days_allowed_checkbox" name="credit_days_editable" value="1" {{ isset($vendor) && $vendor->credit_days_editable == 1 ? 'checked' : '' }}>
                                                                         <label class="form-check-label" for="credit_days_allowed_checkbox">Allowed to Change</label>
                                                                     </div>
                                                                 </div> 

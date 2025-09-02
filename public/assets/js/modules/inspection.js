@@ -184,7 +184,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     const dataIndex = $tr.attr("data-index");
     const itemId = $tr.find("[name*='item_id']").val();
 
-    $qtyInput.val(orderQty.toFixed(2));
+    $qtyInput.val(orderQty.toFixed(6));
     checkDuplicateObjects($qtyInput);
 
     if (orderQty <= 0) {
@@ -193,7 +193,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
             text: "Inspection Qty. cannot be zero.",
             icon: "error",
         });
-        $qtyInput.val(poQty.toFixed(2));
+        $qtyInput.val(poQty.toFixed(6));
         return;
     }
 
@@ -211,7 +211,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     safeSet("mrn_header_id", getVal("[name*='[mrn_header_id]']"));
     safeSet("mrn_detail_id", getVal("[name*='[mrn_detail_id]']"));
     safeSet("inspection_dtl_id", getVal("[name*='[inspection_dtl_id]']"));
-    safeSet("qty", orderQty.toFixed(2));
+    safeSet("qty", orderQty.toFixed(6));
     safeSet("type", currentProcessType);
 
     const response = await fetch(
@@ -220,15 +220,15 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     const result = await response.json();
 
     const resultQty = parseFloat(result.order_qty) || 0;
-    const finalQty = resultQty.toFixed(2);
+    const finalQty = resultQty.toFixed(6);
     $qtyInput.val(finalQty);
 
     let acceptedQty = resultQty;
     let rejectedQty = resultQty - acceptedQty;
 
-    $acceptedQtyInput.val(acceptedQty.toFixed(2));
+    $acceptedQtyInput.val(acceptedQty.toFixed(6));
     $acceptedQtyInput.trigger("change");
-    $rejectedQtyInput.val(rejectedQty.toFixed(2));
+    $rejectedQtyInput.val(rejectedQty.toFixed(6));
 
     // // Keep single-batch hidden JSON aligned if user edits row Accepted/Rejected
     // const batchCount =
@@ -265,8 +265,8 @@ $(document).on("change", "[name*='accepted_qty']", function (e) {
 
     let rejectedQty = orderQty - acceptedQty;
 
-    $acceptedQtyInput.val(acceptedQty.toFixed(2));
-    $rejectedQtyInput.val(rejectedQty.toFixed(2));
+    $acceptedQtyInput.val(acceptedQty.toFixed(6));
+    $rejectedQtyInput.val(rejectedQty.toFixed(6));
 });
 
 /*Open item remark modal*/

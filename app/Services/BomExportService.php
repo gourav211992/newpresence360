@@ -7,7 +7,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Models\Bom;
 use App\Models\Organization;
-
+use Illuminate\Support\Str;
 class BomExportService
 {
     public function getExportData(int $id): array
@@ -130,6 +130,31 @@ class BomExportService
                 'bold' => true,
                 'font_size' => 12,
                 'data' => $bomSummary,
+            ];
+        }
+        // Section 4: Multiple Attachment
+        $attachments = $bom->getDocuments()->filter(fn($doc) => Str::contains($doc->mime_type, 'image'))->values();
+
+        $bomAttachment = [];
+        if ($canView && $attachments->isNotEmpty()) {
+            foreach ($attachments as $keys=>$file) {
+                $fileName = 'Attachment '.$keys+1;
+                $fileType = Str::contains($file->mime_type, 'pdf') ? 'PDF' : 'Image';
+                $downloadUrl = $bom->getPdfDocumentUrl($file);
+
+                $bomAttachment[] = [
+                            'text' => $fileName ,
+                            'link' => $downloadUrl
+                            // 'link' => "=HYPERLINK(\"{$downloadUrl}\", \"Download\")",
+                        ];
+            }
+
+            $sections[] = [
+                'section_title' => 'Attachment',
+                'bold' => true,
+                'font_size' => 12,
+                'data' => $bomAttachment,
+              
             ];
         }
 

@@ -26,6 +26,7 @@ class ConstantHelper
     const CLIENT_SECRET = 'e_invoice_client_secret';
     const CLIENT_USERNAME = 'e_invoice_client_username';
     const CLIENT_PASSWORD = 'e_invoice_client_password';
+    const CLIENT_ACCESS_TOKEN = 'e_invoice_acess_token';
 
     const ERP_CUSTOMER_STATUS = [
         self::ACTIVE,

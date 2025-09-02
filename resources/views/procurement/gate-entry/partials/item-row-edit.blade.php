@@ -63,7 +63,7 @@
          <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{number_format(($item->accepted_qty), 2, '.', '')}}" step="any" {{ $readOnly }}/>
       </td>
       <td>
-         <input type="number" name="components[{{$rowCount}}][rate]" value="{{number_format(($item->rate), 2, '.', '')}}" class="form-control mw-100 text-end rate checkNegativeVal" readonly />
+         <input type="number" name="components[{{$rowCount}}][rate]" value="{{number_format(($item->rate), 2, '.', '')}}" class="form-control mw-100 text-end rate checkNegativeVal" step="any" readonly />
       </td>
       <td>
          <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{number_format(($item->accepted_qty*$item->rate), 2, '.', '')}}" class="form-control text-end mw-100 basic_value" step="any" readonly />

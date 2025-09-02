@@ -169,7 +169,7 @@
                 step="any" {{ $acceptedReadOnly }} />
         </td>
         <td>
-            <input type="number" name="components[{{ $rowCount }}][rate]" value="{{ $item->rate }}"
+            <input type="number" name="components[{{ $rowCount }}][rate]" value="{{ $item->rate }}" step="any"
                 class="form-control mw-100 text-end rate checkNegativeVal" />
         </td>
         <td>

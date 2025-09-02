@@ -2498,7 +2498,7 @@
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {
                             setAttributesUIHelper(index + 1, "#itemTable");
                         });
-                    }, 500);
+                    }, 3000);
                 })
                 // .catch(() => {
                 //     Swal.fire({

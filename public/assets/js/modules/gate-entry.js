@@ -184,7 +184,7 @@ $(document).on("change", "[name*='accepted_qty']", async function (e) {
     const $tr = $(e.target).closest("tr");
     const $qtyInput = $(e.target);
     const orderQty = parseFloat($qtyInput.val()) || 0;
-    $qtyInput.val(orderQty.toFixed(2));
+    $qtyInput.val(orderQty.toFixed(6));
     let acceptedQuantity = $(e.target)
         .closest("tr")
         .find("[name*='accepted_qty']");
@@ -236,12 +236,12 @@ $(document).on("change", "[name*='accepted_qty']", async function (e) {
         const result = await response.json();
 
         const resultQty = parseFloat(result.order_qty) || 0;
-        const finalQty = resultQty.toFixed(2);
+        const finalQty = resultQty.toFixed(6);
         $qtyInput.val(finalQty);
 
         let acceptedQty = resultQty;
 
-        $acceptedQtyInput.val(acceptedQty.toFixed(2));
+        $acceptedQtyInput.val(acceptedQty.toFixed(6));
 
         if (Number($itemCost.val())) {
             let totalValue =
@@ -292,7 +292,7 @@ $(document).on("change", "[name*='rate']", (e) => {
         // }
         let totalItemValue = itemRate * parseFloat(acceptedQuantity.val());
         totalItemValue = parseFloat(totalItemValue);
-        orderRate.val(itemRate.toFixed(2));
+        orderRate.val(itemRate.toFixed(6));
         itemValue.val(totalItemValue.toFixed(2));
     } else {
         itemValue.val("");
@@ -596,7 +596,7 @@ function setTableCalculation(edit = null) {
         let price = itemValue3 - itemDisc3 - itemHeaderDisc;
         if (price > 0 && itemId) {
             if (isTax) {
-                let transactionType = "collection";
+                let transactionType = "purchase";
                 let partyCountryId = $("#hidden_country_id").val();
                 let partyStateId = $("#hidden_state_id").val();
                 let locationId = $("[name='header_store_id']").val();
@@ -1560,6 +1560,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
     const new_exp_id = $("#new_exp_id").val() || "";
     const new_exp_perc = (Number($("#new_exp_perc").val()) || 0).toFixed(2);
     const new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
+    let locationId = $("[name='header_store_id']").val() || "";
 
     let _total_head_exp = 0;
     $("[name*='[e_amnt]']").each(function (index, item) {
@@ -1587,6 +1588,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
             <input type="hidden" value="" name="exp_summary[${tbl_row_count}][e_id]">
             <input type="hidden" value="${new_exp_id}" name="exp_summary[${tbl_row_count}][ted_e_id]">
             <input type="hidden" value="${new_exp_name}" name="exp_summary[${tbl_row_count}][e_name]" />
+            <input type="hidden" name="exp_summary[${tbl_row_count}][location_id]" value="${locationId}">
         </td>
         <td class="text-end">${new_exp_perc}
             <input type="hidden" value="${new_exp_perc}" name="exp_summary[${tbl_row_count}][e_perc]" />

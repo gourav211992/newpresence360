@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Report;
 
 use App\Helpers\Helper;
 use Illuminate\Http\Request;
+use App\Models\Address;
 use App\Models\Organization;
 use App\Helpers\ConstantHelper;
 use Yajra\DataTables\DataTables;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\View\BomVsConsumption;
 use App\Models\View\ProductionTracking;
-
+use PDF;
 class ProductionReportController extends Controller
 {
         public function bomVsActualReport(Request $request)
@@ -96,7 +97,7 @@ class ProductionReportController extends Controller
             $groupId   = $organization?->group_id ?? null;
             $companyId = $organization?->company_id ?? null;
 
-        $results = DB::table('erp_bom_vs_consumptions_view')
+        $query = DB::table('erp_bom_vs_consumptions_view')
             ->select([
                 'pslip_book_code',
                 'pslip_document_number',
@@ -122,22 +123,52 @@ class ProductionReportController extends Controller
                 DB::raw('(consumption_qty * rate) as consumed_total'),
                 DB::raw('(required_qty - consumption_qty) as remaining_qty'),
                 DB::raw('((required_qty * rate) - (consumption_qty * rate)) as remaining_total'),
-                DB::raw('CASE 
-                            WHEN required_qty > 0 
-                            THEN ROUND(((required_qty - consumption_qty) / required_qty) * 100, 2) 
-                            ELSE 0 
+                DB::raw('CASE
+                            WHEN required_qty > 0
+                            THEN ROUND(((required_qty - consumption_qty) / required_qty) * 100, 2)
+                            ELSE 0
                         END as remaining_qty_percentage'),
-                DB::raw('CASE 
-                            WHEN (required_qty * rate) > 0 
-                            THEN ROUND((((required_qty - consumption_qty) * rate) / (required_qty * rate)) * 100, 2) 
-                            ELSE 0 
+                DB::raw('CASE
+                            WHEN (required_qty * rate) > 0
+                            THEN ROUND((((required_qty - consumption_qty) * rate) / (required_qty * rate)) * 100, 2)
+                            ELSE 0
                         END as remaining_total_percentage'),
             ])
             ->where('group_id', $groupId)
             ->where('company_id', $companyId)
             ->where('organization_id', $organizationId)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->get();
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                if ($request->filled('date_range')) {
+                    $dates = explode(' to ', $request->date_range);
+
+                    if (count($dates) === 2) {
+                        $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay()->format('Y-m-d');
+                        $endDate   = \Carbon\Carbon::parse($dates[1])->endOfDay()->format('Y-m-d');
+
+                        $query->whereDate('pslip_document_date', '>=', $startDate)
+                            ->whereDate('pslip_document_date', '<=', $endDate);
+                    }
+                }
+        
+
+                if ($request->filled('so_number')) {
+                    $so = explode('-', $request->so_number);
+                  
+                    $so_number=isset($so[1])?$so[1]:$request->so_number;
+                    $query->where('so_document_number', 'like', '%' . $so_number . '%');
+                }
+
+                if ($request->filled('mo_number')) {
+                    $mo = explode('-', $request->mo_number);
+                    $mo_number=isset($mo[1])?$mo[1]:'';
+                    $query->where('mo_document_number', 'like', '%' . $mo_number . '%');
+                }
+
+                if ($request->filled('item_code')) {
+                      
+                    $query->where('item_code', 'like', '%' . $request->item_code . '%');
+                }
+            $results=$query->get();
 
 
             $handle = fopen($localFilePath, 'w');
@@ -175,11 +206,11 @@ class ProductionReportController extends Controller
                 fputcsv($handle, [
                     $row->pslip_book_code,
                     $row->pslip_document_number,
-                    date('d-m-Y', strtotime($row->pslip_document_date)),
+                    $row->pslip_document_date,
                     $row->mo_document_number,
-                    date('d-m-Y', strtotime($row->mo_document_date)),
+                    $row->mo_document_date,
                     $row->so_document_number,
-                    date('d-m-Y', strtotime($row->so_document_date)),
+                    $row->so_document_date,
                     $row->store_name,
                     $row->sub_store_name,
                     $row->pslip_item_code,
@@ -201,6 +232,7 @@ class ProductionReportController extends Controller
             }
 
             fclose($handle);
+
 
         return response()->download($localFilePath)->deleteFileAfterSend(true);
     }
@@ -376,7 +408,7 @@ class ProductionReportController extends Controller
         $organization = Organization::find($organizationId);
         $groupId   = $organization?->group_id ?? null;
         $companyId = $organization?->company_id ?? null;
-
+      
         $details = ProductionTracking::query()
                 ->where('group_id', $groupId)
                 ->where('company_id', $companyId)
@@ -385,7 +417,7 @@ class ProductionReportController extends Controller
                 ->where('id', $id)
                 ->first();
 
-        if ($request->ajax()) {
+        if ($request->ajax()||$request->pdf) {
                 $query = DB::table('erp_pwo_so_mapping as a')
                     ->Join('erp_mo_products as mp', 'mp.pwo_mapping_id', '=', 'a.id')
                     ->Join('erp_mfg_orders as b', 'b.id', '=', 'mp.mo_id')
@@ -411,7 +443,7 @@ class ProductionReportController extends Controller
                         'd.accepted_qty',
                         'd.subprime_qty',
                         'd.rejected_qty',
-                        'e.name',
+                        'e.name as station_name',
                         'f.name as sub_store_name',
                         'f.code as sub_store_code'
                     ])->where('b.group_id', $groupId)
@@ -419,6 +451,30 @@ class ProductionReportController extends Controller
                     ->where('b.company_id', $companyId)
                     ->where('b.organization_id', $organizationId)
                     ->orderByDesc('a.id');
+        }
+        if($request->pdf){
+            $get=$query->get();
+            $imagePath = public_path('assets/css/midc-logo.jpg');
+            $title = 'Production Report';
+            $organizationAddress = Address::with(['city', 'state', 'country'])
+                    ->where('addressable_id', $user->organization_id)
+                    ->where('addressable_type', Organization::class)
+                    ->first();
+            $data=[
+                'title' => $title,
+                'imagePath' => $imagePath,
+                'user' => $user,
+                'organization' => $organization,
+                'organizationAddress' => $organizationAddress
+            ];
+           $pdf = PDF::loadView('reports.pdf.productionTrackingDetails',$data,compact('details','get'));
+
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        return $pdf->stream(str_replace(' ', '', $title) . '-' . date('Y-m-d') . '.pdf');
+
+        }
+
+        if ($request->ajax()) {
                 return DataTables::of($query)
                 ->addIndexColumn() 
                 ->filterColumn('document_date', function($query, $keyword) {

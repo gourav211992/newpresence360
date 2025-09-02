@@ -3052,7 +3052,7 @@ class PurchaseReturnController extends Controller
             //     $data = EInvoiceHelper::saveGstIn($documentHeader);
             $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
             if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
-                $data = MasterIndiaHelper::saveGstIn($documentHeader);
+                $data = MasterIndiaHelper::saveGstIn($documentHeader, $user);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
                         'status' => 'error',
@@ -3087,13 +3087,12 @@ class PurchaseReturnController extends Controller
 
         try{
             $documentHeader = PRHeader::find($request->id);
-            // $data = EInvoiceHelper::generateEwayBill($documentHeader);
-            $data = MasterIndiaHelper::generateEwayBill($documentHeader);
+            $data = MasterIndiaHelper::generateEwayBill($documentHeader, $user);
             if (isset($data) && (isset($data['results']) && ($data['results']['status'] != 'Success'))) {
                 return response()->json([
                     'status' => 'error',
                     'error' => 'error',
-                    'message' => $data['results'],
+                    'message' => $data['results']['message'],
                 ], 500);
             } else{
                 $message = $data['results']['message'];

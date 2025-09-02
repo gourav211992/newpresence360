@@ -217,7 +217,8 @@ class ErpPSVController extends Controller
         //Get the menu 
         
         $parentURL = request() -> segments()[0];
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $user = Helper::getAuthenticatedUser();
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL,'',$user);
         if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
@@ -226,7 +227,6 @@ class ErpPSVController extends Controller
         $currentfyYear['current_date'] = Carbon::now() -> format('Y-m-d');
         $redirectUrl = route('psv.index');
         $firstService = $servicesBooks['services'][0];
-        $user = Helper::getAuthenticatedUser();
         $typeName = ConstantHelper::PSV_SERVICE_ALIAS;
         $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
         $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
@@ -276,7 +276,7 @@ class ErpPSVController extends Controller
             $items = self::pullItems($doc);
             $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
             if (isset($doc)) {
-                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias);
+                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$doc -> book ?-> service ?-> alias,$user);
             }            
             $revision_number = $doc->revision_number;
             $selectedfyYear = Helper::getFinancialYear($doc->document_date ?? Carbon::now()->format('Y-m-d'));

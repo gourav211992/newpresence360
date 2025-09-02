@@ -1699,8 +1699,13 @@ class ExpenseAdviseController extends Controller
     public function taxCalculation(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
+        $location = ErpStore::find($request->location_id ?? null);
+
         $organization = $user->organization;
-        $firstAddress = $organization->addresses->first();
+        $firstAddress = $location?->address ?? null;
+        if(!$firstAddress) {
+            $firstAddress = $organization?->addresses->first();
+        }
         if ($firstAddress) {
             $companyCountryId = $firstAddress->country_id;
             $companyStateId = $firstAddress->state_id;

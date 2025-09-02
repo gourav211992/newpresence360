@@ -17,9 +17,9 @@
                     </div>
                     <div class="content-header-right text-end col-md-6">
 
-                        {{-- <a href="{{ route('productionTracking.download') }}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                        <a href="{{ route('productionTracking.details',['id'=> request()->route('id')]) }}?pdf='true'" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
                                 data-feather="download"></i> Print
-                        </a> --}}
+                        </a>
                     </div>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                                     @endforeach
                                 </td>
                                 <td><b>Date</b></td>
-                                <td>{{$details->pwo_document_date}}</td>
+                                <td>{{date('d-m-Y',strtotime($details->pwo_document_date))}}</td>
                             </tr>
                             <tr>
                                 <td><b>Customer</b></td>
@@ -61,13 +61,13 @@
                             </tr>
                             <tr>
                                 <td><b>SO#</b></td>
-                                <td>{{$details->so_document_number}}</td>
+                                <td>{{$details->so_book_code}}-{{$details->so_document_number}}</td>
                                 <td><b>Produced Qty</b></td>
                                 <td>{{$details->pslip_qty}}</td>
                             </tr>
                             <tr>
                                 <td><b>Date</b></td>
-                                <td>{{$details->so_document_date}}</td>
+                                <td>{{date('d-m-Y',strtotime($details->so_document_date))}}</td>
                                 <td><b>% Completion</b></td>
                                 <td>{{$details->completion_percent}}%</td>
                             </tr>
@@ -185,10 +185,10 @@
                                     }
                                 },          
                                 {
-                                    data: 'name',
+                                    data: 'station_name',
                                     name: 'e.name',
                                     render: function (data, type, row) {
-                                        return row.name;
+                                        return row.station_name;
                                     }
                                 },            
                                 {

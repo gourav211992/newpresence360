@@ -259,7 +259,7 @@ class ErpSaleReturnController extends Controller
         $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
 
         $type = SaleModuleHelper::getAndReturnReturnType($request->type ?? ConstantHelper::SR_SERVICE_ALIAS);
-        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL,'',$user);
         $firstService = $servicesBooks['services'][0];
         $bookType = $type;
         $typeName = "Sales Return";

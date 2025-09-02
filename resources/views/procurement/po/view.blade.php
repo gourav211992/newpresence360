@@ -715,7 +715,7 @@ function setServiceParameters(parameters) {
 
     const $procurementTypeSelect = $('#procurement_type');
     const poProcurementType = @json($po->procurement_type ?? '') || parameters?.po_procurement_type || '';
-    const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\ServiceParametersHelper::PO_PROCUREMENT_TYPE_VALUES);
+    const PO_PROCUREMENT_TYPE_VALUES = @json(\App\Helpers\CommonHelper::PO_PROCUREMENT_TYPE_VALUES);
 
     if (poProcurementType === 'All') {
         $procurementTypeSelect.empty();

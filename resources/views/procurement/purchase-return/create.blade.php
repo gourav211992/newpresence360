@@ -2138,7 +2138,7 @@
                         }
                         currentIndex = tableRowCount + 1;
                         setAttributesUIHelper(currentIndex,"#itemTable");
-                    },500);
+                    },3000);
                 })
                 .catch(() => {
                     Swal.fire({

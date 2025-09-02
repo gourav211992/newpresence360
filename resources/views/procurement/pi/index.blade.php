@@ -60,13 +60,68 @@
             </div>
         </div>
     </div>
+    {{-- filter start------}}
+    <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+        <div class="modal-dialog sidebar-sm">
+            <form class="add-new-record modal-content pt-0">
+                <div class="modal-header mb-1">
+                    <h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                </div>
+                <div class="modal-body flex-grow-1">
+                    <div class="mb-1">
+                    <label class="form-label" for="fp-range">Select Date</label>
+                    <input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label">Series</label>
+                        <select class="form-select select2" id="filter-book" name="book_id[]" multiple>
+                            @foreach($books as $book)
+                                <option value="{{ $book->id }}">{{ $book->book_code }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                    <label class="form-label">Location</label>
+                    <select class="form-select select2" id="filter-location" name="location_id[]" multiple>
+                            @foreach($locations as $location)
+                                <option value="{{ $location->id }}">{{ $location->store_name }}</option>
+                            @endforeach
+                    </select>
+                    </div>
+                    <div class="mb-1">
+                    <label class="form-label">Requester</label>
+                    <select class="form-select select2" id="filter-requester" name="requester_id[]" multiple>
+                            @foreach($requesters as $requester)
+                                <option value="{{ $requester->id }}">{{ $requester->name }}-({{ $requester->email }})</option>
+                            @endforeach
+                    </select>
+                    </div>
+                    <div class="mb-1">
+                    <label class="form-label">Organization</label>
+                    <select class="form-select select2" id="filter-organization" name="organization_id[]" multiple>
+                            @foreach($applicableOrganizations as $applicableOrganization)
+                                <option value="{{ $applicableOrganization->id }}">{{ $applicableOrganization->name }}</option>
+                            @endforeach
+                    </select>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-start">
+                    <button type="button" class="btn btn-primary data-submit mr-1">Apply</button>
+                    <button type="reset" class="btn btn-outline-secondary reset-filter" data-bs-dismiss="modal">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {{-- filter end --}}
+
 @endsection
 @section('scripts')
 <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
 <script>
 $(document).ready(function() {
    function renderData(data) {
-        return data ? data : ''; 
+        return data ? data : '';
     }
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -83,7 +138,7 @@ $(document).ready(function() {
             $(td).addClass('no-wrap');
         }
         },
-        
+
         { data: 'department', name: 'department', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
             $(td).addClass('no-wrap');
         }
@@ -94,15 +149,16 @@ $(document).ready(function() {
             }
         }
     ];
-    // Define your dynamic filters
     var filters = {
-        status: '#filter-status',         // Status filter (dropdown)
-        category: '#filter-category',     // Category filter (dropdown)
-        item_code: '#filter-item-code'    // Item code filter (input text field)
+        book_id: '#filter-book',
+        requester_id: '#filter-requester',
+        location_id: '#filter-location',
+        date_range: '#fp-range',
+        organization_id: '#filter-organization',
     };
     var exportColumns = [0, 1, 2, 3, 4, 5, 6]; // Columns to export
-    initializeDataTable('.datatables-basic', 
-        "{{ route('pi.index') }}", 
+    var table = initializeDataTable('.datatables-basic',
+        "{{ route('pi.index') }}",
         columns,
         filters,  // Apply filters
         'Purchase Indent',  // Export title
@@ -110,8 +166,19 @@ $(document).ready(function() {
         // [[1, "desc"]] // default order
 
     );
-    // Apply filter on button click
-    // applyFilter('.apply-filter');
+    $(".data-submit").on("click", function () {
+        table.ajax.reload();
+        $("#filter").modal('hide');
+    });
+
+    $(".reset-filter").on("click", function () {
+        $("#filter-book").val(null).trigger("change");
+        $("#filter-requester").val(null).trigger("change");
+        $("#filter-location").val(null).trigger("change");
+        $("#filter-organization").val(null).trigger("change");
+        $("#fp-range").val("");
+        table.ajax.url("{{ route('pi.index') }}").load();
+    });
 });
 </script>
 @endsection

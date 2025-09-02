@@ -79,6 +79,30 @@ class PoController extends Controller
                     ->with('vendor:id,vendor_code,company_name')
                     ->with('currency:id,short_name,name')
                     ->latest();
+
+            // Apply drawer filters
+            if ($request->filled('date_range')) {
+                $dates = explode(' to ', $request->date_range);
+
+                if (count($dates) === 2) {
+                    $startDate = Carbon::parse($dates[0])->startOfDay();
+                    $endDate   = Carbon::parse($dates[1])->endOfDay();
+
+                    $pos->whereBetween('document_date', [$startDate, $endDate]);
+                }
+            }
+            if ($request->filled('book_id')) {
+                $pos->whereIn('book_id', $request->book_id);
+            }
+            if ($request->filled('location_id')) {
+                $pos->whereIn('store_id', $request->location_id);
+            }
+            if ($request->filled('vendor_id')) {
+                $pos->whereIn('vendor_id', $request->vendor_id);
+            }
+            if ($request->filled('organization_id')) {
+                $pos->whereIn('organization_id', $request->organization_id);
+            }
             return DataTables::of($pos)
             ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
@@ -111,6 +135,11 @@ class PoController extends Controller
             ->addColumn('store_location', function ($row) {
                 return $row->store_location ? $row->store_location?->store_name : 'N/A';
             })
+            ->filterColumn('store_location', function($query, $keyword) {
+            $query->whereHas('store_location', function($q) use ($keyword) {
+                $q->where('store_name', 'like', "%{$keyword}%");
+            });
+            })
             ->addColumn('curr_name', function ($row) {
                 return $row->currency ? ($row->currency?->short_name ?? $row->currency?->name) : 'N/A';
             })
@@ -122,6 +151,12 @@ class PoController extends Controller
             })
             ->addColumn('vendor_name', function ($row) {
                 return $row->vendor?->company_name ?? 'NA';
+            })
+            ->filterColumn('vendor_name', function($query, $keyword) {
+            $query->whereHas('vendor', function($q) use ($keyword) {
+                $q->where('company_name', 'like', "%{$keyword}%")
+                ->orWhere('vendor_code', 'like', "%{$keyword}%");
+            });
             })
             ->addColumn('components', function ($row) {
                 return $row->po_items->count();
@@ -146,7 +181,22 @@ class PoController extends Controller
         }
         $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        return view('procurement.po.index',['servicesBooks' => $servicesBooks]);
+        $user = Helper::getAuthenticatedUser();
+        $applicableOrgIds = $user->organizations->pluck('id')->toArray();
+        $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
+        $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
+        $vendors = Vendor::where('organization_id', $user->organization_id)->get();
+        $locations = InventoryHelper::getAccessibleLocations();
+        $applicableOrganizations = Organization::whereIn('id', $applicableOrgIds)
+        ->where('status', ConstantHelper::ACTIVE)
+        ->get(['id', 'name']);
+        return view('procurement.po.index',[
+            'servicesBooks' => $servicesBooks,
+            'books' => $books,
+            'vendors' => $vendors,
+            'locations' => $locations,
+            'applicableOrganizations' => $applicableOrganizations,
+        ]);
     }
 
     # Po create
@@ -346,6 +396,8 @@ class PoController extends Controller
                     ->latest()
                     ->first();
 
+        $compliances = $vendor->compliances ?? null;
+
         if (!$vendorAddress) {
             return response() -> json([
                 'data' => array(
@@ -380,7 +432,8 @@ class PoController extends Controller
                     'vendor' => $vendor,
                     'paymentTerm' => $paymentTerm,
                     'currency' => $currency,
-                    'currency_exchange' => $currencyData
+                    'currency_exchange' => $currencyData,
+                    'compliances' => $compliances
                 ],
             'status' => 200,
             'message' => 'fetched'

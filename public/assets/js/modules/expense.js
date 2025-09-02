@@ -390,7 +390,7 @@ function setTableCalculation() {
 
         if (price > 0 && itemId) {
             if(isTax) {
-                let transactionType = 'collection';
+                let transactionType = 'purchase';
                 let partyCountryId = $("#hidden_country_id").val();
                 let partyStateId = $("#hidden_state_id").val();
                 // Construct the query parameters

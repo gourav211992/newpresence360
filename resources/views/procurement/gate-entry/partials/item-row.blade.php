@@ -24,13 +24,13 @@
         </select>
     </td>
     <td>
-        <input type="number" step="any" class="form-control mw-100 accepted_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" />
+        <input type="number" step="any" class="form-control mw-100 accepted_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" step="any" />
     </td>
     <td>
-        <input type="number" step="any" name="components[{{$rowCount}}][rate]" class="form-control mw-100 text-end checkNegativeVal" />
+        <input type="number" step="any" name="components[{{$rowCount}}][rate]" class="form-control mw-100 text-end checkNegativeVal" step="any" />
     </td>
     <td>
-        <input type="number" step="any" readonly name="components[{{$rowCount}}][basic_value]" class="form-control mw-100 text-end" />
+        <input type="number" step="any" readonly name="components[{{$rowCount}}][basic_value]" class="form-control mw-100 text-end" step="any" />
     </td>
     <td>
         <div class="position-relative d-flex align-items-center">

@@ -27,7 +27,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 500;
+        return 100;
     }
 
     public function __construct(ItemImportExportService $service, $user)

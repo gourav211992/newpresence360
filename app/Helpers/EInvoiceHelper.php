@@ -214,9 +214,11 @@ class EInvoiceHelper
         try{
 
             $gstin = $gstNumber;
-            $authCredentials = self::getAuthCredentials();
+            // $authCredentials = self::getAuthCredentials();
             $requestUid = 'GOV-EINVOICE-'.date('dmy').time();;
-            $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
+            // $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
+            $eInvoiceService = new MasterIndiaService($requestUid);
+
 
             $authToken = $eInvoiceService->getAuthToken();
             $baseUrl = config('app.masterindia.base_url');

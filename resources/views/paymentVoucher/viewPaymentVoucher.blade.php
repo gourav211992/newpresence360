@@ -2026,9 +2026,11 @@
                 Swal.fire(datas.message, datas.error, "error");
                 return;
             }
-
+            let inCVBlock = false;
+            let nextIsCV = true;
+            let fullHTML = ""; // sara html collect karne ke liye
             // Loop through each voucher in the array
-            datas.data.forEach((voucherWrapper) => {
+            datas.data.forEach((voucherWrapper, index) => {
                 if (!voucherWrapper || voucherWrapper.status === false) {
                     error = true;
                     Swal.fire("Error!", voucherWrapper?.message || "Unknown error occurred", "error");
@@ -2037,8 +2039,25 @@
 
                 const voucherEntries = voucherWrapper.data;
                 var org_name = @json(App\Helpers\Helper::getAuthenticatedUser()?->organization?->name);
-
-                let voucherEntriesHTML = `
+                let isCV = voucherEntries.book_code?.toLowerCase() === "cv";
+                let nextVoucher = datas.data[index + 1];
+                console.log(nextVoucher);
+                if (nextVoucher && nextVoucher.data && nextVoucher.data.book_code) 
+                {
+                    nextIsCV = (nextVoucher?.data?.book_code?.toLowerCase() === "cv") || false;
+                }
+                else
+                {
+                    nextIsCV = false;
+                }
+                console.log(nextIsCV,index);
+                if (isCV && !inCVBlock) {
+                    console.log(voucherEntries.document_number,index);
+                    fullHTML +=  `<div class="bg-light p-2 border" style="border-radius: 20px">`;
+                    fullHTML += `<h4 class="mb-1 pb-75 fw-bolder border-bottom">Contra Entries</h4>`;
+                    inCVBlock = true;
+                }
+                fullHTML += `
                     <div class="row">
                         <div class="col-md-3">
                              <div class="mb-1">
@@ -2073,7 +2092,7 @@
                         </div>
                         <div class="col-md-12">
                             <div class="table-responsive">
-                               <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
 								     <thead>
                                         <tr>
                                             <th>Type</th>
@@ -2087,37 +2106,46 @@
                                     </thead>
                                     <tbody>`;
 
-                Object.keys(voucherEntries.ledgers).forEach((typeKey) => {
-                    voucherEntries.ledgers[typeKey].forEach((entry) => {
-                        voucherEntriesHTML += `
-                            <tr>
-                                <td>${typeKey}</td>
-                                <td style="font-weight : bold;">${entry.ledger_group_code || ''}</td>
-                                <td>${entry.ledger_code || ''}</td>
-                                <td>${entry.ledger_name || ''}</td>
-                                <td>${entry.cost_name || ''}</td>
-                                <td class="text-end indian-number">${entry.debit_amount > 0 ? parseFloat(entry.debit_amount).toFixed(2) : ''}</td>
-                                <td class="text-end indian-number">${entry.credit_amount > 0 ? parseFloat(entry.credit_amount).toFixed(2) : ''}</td>
-                            </tr>`;
-                    });
-                });
+                                        Object.keys(voucherEntries.ledgers).forEach((typeKey) => {
+                                            voucherEntries.ledgers[typeKey].forEach((entry) => {
+                                                fullHTML += `
+                                                    <tr>
+                                                        <td>${typeKey}</td>
+                                                        <td style="font-weight : bold;">${entry.ledger_group_code || ''}</td>
+                                                        <td>${entry.ledger_code || ''}</td>
+                                                        <td>${entry.ledger_name || ''}</td>
+                                                        <td>${entry.cost_name || ''}</td>
+                                                        <td class="text-end indian-number">${entry.debit_amount > 0 ? parseFloat(entry.debit_amount).toFixed(2) : ''}</td>
+                                                        <td class="text-end indian-number">${entry.credit_amount > 0 ? parseFloat(entry.credit_amount).toFixed(2) : ''}</td>
+                                                    </tr>`;
+                                            });
+                                        });
      
-                voucherEntriesHTML += `
-                    <tr>
-                        <td style="font-weight : bold;" colspan="5" class="text-end">Total</td>
-                        <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
-                        <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
-                    </tr>
-                    </tbody>
-                </table>
-                </div>
-                </div>
-                </div>`;
+                                        fullHTML += `
+                                            <tr>
+                                                <td style="font-weight : bold;" colspan="5" class="text-end">Total</td>
+                                                <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                                                <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
+                                            </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
 
                 // Append to modal container (supports multiple vouchers if needed)
-                $('#posting').append(voucherEntriesHTML);
                 //$('#posting').append('<hr class="my-4">');
-                $('#posting').append('<br/>');
+                if (inCVBlock && !nextIsCV) {
+                    console.log("closing Contra block at", voucherEntries.document_number);
+                    // $('#posting').append(voucherEntriesHTML);  // pehle current voucher ka HTML
+                    // $('#posting').append(`</div><br/>`);       // fir close karo div
+                    fullHTML += `</div><br/>`;
+                    inCVBlock = false;
+                } else {
+                    // $('#posting').append(voucherEntriesHTML);  // normal append
+                    // $('#posting').append('<br/>');
+                    fullHTML += `<br/>`;
+                }
 
                 if (type === "posted") {
                     $('#posting_button').hide();
@@ -2126,6 +2154,7 @@
                 }
                 
             });
+            $('#posting').append(fullHTML);
             if(!error)
                 $('#postvoucher').modal('show');
                 

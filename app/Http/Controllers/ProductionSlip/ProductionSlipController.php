@@ -187,7 +187,7 @@ class ProductionSlipController extends Controller
             $groupId   = $organization?->group_id ?? null;
             $companyId = $organization?->company_id ?? null;
 
-        $results = DB::table('erp_bom_vs_consumptions_view')
+        $query = DB::table('erp_bom_vs_consumptions_view')
             ->select([
                 'pslip_book_code',
                 'pslip_document_number',
@@ -227,8 +227,38 @@ class ProductionSlipController extends Controller
             ->where('group_id', $groupId)
             ->where('company_id', $companyId)
             ->where('organization_id', $organizationId)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-            ->get();
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                if ($request->filled('date_range')) {
+                    $dates = explode(' to ', $request->date_range);
+
+                    if (count($dates) === 2) {
+                        $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay()->format('Y-m-d');
+                        $endDate   = \Carbon\Carbon::parse($dates[1])->endOfDay()->format('Y-m-d');
+
+                        $query->whereDate('pslip_document_date', '>=', $startDate)
+                            ->whereDate('pslip_document_date', '<=', $endDate);
+                    }
+                }
+        
+
+                if ($request->filled('so_number')) {
+                    $so = explode('-', $request->so_number);
+                  
+                    $so_number=isset($so[1])?$so[1]:$request->so_number;
+                    $query->where('so_document_number', 'like', '%' . $so_number . '%');
+                }
+
+                if ($request->filled('mo_number')) {
+                    $mo = explode('-', $request->mo_number);
+                    $mo_number=isset($mo[1])?$mo[1]:'';
+                    $query->where('mo_document_number', 'like', '%' . $mo_number . '%');
+                }
+
+                if ($request->filled('item_code')) {
+                      
+                    $query->where('item_code', 'like', '%' . $request->item_code . '%');
+                }
+            $results=$query->get();
 
 
             $handle = fopen($localFilePath, 'w');

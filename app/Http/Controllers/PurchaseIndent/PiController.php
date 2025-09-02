@@ -46,8 +46,33 @@ class PiController extends Controller
             $selectedfyYear = Helper::getFinancialYear(Carbon::now());
             $selectColumns = ['id', 'document_date', 'document_status', 'book_id', 'store_id', 'sub_store_id', 'user_id', 'requester_type', 'revision_number', 'document_number'];
             $pis = PurchaseIndent::select($selectColumns)->withDraftListingLogic()
-                ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
-                ->latest();
+                    ->whereBetween('document_date',[$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+                    ->latest();
+            // Apply filters
+            if ($request->filled('date_range')) {
+                $dates = explode(' to ', $request->date_range);
+
+                if (count($dates) === 2) {
+                    $startDate = Carbon::parse($dates[0])->startOfDay();
+                    $endDate   = Carbon::parse($dates[1])->endOfDay();
+
+                    $pis->whereBetween('document_date', [$startDate, $endDate]);
+                }
+            }
+            if ($request->filled('book_id')) {
+                $pis->whereIn('book_id', $request->book_id);
+            }
+            if ($request->filled('location_id')) {
+                $pis->whereIn('store_id', $request->location_id);
+            }
+            if ($request->filled('requester_id')) {
+                $pis->whereIn('user_id', $request->requester_id);
+            }
+            if ($request->filled('organization_id')) {
+                $pis->whereIn('organization_id', $request->organization_id);
+            }
+
+
             return DataTables::of($pis)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
@@ -63,35 +88,60 @@ class PiController extends Controller
                             ]
                         ]
                     ])->render();
-                })
-                ->addColumn('book_name', function ($row) {
-                    return $row->book ? $row->book?->book_code : '';
-                })
-                ->addColumn('location', function ($row) {
-                    return $row?->store ? $row?->store?->store_name : '';
-                })
-                ->addColumn('department', function ($row) {
-                    if ($row->sub_store_id) {
-                        return $row?->sub_store ? $row?->sub_store?->name : '';
-                    } else {
-                        return $row?->requester ? $row->requester?->name : '';
-                    }
-                })
-                ->editColumn('document_date', function ($row) {
-                    return $row->getFormattedDate('document_date') ?? '';
-                })
-                ->editColumn('revision_number', function ($row) {
-                    return strval($row->revision_number);
-                })
-                ->addColumn('components', function ($row) {
-                    return $row->pi_items->count() ?? 0;
-                })
-                ->rawColumns(['document_status'])
-                ->make(true);
+            })
+            ->addColumn('book_name', function ($row) {
+                return $row->book ? $row->book?->book_code : '';
+            })
+            ->filterColumn('book_name', function($query, $keyword) {
+            $query->whereHas('book', function($q) use ($keyword) {
+                $q->where('book_code', 'like', "%{$keyword}%");
+            });
+            })
+            ->addColumn('location', function ($row) {
+                return $row?->store ? $row?->store?->store_name : '';
+            })
+            ->filterColumn('location', function($query, $keyword) {
+            $query->whereHas('store', function($q) use ($keyword) {
+                $q->where('store_name', 'like', "%{$keyword}%");
+            });
+            })
+            ->addColumn('department', function ($row) {
+                if($row->sub_store_id) {
+                    return $row?->sub_store ? $row?->sub_store?->name : '';
+                } else {
+                    return $row?->requester ? $row->requester?->name : '';
+                }
+            })
+            ->editColumn('document_date', function ($row) {
+                return $row->getFormattedDate('document_date') ?? '';
+            })
+            ->editColumn('revision_number', function ($row) {
+                return strval($row->revision_number);
+            })
+            ->addColumn('components', function ($row) {
+                return $row->pi_items->count() ?? 0;
+            })
+            ->rawColumns(['document_status'])
+            ->make(true);
         }
         $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        return view('procurement.pi.index', ['servicesBooks' => $servicesBooks]);
+        $serviceAlias = ConstantHelper::PI_SERVICE_ALIAS;
+	    $user = Helper::getAuthenticatedUser();
+        $applicableOrgIds = $user->organizations->pluck('id')->toArray();
+	    $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
+        $requesters = Helper::getOrgWiseUserAndEmployees($user->organization_id);
+        $locations = InventoryHelper::getAccessibleLocations();
+        $applicableOrganizations = Organization::whereIn('id', $applicableOrgIds ?? [0])
+        ->where('status', ConstantHelper::ACTIVE)
+        ->get(['id', 'name']);
+        return view('procurement.pi.index',[
+            'servicesBooks' => $servicesBooks,
+            'books' => $books,
+            'requesters' => $requesters,
+            'locations' => $locations,
+            'applicableOrganizations' => $applicableOrganizations,
+        ]);
     }
 
     // # Po create

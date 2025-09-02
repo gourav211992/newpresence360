@@ -39,8 +39,7 @@ use App\Models\PRItemAttribute;
 
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
-use App\Models\ErpEinvoice;
-use App\Models\ErpEInvoiceConfiguration;
+
 use Illuminate\Http\Request;
 use App\Services\EInvoiceService;
 use App\Services\MasterIndiaService;
@@ -53,7 +52,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
-class MasterIndiaHelper
+class MasterIndiaHelperBack
 {
     public function __construct()
 	{
@@ -112,26 +111,25 @@ class MasterIndiaHelper
         }
     }
 
-    public static function generateInvoice($documentHeader, $documentDetails, $user)
+    public static function generateInvoice($documentHeader, $documentDetails)
     {
-        $organization = Organization::find($user->organization_id);
-        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $masterIndiaService = new MasterIndiaService($requestUid);
-        $configurations = ErpEInvoiceConfiguration::where('group_id', $organization ?-> group_id)
-            -> where('gst_number', $organization ?-> gst_number) -> first();
+        $user = Helper::getAuthenticatedUser();
 
-        $authToken = $configurations ?-> client_access_token ?? null;
-        $authCredentials = [
-            'gstin'        => $organization->gst_number ?? env('EINVOICE_GSTIN', ''),
-        ];
-        $postData = self::prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials, $user);
+        $authCredentials = self::getAuthCredentials();
+        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        // $authToken = $masterIndiaService->getAuthToken();
+        $authToken = config('app.masterindia.e_invoice_access_token');;
+        $postData = self::prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials);
         $response = $masterIndiaService->generateInvoice($postData);
         return $response;
     }
 
-    private static function prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials, $user)
+    private static function prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials)
     {
-        $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails, $user);
+        $user = Helper::getAuthenticatedUser();
+
+        $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails);
         $invoiceData = [
             "access_token" => $authToken,
             "user_gstin" => $authCredentials['gstin'],
@@ -450,8 +448,10 @@ class MasterIndiaHelper
         return $authCredentials;
     }
 
-    private static function getInvoiceDetail($documentHeader, $documentDetails, $user)
+    private static function getInvoiceDetail($documentHeader, $documentDetails)
     {
+        $user = Helper::getAuthenticatedUser();
+
         $itemList = array();
         $result = array();
 
@@ -776,12 +776,12 @@ class MasterIndiaHelper
         return $stateCode ? $stateCode : null;
     }
 
-    private  static function generateIrn($docId, $document, $documentType, $user) {
+    private  static function generateIrn($docId, $document, $documentType) {
         $condition = self::checkIfGstInShouldGenerate($document, $documentType);
         if($condition){
             $documentHeader = $document;
             $documentDetails = $document -> items;
-            $generateInvoice = MasterIndiaHelper::generateInvoice($documentHeader, $documentDetails, $user);
+            $generateInvoice = MasterIndiaHelper::generateInvoice($documentHeader, $documentDetails);
             if ((isset($generateInvoice['results']) && isset(['results']['message']) && isset(['results']['message']['alert'])) && !empty($generateInvoice['results']['message']['alert'])) {
                 return [
                         'results' => [
@@ -795,14 +795,6 @@ class MasterIndiaHelper
                     'results' => [
                         'status' => 'Error',
                         'message' => $generateInvoice['results']['errorMessage']
-                    ]
-                ];
-            }
-            if (isset($generateInvoice['results']) && isset($generateInvoice['results']['message']) && ($generateInvoice['results']['code'] != 200)) {
-                return [
-                    'results' => [
-                        'status' => 'Error',
-                        'message' => $generateInvoice['results']['message']
                     ]
                 ];
             }
@@ -898,12 +890,12 @@ class MasterIndiaHelper
         }
     }
 
-    public static function saveGstIn(Model $document, $user)
+    public static function saveGstIn(Model $document)
     {
         $value = self::checkIfGstInShouldGenerate($document, null);
         if ($value) {
             // Generate Invoice
-            $generateInvoice = self::generateIrn($document -> id, $document, null, $user);
+            $generateInvoice = self::generateIrn($document -> id, $document, null);
             if(isset($generateInvoice['results']) && $generateInvoice['results']['status'] == "Error"){
                 return [
                     'status' => 'error',
@@ -917,22 +909,47 @@ class MasterIndiaHelper
     }
 
     // Generate Eway Bill
-    public static function generateEwayBillData($document, $user) {
-        $organization = Organization::find($user -> organization_id);
-        $configurations = ErpEInvoiceConfiguration::where('group_id', $organization ?-> group_id)
-            -> where('gst_number', $organization ?-> gst_number) -> first();
-        $authToken = $configurations ?-> client_access_token ?? null;
+    public static function generateEwayBillData($document) {
+        $user = Helper::getAuthenticatedUser();
+        $authCredentials = self::getAuthCredentials();
+        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        // $authToken = $masterIndiaService->getAuthToken();
+        $configurations = Configuration::where('type', 'organization')
+        ->where('type_id', $user->organization_id)
+        ->whereIn('config_key', [
+            ConstantHelper::CLIENT_ID,
+            ConstantHelper::CLIENT_SECRET,
+            ConstantHelper::CLIENT_USERNAME,
+            ConstantHelper::CLIENT_PASSWORD,
+            ConstantHelper::CLIENT_ACCESS_TOKEN
+        ])
+        ->pluck('config_value', 'config_key');
+        $authToken = $configurations['e_invoice_access_token'] ?? null;
+        // $authToken = config('app.masterindia.e_invoice_access_token');
         $documentHeader = $document;
+        // $eInvoice = $documentHeader->irnDetail()->first();
+        // $irnNumber = $eInvoice?->irn_number;
+        // $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
+
+        // $organization = Organization::where('id', $user->organization_id)->first();
+        // $organizationAddress = Address::with(['city', 'state', 'country'])
+        //     ->where('addressable_id', $user->organization_id)
+        //     ->where('addressable_type', Organization::class)
+        //     ->first();
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        // $distance = $masterIndiaService->getDistance($documentHeader, $authToken);
         $distance = 100;
-        $requestData = self::generateHeader($documentHeader, $authToken, $distance, $user);
+        // dd($distance);
+        $requestData = self::generateHeader($documentHeader, $authToken, $distance);
         return $requestData;
 
     }
 
-    public static function generateHeader($documentHeader, $authToken, $distance, $user)
+    public static function generateHeader($documentHeader, $authToken, $distance)
 	{
         $documentDetails = $documentHeader -> items;
-        $data = self::getInvoiceDetail($documentHeader, $documentDetails, $user);
+        $data = self::getInvoiceDetail($documentHeader, $documentDetails);
         $itemData = [];
         foreach ($data['itemList'] as $key2 => $item) {
             $itemData = self::generateItems($item);
@@ -1015,27 +1032,20 @@ class MasterIndiaHelper
 	}
 
 
-    public static function generateEwayBill($documentHeader, $user)
+    public static function generateEwayBill($documentHeader)
     {
-        $postData = self::generateEwayBillData($documentHeader, $user);
+        $user = Helper::getAuthenticatedUser();
+        $postData = self::generateEwayBillData($documentHeader);
         $authCredentials = self::getAuthCredentials();
         $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new MasterIndiaService($requestUid);
+        $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
         $response = $eInvoiceService->generateEwaybillByIRN($postData);
         if(isset($response['status']) && $response['status'] != 'Success'){
             return [
                 'status' => 'error',
                 'message' => "Error: ". @$response['ErrorMessage'],
             ];
-        } else if (isset($response['results']) && isset($response['results']['message']) && ($response['results']['code'] != 200)) {
-                return [
-                    'results' => [
-                        'status' => 'error',
-                        'message' => $response['results']['message']
-                    ]
-                ];
-            }
-        else{
+        } else{
             return $response;
         }
     }

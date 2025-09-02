@@ -43,6 +43,8 @@ class ErpRateContract extends Model
         'customer_code',
         'applicable_organizations',
         'payment_term_id',
+        'tnc',
+        'tnc_id',
     ];
 
     public static function boot()
@@ -69,6 +71,10 @@ class ErpRateContract extends Model
                 $model->deleted_by = $user->auth_user_id;
             }
         });
+    }
+    public function terms()
+    {
+        return $this -> hasOne(TermsAndCondition::class, 'id', 'tnc_id');
     }
     public function vendor()
     {

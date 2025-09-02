@@ -33,36 +33,63 @@ class StockLookoutController extends Controller
 
         $itemId = $request->query('item_id');
         $storeId = $request->query('store_id');
-        $isAttribute = $request->query('is_attribute');
         $isSubStore = $request->query('is_sub_store');
         $subStoreId = $request->query('sub_store_id');
         $attrGroup = $request->query('attribute_name');
         $attrValue = $request->query('attribute_value');
         $search = $request->search;
 
+        $selectFields = [
+            'group_id',
+            'company_id',
+            'organization_id',
+            'store_id',
+            'sub_store_id',
+            'item_id',
+            'reserved_qty',
+            'hold_qty'
+        ];
+
+        // Conditionally include 'item_attributes'
+        if ($request->is_attribute == 1) {
+            $selectFields[] = 'item_attributes';
+        }
+        
+
         $query = StockLedger::with(['item' => function($q){
                 $q->select('id','item_name','item_code');
             }, 'location' =>  function($q){
                 $q->select('id', 'store_name', 'store_code');
-            }, 'store' => function($q){
-                $q->select('id','name','code');
             }])
+            ->when($request->is_sub_store == 1, function($q) {
+                $q->with(['store' => function($q){
+                    $q->select('id','name');
+                }]);
+            })
             ->when($storeId, function($q) use($storeId){
                 $q->where('store_id', $storeId)->groupBy('store_id');
             })
-            // ->when($subStoreId, function($q) use($subStoreId){
-            //     $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
-            // })
-            // ->when($itemId, function($query) use($itemId){
-            //     $query->whereHas('item', function($q) use ($itemId) {
-            //          $q->where('id', $itemId);
-            //     });
-            // })
+            ->when($subStoreId, function($q) use($subStoreId){
+                $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
+            })
+            ->when($itemId, function($query) use($itemId){
+                $query->whereHas('item', function($q) use ($itemId) {
+                     $q->where('id', $itemId);
+                });
+            })
             ->when($search, function($q) use($search){
                 $q->whereHas('item', function($q) use ($search) {
                         $q->where('item_name', 'like', '%'.$search.'%')
                         ->orWhere('item_code','like', '%'.$search.'%');
                     });
+            })
+            ->when(!empty($request->input('attributes')), function($q) use ($request) {
+                foreach ($request->input('attributes') as $attrName => $attrValue) {
+                    $q->whereJsonContains('item_attributes', [
+                        'attr_name' => (string) $attrName,
+                        'attr_value' => (string) $attrValue
+                    ]);
+                }
             })
             ->withDefaultGroupCompanyOrg()
             ->whereNull('utilized_id')
@@ -82,17 +109,7 @@ class StockLookoutController extends Controller
         //     }
         // }
 
-        $query->select('id',
-                'group_id',
-                'company_id',
-                'organization_id',
-                'store_id',
-                'sub_store_id',
-                'item_id',
-                'reserved_qty',
-                'hold_qty',
-                'item_attributes'
-            )
+        $query->select($selectFields)
             ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as confirmed_stock',
                 ['approved', 'approval_not_required', 'posted']
             )

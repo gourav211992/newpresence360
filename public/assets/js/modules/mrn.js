@@ -198,7 +198,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     const dataIndex = $tr.attr("data-index");
     const itemId = $tr.find("[name*='item_id']").val();
 
-    $qtyInput.val(orderQty.toFixed(2));
+    $qtyInput.val(orderQty.toFixed(6));
     checkDuplicateObjects($qtyInput);
 
     if (orderQty <= 0) {
@@ -207,7 +207,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
             text: "Receipt Qty. cannot be zero.",
             icon: "error",
         });
-        $qtyInput.val(poQty.toFixed(2));
+        $qtyInput.val(poQty.toFixed(6));
         return;
     }
 
@@ -231,7 +231,7 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
     safeSet("ge_detail_id", getVal("[name*='[gate_entry_detail_id]']"));
     safeSet("asn_detail_id", getVal("[name*='[vendor_asn_dtl_id]']"));
     safeSet("mrn_detail_id", getVal("[name*='[mrn_detail_id]']"));
-    safeSet("qty", orderQty.toFixed(2));
+    safeSet("qty", orderQty.toFixed(6));
     safeSet("type", currentProcessType);
 
     try {
@@ -241,15 +241,15 @@ $(document).on("change", "[name*='order_qty']", async function (e) {
         const result = await response.json();
 
         const resultQty = parseFloat(result.order_qty) || 0;
-        const finalQty = resultQty.toFixed(2);
+        const finalQty = resultQty.toFixed(6);
         $qtyInput.val(finalQty);
 
         let acceptedQty = inspectionRequired ? 0.0 : resultQty;
         let rejectedQty = inspectionRequired ? 0.0 : resultQty - acceptedQty;
 
-        $acceptedQtyInput.val(acceptedQty.toFixed(2));
+        $acceptedQtyInput.val(acceptedQty.toFixed(6));
         $acceptedQtyInput.trigger("change");
-        $rejectedQtyInput.val(rejectedQty.toFixed(2));
+        $rejectedQtyInput.val(rejectedQty.toFixed(6));
         autoSyncLockedBatchForRow(dataIndex);
 
         if (Number($itemCost.val())) {
@@ -305,8 +305,8 @@ $(document).on("change", "[name*='accepted_qty']", function (e) {
 
     let rejectedQty = inspectionRequired ? 0 : orderQty - acceptedQty;
 
-    $acceptedQtyInput.val(acceptedQty.toFixed(2));
-    $rejectedQtyInput.val(rejectedQty.toFixed(2));
+    $acceptedQtyInput.val(acceptedQty.toFixed(6));
+    $rejectedQtyInput.val(rejectedQty.toFixed(6));
 
     if (Number($itemCost.val())) {
         const value = orderQty * parseFloat($itemCost.val());
@@ -347,7 +347,7 @@ $(document).on("change", "[name*='rate']", (e) => {
         // }
         let totalItemValue = itemRate * parseFloat(orderQuantity.val());
         totalItemValue = parseFloat(totalItemValue);
-        orderRate.val(itemRate.toFixed(2));
+        orderRate.val(itemRate.toFixed(6));
         itemValue.val(totalItemValue.toFixed(2));
     } else {
         itemValue.val("");
@@ -643,7 +643,7 @@ function setTableCalculation(edit = null) {
         let price = itemValue3 - itemDisc3 - itemHeaderDisc;
         if (price > 0 && itemId) {
             if (isTax) {
-                let transactionType = "collection";
+                let transactionType = "purchase";
                 let partyCountryId = $("#hidden_country_id").val();
                 let partyStateId = $("#hidden_state_id").val();
                 let locationId = $("[name='header_store_id']").val();
@@ -663,6 +663,8 @@ function setTableCalculation(edit = null) {
                 let promise = fetch(urlWithParams)
                     .then((response) => response.json())
                     .then((data) => {
+                        console.log("step 1.2", data?.data?.html);
+
                         $(item3).find("[name*='t_d_id']").remove();
                         $(item3).find("[name*='t_code']").remove();
                         $(item3).find("[name*='applicability_type']").remove();
@@ -709,6 +711,7 @@ function setTableCalculation(edit = null) {
                 ) || 0;
 
             let totalAmountAfterItemDis = itemValue4 - itemDisc4;
+
             if (isTax) {
                 if (
                     $(item4).find("[name*='[t_perc]']").length &&
@@ -1832,8 +1835,7 @@ $(document).on("change", ".sub_store", function () {
     if (selectedStoreId && selectedSubStoreId) {
         if (isRequired) {
             checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
-        }
-        else {
+        } else {
             $(".is_warehouse_required").val(0);
         }
     }
@@ -1860,13 +1862,12 @@ if (selectedStoreId) {
 }
 
 if (selectedStoreId && selectedSubStoreId) {
-        if (isSubStoreRequired) {
-            checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
-        }
-        else {
-            $(".is_warehouse_required").val(0);
-        }
+    if (isSubStoreRequired) {
+        checkWarehouseSetup(selectedStoreId, selectedSubStoreId);
+    } else {
+        $(".is_warehouse_required").val(0);
     }
+}
 // 4. Get Sub Stores
 function getSubStores(storeLocationId, selectedSubStoreId = null) {
     const storeId = storeLocationId;
@@ -1918,8 +1919,7 @@ function getSubStores(storeLocationId, selectedSubStoreId = null) {
                 if (subStoreId) {
                     if (isWarehouseRequired) {
                         checkWarehouseSetup(storeId, subStoreId);
-                    }
-                    else {
+                    } else {
                         $(".is_warehouse_required").val(0);
                     }
                 }
@@ -2517,6 +2517,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
         let new_exp_name = $("#new_exp_name").val() || "";
         let new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
         let hsn_id = $("#new_exp_id").attr("data-hsn-id") || 0;
+        let locationId = $("[name='header_store_id']").val() || "";
 
         let new_exp_tax_amount = (
             Number($("#new_exp_tax_amount").val()) || 0
@@ -2538,6 +2539,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
                     <input type="hidden" name="exp_summary[${tbl_row_count}][ted_e_id]" value="${new_exp_id}">
                     <input type="hidden" name="exp_summary[${tbl_row_count}][e_id]" value="">
                     <input type="hidden" name="exp_summary[${tbl_row_count}][e_name]" value="${new_exp_name}">
+                    <input type="hidden" name="exp_summary[${tbl_row_count}][location_id]" value="${locationId}">
                 </td>
                 <td class="text-end">${new_exp_value}
                     <input type="hidden" name="exp_summary[${tbl_row_count}][e_amnt]" value="${new_exp_value}">
@@ -2603,10 +2605,12 @@ function getTaxParams(el = null) {
     let price = $row.find("[id='new_exp_value']").val();
     let hsn_id = $row.find("[id='new_exp_id']").attr("data-hsn-id") || 0;
     let transactionDate = $("input[name='document_date']").val();
+    let locationId = $("[name='header_store_id']").val();
 
     return {
         hsn_id: hsn_id || 0,
         price: parseFloat(price) || 0,
+        store_id: locationId || null,
         from_country: Number($("#country_id").val()) || 0,
         from_state: Number($("#state_id").val()) || 0,
         party_country_id:

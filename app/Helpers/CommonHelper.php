@@ -69,6 +69,7 @@ class CommonHelper
     const SAFETY = 'safety';
     const AFTER_KAIZEN = 'after kaizen';
     const BEFORE_KAIZEN = 'before kaizen';
+    const PO_PROCUREMENT_TYPE_VALUES = ['Buy', 'Lease'];
 
     const IMPROVEMENT_TYPES = [
         self::PRODUCTIVITY,
@@ -179,7 +180,7 @@ class CommonHelper
         $requestCount = ErpRecruitmentJobRequestLog::where('action_by',$user->id)
         ->where('action_by_type',$user->authenticable_type)
         ->count();
-        
+
         $referralCount = ErpRecruitmentJobReferral::where('created_by',$user->id)
             ->count();
         return [
@@ -200,11 +201,11 @@ class CommonHelper
         }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
             $type = 'dispatch';
         }elseif ($morphableType == 'App\Models\ErpRgr') {
-            $type = 'rgr';   
+            $type = 'rgr';
         } else{
             $type = '';
         }
-    
+
         return $type;
     }
 
@@ -226,7 +227,7 @@ class CommonHelper
         }else{
             $type = '';
         }
-     
+
         return $type;
     }
 
@@ -254,6 +255,6 @@ class CommonHelper
             if (!$model || !isset($model->description) || $model->description === 'No Impact') {
                 return '#ffffff';
             }
-            return '#008000'; 
+            return '#008000';
     }
 }

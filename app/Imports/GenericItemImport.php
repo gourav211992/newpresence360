@@ -8,12 +8,13 @@ use App\Models\Vendor;
 use Carbon\Traits\Units;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Carbon\Carbon;
 
-class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows, WithChunkReading
 {
     protected string $alias;
     protected array $validRows = [];
@@ -88,28 +89,34 @@ class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             }
                         }
                     }
-                    if ($key === 'attribute' && !empty($value) && strpos($value, ':') !== false) {
-                        [$group, $attributeValue] = array_map('trim', explode(':', $value, 2));
-                        $groupModel = \App\Models\AttributeGroup::whereRaw('LOWER(name) = ?', [strtolower($group)])->first();
-                        if (!$groupModel) {
-                            $errors[] = "Attribute group '$group' not found";
-                        } elseif (!$groupModel->attributes()->whereRaw('LOWER(value) = ?', [strtolower($attributeValue)])->exists()) {
-                            $errors[] = "Attribute '$attributeValue' not found in group '$group'";
-                        } else {
-                            $parsedRow['short_name'] = $groupModel->short_name ?? '';
-                            $parsedRow['group_name'] = $groupModel->name ?? '';
-                            $parsedRow['attribute_group_id'] = $groupModel->id;
-                            $parsedRow['attribute_value'] = $attributeValue;
+                    if ($key === 'attribute') {
+                        $attrArray = isset($item) ? $item->item_attributes_array() : [];
+                        $parsedRow['item_attribute_array'] = $attrArray; // always send back
 
-                            if (isset($item)) {
-                                $attrArray = $item->item_attributes_array();
-                                
+                        if (!empty($value) && strpos($value, ':') !== false) {
+                            [$group, $attributeValue] = array_map('trim', explode(':', $value, 2));
+
+                            $groupModel = \App\Models\AttributeGroup::whereRaw('LOWER(name) = ?', [strtolower($group)])->first();
+
+                            if (!$groupModel) {
+                                $errors[] = "Attribute group '$group' not found";
+                            } elseif (!$groupModel->attributes()->whereRaw('LOWER(value) = ?', [strtolower($attributeValue)])->exists()) {
+                                $errors[] = "Attribute '$attributeValue' not found in group '$group'";
+                            } else {
+                                $parsedRow['short_name']         = $groupModel->short_name ?? '';
+                                $parsedRow['group_name']         = $groupModel->name ?? '';
+                                $parsedRow['attribute_group_id'] = $groupModel->id;
+                                $parsedRow['attribute_value']    = $attributeValue;
+
+                                $matchFound = false;
+
                                 foreach ($attrArray as &$groupAttr) {
-                                    if ((int)$groupAttr['attribute_group_id'] === (int)$groupModel->id) {
+                                    if ((int) $groupAttr['attribute_group_id'] === (int) $groupModel->id) {
                                         foreach ($groupAttr['values_data'] as &$valueObj) {
-                                            // Handle object or array
                                             $val = is_object($valueObj) ? $valueObj->value : ($valueObj['value'] ?? null);
-                                            if (strtolower($val) == strtolower($attributeValue)) {
+
+                                            if (strtolower($val) === strtolower($attributeValue)) {
+                                                $matchFound = true;
                                                 if (is_object($valueObj)) {
                                                     $valueObj->selected = true;
                                                     $parsedRow['attribute_id'] = $valueObj->id;
@@ -128,7 +135,9 @@ class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                                     }
                                 }
 
-                                $parsedRow['item_attribute_array'] = $attrArray;
+                                if (!$matchFound) {
+                                    $parsedRow['attribute_id'] = null; // no match, still return all attributes
+                                }
                             }
                         }
                     }
@@ -151,31 +160,52 @@ class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             $parsedRow['vendor_name'] = $vendor->name;
                         }
                     }
-                    if (stripos($key, 'date') !== false) {
+                    if (stripos($key, 'date') !== false || in_array($key, ['effective_from', 'effective_upto'])) {
                         if (empty($value)) {
                             $parsedRow[$key] = null;
-                            // ✅ Empty date cell → just ignore
                             continue;
                         }
+
                         try {
                             if (is_numeric($value)) {
-                                // ✅ Real Excel date cell
-                                $carbonDate = Carbon::instance(ExcelDate::excelToDateTimeObject($value));
-                                $parsedRow[$key] = $carbonDate->format('Y/m/d');
-                            } elseif (is_string($value) && preg_match('/^\d{4}[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12][0-9]|3[01])$/', trim($value))) {
-                                // ✅ Strict string in yyyy/mm/dd or yyyy-mm-dd
-                                $carbonDate = Carbon::createFromFormat('Y/m/d', str_replace('-', '/', trim($value)));
-                                $parsedRow[$key] = $carbonDate->format('Y/m/d');
+                                // ✅ Excel serial → Carbon
+                                $carbonDate = \Carbon\Carbon::instance(
+                                    \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)
+                                );
                             } else {
-                                // ❌ Not a valid date
-                                $parsedRow[$key] = null;
-                                $errors[] = "Invalid date format in column $key";
+                                // Normalize strings (replace "-" with "/")
+                                $cleanValue = trim(str_replace('-', '/', $value));
+
+                                if (preg_match('/^\d{1,2}\/\d{1,2}\/\d{4}$/', $cleanValue)) {
+                                    // dd/mm/yyyy
+                                    $carbonDate = \Carbon\Carbon::createFromFormat('d/m/Y', $cleanValue);
+                                } elseif (preg_match('/^\d{4}\/\d{1,2}\/\d{1,2}$/', $cleanValue)) {
+                                    // yyyy/mm/dd
+                                    $carbonDate = \Carbon\Carbon::createFromFormat('Y/m/d', $cleanValue);
+                                } else {
+                                    // fallback parse
+                                    $carbonDate = \Carbon\Carbon::parse($cleanValue);
+                                }
+                            }
+
+                            // Always store normalized format
+                            $parsedRow[$key] = $carbonDate->format('Y-m-d');
+
+                            // Extra validation: effective_upto >= effective_from
+                            if ($key === 'effective_upto' && !empty($parsedRow['effective_from'])) {
+                                $fromDate = \Carbon\Carbon::createFromFormat('Y-m-d', $parsedRow['effective_from']);
+                                if ($carbonDate->lt($fromDate)) {
+                                    $parsedRow[$key] = null;
+                                    $errors[] = "Effective Upto date cannot be before Effective From date";
+                                }
                             }
                         } catch (\Exception $e) {
                             $parsedRow[$key] = null;
-                            $errors[] = "Error parsing date in column $key";
+                            $errors[] = "Invalid date format in column $key";
                         }
                     }
+
+
                     else{
                         $parsedRow[$key] = $value;
                     }
@@ -204,6 +234,10 @@ class GenericItemImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         return $this->invalidRows;
     }
 
+    public function chunkSize(): int
+    {
+        return 100; // ✅ process 100 rows per chunk
+    }
     public function getParsedRows(): array
     {
         return [

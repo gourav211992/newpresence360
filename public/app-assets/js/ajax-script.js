@@ -850,7 +850,7 @@ function updateRowIndexes() {
     });
 }
 
-function initializeAutocomplete($row) {
+function initializeGstAddressAutocomplete($row) {
     // Country Autocomplete
     $row.find('.country-input').autocomplete({
         source: function(request, response) {
@@ -1108,7 +1108,7 @@ function addNewRow() {
     $newRow.find('input[type="radio"]').prop('checked', false);
 
     $('#address-table-body').append($newRow);
-    initializeAutocomplete($newRow);
+    initializeGstAddressAutocomplete($newRow);
     updateRowIndexes();
     handleRadioSelection();
     applyCapsLock();

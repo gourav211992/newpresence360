@@ -1741,7 +1741,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                                     if (({{ isset($order) && in_array($order->document_status, [App\Helpers\ConstantHelper::DRAFT]) ? 'true' : 'false' }} || {{ !isset($order) ? 'true' : 'false' }})) {
                                         $(`#item_confirmed_qty_${itemRowId}`).val(data?.stocks?.confirmedStockAltUom  ?? 0.00);
                                         $(`#item_unconfirmed_qty_${itemRowId}`).val(data?.stocks?.pendingStockAltUom ?? 0.00);
-                                        if(order && order.document_status !={{App\Helpers\ConstantHelper::DRAFT}})
+                                        if(order && order.document_status !="{{App\Helpers\ConstantHelper::DRAFT}}")
                                         {
                                             getStoresData(itemRowId,data?.stocks?.confirmedStockAltUom ?? 0.00,false);
                                         }
@@ -4604,13 +4604,19 @@ $(function() {
                 </td>
             </tr>`;
             tbody.append(rowHtml);
-            // setItemAttributes(`items_dropdown_${index}`, index, false);
-            setAttributesUI(index);
+             // Post-append initializations
+            initializeAutocomplete1("items_dropdown_" + index, index);
             onItemClick(index);
+            const itemCodeInput = document.getElementById('items_dropdown_' + index);
+            const uomCodeInput = document.getElementById('uom_dropdown_' + index);
+            itemCodeInput.addEventListener('input', () => checkStockData(index));
+            uomCodeInput.addEventListener('input', () => checkStockData(index));
+            setAttributesUI(index);
             console.log('Row added:', rowHtml);
         });
         console.log('Parsed valid rows:', parsedValidRows);
         renderIcons()
+        $(".Item_Search_section").hide();
         $('#importItemModal').modal('hide');
     });
 
