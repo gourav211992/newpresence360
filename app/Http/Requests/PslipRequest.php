@@ -96,13 +96,13 @@ class PslipRequest extends FormRequest
 
     protected function withValidator($validator)
     {
-        $id = $this->input('id');
-        $validator->after(function ($validator) use ($id) {
+        // $id = $this->input('id');
+        $validator->after(function ($validator){
 
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
-                $pslipBomMappingId = $component['pslip_bom_cons_id'] ?? null;
+                // $pslipBomMappingId = $component['pslip_bom_cons_id'] ?? null;
                 // if($pslipBomMappingId) {
                 //     $moBomMapping = PslipBomConsumption::find($pslipBomMappingId);
                 // } else {
@@ -115,8 +115,8 @@ class PslipRequest extends FormRequest
                     $itemWipStationId = $moBomMapping->station_id;
                 }
 
-                $requiredQty = floatval($component['item_qty']);
                 $consumptionQty = floatval($component['consumption_qty']);
+                // $requiredQty = floatval($component['item_qty']);
                 // $itemAttributes = $moBomMapping->attributes ?? [];
                 // foreach ($itemAttributes as $itemAttr) {
                 //     $selectedAttributeIds[] = $itemAttr['attribute_value'];
@@ -150,10 +150,12 @@ class PslipRequest extends FormRequest
 
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
 
-                if($this->input('document_status') != ConstantHelper::APPROVED) {
-                    if ($consumptionQty > $stockBalanceQty) {
-                        $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
-                    }
+                if (
+                    $this->input('document_status') !== ConstantHelper::APPROVED &&
+                    !$this->input('id') &&
+                    $consumptionQty > $stockBalanceQty
+                ) {
+                    $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
             }
         });

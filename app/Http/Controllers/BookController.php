@@ -1586,6 +1586,70 @@ class BookController extends Controller
         }
     }
 
+    public function firstOrNewBookDocNoAndParameters(Request $request)
+    {
+        try {
+            $book = Book::find($request->book_id);
+            if (isset($book)) {
+                $parameters = new stdClass();
+                foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                    $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                    if(count($param)) {
+                        $parameters->{$paramName} = $param;
+                    }
+                }
+
+                $docNum = Helper::firstOrNewDocumentNumber($book->id, $request->document_date, $request->document_number, $parameters);
+                if (isset($docNum['error'])) {
+                    return response()->json(['data' => [], 'message' => $docNum['error'], 'status' => 500]);
+                }
+
+                $lotNumber = InventoryHelper::generateLotNumber($request->document_date, $book->book_code, $docNum['document_number'] ?? "");
+                $selectedDynamicFields = $book -> dynamic_fields() -> pluck('dynamic_field_id') -> toArray();
+                $dynamicFields = DynamicFieldDetail::select('id', 'header_id', 'name', 'data_type') -> whereIn('header_id', $selectedDynamicFields) -> whereHas('header') -> get();
+                $dynamicFieldsHTML = "";
+                foreach ($dynamicFields as $dynamicField) {
+                    $dynamicFieldsHTML .= DynamicFieldHelper::generateFieldUI($dynamicField);
+                }
+                $dynamicFieldsBaseHTML = "
+                        <div class='card quation-card'>
+                            <div class='card-header newheader'>
+                                <div>
+                                    <h4 class='card-title'>Dynamic Fields</h4>
+                                </div>
+                            </div>
+                            <div class='card-body'>
+                                <div class='row'>
+                                    $dynamicFieldsHTML
+                                </div>
+                            </div>
+                        </div>
+                    ";
+                return response()->json([
+                    'data' => [
+                        'doc' => $docNum,
+                        'lot_number' => $lotNumber,
+                        'book_code' => $book->book_code,
+                        'parameters' => $parameters,
+                        'dynamic_fields' => $dynamicFields,
+                        'dynamic_fields_html' => $dynamicFieldsBaseHTML
+                    ],
+                    'message' => "fetched!",
+                    'status' => 200
+                ]);
+
+            } else {
+                return response()->json(['data' => [], 'message' => "No record found!", 'status' => 404]);
+            }
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $ex->getMessage(),
+                'status' => 500
+            ], 500);
+        }
+    }
+
     public function checkLevelForChange(Request $request)
     {
         try {

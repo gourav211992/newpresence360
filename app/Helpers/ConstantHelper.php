@@ -867,6 +867,7 @@ class ConstantHelper
         self::LOAN_DISBURSEMENT => 'loan.view-disbursement',
         self::FIXED_ASSET_DEPRECIATION => 'finance.fixed-asset.depreciation.show',
         self::SCRAP_SERVICE_ALIAS => 'remanufacturing.scrap.edit',
+        self::PI_SERVICE_ALIAS =>'pi.edit',
         self::PO_SERVICE_ALIAS =>'po.edit',
         self::JO_SERVICE_ALIAS => 'jo.edit',
         self::GATE_ENTRY_SERVICE_ALIAS => 'gate-entry.edit',

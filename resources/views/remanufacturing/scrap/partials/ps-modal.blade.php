@@ -15,47 +15,30 @@
                     <div class="col">
                         <div class="mb-1">
                             <label class="form-label">Slip No.</label>
-                            <input type="text" id="document_no_input_qt" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
+                            <input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                             <input type="hidden" id="document_id_qt_val"></input>
                         </div>
                     </div>
                     <div class="col">
                         <div class="mb-1">
-                            <label class="form-label">Sales Order</label>
-                            <input type="text" id="pi_so_no_input_qt" placeholder="Select"
-                                class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
-                                value="">
-                            <input type="hidden" id="pi_so_qt_val"></input>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="mb-1">
                             <label class="form-label">Item</label>
-                            <input type="text" name="item_name_search" id="item_name_search"
-                                placeholder="Item Name/Code" class="form-control mw-100" autocomplete="off"
-                                value="">
+                            <input type="text" name="item_name_search" id="item_name_search" placeholder="Item Name/Code" class="form-control mw-100" autocomplete="off" value="">
                         </div>
                     </div>
                     <div class="col mb-1">
                         <label class="form-label">&nbsp;</label><br />
-                        <button type="button" class="btn btn-warning btn-sm clearPiFilter"><i
-                                data-feather="x-circle"></i> Clear</button>
-                        <button type="button" class="btn btn-primary btn-sm psProcess"> <i
-                                data-feather="check-circle"></i> Process</button>
+                        <button type="button" class="btn btn-warning btn-sm clearPiFilter"><i data-feather="x-circle"></i> Clear</button>
+                        <button type="button" class="btn btn-primary btn-sm psProcess"> <i data-feather="check-circle"></i> Process</button>
                     </div>
                     <div class="col-md-12">
                         <div class="po-table-container">
-                            <table
-                                class="table table-striped table-bordered ps-order-detail myrequesttablecbox nowrap w-100">
+                            <table class="table table-striped table-bordered ps-order-detail myrequesttablecbox nowrap w-100">
                                 <thead class="table-light header">
                                     <tr>
-                                        <th class="d-none">ID</th>
+                                        <th>ID</th>
                                         <th>
                                             <div class="form-check form-check-inline me-0">
-                                                <input class="form-check-input" type="checkbox" name="psdetail"
-                                                    id="inlineCheckbox1">
+                                                <input class="form-check-input" type="checkbox" name="psdetail" id="inlineCheckbox1">
                                             </div>
                                         </th>
                                         <th>Series</th>

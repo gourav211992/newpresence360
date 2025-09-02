@@ -13,15 +13,12 @@ class StockReservation
 {
     public static function stockReservation(string $bookType, int $headerId, Collection $items) : array
     {
-        $totalRequestedQty = 0;
         foreach ($items as $item) {
             $prepareDataForStock = self::prepareDataForStock($item, $bookType);
             //Retrieve stocks for each item
             $stockLedger = InventoryHelper::totalInventoryAndStock($prepareDataForStock['item_id'],$prepareDataForStock['selected_attributes'],
                 $prepareDataForStock['uom_id'], $prepareDataForStock['store_id'], $prepareDataForStock['sub_store_id'], $prepareDataForStock['order_id'], 
                 $prepareDataForStock['station_id'], $prepareDataForStock['stock_type'], $prepareDataForStock['wip_station_id']);
-            //Increment Total requested qty
-            $totalRequestedQty += $prepareDataForStock['requested_qty']; 
             //Check if stocks are availble for the requested qty
             if ($stockLedger['confirmedStocks'] < $prepareDataForStock['requested_qty']) {
                 return [
@@ -32,30 +29,36 @@ class StockReservation
             //Reserve the stocks
             $totalQtyToBeReserved = (float)$prepareDataForStock['requested_qty'];
             $balanceQty = $totalQtyToBeReserved;
+            $reservedQty = 0;
             foreach ($stockLedger['stockLedgers'] as $stockLedger) {
                 $stkLdgr = StockLedger::find($stockLedger -> id);
                 $stockLedgerQty = (float)$stkLdgr -> receipt_qty - (float)$stkLdgr -> reserved_qty;
-                $currentQty = min($stockLedgerQty, $balanceQty);
-                $reservation = StockLedgerReservation::create([
-                    'issue_header_id' => $headerId,
-                    'receipt_header_id' => $stkLdgr -> document_header_id,
-                    'issue_detail_id' => $item -> id,
-                    'receipt_detail_id' => $stkLdgr -> document_detail_id,
-                    'issue_book_type' => $bookType,
-                    'receipt_book_type' => $stkLdgr -> book_type,
-                    'stock_ledger_id' => $stkLdgr -> id,
-                    'quantity' => $currentQty
-                ]);
-                $stkLdgr -> reserved_qty += $currentQty;
-                $stkLdgr -> save();
-                $balanceQty -= $currentQty;
+                if($stockLedgerQty > 0) {
+                    $currentQty = min($stockLedgerQty, $balanceQty);
+                    StockLedgerReservation::create([
+                        'issue_header_id' => $headerId,
+                        'receipt_header_id' => $stkLdgr -> document_header_id,
+                        'issue_detail_id' => $item -> id,
+                        'receipt_detail_id' => $stkLdgr -> document_detail_id,
+                        'issue_book_type' => $bookType,
+                        'receipt_book_type' => $stkLdgr -> book_type,
+                        'stock_ledger_id' => $stkLdgr -> id,
+                        'quantity' => $currentQty
+                    ]);
+                    $reservedQty += $currentQty;
+                    $stkLdgr -> reserved_qty += $currentQty;
+                    $stkLdgr -> save();
+                    $balanceQty -= $currentQty;
+                }
                 if ($balanceQty <= 0) {
                     break;
                 }
-                // self::reserveStock($bookType, $headerId, $item -> id, $prepareDataForStock['requested_qty'], $stkLdgr);
+            }
+            if ($balanceQty > 0) {
+                //error message
+                return ['status'=> 'error','message'=> 'Enough stock not available for reservation'];
             }
         }
-        //Final success message
         return ['status'=> 'success','message'=> 'Stock Reserved successfully'];
     }
 

@@ -80,7 +80,7 @@ class ProductionSlipController extends Controller
             $pslipDeleteService = new PslipDeleteService();
 
             // Safe handling if no items exist
-            $pslipItemIds = $erpProductionSlip->pslip_items?->pluck('id')->toArray() ?? [];
+            $pslipItemIds['deletedSiItemIds'] = $erpProductionSlip->pslip_items?->pluck('id')->toArray() ?? [];
 
             $response = $pslipDeleteService->deleteProductionItems($pslipItemIds, $erpProductionSlip);
 
@@ -96,6 +96,7 @@ class ProductionSlipController extends Controller
 
         } catch (\Exception $e) {
             \DB::rollBack();
+         
             return response()->json([
                 'status'  => false,
                 'message' => 'Error deleting Production Slip: ' . $e->getMessage(),

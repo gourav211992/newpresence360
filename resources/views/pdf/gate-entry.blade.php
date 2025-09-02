@@ -218,6 +218,9 @@
                                 </td>
                             </tr>
                         @endif
+                        @if($qrCodeBase64)
+                        <img src="{{ $qrCodeBase64 }}" style = "margin-top:10px" width="100%" alt="QR Code">
+                        @endif
                     </table>
                 </td>
             </tr>

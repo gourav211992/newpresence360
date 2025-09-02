@@ -1171,7 +1171,7 @@ class PiController extends Controller
                         'erp_pi_so_mapping.so_id',
                         'erp_pi_so_mapping.item_id',
                         DB::raw('erp_pi_so_mapping.attributes'),
-                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),6) as total_qty')
                     )
                     ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes', 'erp_pi_so_mapping.vendor_id')
                     ->havingRaw('total_qty > 0')
@@ -1183,7 +1183,7 @@ class PiController extends Controller
                         'erp_pi_so_mapping.vendor_id',
                         'erp_pi_so_mapping.item_id',
                         DB::raw('erp_pi_so_mapping.attributes'),
-                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),6) as total_qty')
                     )
                     ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes', 'erp_pi_so_mapping.vendor_id')
                     ->havingRaw('total_qty > 0')

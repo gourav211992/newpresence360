@@ -1,3 +1,16 @@
+setTimeout(() => {
+    $("#book_id").trigger("change");
+}, 0);
+
+$(document).on("load", function () {
+    if (feather) {
+        feather.replace({
+            width: 14,
+            height: 14,
+        });
+    }
+});
+
 /*Approve modal*/
 $(document).on("click", "#approved-button", (e) => {
     let actionType = "approve";
@@ -83,14 +96,6 @@ $(document).on("change", '[name*="comp_attribute"]', (e) => {
     qtyEnabledDisabled();
     setSelectedAttribute(rowCount);
 });
-
-/*Edit mode table calculation filled*/
-if ($("#scavengingItemsTable .mrntableselectexcel tr").length) {
-    setTimeout(() => {
-        $("[name*='component_item_name[1]']").trigger("focus");
-        $("[name*='component_item_name[1]']").trigger("blur");
-    }, 100);
-}
 
 /*Open item remark modal*/
 $(document).on("click", ".addRemarkBtn", (e) => {
@@ -194,7 +199,6 @@ function validateItems(inputEle, itemChange = false) {
     $("tr[id*='scavengingItemsTr_']").each(function (index, item) {
         let itemId = $(item).find("input[name*='[item_id]']").val();
         let uomId = $(item).find("select[name*='[uom_id]']").val();
-        let soId = $(item).find("input[name*='[so_id]']").val();
         if (itemId && uomId) {
             let attr = [];
             $(item)
@@ -215,7 +219,6 @@ function validateItems(inputEle, itemChange = false) {
                 item_id: itemId,
                 uom_id: uomId,
                 attributes: attr,
-                so_id: soId,
             });
         }
     });
@@ -235,15 +238,6 @@ function validateItems(inputEle, itemChange = false) {
             $(inputEle).closest("tr").find("[name*='[uom_id]']").empty();
         }
     }
-}
-function isEmptyValue(val) {
-    return (
-        val === undefined ||
-        val === null ||
-        val === "" ||
-        val === "0" ||
-        val === 0
-    );
 }
 
 function isEmptyValue(val) {
@@ -505,8 +499,7 @@ $(document).on("click", ".submitAttributeBtn", (e) => {
     $("#attribute").modal("hide");
 });
 
-function getSubStores(locationId) {
-    const storeId = locationId;
+function getSubStores(storeId, subStoreId = "") {
     const $subStoreRow = $(".sub-store-row");
     const $subStoreSelect = $(".sub_store");
 
@@ -524,13 +517,22 @@ function getSubStores(locationId) {
             store_id: storeId,
         },
         success: function (data) {
-            if (data.status == 200 && data.data.length) {
+            if (
+                data.status === 200 &&
+                Array.isArray(data.data) &&
+                data.data.length
+            ) {
                 let options = '<option value="">Select Sub Store</option>';
-                data.data.forEach(function (location) {
-                    options += `<option value="${location.id}">${location.name}</option>`;
+                data.data.forEach(function (subStore) {
+                    options += `<option value="${subStore.id}">${subStore.name}</option>`;
                 });
 
-                $subStoreSelect.empty().html(options).val(null);
+                $subStoreSelect
+                    .empty()
+                    .html(options)
+                    .val(subStoreId || "")
+                    .trigger("change");
+
                 $subStoreRow.removeClass("d-none");
             } else {
                 $subStoreSelect.empty().val(null);
@@ -541,6 +543,10 @@ function getSubStores(locationId) {
                     text: "No sub store exists for this location.",
                     icon: "error",
                 });
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             }
         },
         error: function (xhr) {
@@ -567,13 +573,10 @@ function hasDuplicateObjects(arr) {
 
 /*For comp attr*/
 function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
-    let isSo = $(tr).find('[name*="so_item_id"]').length ? 1 : 0;
-    if (!isSo) {
-        isSo = $(tr).find('[name*="so_pi_mapping_item_id"]').length ? 1 : 0;
-    }
-    if (!isSo) {
+    let isPs = $(tr).find('[name*="ps_item_ids"]').length ? 1 : 0;
+    if (!isPs) {
         if ($(tr).find('td[id*="itemAttribute_"]').data("disabled")) {
-            isSo = 1;
+            isPs = 1;
         }
     }
 
@@ -581,7 +584,7 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
         scrapItemAttrRoute +
         "?item_id=" +
         itemId +
-        `&rowCount=${rowCount}&selectedAttr=${selectedAttr}&isSo=${isSo}`;
+        `&rowCount=${rowCount}&selectedAttr=${selectedAttr}&isPs=${isPs}`;
     fetch(actionUrl).then((response) => {
         return response.json().then((data) => {
             if (data.status == 200) {
@@ -608,14 +611,16 @@ function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
     });
 }
 
-function getDocNumberByBookId(bookId) {
+function getDocNumberByBookId(bookId, docNumber) {
     let document_date = $("[name='document_date']").val();
     let actionUrl =
         getDocNumberByBookIdUrl +
         "?book_id=" +
         bookId +
         "&document_date=" +
-        document_date;
+        document_date +
+        "&document_number=" +
+        docNumber;
     fetch(actionUrl).then((response) => {
         return response.json().then((data) => {
             if (data.status == 200) {
@@ -693,29 +698,32 @@ function setServiceParameters(parameters) {
         docDateInput.removeAttr("max");
     }
     /*Reference from*/
-    let reference_type_service = parameters.reference_type_service;
+    let reference_from_service = parameters.reference_from_service;
+    if ($("#sub_store_id").val() || "") {
+        if (reference_from_service.length) {
+            if (
+                reference_from_service.includes(PRODUCTION_SLIP_SERVICE_ALIAS)
+            ) {
+                $("#reference_type").removeClass("d-none");
+            } else {
+                $("#reference_type").addClass("d-none");
+            }
 
-    if (reference_type_service.length) {
-        let scrap = "{{ AppHelpersConstantHelper::SCRAP_SERVICE_ALIAS }}";
-        if (reference_type_service.includes(scrap)) {
-            $("#reference_type").removeClass("d-none");
+            if (reference_from_service.includes("d")) {
+                $("#addNewItemBtn").removeClass("d-none");
+            } else {
+                $("#addNewItemBtn").addClass("d-none");
+            }
         } else {
-            $("#reference_type").addClass("d-none");
+            Swal.fire({
+                title: "Error!",
+                text: "Please update first reference from service param.",
+                icon: "error",
+            });
+            setTimeout(() => {
+                location.href = scrapIndexRoute;
+            }, 1500);
         }
-        if (reference_type_service.includes("d")) {
-            $("#addNewItemBtn").removeClass("d-none");
-        } else {
-            $("#addNewItemBtn").addClass("d-none");
-        }
-    } else {
-        Swal.fire({
-            title: "Error!",
-            text: "Please update first reference from service param.",
-            icon: "error",
-        });
-        setTimeout(() => {
-            location.href = scrapIndexRoute;
-        }, 1500);
     }
 }
 
@@ -870,11 +878,10 @@ function getDynamicParams() {
     };
 }
 
-function getProductionSlips() {
-    console.log(type);
-
+function getPslipItems() {
     const ajaxUrl = getPsRoute.replace(":type", type);
-    var columns = [
+
+    const columns = [
         {
             data: "id",
             visible: false,
@@ -891,68 +898,187 @@ function getProductionSlips() {
             data: "book_name",
             name: "book_name",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Book Name",
         },
         {
             data: "doc_no",
             name: "doc_no",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Doc No",
         },
         {
             data: "doc_date",
             name: "doc_date",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Doc Date",
         },
         {
             data: "item_code",
             name: "item_code",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Item Code",
         },
         {
             data: "item_name",
             name: "item_name",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Item Name",
         },
         {
             data: "attributes",
             name: "attributes",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Attributes",
         },
         {
             data: "uom",
             name: "uom",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "UOM",
         },
         {
             data: "qty",
             name: "qty",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Qty",
         },
         {
             data: "remarks",
             name: "remarks",
             render: renderData,
-            orderable: false,
+            orderable: true,
             searchable: false,
+            title: "Remarks",
         },
     ];
-    initializeDataTableCustom("#psModal .ps-order-detail", ajaxUrl, columns);
+
+    const selector = "#psModal .ps-order-detail";
+    $(selector).css("width", "100%");
+
+    psTable = initializeDataTableCustom(selector, ajaxUrl, columns);
 }
+
+$(document).on("keyup", "#item_name_search", function () {
+    if (psTable) psTable.ajax.reload(null, false);
+});
+
+function initializeDataTableCustom(
+    selector,
+    ajaxUrl,
+    columns,
+    ajaxRequestType = "GET"
+) {
+    const $table = $(selector);
+    if (!$table.length) return null;
+
+    if ($table.find("thead").length === 0) {
+        const header = `<thead><tr>${columns
+            .map((c) => `<th>${c.title ?? ""}</th>`)
+            .join("")}</tr></thead>`;
+        $table.prepend(header);
+        if ($table.find("tbody").length === 0) $table.append("<tbody></tbody>");
+    }
+
+    const dt = $table.DataTable({
+        // crucial for modal reuse
+        destroy: true,
+        retrieve: true,
+
+        processing: true,
+        serverSide: true,
+        deferRender: true,
+
+        scrollY: "300px",
+        scrollX: true,
+        scrollCollapse: true,
+        autoWidth: false,
+        responsive: false, // avoid conflicts with scrollX
+
+        // keep orderable only on first hidden index
+        columnDefs: [
+            { targets: 0, width: "40px", orderable: true },
+            { targets: 1, width: "50px" },
+            { targets: 2, width: "90px" },
+            { targets: 3, width: "120px" },
+            { targets: "_all", orderable: false },
+        ],
+
+        lengthMenu: [
+            [10, 25, 50, 100, -1],
+            [10, 25, 50, 100, "All"],
+        ],
+        order: [[0, "desc"]],
+        searching: false,
+
+        ajax: {
+            url: ajaxUrl,
+            type: ajaxRequestType,
+            headers: {
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+            },
+            data: function (d) {
+                const dynamicParams =
+                    typeof getDynamicParams === "function"
+                        ? getDynamicParams()
+                        : {};
+                Object.assign(d, dynamicParams);
+            },
+        },
+
+        columns,
+
+        dom:
+            "<'row'<'col-sm-12'tr>>" +
+            "<'row align-items-center'" +
+            "<'col-md-4 text-start'l>" +
+            "<'col-md-4 text-center'i>" +
+            "<'col-md-4 text-end'p>" +
+            ">",
+
+        initComplete: function () {
+            // when DataTable finishes, adjust once
+            this.api().columns.adjust();
+        },
+
+        drawCallback: function () {
+            if (window.feather && typeof feather.replace === "function") {
+                feather.replace();
+            }
+        },
+
+        rowCallback: function (row, data) {
+            if (data && typeof data.DT_RowIndex !== "undefined") {
+                $(row).attr("id", "row_" + data.DT_RowIndex);
+                $(row).attr("data-index", data.DT_RowIndex);
+            }
+        },
+
+        language: {
+            paginate: { previous: " ", next: " " },
+        },
+
+        search: { caseInsensitive: true },
+    });
+
+    return dt;
+}
+
 function getSelectedItemIDs() {
     return $("#psModal .ps_item_checkbox:checked")
         .map(function () {

@@ -6082,7 +6082,7 @@ class MaterialReceiptController extends Controller
         $processNumber = (int)$request->asn_number;
         $moduleType = $request->module_type;
         if ($moduleType == 'suppl-inv') {
-            $asnData = VendorAsn::where('doc_no', $processNumber)->first();
+            $asnData = VendorAsn::where('id', $processNumber)->first();
             if (!$asnData) {
                 return response()->json([
                     'status' => 404,
@@ -6115,7 +6115,7 @@ class MaterialReceiptController extends Controller
             $asnIds = [$asnData->id];
         }
         elseif ($moduleType == 'gate-entry') {
-            $geData = GateEntryHeader::where('doc_no', $processNumber)->first();
+            $geData = GateEntryHeader::where('id', $processNumber)->first();
             if (!$geData) {
                 return response()->json([
                     'status' => 404,

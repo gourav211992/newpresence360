@@ -1058,6 +1058,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/deleteBook/{id}', [BookController::class, 'destroy_book'])->name('book.delete');
     Route::post('get_codes', [BookController::class, 'get_codes'])->name('get_codes');
     Route::get('book/get/doc-no-and-parameters', [BookController::class, 'getBookDocNoAndParameters'])->name('book.get.doc_no_and_parameters');
+    Route::get('book/doc-no', [BookController::class, 'firstOrNewBookDocNoAndParameters'])->name('book.doc_no');
     Route::get('get/service-params/{serviceId}', [BookController::class, 'getServiceParamForBookCreation'])->name('book.get.service_params');
     Route::get('check/approval-level', [BookController::class, 'checkLevelForChange'])->name('book.approval-level.check');
     Route::get('get/approval-employees', [BookController::class, 'getEmployeesForApprovalOrgWise'])->name('book.approval-employees.get');
@@ -1784,6 +1785,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/post', 'postPR')->name('post');
             Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/generate-einvoice', 'generateEInvoice')->name('generate-einvoice');
+            Route::post('/cancel-einvoice', 'cancelEInvoice')->name('cancel-einvoice');
             Route::get('/generate-ewaybill', 'generateEwayBill')->name('generate-ewaybill');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
@@ -2522,7 +2524,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('store.create');
         Route::post('/', 'store')->name('store.store');
         Route::post('/rack', 'rackStore')->name('rack.store');
-        Route::post('/shelf', 'shelfStore')->name('shelf.store');
+    Route::post('/shelf', 'shelfStore')->name('shelf.store');
         Route::post('/bin', 'binStore')->name('bin.store');
         Route::get('/get-racks', 'getRacks')->name('store.getRacks');
         Route::get('/get-shelfs', 'getShelves')->name('store.getShelves');

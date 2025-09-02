@@ -2,9 +2,15 @@
 
 namespace App\Models\Scrap;
 
+use App\Models\Hsn;
+use App\Models\Item;
+use App\Models\Unit;
+use App\Models\ErpAttribute;
+use App\Models\Scrap\ErpScrap;
+use App\Models\ErpItemAttribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ErpScrapItem extends Model
 {
@@ -39,24 +45,24 @@ class ErpScrapItem extends Model
         return $this->belongsTo(ErpScrap::class, 'erp_scrap_id', 'id');
     }
 
-    public function item()
-    {
-        return $this->belongsTo(ErpItem::class, 'item_id', 'id');
-    }
-
-    public function hsn()
-    {
-        return $this->belongsTo(ErpHsn::class, 'hsn_id', 'id');
-    }
-
     public function uom()
     {
-        return $this->belongsTo(ErpUom::class, 'uom_id', 'id');
+        return $this->belongsTo(Unit::class, 'uom_id');
     }
 
     public function inventoryUom()
     {
-        return $this->belongsTo(ErpUom::class, 'inventory_uom_id', 'id');
+        return $this->belongsTo(Unit::class, 'inventory_uom_id');
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+
+    public function hsn()
+    {
+        return $this->belongsTo(Hsn::class, 'hsn_id');
     }
 
     public function costCenter()

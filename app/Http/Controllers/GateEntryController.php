@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Exports\GateEntryExport;
 use DB;
 use PDF;
+use Milon\Barcode\DNS2D;
 use Yajra\DataTables\DataTables;
 
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\DynamicFieldHelper;
+use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
@@ -2167,11 +2169,18 @@ class GateEntryController extends Controller
         $sellerBillingAddress = $mrn->latestBillingAddress();
         $buyerAddress = $mrn?->erpStore?->address;
 
+        // Create barcode generator
+        $barcode = new DNS2D();
+
+        // Generate QR as base64 (important: last param = true)
+        $qrCodeBase64 = $mrn->id ? EInvoiceHelper::generateQRCodeBase64($mrn->id) : '';
+
         $pdf = PDF::loadView(
             'pdf.gate-entry',
             [
                 'mrn' => $mrn,
                 'user' => $user,
+                'qrCodeBase64' => $qrCodeBase64,
                 'shippingAddress' => $shippingAddress,
                 'billingAddress' => $billingAddress,
                 'organization' => $organization,
@@ -4126,7 +4135,7 @@ class GateEntryController extends Controller
         $ids = [];
         $asnNumber = (int)$request->asn_number;
         $moduleType = [$request->module_type];
-        $asnData = VendorAsn::where('doc_no', $asnNumber)->first();
+        $asnData = VendorAsn::where('id', $asnNumber)->first();
         if (!$asnData) {
             return response()->json([
                 'status' => 404,

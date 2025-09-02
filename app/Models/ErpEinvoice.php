@@ -11,24 +11,25 @@ class ErpEinvoice extends Model
 {
     use HasFactory,Deletable;
     protected $fillable = [
-        'morphable_type', 
-        'morphable_id', 
+        'morphable_type',
+        'morphable_id',
         'organization_id',
         'group_id',
         'company_id',
-        'ack_no', 
-        'ack_date', 
-        'irn_number', 
-        'signed_invoice', 
-        'signed_qr_code', 
-        'ewb_no', 
-        'ewb_date', 
-        'ewb_valid_till', 
+        'ack_no',
+        'ack_date',
+        'irn_number',
+        'signed_invoice',
+        'signed_qr_code',
+        'ewb_no',
+        'ewb_date',
+        'ewb_valid_till',
         'status',
-        'ewb_status', 
-        'remarks', 
-        'created_by', 
-        'updated_by', 
+        'ewb_status',
+        'Cancel_date',
+        'remarks',
+        'created_by',
+        'updated_by',
         'deleted_by'
     ];
 
@@ -73,6 +74,11 @@ class ErpEinvoice extends Model
                 $model->deleted_by = $user->auth_user_id;
             }
         });
+    }
+
+    public function source()
+    {
+        return $this->hasOne(ErpEinvoiceHistory::class, 'source_id');
     }
 
 }

@@ -1476,16 +1476,17 @@ class BomController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
+
+        $canView = true;
         $bom = Bom::findOrFail($id);
-
-        $canView = true;
-
         $parentUrl = request()->segments()[0];
-        $canView = true;
+
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
+
         if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
         }
+
         if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }

@@ -147,22 +147,16 @@ class MasterIndiaService
         }
     }
 
-    public function getDistance($documentHeader, $authToken)
+    public function getDistance($fromPincode, $toPincode, $authToken)
     {
         $auth = $authToken;
-        $distance = 0;
-        $fromPincodeData = ErpAddress::find($documentHeader['billing_to']);
-		$toPincodeData = ErpAddress::find($documentHeader['ship_to']);
-        $fromPincode = $fromPincodeData['pincode'];
-        $toPincode = $toPincodeData['pincode'];
-
 		$requestHeader = array(
 			"Content-Type:application/json",
 		);
 
 		$endpoint = "distance?access_token=" . $auth . "&fromPincode=" . $fromPincode . "&toPincode=" . $toPincode;
-
-		$response = $this->client->request('GET', $this->baseURL . $endpoint, [
+        $einvoiceBaseUrl = config('app.masterindia.e_invoice_base_url');
+		$response = $this->client->request('GET', $einvoiceBaseUrl . $endpoint, [
                 'headers' => $requestHeader,
                 'json' => [],
             ]);
@@ -184,6 +178,30 @@ class MasterIndiaService
             ];
         }
         return $distance;
+    }
+
+    public function cancelInvoice(array $cancelData)
+    {
+        try {
+            $endpoint = "cancelEinvoice";
+            $requestHeader = [
+                "Accept" => "application/json",
+                "Content-Type" => "application/json"
+            ];
+
+            $einvoiceBaseUrl = config('app.masterindia.e_invoice_base_url');
+            $response = $this->client->request('POST', $einvoiceBaseUrl . $endpoint, [
+                'headers' => $requestHeader,
+                'json' => $cancelData,
+            ]);
+            $result =  json_decode($response->getBody(), true);
+            $this->createApiLog($endpoint, 'POST', $cancelData, ConstantHelper::MASTERINDIA, $result);
+            return $result;
+
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: Invoice cancellation failed: " . $e->getMessage();
+            throw new \Exception($errorMsg);
+        }
     }
 
 }

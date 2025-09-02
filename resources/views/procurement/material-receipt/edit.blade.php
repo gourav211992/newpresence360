@@ -1191,6 +1191,7 @@
                         setTableCalculation(true);
                         // checkWarehouseSetup(storeId, subStoreId);
                         $(".inspection_required").val(parameters?.inspection_required[0]);
+                        applyInspectionState();
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -4383,8 +4384,8 @@
         }
 
         // When page loads
-        $(document).ready(function () {
-            applyInspectionState();
-        });
+        // $(document).ready(function () {
+        //     applyInspectionState();
+        // });
     </script>
 @endsection

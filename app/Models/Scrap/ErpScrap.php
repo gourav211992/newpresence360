@@ -108,6 +108,17 @@ class ErpScrap extends Model
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
 
+    public function productionSlips()
+    {
+        return $this->hasMany(ErpScrapProductionSlip::class, 'scrap_id');
+    }
+
+    public function repairOrders()
+    {
+        return [];
+        // return $this->hasMany(RepairOrder::class, 'scrap_id');
+    }
+
     public function dynamic_fields()
     {
         return $this->hasMany(ErpScrapDynamicField::class, 'header_id');

@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=0,minimal-ui">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Presence 360')</title>
-    <link rel="apple-touch-icon" href="{{url('/app-assets/images/ico/apple-icon-120.png')}}">
+    {{-- <link rel="apple-touch-icon" href="{{url('/app-assets/images/ico/apple-icon-120.png')}}"> --}}
     <link rel="shortcut icon" type="image/x-icon" href="{{url('/assets/css/favicon.png')}}">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500;1,600;700"
         rel="stylesheet">
@@ -35,7 +35,7 @@ $sessionVendorId = request()->cookie('vendor_id');
                                 <li> <img src="{{$orgLogo}}" /></li>
                             @endif
                         </ul>
-                        <ul class="nav navbar-nav left-baricontop"> 
+                        <ul class="nav navbar-nav left-baricontop">
                             <li class="nav-item">
                                 <a class="nav-link menu-toggle" href="#">
                                     <i></i>
@@ -104,8 +104,8 @@ $sessionVendorId = request()->cookie('vendor_id');
                 vendorOnChange(e.target.value);
             }
         });
-        
-        function vendorOnChange(vendorId) 
+
+        function vendorOnChange(vendorId)
         {
             let actionUrl = '{{route("supplier.change.vendor")}}'+"?vendor_id="+vendorId;
             fetch(actionUrl).then(response => {
@@ -113,7 +113,7 @@ $sessionVendorId = request()->cookie('vendor_id');
                     if(data.status == 200) {
                         if(vendorId) {
                             location.href='{{route("supplier.dashboard")}}';
-                        } 
+                        }
                         // alert("Vendor Changed!");
                     }
                 });
@@ -121,9 +121,9 @@ $sessionVendorId = request()->cookie('vendor_id');
         }
         let sessionVendorId = @json($sessionVendorId);
         if(!sessionVendorId) {
-            vendorOnChange(''); 
+            vendorOnChange('');
         }
-        
+
     </script>
 </body>
 <!-- END: Body-->

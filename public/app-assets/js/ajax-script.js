@@ -159,6 +159,13 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         }
     }
 
+    if (this.classList.contains('scrap_module_form')) {
+        const items = document.getElementsByClassName('comp_item_code');
+        for (let index = 0; index < items.length; index++) {
+            data.append(`item_attributes[${index}]`, items[index].getAttribute('attribute-array'));
+        }
+    }
+
     // if (typeof selectedAttachmentsMain !== 'undefined')
     // {
     //     selectedAttachmentsMain.forEach((element, index) => {

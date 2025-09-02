@@ -3033,7 +3033,6 @@
                         $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
-                        $("#vendor_name").prop('readonly',true);
                         if(soOrder.type == 'supplier-invoice'){
                             $("[name='supplier_invoice_no']").val(soOrder.document_number);
                             $("[name='supplier_invoice_date']").val(soOrder.document_date);
@@ -3564,7 +3563,7 @@
                     $(".module_type").val(modelType);
                     $("#itemTable .mrntableselectexcel").append(pos);
                     console.log('step 1');
-                    
+
                     initializeAutocomplete2(".comp_item_code");
 
                     $("#poModal, #joModal").modal('hide');

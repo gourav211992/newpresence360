@@ -12,7 +12,7 @@ use App\Models\PwoStationConsumption;
 
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelperV2;
-
+use Illuminate\Support\Facades\Log;
 class PslipDeleteService
 {
      /**
@@ -42,9 +42,10 @@ class PslipDeleteService
 
             // Process Delete Pslip Bom Consumptions
             $result = $this->processDeletePslipBomConsumptions($pslipBomMappings, $productionSlip);
+           
             return $result['status'] === 'error'
                 ? self::errorResponse($result['message'])
-                : true;
+                :$result;
 
         }
 
@@ -81,8 +82,7 @@ class PslipDeleteService
 
     private function processDeletePslipBomConsumptions($pslipBomMappings, $productionSlip)
     {
-
-        foreach($pslipBomMappings as $pslipBomMapping) {
+        foreach($pslipBomMappings as $keys=>$pslipBomMapping) {
             $attributes = $pslipBomMapping->attributes ?? [];
             $psItem = $pslipBomMapping->pslip_item;
 
@@ -94,14 +94,24 @@ class PslipDeleteService
 
             // 2: Check stock for issue reversal
             $issueCheck = $this->checkIssueStock($pslipBomMapping, $psItem, $productionSlip, $selectedAttr);
+           
             if ($issueCheck !== true) return $issueCheck;
 
             // 3: Check stock for receipt reversal
             $receiptCheck = $this->checkReceiptStock($psItem, $productionSlip, $selectedAttr);
+
+            if($psItem->subprime_qty > 0) {
+                 $receiptCheck = $this->checkReceiptStock($psItem, $productionSlip, $selectedAttr);
+            }  
+            if($productionSlip->rg_sub_store_id && $psItem->rejected_qty > 0) {
+                $receiptCheck = $this->checkReceiptRejectStock($psItem, $productionSlip, $selectedAttr);
+            }
+            
+           
             if ($receiptCheck !== true) return $receiptCheck;
 
             // 4: Update MO product & station consumption
-            $this->updateMoAndStation($psItem);
+            $this->updatePwoStationConsumption($psItem);
 
             // 5: Update Sales Order & Mapping if applicable
             $this->updateSalesOrderAndMapping($psItem, $productionSlip);
@@ -133,7 +143,7 @@ class PslipDeleteService
                             );
                         }
                     });
-                }, '=', count($moProductAttributes));
+                }, '=', count($moProductAttributes));   
             })
             ->first();
 
@@ -171,7 +181,7 @@ class PslipDeleteService
      * Validate stock for receipt reversal
      */
     private function checkReceiptStock($psItem, $productionSlip, array $selectedAttr)
-    {
+    {    
         $pslipItemData = [
             'document_header_id' => $productionSlip->id,
             'document_detail_id' => $psItem->id,
@@ -179,12 +189,37 @@ class PslipDeleteService
             'store_id'           => $psItem->store_id,
             'document_type'      => ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS,
             'attributes'         => $selectedAttr,
-            'sub_store_id'       => $psItem->sub_store_id,
+            'sub_store_id'       => $productionSlip->fg_sub_store_id,
             'transaction_type'   => 'receipt',
             'document_status'    => $productionSlip->document_status,
         ];
 
         $check = InventoryHelperV2::checkStockForDelete($pslipItemData, true);
+
+        
+        return $check['status'] === 'error'
+            ? self::errorResponse($check['message'])
+            : true;
+    }
+
+
+    private function checkReceiptRejectStock($psItem, $productionSlip, array $selectedAttr)
+    {    
+        $pslipItemData = [
+            'document_header_id' => $productionSlip->id,
+            'document_detail_id' => $psItem->id,
+            'item_id'            => $psItem->item_id,
+            'store_id'           => $psItem->store_id,
+            'document_type'      => ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS,
+            'attributes'         => $selectedAttr,
+            'sub_store_id'       => $productionSlip->rg_sub_store_id,
+            'transaction_type'   => 'receipt',
+            'document_status'    => $productionSlip->document_status,
+        ];
+
+        $check = InventoryHelperV2::checkStockForDelete($pslipItemData, true);
+
+        
         return $check['status'] === 'error'
             ? self::errorResponse($check['message'])
             : true;
@@ -193,7 +228,7 @@ class PslipDeleteService
     /**
      * Back update MO Product and PWO Station consumption
      */
-    private function updateMoAndStation($psItem)
+    private function updatePwoStationConsumption($psItem)
     {
         if (!$psItem?->mo_product) return;
 
@@ -204,14 +239,14 @@ class PslipDeleteService
         $psItem->mo_product->save();
 
         // Update PWO Station
-        $pwoStation = PwoStationConsumption::where('pwo_mapping_id', $psItem->mo_product?->pwoMapping?->id)
+        $pwoStationConsumption = PwoStationConsumption::where('pwo_mapping_id', $psItem->mo_product?->pwoMapping?->id)
             ->where('mo_id', $psItem->mo_product->mo_id)
             ->where('station_id', $psItem->mo_product?->mo?->station_id)
             ->first();
 
-        if ($pwoStation) {
-            $pwoStation->pslip_qty -= $deductQty;
-            $pwoStation->save();
+        if ($pwoStationConsumption) {
+            $pwoStationConsumption->pslip_qty -= $deductQty;
+            $pwoStationConsumption->save();
         }
     }
 
@@ -236,6 +271,7 @@ class PslipDeleteService
                 $pwoSoMappingItem->save();
             }
         }
+      
     }
 
     /**

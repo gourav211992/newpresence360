@@ -385,6 +385,129 @@ class Helper
         ];
     }
 
+    public static function firstOrNewDocumentNumber(int $book_id, string $document_date, ?string $document_number = null, stdClass $parameters = null, $authUser = null): mixed
+    {
+        $book = Book::find($book_id);
+        $pattern = NumberPattern::where('book_id', $book_id)->orderBy('id', 'DESC')->first();
+        $serviceAlias = $pattern?->book?->org_service?->alias;
+        $modelName = ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] ?? '';
+
+        $financialYear = self::getFinancialYear($document_date);
+        $financialQuarter = self::getFinancialYearQuarter($document_date);
+        $financialMonth = self::getFinancialMonth($document_date);
+
+        if ($pattern && $modelName) {
+            $model = resolve("App\\Models\\{$modelName}");
+            if ($pattern->series_numbering === ConstantHelper::DOC_NO_TYPE_AUTO) {
+                $startFrom = max(0, $pattern->starting_no - 1);
+
+                $prefix = '';
+                $suffix = '';
+
+                if ($pattern->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_NEVER) {
+                    $prefix = $pattern->prefix;
+                    $suffix = $pattern->suffix;
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)
+                        ->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->orderByRaw('CAST(doc_no AS UNSIGNED) DESC')
+                        ->value('doc_no') ?? $startFrom;
+                } elseif ($pattern->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_YEARLY) {
+                    if (!$financialYear) {
+                        return self::errorData('Financial Year not setup');
+                    }
+                    $prefix = $financialYear['alias'];
+                    $suffix = $pattern->suffix;
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)
+                        ->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->whereBetween('document_date', [$financialYear['start_date'], $financialYear['end_date']])
+                        ->orderBy('doc_no', 'DESC')
+                        ->value('doc_no') ?? $startFrom;
+                } elseif ($pattern->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_QUARTERLY) {
+                    if (!$financialQuarter) {
+                        return self::errorData('Financial Year not setup');
+                    }
+                    $prefix = $financialYear['alias'] . '-' . $financialQuarter['alias'];
+                    $suffix = $pattern->suffix;
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)
+                        ->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->whereBetween('document_date', [$financialQuarter['start_date'], $financialQuarter['end_date']])
+                        ->orderBy('doc_no', 'DESC')
+                        ->value('doc_no') ?? $startFrom;
+                } else {
+                    if (!$financialMonth) {
+                        return self::errorData('Financial Year not setup');
+                    }
+                    $prefix = $financialYear['alias'] . '-' . $financialMonth['alias'];
+                    $suffix = $pattern->suffix;
+                    $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)
+                        ->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->whereBetween('document_date', [$financialMonth['start_date'], $financialMonth['end_date']])
+                        ->orderBy('doc_no', 'DESC')
+                        ->value('doc_no') ?? $startFrom;
+                }
+
+
+                $currentDocNo = $document_number ?? ($currentDocNo ?: 0) + 1;
+                $voucher_no = ($prefix ? $prefix . '-' : '') . $currentDocNo . ($suffix ? '-' . $suffix : '');
+
+                $shouldCheckTransportDocForPrSr = in_array($book->service?->service?->alias, [
+                    ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS,
+                    ConstantHelper::SR_SERVICE_ALIAS
+                ]);
+                $shouldCheckTransportDocForSi = (
+                    $serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS
+                    && isset($parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM})
+                    && $parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] === "no"
+                );
+
+                if (($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi)
+                    && strlen($book->book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT
+                ) {
+                    return self::errorData('Document Number cannot exceed 15 characters');
+                }
+
+                return [
+                    'type' => ConstantHelper::DOC_NO_TYPE_AUTO,
+                    'document_number' => $voucher_no,
+                    'prefix' => $prefix,
+                    'suffix' => $suffix,
+                    'doc_no' => $currentDocNo,
+                    'reset_pattern' => $pattern->reset_pattern,
+                    'error' => null
+                ];
+            }
+
+            return [
+                'type' => ConstantHelper::DOC_NO_TYPE_MANUAL,
+                'document_number' => null,
+                'prefix' => null,
+                'suffix' => null,
+                'doc_no' => null,
+                'reset_pattern' => $pattern->reset_pattern,
+                'error' => null
+            ];
+        }
+
+        return self::errorData('Transaction not setup');
+    }
+
+    private static function errorData(string $message): array
+    {
+        return [
+            'type' => null,
+            'document_number' => null,
+            'prefix' => null,
+            'suffix' => null,
+            'doc_no' => null,
+            'reset_pattern' => null,
+            'error' => $message
+        ];
+    }
+
     public static function generateDocumentNumberNew(int $book_id, string $document_date, stdClass $parameters = null, $authUser = null): mixed
     {
 
@@ -4226,9 +4349,9 @@ class Helper
                         'mrn_header_id' => $mrn->id,
                         'asset_code' => $asset_code,
                         'asset_name' => $asset_name,
-                        'brand_name'=>$mrn_asset->brand_name,
-                        'model_no'=>$mrn_asset->model_no,
-                        'procurement_type'=>$mrn_asset->procurement_type,
+                        'brand_name' => $mrn_asset->brand_name,
+                        'model_no' => $mrn_asset->model_no,
+                        'procurement_type' => $mrn_asset->procurement_type,
                         'quantity' => $mrn_detail->accepted_inv_uom_qty,
                         'category_id' => $category_id,
                         'reference_doc_id' => $mrn->id,
@@ -4295,7 +4418,6 @@ class Helper
                     'message' => "MRN does not have any asset to register",
                     'data' => []
                 ];
-
             }
         } catch (Exception $e) {
             DB::rollBack();
@@ -4308,13 +4430,14 @@ class Helper
             ];
         }
     }
-    public static function access_org(){
+    public static function access_org()
+    {
         $user = Helper::getAuthenticatedUser();
         $companies = $user?->access_rights_org;
 
         $companies = ($companies && $companies->isNotEmpty())
-    ? $companies
-    : collect([$user]);
+            ? $companies
+            : collect([$user]);
         return $companies;
     }
 }

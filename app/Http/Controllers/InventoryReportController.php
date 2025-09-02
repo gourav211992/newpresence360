@@ -204,13 +204,20 @@ class InventoryReportController extends Controller
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as unconfirmed_stock',
-            ['approved', 'approval_not_required', 'posted']
+                ['approved', 'approval_not_required', 'posted']
+            )
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN putaway_pending_qty ELSE 0 END) as putaway_pending_qty',
+                ['approved', 'approval_not_required', 'posted']
+            )
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN reserved_qty ELSE 0 END) as reserved_qty',
+                ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN org_currency_cost ELSE 0 END) as confirmed_stock_value',
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN org_currency_cost ELSE 0 END) as unconfirmed_stock_value',
-            ['approved', 'approval_not_required', 'posted'])
+                ['approved', 'approval_not_required', 'posted']
+            )
             ->groupBy(['inventory_uom_id']);
         $now = Carbon::now();
         if ($day1Check) {

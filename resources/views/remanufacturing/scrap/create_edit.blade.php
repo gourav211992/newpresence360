@@ -36,9 +36,7 @@
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" data-module="scrap" method="POST"
-        action="{{ isset($scrap->id) ? route('scrap.edit', ['id' => $scrap->id]) : route('scrap.store') }}"
-        data-redirect="{{ route('scrap.index') }}" enctype="multipart/form-data">
+    <form class="ajax-input-form scrap_module_form" data-module="scrap" method="POST" action="{{ isset($scrap->id) ? route('scrap.edit', ['id' => $scrap->id]) : route('scrap.store') }}" data-redirect="{{ route('scrap.index') }}" enctype="multipart/form-data">
 
         @csrf
         @if (isset($scrap->id))
@@ -49,7 +47,6 @@
             <input type="hidden" name="id" value="{{ $scrap->id ?? '' }}">
         @endif
 
-        <input type="hidden" name="show_attribute" value="0" id="show_attribute">
         <input type="hidden" name="pslip_id" id="pslip_id">
         <input type="hidden" name="ps_item_ids" id="ps_item_ids">
         <input type="hidden" name="pull_item_type" id="pull_item_type">
@@ -82,71 +79,42 @@
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right" id = "buttonsDiv">
                                 @if (!isset(request()->revisionNumber))
-                                    <button type = "button" onclick="javascript: history.go(-1)"
-                                        class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                            data-feather="arrow-left-circle"></i> Back</button>
+                                    <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                                     @if (isset($slip))
-                                        <a href="{{ route('production.slip.generate-pdf', $slip->id) }}" target="_blank"
-                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round"
-                                                class="feather feather-printer">
+                                        <a href="{{ route('production.slip.generate-pdf', $slip->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                                <path
-                                                    d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
                                                 </path>
                                                 <rect x="6" y="14" width="12" height="8"></rect>
                                             </svg> Print
                                         </a>
                                         @if ($buttons['draft'])
-                                            <button type="submit"
-                                                class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
-                                                name="action" value="draft"><i data-feather='save'></i> Save as
-                                                Draft</button>
+                                            <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                         @endif
                                         @if ($buttons['submit'])
-                                            <button type="submit" class="btn btn-primary btn-sm submit-button"
-                                                name="action" value="submitted"><i data-feather="check-circle"></i>
-                                                Submit</button>
+                                            <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                                         @endif
                                         @if ($buttons['approve'])
-                                            <button type="button" id="reject-button" data-bs-toggle="modal"
-                                                data-bs-target="#approveModal" type="submit"
-                                                class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
-                                                value="reject"><svg xmlns="http://www.w3.org/2000/svg" width="14"
-                                                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    class="feather feather-x-circle">
+                                            <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="reject"><svg xmlns="http://www.w3.org/2000/svg" width="14"
+                                                     height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <line x1="15" y1="9" x2="9" y2="15">
                                                     </line>
                                                     <line x1="9" y1="9" x2="15" y2="15">
                                                     </line>
                                                 </svg> Reject</button>
-                                            <button type="button" data-bs-toggle="modal" data-bs-target="#approveModal"
-                                                type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button"
-                                                name="action" value="approve"><i data-feather="check-circle"></i>
-                                                Approve</button>
+                                            <button type="button" data-bs-toggle="modal" data-bs-target="#approveModal" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="approve"><i data-feather="check-circle"></i> Approve</button>
                                         @endif
                                         @if ($buttons['amend'])
-                                            <button id = "amendShowButton" type="submit"
-                                                class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
-                                                value="amend"><i data-feather='edit'></i> Amendment</button>
+                                            <button id = "amendShowButton" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="amend"><i data-feather='edit'></i> Amendment</button>
                                         @endif
                                         @if ($buttons['revoke'])
-                                            <button id = "revokeButton" type="submit"
-                                                class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
-                                                value="revoke"><i data-feather='rotate-ccw'></i> Revoke</button>
+                                            <button id = "revokeButton" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="revoke"><i data-feather='rotate-ccw'></i> Revoke</button>
                                         @endif
                                     @else
-                                        <button type="submit"
-                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
-                                            name="action" value="draft"><i data-feather='save'></i> Save as
-                                            Draft</button>
-                                        <button type="submit" class="btn btn-primary btn-sm submit-button"
-                                            name="action" value="submitted"><i data-feather="check-circle"></i>
-                                            Submit</button>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                        <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                                     @endif
                                 @endif
                             </div>
@@ -161,8 +129,7 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div
-                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
@@ -172,13 +139,12 @@
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Series <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" id="book_id" name="book_id">
+                                                        <select class="form-select disable_on_edit_view" id="book_id" name="book_id">
                                                             @foreach ($books as $book)
-                                                                <option value="{{ $book->id }}">
+                                                                <option value="{{ $book->id }}" {{ isset($scrap->book_id) && $scrap->book_id == $book->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($book->book_code) }}</option>
                                                             @endforeach
                                                         </select>
@@ -187,49 +153,32 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Scrap No <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Scrap No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="document_number" class="form-control"
-                                                            id="document_number" value="{{ isset($scrap->id) ? $scrap->document_number : '' }}">
-                                                    </div>
-                                                </div>
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Scrap Date <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="date" class="form-control"
-                                                            value="{{isset($scrap->id) ? $scrap->document_date : '' }}"
-                                                            value="{{ date('Y-m-d') }}" name="document_date"
-                                                            min = "{{ $current_financial_year['start_date'] }}"
-                                                            max = "{{ $current_financial_year['end_date'] }}">
+                                                        <input type="text" name="document_number" class="form-control disable_on_edit_view" id="document_number" value="{{ isset($scrap->id) ? $scrap->document_number : '' }}">
                                                     </div>
                                                 </div>
 
-                                                {{-- <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
+                                                        <label class="form-label">Scrap Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control">
+                                                        <input type="date" class="form-control disable_on_edit_view" value="{{ isset($scrap->id) ? $scrap->document_date : \Carbon\Carbon::now()->format('Y-m-d') }}" name="document_date" min="{{ $current_financial_year['start_date'] }}"
+                                                               max="{{ $current_financial_year['end_date'] }}">
                                                     </div>
-                                                </div> --}}
+                                                </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Location <spanp
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <spanp class="text-danger">
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="store_id"
-                                                            id="store_id" onchange="getSubStores(this.value)">
+                                                        <select class="form-select disable_on_edit_view select2" name="store_id" id="store_id" onchange="getSubStores(this.value)">
                                                             <option value="">Select Location</option>
                                                             @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}"
-                                                                    {{ isset($scrap->store_id) && $scrap->store_id == $location->id ? 'selected' : '' }}>
+                                                                <option value="{{ $location->id }}" {{ isset($scrap->store_id) && $scrap->store_id == $location->id ? 'selected' : '' }}>
                                                                     {{ $location->store_name }}
                                                                 </option>
                                                             @endforeach
@@ -237,29 +186,35 @@
                                                     </div>
                                                 </div>
 
-                                                <div
-                                                    class="row align-items-center mb-1 sub-store-row {{ isset($scrap->id) ? '' : 'd-none' }}">
+                                                <div class="row align-items-center mb-1 sub-store-row {{ isset($scrap->id) ? '' : 'd-none' }}">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Sub Store <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Sub Store <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2 sub_store" id="sub_store_id"
-                                                            name="sub_store_id"></select>
+                                                        <select class="form-select disable_on_edit_view select2 sub_store" id="sub_store_id" name="sub_store_id"></select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1 {{ isset($scrap->id) ? '' : 'd-none' }}"
-                                                    id="reference_type">
+                                                <div class="row align-items-center mb-1 {{ isset($scrap->id) ? '' : 'd-none' }}" id="reference_type">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference from</label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button"
-                                                            class="btn btn-outline-primary btn-sm mb-0 psSelect"><i
-                                                                data-feather="plus-square"></i> Production Slip</button>
-                                                        <button type="button"
-                                                            class="btn btn-outline-primary btn-sm mb-0 roSelect"><i
-                                                                data-feather="plus-square"></i> Repair Order</button>
+                                                        @if (isset($scrap->reference_type))
+                                                            @if ($scrap->reference_type == 'pslip')
+                                                                <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
+                                                                    <i data-feather="plus-square"></i>
+                                                                    Production Slip
+                                                                </button>
+                                                            @elseif ($scrap->reference_type == 'repairOrder')
+                                                                <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
+                                                                    <i data-feather="plus-square"></i>
+                                                                    Repair Order
+                                                                </button>
+                                                            @endif
+                                                        @else
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect"> <i data-feather="plus-square"></i>Production Slip </button>
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect"><i data-feather="plus-square"></i> Repair Order</button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -282,8 +237,7 @@
                                         <div class="step-custhomapp bg-light">
                                             <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
                                                 <li class="nav-item">
-                                                    <a class="nav-link active" data-bs-toggle="tab"
-                                                        href="#scavengingItems">
+                                                    <a class="nav-link active" data-bs-toggle="tab" href="#scavengingItems">
                                                         Scrap Items
                                                     </a>
                                                 </li>
@@ -298,31 +252,21 @@
                                         <div class="tab-content pb-1">
                                             <div class="tab-pane active" id="scavengingItems">
                                                 <div class="text-end mb-50">
-                                                    <a href="javascript:;" id="deleteBtn"
-                                                        class="btn btn-sm btn-outline-danger me-50">
+                                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtn"
-                                                        class="btn btn-sm btn-outline-primary">
+                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
                                                         <i data-feather="plus"></i> Add Item</a>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
                                                         <div class="table-responsive pomrnheadtffotsticky">
-                                                            <table id="scavengingItemsTable"
-                                                                class="ItemsTable table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                                                data-json-key="components_json"
-                                                                data-row-selector="tr[id^='row_']">
+                                                            <table id="scavengingItemsTable" class="ItemsTable table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" data-json-key="components_json" data-row-selector="tr[id^='row_']">
                                                                 <thead id="scavengingItemsThead">
                                                                     <tr>
-                                                                        <th width="62"
-                                                                            class="customernewsection-form">
-                                                                            <div
-                                                                                class="form-check form-check-primary custom-checkbox">
-                                                                                <input type="checkbox"
-                                                                                    class="form-check-input"
-                                                                                    id="Email" />
-                                                                                <label class="form-check-label"
-                                                                                    for="Email"></label>
+                                                                        <th width="62" class="customernewsection-form">
+                                                                            <div class="form-check form-check-primary custom-checkbox">
+                                                                                <input type="checkbox" class="form-check-input" id="Email" />
+                                                                                <label class="form-check-label" for="Email"></label>
                                                                             </div>
                                                                         </th>
                                                                         <th width="285">Item Code</th>
@@ -334,17 +278,13 @@
                                                                         <th>Remark</th>
                                                                     </tr>
                                                                 </thead>
-                                                                <tbody class="mrntableselectexcel"
-                                                                    id="scavengingItemsTbody">
+                                                                <tbody class="mrntableselectexcel" id="scavengingItemsTbody">
                                                                     @if (isset($scrap) && $scrap->items)
                                                                         @foreach ($scrap->items as $key => $item)
-                                                                            @include(
-                                                                                'remanufacturing.scrap.partials.item-row',
-                                                                                [
-                                                                                    'rowCount' => $key,
-                                                                                    'item' => $item,
-                                                                                ]
-                                                                            )
+                                                                            @include('remanufacturing.scrap.partials.item-row', [
+                                                                                'rowCount' => $key,
+                                                                                'item' => $item,
+                                                                            ])
                                                                         @endforeach
                                                                     @endif
                                                                 </tbody>
@@ -354,8 +294,7 @@
                                                                             <table class="table border">
                                                                                 <tr>
                                                                                     <td class="p-0">
-                                                                                        <h6
-                                                                                            class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
                                                                                             <strong>Item Details</strong>
                                                                                         </h6>
                                                                                     </td>
@@ -379,9 +318,14 @@
                                             </div>
 
                                             <div class="tab-pane" id="productionSlip">
+                                                <div class="text-end mb-50">
+                                                    <a href="javascript:;" id="deleteBtnPullItem" class="btn btn-sm btn-outline-danger me-50">
+                                                        <i data-feather="x-circle"></i> Delete</a>
+                                                    <a href="javascript:;" id="addNewItemBtnPullItem" class="btn btn-sm btn-outline-primary">
+                                                        <i data-feather="plus"></i> Add Item</a>
+                                                </div>
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="productionSlipsTable"
-                                                        class="ItemsTable table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                    <table id="productionSlipsTable" class="ItemsTable table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                         <thead>
                                                             <tr>
                                                                 <th>#</th>
@@ -399,10 +343,7 @@
                                                         <tbody class="mrntableselectexcel">
                                                             @if (isset($pullItemType) && $pullItemType == 'pslip' && isset($psItems))
                                                                 @foreach ($psItems as $key => $item)
-                                                                    @include(
-                                                                        'remanufacturing.scrap.partials.ps-item-row',
-                                                                        ['rowCount' => $key, 'item' => $item]
-                                                                    )
+                                                                    @include('remanufacturing.scrap.partials.ps-item-row', ['rowCount' => $key, 'item' => $item])
                                                                 @endforeach
                                                             @endif
                                                             @if (isset($pullItemType) && $pullItemType == 'repairOrder' && isset($roItems))
@@ -423,8 +364,7 @@
                                                 <div class="col-md-4">
                                                     <div class="mb-1">
                                                         <label class="form-label">Upload Document</label>
-                                                        <input type="file" class="form-control" name="attachment"
-                                                            id="document-upload" />
+                                                        <input type="file" class="form-control" name="attachment" id="document-upload" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -432,8 +372,7 @@
                                             <div class="col-md-12">
                                                 <div class="mb-1">
                                                     <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" id="document_remarks"
-                                                        value="{{ $scrap->document_remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
+                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" id="document_remarks" value="{{ $scrap->document_remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -473,8 +412,7 @@
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" {{-- data-bs-dismiss="modal" --}}
-                        class="btn btn-primary submitAttributeBtn">Select</button>
+                    <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
                 </div>
             </div>
         </div>
@@ -521,61 +459,22 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/scrap.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
+        let psTable;
         const scrap = @json($scrap ?? []);
         const type = '{{ request()->route('type') }}';
         const getPsRoute = '{{ route('scrap.get.ps') }}';
         const scrapIndexRoute = '{{ route('scrap.index') }}';
         const scrapItemRowRoute = '{{ route('scrap.item.row') }}';
         const scrapItemAttrRoute = '{{ route('scrap.item.attr') }}';
+        const getDocNumberByBookIdUrl = '{{ route('book.doc_no') }}';
         const scrapItemDetailsRoute = '{{ route('scrap.get.itemdetail') }}';
-        const getDocNumberByBookIdUrl = '{{ route('book.get.doc_no_and_parameters') }}';
+        const PRODUCTION_SLIP_SERVICE_ALIAS = "{{ \App\Helpers\ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS }}";
     </script>
     <script>
-        setTimeout(() => {
-            $("#book_id").trigger('change');
-        }, 0);
+        @if (isset($scrap))
+            getSubStores(scrap.store_id, scrap.sub_store_id);
+        @endif
 
-        $(window).on("load", function() {
-            if (feather) {
-                feather.replace({
-                    width: 14,
-                    height: 14,
-                });
-            }
-        });
-
-        $(function() {
-            $(".ledgerselecct")
-                .autocomplete({
-                    source: [
-                        "Indian Oil Corporation Ltd.",
-                        "Airports Authority of India",
-                        "Bharat Heavy Electricals Ltd.",
-                        "Bharat Petroleum Corpn. Ltd.",
-                        "NTPC Ltd.",
-                        "Gail (India) Ltd.",
-                        "Hindustan Petroleum Corpn. Ltd.",
-                        "Steel Authority of India Ltd.",
-                        "Indian Railway Stations Devpt. Corporation Ltd.",
-                        "Oil & Natural Gas Corporation Ltd.",
-                        "Oil & Natural Gas Corporation Ltd.",
-                        "Hindustan Aeronautics Ltd.",
-                    ],
-                    minLength: 0,
-                })
-                .focus(function() {
-                    if (this.value == "") {
-                        $(this).autocomplete("search");
-                    }
-                });
-        });
-
-        $(".mrntableselectexcel tr").click(function() {
-            $(this).addClass("trselected").siblings().removeClass("trselected");
-            value = $(this).find("td:first").html();
-        });
-    </script>
-    <script>
         $(document).on('change', '#sub_store_id', (e) => {
             let value = $(e.target).val();
             if (value === '' || value === null || value === '0') {
@@ -588,123 +487,12 @@
         $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
-                getDocNumberByBookId(bookId);
+                getDocNumberByBookId(bookId, scrap?.document_number ?? '');
             } else {
                 $("#book_id").val('');
                 $("#document_number").val('');
                 $("#document_number").attr('readonly', false);
             }
-        });
-
-        let psTable;
-        $(document).on('click', '.psSelect', (e) => {
-            $("#psModal").modal('show');
-            const tableSelector = '#psModal .ps-order-detail';
-            if ($.fn.DataTable.isDataTable(tableSelector)) {
-                psTable = $(tableSelector).DataTable();
-                psTable.ajax.reload();
-            } else {
-                getProductionSlips();
-            }
-        });
-
-        $(document).on("click", ".psProcess", function(e) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-
-            $("#psModal th .form-check-input").prop("checked", false);
-
-            let ids = getSelectedItemIDs();
-
-            if (!ids.length) {
-                setHiddenInput("ps_item_ids", "");
-                setHiddenInput("item_ids", "");
-                setHiddenInput("pull_item_type", "");
-
-                $("#psModal").modal("hide");
-                Swal.fire({
-                    title: "Error!",
-                    text: "Please select at least one SO item.",
-                    icon: "error",
-                });
-
-                return false;
-            }
-
-            setHiddenInput("ps_item_ids", ids);
-
-            let itemIds = [];
-            let selectedItems = [];
-
-            $("#psModal .ps_item_checkbox:checked").each(function() {
-                const itemId = Number($(this).data("item-id"));
-                itemIds.push(itemId);
-                selectedItems.push({
-                    item_id: itemId
-                });
-            });
-
-            setHiddenInput("item_ids", itemIds);
-            setHiddenInput("pull_item_type", 'pslip');
-
-            const storeId = $("#store_id").val() || "";
-            const subStoreId = $("#sub_store_id").val() || "";
-            const currentRowCount = $("#productionSlipsTable .mrntableselectexcel tr").length;
-            const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
-
-            const actionUrl = `{{ route('scrap.process.item') }}?` +
-                `type=pslip&ids=${encodeURIComponent(JSON.stringify(ids))}` +
-                `&selected_items=${selectedItemsParam}` +
-                `&store_id=${storeId}&sub_store_id=${subStoreId}&current_row_count=${currentRowCount}`;
-
-            fetch(actionUrl)
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.status === 200) {
-                        $("#uidTh").hide();
-                        $("#psModal").modal("hide");
-                        $("#productionSlipsTable .mrntableselectexcel")
-                            .empty()
-                            .append(data.data.pos);
-
-                        setTimeout(() => {
-                            $("#productionSlipsTable .mrntableselectexcel tr").each(
-                                function(index) {
-                                    let currentIndex = index + 1;
-                                    setAttributesUIHelper(currentIndex, "#productionSlipsTable");
-                                }
-                            );
-                        }, 100);
-
-                        $('a[href="#productionSlip"]').tab("show");
-                        const $lastRow = $("#productionSlipsTable .mrntableselectexcel tr").last();
-                        if ($lastRow.length) {
-                            $lastRow.attr("tabindex", "-1").focus();
-                        }
-
-                    } else {
-                        setHiddenInput("ps_item_ids", "");
-                        setHiddenInput("item_ids", "");
-                        setHiddenInput("pull_item_type", "");
-
-                        Swal.fire({
-                            title: "Error!",
-                            text: data.message,
-                            icon: "error",
-                        });
-                    }
-                })
-                .catch((e) => {
-                    setHiddenInput("ps_item_ids", "");
-                    setHiddenInput("item_ids", "");
-                    setHiddenInput("pull_item_type", "");
-
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Something went wrong while processing the request.",
-                        icon: "error",
-                    });
-                });
         });
 
         $(document).on('click', '#backBtn', (e) => {
@@ -714,12 +502,38 @@
             }, 0);
         });
 
+        $(document).on("click", ".psSelect", function() {
+            const selector = "#psModal .ps-order-detail";
+            $("#psModal").modal("show");
+
+            if ($.fn.DataTable.isDataTable(selector)) {
+                psTable = psTable || $(selector).DataTable();
+                psTable.ajax.reload(null, false);
+            } else {
+                getPslipItems();
+            }
+
+            $(".select2").each(function() {
+                const $el = $(this);
+                if ($el.data("select2")) $el.select2("destroy");
+                $el.select2({
+                    dropdownParent: $("#psModal")
+                });
+            });
+        });
+
+        $("#psModal").on("shown.bs.modal", function() {
+            $.fn.dataTable.tables({
+                visible: true,
+                api: true
+            }).columns.adjust();
+        });
+
         /* Common Item Detail Fetcher */
         $(document).on('input change focus', 'table[class$="ItemsTable"] tr input', (e) => {
             let currentTr = e.target.closest('tr');
             let $row = $(currentTr);
-            let tab = $row.closest(".tab-pane").attr(
-                "id"); // find which tab (scavenging, repairOrder, productionSlip)
+            let tab = $row.closest(".tab-pane").attr("id");
             let itemId = $row.find("[name*='[item_id]']").val();
             let remark = $row.find("[name*='remark']").val() || '';
             let uomId = $row.find("[name*='[uom_id]']").val() || '';
@@ -759,16 +573,16 @@
             $("#book_id_qt_val").val('');
             $("#document_no_input_qt").val('');
             $("#document_id_qt_val").val('');
-            getProductionSlips();
+            getPslipItems();
         });
 
         /*searchPiBtn*/
         $(document).on('click', '.searchPiBtn', (e) => {
-            getProductionSlips();
+            getPslipItems();
         });
 
         $(document).on('keyup', '#item_name_search', (e) => {
-            getProductionSlips();
+            getPslipItems();
         });
 
         $(document).on('change', '#attributeCheck', (e) => {
@@ -777,7 +591,7 @@
             } else {
                 $("#show_attribute").val(0);
             }
-            getProductionSlips();
+            getPslipItems();
         });
 
         /*Checkbox for pi item list*/

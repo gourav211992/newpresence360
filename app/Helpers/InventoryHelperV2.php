@@ -358,6 +358,7 @@ class InventoryHelperV2
             ->get();
 
         $stockQty = 0;
+        $isIssueStockDelete = 0;
         if ($utilizedStockLedger->isNotEmpty()) {
             foreach ($utilizedStockLedger as $val) {
                 // $normalizedAttributes = self::normalizeJsonAttributes($val->item_attributes);
@@ -399,10 +400,13 @@ class InventoryHelperV2
                 $val->utilized_date = null;
                 $val->save();
             }
+            $isIssueStockDelete = 1;
         }
-
-        if (!$utilizedStockLedger) {
-            $issueStock->attributes->delete();
+      
+        if ($isIssueStockDelete) {
+            if(count($issueStock->attributes) > 0){
+                $issueStock?->attributes?->delete();
+            }
             $issueStock->delete();
         }
         return true;

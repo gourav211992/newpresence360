@@ -13,7 +13,7 @@ Route::middleware(['user.auth'])->group(function () {
     // Report for Production Tracking
     Route::prefix('production-tracking')->group(function(){
         
-        Route::get('', [ProductionReportController::class, 'productionTrackingReport'])->name('productionTracking.report');
+        Route::get('/', [ProductionReportController::class, 'productionTrackingReport'])->name('productionTracking.report');
         Route::get('/details/{id}', [ProductionReportController::class, 'productionTrackingDetails'])->name('productionTracking.details');
         Route::get('/download', [ProductionReportController::class, 'downloadProductionTrackingWithOutfile'])->name('productionTracking.download');
     });

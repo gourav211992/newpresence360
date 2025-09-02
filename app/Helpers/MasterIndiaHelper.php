@@ -41,6 +41,7 @@ use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Models\ErpEinvoice;
 use App\Models\ErpEInvoiceConfiguration;
+use App\Models\ErpEinvoiceHistory;
 use Illuminate\Http\Request;
 use App\Services\EInvoiceService;
 use App\Services\MasterIndiaService;
@@ -51,6 +52,7 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Exception;
 use Illuminate\Support\Facades\Storage;
 
 class MasterIndiaHelper
@@ -131,7 +133,7 @@ class MasterIndiaHelper
 
     private static function prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials, $user)
     {
-        $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails, $user);
+        $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails, $user, $authToken);
         $invoiceData = [
             "access_token" => $authToken,
             "user_gstin" => $authCredentials['gstin'],
@@ -153,16 +155,50 @@ class MasterIndiaHelper
         return $invoiceData;
     }
 
-    public function cancelInvoice(Request $request)
-    {
-        $cancelData = $request->all();
+    // public function cancelInvoice(Request $request)
+    // {
+    //     $cancelData = $request->all();
 
-        $authCredentials = self::getAuthCredentials();
-        $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+    //     // $authCredentials = self::getAuthCredentials();
+    //     $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+    //     $eInvoiceService = new MasterIndiaService($requestUid);
+    //     try {
+    //         $response = $eInvoiceService->cancelInvoice($cancelData);
+    //         return response()->json($response);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+
+    public static function cancelEInvoice($cancelData)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::find($user -> organization_id);
+        $configurations = ErpEInvoiceConfiguration::where('group_id', $organization ?-> group_id)
+            -> where('gst_number', $organization ?-> gst_number) -> first();
+        $authToken = $configurations ?-> client_access_token ?? null;
+        $cancelData = [
+            "access_token" => $authToken,
+            "user_gstin" => $cancelData['user_gstin'],
+            "irn" => $cancelData['irn'],
+            "cancel_reason" => $cancelData['cancel_reason'],
+            "cancel_remarks" => $cancelData['cancel_remarks'],
+        ];
+        $requestUid = 'GOV-EINVOICE-' . now()->format('dmyHis');
+        $masterIndiaService = new MasterIndiaService($requestUid);
         try {
-            $response = $eInvoiceService->cancelInvoice($cancelData);
-            return response()->json($response);
+            $response = $masterIndiaService->cancelInvoice($cancelData);
+            if(isset($response['results']['status']) && $response['results']['status'] != 'Success'){
+                return [
+                    'status'  => 'error',
+                    'message' => !empty($response['results']['message'])
+                        ? $response['results']['message']
+                        : ($response['results']['errorMessage'] ?? 'Unknown error'),
+                ];
+            }
+            else{
+                return $response;
+            }
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -450,7 +486,7 @@ class MasterIndiaHelper
         return $authCredentials;
     }
 
-    private static function getInvoiceDetail($documentHeader, $documentDetails, $user)
+    private static function getInvoiceDetail($documentHeader, $documentDetails, $user, $authToken)
     {
         $itemList = array();
         $result = array();
@@ -478,6 +514,12 @@ class MasterIndiaHelper
         $sellerStateCode = self::getStateCode($organizationAddress->state_id);
         $buyerStateCode = self::getStateCode($sellerBillingAddress->state_id);
 
+        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+        $eInvoiceService = new MasterIndiaService($requestUid);
+        $fromPincode = $organizationAddress->pincode;
+        $toPincode = $sellerBillingAddress->pincode;
+        $distance = $eInvoiceService->getDistance($fromPincode, $toPincode, $authToken);
+
         $tranDetails = (object) [
             "supply_type" => $documentHeader->gst_invoice_type,
             "charge_type" => "N",
@@ -495,12 +537,9 @@ class MasterIndiaHelper
             "gstin" => $organization?->gst_number,
             "legal_name" => $organization->name,
             "trade_name" => null,
-            // "address1" => $organizationAddress->line_1,
             "address1" => substr($organizationAddress?->address ?? '', 0, 90),
-            // "address2" => $organizationAddress->line_2,
             "address2" => null,
             "location" => $organizationAddress?->city?->name,
-            // "pincode" => $organizationAddress->postal_code,
             "pincode" => $organizationAddress->pincode,
             "state_code" => $sellerStateCode->name,
             "phone_number" => $organizationAddress->phone,
@@ -523,18 +562,14 @@ class MasterIndiaHelper
 
         $dispatchDetails = (object) [
             "company_name" => $documentHeader?->erpStore?->store_name,
-            // "address1" => $organizationAddress->line_1,
             "address1" => substr($organizationAddress?->address ?? '', 0, 90),
-            // "address2" => $organizationAddress->line_2,
             "address2" => null,
             "location" => $organizationAddress?->city?->name,
-            // "pincode" => $organizationAddress->postal_code,
             "pincode" => $organizationAddress->pincode,
             "state_code" => $sellerStateCode->name,
         ];
 
         $shipDetails = (object) [
-            // "gstin" => "05AAAPG7885R002",
             "gstin" => $documentHeader?->vendor->compliances->gstin_no,
             "legal_name" => $documentHeader?->vendor?->company_name,
             "trade_name" => null,
@@ -665,7 +700,7 @@ class MasterIndiaHelper
             "transporter_id" => "",
             "transporter_name" => $documentHeader->transportation_name,
             "transportation_mode" => $documentHeader->transportation_mode,
-            "transportation_distance" => 100,
+            'transportation_distance' => isset($distance['distance']) ? $distance['distance'] : 0,
             "transporter_document_number" => "12345",
             "transporter_document_date" => now()->format('d/m/Y'),
             "vehicle_number" => $documentHeader->vehicle_no,
@@ -827,6 +862,7 @@ class MasterIndiaHelper
                 'remarks' => $generateInvoice['results']['message']['Remarks'],
                 'type' => 'IRN'
             ]);
+            self::generateEinvoiceHistoryLog($documentHeader->irnDetail());
             return $generateInvoice;
         }
     }
@@ -923,21 +959,24 @@ class MasterIndiaHelper
             -> where('gst_number', $organization ?-> gst_number) -> first();
         $authToken = $configurations ?-> client_access_token ?? null;
         $documentHeader = $document;
-        $distance = 100;
-        $requestData = self::generateHeader($documentHeader, $authToken, $distance, $user);
+        $requestData = self::generateHeader($documentHeader, $authToken, $user);
         return $requestData;
 
     }
 
-    public static function generateHeader($documentHeader, $authToken, $distance, $user)
+    public static function generateHeader($documentHeader, $authToken, $user)
 	{
         $documentDetails = $documentHeader -> items;
-        $data = self::getInvoiceDetail($documentHeader, $documentDetails, $user);
+        $data = self::getInvoiceDetail($documentHeader, $documentDetails, $user, $authToken);
         $itemData = [];
         foreach ($data['itemList'] as $key2 => $item) {
             $itemData = self::generateItems($item);
         }
-
+        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+        $eInvoiceService = new MasterIndiaService($requestUid);
+        $fromPincode = $data['sellerDetails']->pincode;
+        $toPincode = $data['buyerDetails']->pincode;
+        $distance = $eInvoiceService->getDistance($fromPincode, $toPincode, $authToken);
 		return [
             'itemList' => $itemData,
 			'access_token' => $authToken,
@@ -984,7 +1023,7 @@ class MasterIndiaHelper
 			'transporter_document_number' => $data['ewbDtls']->transporter_document_number,
 			'transporter_document_date' => $data['ewbDtls']->transporter_document_date,
 			'transportation_mode' => $data['ewbDtls']->transportation_mode,
-			'transportation_distance' => $distance,
+			'transportation_distance' => isset($distance['distance']) ? $distance['distance'] : 0,
 			'vehicle_number' => $data['ewbDtls']->vehicle_number,
 			'vehicle_type' => $data['ewbDtls']->vehicle_type,
 			'generate_status' => 1,
@@ -1040,4 +1079,28 @@ class MasterIndiaHelper
         }
     }
 
+    public static function generateEinvoiceHistoryLog($documentHeader)
+    {
+        $data = [];
+        try {
+            $historyLog = new ErpEinvoiceHistory();
+            $historyLog->source_id = $documentHeader->id;
+            foreach ($documentHeader as $key => $value) {
+                if (property_exists($historyLog, $key)) {
+                    $historyLog->$key = $value;
+                }
+                $historyLog->save();
+            }
+            $data = [
+                'status' => 200,
+                'message' => 'Invoice History Data Inserted Successfully.'
+            ];
+        } catch (Exception $e) {
+            $data = [
+                'status' => 204,
+                'message' => $e->getMessage()
+            ];
+        }
+        return $data;
+    }
 }

@@ -273,8 +273,8 @@ class InventoryHelper
             }
         }
 
-        $stockLedgers = $stockLedgerIdQuery->where('document_status', ['approved', 'posted', 'approval_not_required'])
-            -> selectRaw('SUM(receipt_qty - reserved_qty) as qty, id') -> get();
+        $stockLedgers = $stockLedgerIdQuery->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
+            ->select(DB::raw('receipt_qty - reserved_qty AS qty'), 'id') -> get();
 
         $rate = $stockLedger->pluck('cost_per_unit')->first();
         $pendingStockAltUom = $pendingStocks;
@@ -1282,7 +1282,6 @@ class InventoryHelper
     {
         try{
             $invoiceLedger = $invoiceLedger['invoiceLedger'] ?? null; // as discussed with brijesh
-            // $user = Helper::getAuthenticatedUser();
             $inventoryUomQty = $documentItemLocation->mi_inventory_uom_qty ?? $documentItemLocation->inventory_uom_qty;
             $balanceQty = 0;
             $extraQty = 0;
@@ -1353,7 +1352,6 @@ class InventoryHelper
                 if ($approvedStockLedger->isNotEmpty()) {
                     $availableQty = $approvedStockLedger->sum('receipt_qty');
                     $requestedQty = $invoiceLedger -> issue_qty;
-
                     if ($availableQty < (float)$requestedQty) {
 
                         $altUomAvlQty = ItemHelper::convertToAltUom($invoiceLedger -> item_id, $documentItemLocation ?-> uom_id ?? 0, (float) $availableQty);
@@ -1413,7 +1411,6 @@ class InventoryHelper
                                 $stockLedger->utilized_date = $invoiceLedger->created_at->format('Y-m-d');
                                 $stockLedger->save();
                             }
-
                             $stockLedger->total_cost = round(($stockLedger->cost_per_unit*$stockLedger->receipt_qty), 2);
                             $stockLedger->save();
                             self::updateStockCost($stockLedger);
@@ -2677,7 +2674,6 @@ class InventoryHelper
                 }
                 $utilizedQty = 0;
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
-
                 if($invoiceLedger['status'] == 'error'){
                     return $invoiceLedger;
                 }
@@ -2958,18 +2954,18 @@ class InventoryHelper
             foreach ($documentItemLocations as $documentItemLocation) {
                 $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
                     ->where('document_header_id',$documentHeaderId)
-                    ->where('document_detail_id',$documentDetailId)
+                    ->where('document_detail_id',$documentItemLocation -> mi_item_id)
                     ->where('book_type','=',$bookType)
                     ->where('transaction_type','=',$transactionType)
                     // ->where('document_status','draft')
                     ->whereNotNull('utilized_id')
                     ->sum('receipt_qty');
                 if($documentItemLocation->inventory_uom_qty > $utilizedQty){
-                    $stockLedger = new StockLedger();
+                    // $stockLedger = new StockLedger();
                     // $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
                     $issueStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                         ->where('document_header_id',$documentHeaderId)
-                        ->where('document_detail_id',$documentDetailId)
+                        ->where('document_detail_id',$documentItemLocation -> mi_item_id)
                         ->where('book_type','=',$bookType)
                         ->where('transaction_type','=','issue')
                         ->first();
@@ -3175,7 +3171,6 @@ class InventoryHelper
     // Update document status while update mrn
     private static function updateStockCost($stockLedger)
     {
-        $user = Helper::getAuthenticatedUser();
         //costing exchange rate currency
         $orgnizationCurrencyCostPerUnit = $stockLedger->cost_per_unit*$stockLedger->org_currency_exg_rate;
         $orgnizationCurrencyCost = $stockLedger->total_cost*$stockLedger->org_currency_exg_rate;

@@ -324,6 +324,7 @@ class ErpProductionSlipController extends Controller
 
     public function store(PslipRequest $request)
     {
+    
         $consuptions = $request->cons;
         $productionSlipId = isset($request->id) ? $request->id : null;
         if(!$productionSlipId && !$consuptions)
@@ -503,56 +504,16 @@ class ErpProductionSlipController extends Controller
                 // ---------------------------------------------------------------
                 // If no items remain in production slip, reset slip properties
                 // ---------------------------------------------------------------
-                if ($productionSlip->fresh()->items->isEmpty()) {
-                    $productionSlip->update([
-                        'mo_id'          => null,
-                        'is_last_station'=> 0,
-                        'station_id'     => null,
-                        'fg_sub_store_id'=> null,
-                        'rg_sub_store_id'=> null,
-                    ]);
-                }
-
-
-                // // Handle Delete Items and Manage Stocks
-
-                // $deletedData = [];
-                // $keys = ['deletedSiItemIds', 'deletedAttachmentIds', 'deletedConsItemIds'];
-
-                // foreach ($keys as $key) {
-                //     $deletedData[$key] = json_decode($request->input($key, '[]'), true);
+                // if ($productionSlip->fresh()->items->isEmpty()) {
+                //     $productionSlip->update([
+                //         'mo_id'          => null,
+                //         'is_last_station'=> 0,
+                //         'station_id'     => null,
+                //         'fg_sub_store_id'=> null,
+                //         'rg_sub_store_id'=> null,
+                //     ]);
                 // }
 
-                // $pslipDeleteService = new PslipDeleteService();
-                // // Delete Production Items
-                // $deleteProductionItems = $pslipDeleteService->deleteProductionItems($deletedData, $productionSlip);
-                // if($deleteProductionItems['status'] === 'error') {
-                //     \DB::rollBack();
-                //     return response()->json([
-                //         'message' => $deleteProductionItems['message'],
-                //         'error' => ''
-                //     ], 422);
-                // }
-
-                // // Delete Consumption Items
-                // $deleteConsumptionItems = $pslipDeleteService->deleteConsumptionItems($deletedData, $productionSlip);
-                // if($deleteConsumptionItems['status'] === 'error') {
-                //     \DB::rollBack();
-                //     return response()->json([
-                //         'message' => $deleteConsumptionItems['message'],
-                //         'error' => ''
-                //     ], 422);
-                // }
-
-                // //Remove deleted items from production slip
-                // if(!$productionSlip->fresh()->items->count()) {
-                //     $productionSlip->mo_id = null;
-                //     $productionSlip->is_last_station = 0;
-                //     $productionSlip->station_id = null;
-                //     $productionSlip->fg_sub_store_id = null;
-                //     $productionSlip->rg_sub_store_id = null;
-                //     $productionSlip->save();
-                // }
 
             } else { //Create
                 $productionSlip = ErpProductionSlip::create([
@@ -1065,56 +1026,21 @@ class ErpProductionSlipController extends Controller
 
                 // Issue Raw Materials
                 if ($productionSlip->fresh()->items->count()) {
+                    // Maintain stock ledger once (no need to call it in a loop)
+                    $maintainStockLedger = self::maintainStockLedger($productionSlip);
 
-                    // Check if there are any consumptions with qty > 0
-                    $hasValidConsumption = $productionSlip->consumptions
-                        ->where('consumption_qty', '>', 0)
-                        ->isNotEmpty();
-
-                    if ($hasValidConsumption) {
-                        // Maintain stock ledger once (no need to call it in a loop)
-                        $maintainStockLedger = self::maintainStockLedger($productionSlip);
-
-                        if ($maintainStockLedger['status'] === 'error') {
-                            DB::rollBack();
-                            return response()->json([
-                                'message' => $maintainStockLedger['message'],
-                                'error'   => 'ERR_maintainStockLedger'
-                            ], 422);
-                        }
+                    if ($maintainStockLedger['status'] === 'error') {
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => $maintainStockLedger['message'],
+                            'error'   => 'ERR_maintainStockLedger'
+                        ], 422);
                     }
 
                     // Assign inherited Lot Numbers to items in $productionSlip
                     // Returns ['status' => bool, 'message' => string]
                     self::assignInheritedLotNumber($productionSlip);
                 }
-
-                // # Issue Raws Materials
-                // if($productionSlip->fresh()->items->count()) {
-
-                //     if($productionSlip->consumptions->count()) {
-                //         foreach($productionSlip->consumptions as $consumption)
-                //         {
-                //             if($consumption->consumption_qty >0) {
-                //                 $maintainStockLedger = self::maintainStockLedger($productionSlip);
-                //                 if($maintainStockLedger['status'] == 'error') {
-                //                     DB::rollBack();
-                //                     return response()->json([
-                //                         'message' => $maintainStockLedger['message'],
-                //                         'error' => ''
-                //                     ], 422);
-                //                 }
-
-                //             }
-
-                //         }
-                //     }
-
-                //     // Call static method to assign inherited Lot Numbers to items in $productionSlip.
-                //     // Returns ['status' => bool, 'message' => string]
-                //     self::assignInheritedLotNumber($productionSlip);
-
-                // }
 
                 # Update rate in  Pslip Item & insert in Pslip Item Location
                 $moProdItems = ErpPslipItem::where('pslip_id', $productionSlip->id)->get();
@@ -1391,12 +1317,23 @@ class ErpProductionSlipController extends Controller
     private static function maintainStockLedger(ErpProductionSlip $pslip)
     {
         $pslipStatus = $pslip->document_status;
-        // $user = Helper::getAuthenticatedUser();
-        $detailIds = $pslip->fresh()->consumptions->pluck('id')->toArray();
+        $detailIds = $pslip->fresh()->consumptions
+            ->where('consumption_qty', '>', 0)
+            ->pluck('id')->toArray();
+
+        if(!count($detailIds)) {
+            return [
+                'status' => 'success',
+                'message' => 'Success as per consumption qty 0'
+            ];
+        }
+
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($pslip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $pslipStatus, 'issue');
+
         // if(isset($issueRecords['message']) && $issueRecords['message'] != 'Success') {
         //     return $issueRecords['message'];
         // }
+
         if(!empty($issueRecords['data'])){
             foreach($issueRecords['data'] as $key => $val){
 

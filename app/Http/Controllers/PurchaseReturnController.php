@@ -814,7 +814,7 @@ class PurchaseReturnController extends Controller
                 $fy = Helper::getFinancialYear($pb -> document_date);
                 $fyYear = ErpFinancialYear::find($fy['id']);
                 if ((int)$revisionNumber > 0) {
-                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id) 
+                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id)
                         -> where('revision_number', $pb -> revision_number - 1) -> first();
                     if ($oldMrn) {
                         MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear, $oldMrn);
@@ -1536,7 +1536,7 @@ class PurchaseReturnController extends Controller
                 $fy = Helper::getFinancialYear($pb -> document_date);
                 $fyYear = ErpFinancialYear::find($fy['id']);
                 if ((int)$revisionNumber > 0) {
-                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id) 
+                    $oldMrn = PRHeaderHistory::where('header_id', $pb -> id)
                         -> where('revision_number', $pb -> revision_number - 1) -> first();
                     if ($oldMrn) {
                         MrnModuleHelper::buildVendorPurchaseReturnSummary($pb, $fyYear, $oldMrn);
@@ -2698,8 +2698,6 @@ class PurchaseReturnController extends Controller
         $detailsIds = $request->details_ids ?? '';
         $headerId = $request->header_id ?? '';
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-
-        $subStoreId = $request->sub_store_id ?? null;
         // if($qtyTypeRequired == 'rejected'){
         //     $subStoreId = $request->rejected_sub_store_id ?? null;
         // } else{
@@ -3081,6 +3079,47 @@ class PurchaseReturnController extends Controller
         }
     }
 
+    // Cancel EInvoice
+    public function cancelEInvoice(Request $request)
+    {
+        try{
+            $user = Helper::getAuthenticatedUser();
+            $organization = Organization::find($user->organization_id);
+            $eInvoiceData = ErpEinvoice::find($request->eInvoice_id)->first();
+            $cancelData = [
+                "user_gstin" => $organization->gst_number,
+                "irn" => $eInvoiceData->irn_number,
+                "cancel_reason" => "2",
+                "cancel_remarks" => "WRONG ENTRY",
+            ];
+            $data = MasterIndiaHelper::cancelEInvoice($cancelData);
+            if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
+                return response()->json([
+                    'status' => 'error',
+                    'error' => 'error',
+                    'message' => $data['message'],
+                ], 500);
+            } else{
+                $existingData = ErpEinvoice::where('irn_number', $eInvoiceData->irn_number)->first();
+                $existingData->cancel_date = date('Y-m-d H:i:s', strtotime($data['results']['CancelDate']));
+                $existingData->status = ConstantHelper::CANCELLED;
+                $existingData->save();
+                MasterIndiaHelper::generateEinvoiceHistoryLog($existingData);
+                return response() -> json([
+                    'status' => 'success',
+                    'results' => $data,
+                    'message' => 'E-Invoice generated succesfully',
+                ]);
+            }
+
+        } catch(\Exception $ex) {
+            return response() -> json([
+                'status' => 'error',
+                'message' => $ex -> getMessage(),
+            ]);
+        }
+    }
+
     public function generateEwayBill(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
@@ -3110,6 +3149,7 @@ class PurchaseReturnController extends Controller
                     'status' => $data['results']['status'],
                     'type' => 'Direct Eway Bill'
                 ]);
+                MasterIndiaHelper::generateEinvoiceHistoryLog($documentHeader->irnDetail());
                 return response() -> json([
                     'status' => 'success',
                     'results' => $data,
