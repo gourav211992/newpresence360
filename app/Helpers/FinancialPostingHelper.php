@@ -256,6 +256,7 @@ class FinancialPostingHelper
             }
         }
         $serviceAlias = $service->alias;
+        
         if ($type === "view") {
             if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS || $serviceAlias === ConstantHelper::RECEIPTS_SERVICE_ALIAS)
                 return self::getPaymentDocumentPostedVouchers($documentId, $service->alias);
@@ -408,8 +409,11 @@ class FinancialPostingHelper
             }
         } 
         else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+            
             $pay = self::paymentInvoiceVoucherDetails($documentId, '');
+           
             $entries = self::contraVoucherDetails($documentId, '');
+           
             $env = [];
             if (!empty($entries)) {
                 $env[] = $pay;
@@ -7969,11 +7973,15 @@ class FinancialPostingHelper
 
         $ledgerErrorStatus = null;
         $vouchersArray = [];
-        foreach ($vendors as $vendor) {
+       
+        foreach ($vendors as $key => $vendor) {
+           
             $partyOrg = $vendor->voucher->organization;
             
-            if ($partyOrg->id != $organization->id) {
+            if ($partyOrg->id != $organization->id) 
+            {
                 $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
+               
                 if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)
                     return array(
                         'status' => false,
@@ -7988,19 +7996,32 @@ class FinancialPostingHelper
                         'message' => $otherOrgPosting['message'],
                         'data' => []
                     );
-                if (!empty($vouchersArray[$organization->id]))
-                    $vouchersArray[$organization->id] = array_merge($vouchersArray[$organization->id], $sameOrgPosting);
-                else
-                    $vouchersArray[$organization->id] = $sameOrgPosting;
+                    
+               
+               if (!isset($vouchersArray[$organization->id])) {
+                    $vouchersArray[$organization->id] = []; // initialize blank if not set
+                }
 
+                foreach ($sameOrgPosting as $keyName => $entries) {
+                    $vouchersArray[$organization->id][$keyName] = array_merge(
+                        $vouchersArray[$organization->id][$keyName] ?? [],
+                        $entries
+                    );
+                }
 
-                if (!empty($vouchersArray[$partyOrg->id]))
-                    $vouchersArray[$partyOrg->id] = array_merge($vouchersArray[$partyOrg->id], $otherOrgPosting);
-                else
-                    $vouchersArray[$partyOrg->id] = $otherOrgPosting;
+               $vouchersArray[$partyOrg->id] = array_merge($vouchersArray[$partyOrg->id] ?? [], (array)$otherOrgPosting);
+                
+                if ($key == 2) {
 
+                
+            }  
+                
             }
+            
         }
+
+       
+       
         //Check if All Legders exists and posting is properly set
         if ($ledgerErrorStatus) {
             return array(
@@ -8011,7 +8032,7 @@ class FinancialPostingHelper
         }
         if (empty($vouchersArray))
             return [];
-
+       
         foreach ($vouchersArray as $orgID => $postingArray) {
             $totalCreditAmount = 0;
             $totalDebitAmount = 0;
@@ -8086,7 +8107,7 @@ class FinancialPostingHelper
                 'approvalLevel' => $document->approval_level,
                 'remarks' => $remarks,
             ];
-
+           
             $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
 
             $vouchers[$orgID][] = array(

@@ -1194,7 +1194,7 @@ $(document).on('click', '#deleteSelected', function (e) {
 </script>
 
 <script>
-    $(document).on('change', '#no_of_bundles', function () {
+    $(document).on('input', '#no_of_bundles', function () {
     var perbundle = parseFloat($("#per_bundles").val()) || 0;
     var nobundle = parseFloat($("#no_bundles").val()) || 0;
     var changenobundle = parseFloat($(this).val()) || 0;
@@ -1527,11 +1527,11 @@ $('.vehicle-number-autocomplete').each(function () {
 
   // Make it globally accessible
 
- function fetchFreightCharge() {
-    const sourceId = $('input[name="source_id"]').val();
-    const destinationId = $('input[name="destination_id"]').val();
-    const vehicleId = $('input[name="vehicle_number_id"]').val();
-    const customerId = $('input[name="customer_id"]').val();
+ function fetchFreightCharge(sourceId,destId,vehicleId,custId) {
+        sourceId    = sourceId   || $('input[name="source_id"]').val();
+        const destinationId      = destId     || $('input[name="destination_id"]').val();
+        vehicleId = vehicleId  || $('input[name="vehicle_number_id"]').val();
+        const customerId      = custId     || $('input[name="customer_id"]').val();
     const formStatus = $('input[name="document_status"]').val();
     
 
@@ -1576,6 +1576,9 @@ $('.vehicle-number-autocomplete').each(function () {
             // $('#distanceInput').val('');
             // $('#freight_charges').val('');
             // $('#freightCharges').val('');
+            $('#distance').val('').prop('disabled', false);
+                $('#freight_charges').val('').prop('disabled', false);
+                $('#distanceInput').val('');
 
             if (formStatus !== 'submitted' && formStatus !== 'approved') {
                 $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', false);
@@ -1588,13 +1591,28 @@ $('.vehicle-number-autocomplete').each(function () {
 let oldSource = $('input[name="source_name"]').val();
 let oldDestination = $('input[name="destination_name"]').val();
 
-$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]').on('blur', function () {
+$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]')
+    .on('autocompleteselect', function (event, ui) {
     
-    let newSource = $('input[name="source_name"]').val();
-        let newDestination = $('input[name="destination_name"]').val();
+        const type = $(this).attr("name");
 
-        // अगर source या destination बदली है तो tbody reset कर दो
-        if (oldSource !== newSource || oldDestination !== newDestination) {
+        let sourceId = $('input[name="source_id"]').val();
+        let destId   = $('input[name="destination_id"]').val();
+        let vehicleId= $('input[name="vehicle_number_id"]').val();
+        let custId   = $('input[name="customer_id"]').val();
+        console.log(type, ui);
+        // Agar current field source/dest/vehicle/customer hai to ui.item.id ka use karo
+        if (type === "source_name") sourceId = ui.item.id;
+        if (type === "destination_name") destId = ui.item.id;
+        if (type === "vehicle_number") vehicleId = ui.item.id;
+        if (type === "customer_name") custId = ui.item.id;
+
+        console.log('sourceId:', sourceId);
+        console.log('destId:', destId);
+        console.log('vehicleId:', vehicleId);
+        console.log('custId:', custId);
+
+        if (oldSource !== sourceId || oldDestination !== destId) {
             
             let defaultRow = `
                 <tr>
@@ -1626,22 +1644,12 @@ $('input[name="source_name"], input[name="destination_name"], input[name="vehicl
             $("#item-table-body").html(defaultRow);
 
             // पुरानी values update कर दो
-            oldSource = newSource;
-            oldDestination = newDestination;
+            oldSource = sourceId;
+            oldDestination = destId;
         }
 
-    const sourceId = $('input[name="source_id"]').val();
-    const destId = $('input[name="destination_id"]').val();
-    const vehicleId = $('input[name="vehicle_number_id"]').val();
-    const custId = $('input[name="customer_id"]').val();
-
-    console.log('sourceId:', sourceId);
-    console.log('destId:', destId);
-    console.log('vehicleId:', vehicleId);
-    console.log('custId:', custId);
-
-    if (sourceId && destId && vehicleId && custId) {
-        fetchFreightCharge();
+    if (sourceId && destId && vehicleId) {
+            fetchFreightCharge(sourceId,destId,vehicleId,custId);
     }
 });
 

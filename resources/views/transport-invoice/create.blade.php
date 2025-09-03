@@ -2521,7 +2521,7 @@ function processOrder(type = "lr") {
                 getItemTax(currentOrderIndexVal);
                 setAttributesUI(currentOrderIndexVal);
                 currentOrderIndexVal += 1;
-}, 1500);
+            }, 1500);
                
               });
             }
@@ -2594,6 +2594,7 @@ function processOrder(type = "lr") {
           }
         }
         reEnableSelectedPullType(openPullType);
+        onItemClick(0);
       },
       error: function(xhr) {
         console.error("Error fetching customer data:", xhr.responseText);

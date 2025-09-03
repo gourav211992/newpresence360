@@ -1728,7 +1728,14 @@ function onItemClick(itemRowId)
                     document.getElementById('current_item_cat_hsn').innerHTML = html;
 
                    
+                    let node = document.getElementById("current_item_inventory_details").nextElementSibling;
+                    while (node && node.id !== "current_item_specs_row") {
+                        const next = node.nextElementSibling;
+                        node.remove();
+                        node = next;
+                    }
                     document.getElementById('current_item_inventory_details').insertAdjacentHTML("afterend", lrs);
+
                     document.getElementById('current_item_stocks_row').style.display = "none";
                     document.getElementById('current_item_lot_no_row').style.display = "none";
 

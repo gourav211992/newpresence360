@@ -1151,22 +1151,19 @@ class TransporterInvoiceController extends Controller
                     $saleInvoice->save();
                 } else {
                     if ($request->document_status == ConstantHelper::SUBMITTED) {
+                        $bookId = $saleInvoice->book_id;
+                        $docId = $saleInvoice->id;
+                        $remarks = $saleInvoice->remarks;
+                        $attachments = $request->file('attachment');
+                        $currentLevel = $saleInvoice->approval_level;
                         $revisionNumber = $saleInvoice->revision_number ?? 0;
-                        $actionType = 'submit';
+                        $actionType = 'submit'; // Approve // reject // submit
+                        $modelName = get_class($saleInvoice);
                         $totalValue = $saleInvoice->total_amount ?? 0;
-                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                        if ($approveDocument['message']) {
-                            DB::rollBack();
-                            return response()->json([
-                                'message' => $approveDocument['message'],
-                                'error' => "",
-                            ], 422);
-                        }
-                        $document_status = $approveDocument['approvalStatus'] ?? $saleInvoice->document_status;
-                        $saleInvoice->document_status = $document_status;
-                    } else {
-                        $saleInvoice->document_status = $request->document_status ?? ConstantHelper::DRAFT;
-                    }
+                        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                        $saleInvoice->document_status = $approveDocument['approvalStatus'] ?? $saleInvoice->document_status;
+                    } 
+                    $saleInvoice -> save();
                 }
             } else { //Create condition
                 if ($request->document_status == ConstantHelper::SUBMITTED) {
@@ -1933,11 +1930,12 @@ class TransporterInvoiceController extends Controller
                         }
                     }
                     $finalHeaders = $headers->map(function ($header) use ($freightCharges, $locationAmountTotal, $totalFreightWithLocation) {
+                       
                         return [
                             'lr_id' => $header->id,
                             'source'=>$header->source,
                             'destination'=>$header->destination,
-                            'points'=>$header->locations->count(),
+                            'points'=> $header->locations->count() == 1 ? 0 : $header->locations->count(),
                             'articles'=>$header->locations->sum('no_of_articles') + $header->no_of_bundles,
                             'weight'=>$header->locations->sum('weight') + $header->weight, 
                             'freight_charges' => $header->freightCharges,

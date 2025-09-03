@@ -649,7 +649,7 @@ class="ajax-input-form sales_module_form transport_invoice"
 
                                                 {{-- Points --}}
                                                 <td>
-                                                    <input type="text" readonly name="points[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->count() ?? 0 }}">
+                                                    <input type="text" readonly name="points[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->locations->count() == 1 ? 0 : $item->lorry->locations->count()   }}">
                                                 </td>
                                                 <td>
                                                     <input type="text" readonly name="point_charge[{{ $index }}]" class="form-control mw-100" value="{{ $item->lorry->sub_total ?? '' }}">
