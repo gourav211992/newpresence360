@@ -121,7 +121,7 @@ $(document).on("click", ".itemRemarkSubmit", (e) => {
     ).find("[name*='remark']");
     let textValue = $("#itemRemarkModal").find("textarea").val();
     if (!remarkValue.length) {
-        rowHidden = `<input type="hidden" value="${textValue}" name="scavenging[${rowCount}][remark]" />`;
+        rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
         $("#scavengingItemsTable #scavengingItemsTr_" + rowCount)
             .find(".addRemarkBtn")
             .after(rowHidden);
@@ -135,8 +135,9 @@ $(document).on("click", ".itemRemarkSubmit", (e) => {
 
 $("#attribute").on("hidden.bs.modal", function () {
     let rowCount = $("[id*=scavengingItemsTr_].trselected").attr("data-index");
-    if ($(`[name="scavenging[${rowCount}][qty]"]`).is("[readonly]")) {
-        $(`[name="scavenging[${rowCount}][qty]"]`).trigger("focus");
+    setAttributesUIHelper(rowCount, "#scavengingItemsTable tbody");
+    if ($(`[name="components[${rowCount}][qty]"]`).is("[readonly]")) {
+        $(`[name="components[${rowCount}][qty]"]`).trigger("focus");
     }
 });
 
@@ -477,12 +478,12 @@ $(document).on(
 
                     let avlStock =
                         data.data?.inventoryStock.confirmedStocks || 0;
-                    $(`input[name="scavenging[${rowCount}][avl_stock]"]`).val(
+                    $(`input[name="components[${rowCount}][avl_stock]"]`).val(
                         Number(avlStock).toFixed(2)
                     );
 
                     let pendingPo = data.data?.pendingPo || 0;
-                    $(`input[name="scavenging[${rowCount}][pending_po]"]`).val(
+                    $(`input[name="components[${rowCount}][pending_po]"]`).val(
                         Number(pendingPo).toFixed(2)
                     );
                 }
@@ -495,7 +496,7 @@ $(document).on(
 ================================ */
 $(document).on("click", ".submitAttributeBtn", (e) => {
     let rowCount = $("[id*=scavengingItemsTr_].trselected").attr("data-index");
-    $(`[name="scavenging[${rowCount}][qty]"]`).focus();
+    $(`[name="components[${rowCount}][qty]"]`).focus();
     $("#attribute").modal("hide");
 });
 

@@ -16,23 +16,32 @@
         <input type="hidden" name="components[{{ $rowCount }}][hsn_code]" value="{{ $item->hsn_code ?? '' }}">
     </td>
 
-    @php
-        $itemAttrArray = isset($item) ? $item?->item_attributes_array() : [];
-        $selectedAttr = isset($item) ? $item?->attributes()->pluck('attribute_value')->filter()->all() : [];
-    @endphp
-
-    {{-- Hidden inputs for already-selected attributes --}}
-    @foreach ($selectedAttr as $attrValueId)
-        <input type="hidden" name="components[{{ $rowCount }}][selected_attributes][]" value="{{ $attrValueId }}">
-    @endforeach
-
     {{-- Item Name --}}
     <td>
         <input type="text" name="components[{{ $rowCount }}][item_name]" class="form-control mw-100 mb-25" value="{{ $item->item_name ?? '' }}" readonly />
     </td>
 
     {{-- Attributes Button --}}
-    <td class="poprod-decpt attributeBtn" id="itemAttribute_{{ $rowCount }}" data-count="{{ $rowCount }}" data-attributes='@json($itemAttrArray)'>
+    @php
+        $itemAttrArray = isset($item) ? $item?->item_attributes_array() : [];
+        $selectedAttr = isset($item) ? $item?->attributes()->pluck('attribute_value')->filter()->all() : [];
+    @endphp
+    @if (isset($item->attributes) && count($item->attributes))
+        @foreach ($item->attributes as $attributeHidden)
+            <input type="hidden" name="components[{{ $rowCount }}][attr_group_id][{{ $attributeHidden->attribute_group_id }}][attr_id]" value="{{ $attributeHidden->id }}">
+        @endforeach
+    @endif
+    @if (count($selectedAttr))
+        @foreach ($item?->item?->itemAttributes as $itemAttribute)
+            @foreach ($itemAttribute->attributes() as $value)
+                @if (in_array($value->id, $selectedAttr))
+                    <input type="hidden" name="components[{{ $rowCount }}][attr_group_id][{{ $itemAttribute->attribute_group_id }}][item_attr_id]" value="{{ $itemAttribute->id }}">
+                    <input type="hidden" name="components[{{ $rowCount }}][attr_group_id][{{ $itemAttribute->attribute_group_id }}][attr_name]" value="{{ $value->id }}">
+                @endif
+            @endforeach
+        @endforeach
+    @endif
+    <td class="poprod-decpt attributeBtn" id="itemAttribute_{{ $rowCount }}" data-count="{{ $rowCount }}" attribute-array='@json($itemAttrArray)'>
         <button type="button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">
             Attributes
         </button>
@@ -40,13 +49,14 @@
 
     {{-- UOM Dropdown --}}
     <td>
-        <select class="form-select mw-100" name="components[{{ $rowCount }}][uom_id]">
-            <option value="">Select</option>
-            @foreach ($uoms ?? [] as $uomId => $uomName)
-                <option value="{{ $uomId }}" {{ isset($item->uom_id) && $item->uom_id == $uomId ? 'selected' : '' }}>
-                    {{ $uomName }}
-                </option>
-            @endforeach
+        <input type="hidden" name="components[{{ $rowCount }}][inventoty_uom_id]" value="{{ $item->inventoty_uom_id }}">
+        <select class="form-select mw-100 " name="components[{{ $rowCount }}][uom_id]">
+            <option value="{{ $item->uom->id }}">{{ ucfirst($item->uom->name) }}</option>
+            @if ($item?->item?->alternateUOMs)
+                @foreach ($item?->item?->alternateUOMs as $alternateUOM)
+                    <option value="{{ $alternateUOM?->uom?->id }}" {{ $alternateUOM?->uom?->id == $item->inventory_uom_id ? 'selected' : '' }}>{{ $alternateUOM?->uom?->name }}</option>
+                @endforeach
+            @endif
         </select>
     </td>
 
@@ -63,6 +73,6 @@
 
     {{-- Remark --}}
     <td>
-        <input type="text" class="form-control mw-100 text-end" name="components[{{ $rowCount }}][remark]" value="{{ $item->remark ?? '' }}">
+        <input type="text" class="form-control mw-100" name="components[{{ $rowCount }}][remark]" value="{{ $item->remark ?? '' }}">
     </td>
 </tr>

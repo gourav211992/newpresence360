@@ -28,6 +28,7 @@ use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
+use App\Lib\Services\WHM\UnloadingJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Bom;
 use App\Models\Configuration;
@@ -641,7 +642,7 @@ class DocumentApprovalController extends Controller
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->first();
 
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
@@ -785,7 +786,7 @@ class DocumentApprovalController extends Controller
                 && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
-                (new WhmJob)->createJob($gateEntry->id,'App\Models\GateEntryHeader');
+                (new UnloadingJob)->createJob($gateEntry->id,'App\Models\GateEntryHeader');
             }
 
             if ($request->action_type === 'deviation-closed') {
@@ -1540,7 +1541,7 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
-    
+
 
 
      public function lorryReceipt(Request $request)
@@ -1622,16 +1623,16 @@ class DocumentApprovalController extends Controller
             $attachments = $request->file('attachments');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
-            $actionType = $request->action_type; 
+            $actionType = $request->action_type;
             $modelName = get_class($doc);
             $approveDocument = Helper::approveDocument( $bookId,$docId,$revisionNumber,$remarks,$attachments,$currentLevel,$actionType,$docValue,$modelName);
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
- 
+
             if (in_array($doc->document_status, [
                 ConstantHelper::APPROVED,
-                ConstantHelper::APPROVAL_NOT_REQUIRED 
+                ConstantHelper::APPROVAL_NOT_REQUIRED
             ])) {
                 (new WhmJob)->createJob($doc->id, 'App\Models\ErpRgr');
             }

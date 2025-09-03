@@ -221,6 +221,8 @@ class CommonHelper
             $type = ConstantHelper::MRN_SERVICE_ALIAS;
         }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
             $type = ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS;
+        }elseif($morphableType == 'App\Models\ErpMaterialIssueHeader'){
+            $type = ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME;
         }
         elseif($morphableType == 'App\Models\ErpRgr'){
             $type = RgrConstant::SERVICE_ALIAS;

@@ -627,36 +627,8 @@ class InventoryHelper
                     $documentHeader = MrnHeader::find($documentItemLocation->header_id);
                     $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->detail_id);
                     $stockLedger->book_id = @$documentHeader->book_id;
-                    // if($documentDetail->is_inspection == 1){
-                    //     $qty = 0.00;
-                    //     $putawayQty = 0.00;
-                    //     // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
-                    //     $holdQty = $documentItemLocation->inventory_uom_qty;
-                    //     $stockLedger->receipt_qty = $qty;
-                    //     $stockLedger->hold_qty = $holdQty;
-                    //     $stockLedger->putaway_pending_qty = $putawayQty;
-                    //     $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                    //     $costPerUnit = $totalItemCost/$holdQty;
-                    // }else {
-                    //     if($documentHeader->is_warehouse_required == 1){
-                    //         $qty = 0.00;
-                    //         $putawayQty = $documentItemLocation->inventory_uom_qty;
-                    //         $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                    //         $costPerUnit = $totalItemCost/$putawayQty;
-                    //     } else{
-                    //         $putawayQty = 0.00;
-                    //         $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
-                    //         $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                    //         $costPerUnit = $totalItemCost/$qty;
-                    //     }
-                    //     $holdQty = 0.00;
-                    //     $stockLedger->receipt_qty = $qty;
-                    //     $stockLedger->hold_qty = $holdQty;
-                    //     $stockLedger->putaway_pending_qty = $putawayQty;
-                    //     $stockLedger->book_id = @$documentHeader->book_id;
-                    // }
                     // Precompute flags & numbers
-                    $requiresPutaway = (int)($documentHeader->is_warehouse_required ?? 0) === 1;
+                    $requiresPutaway = (int)($documentHeader->is_enforce_uic_scanning ?? 0) === 1;
                     $isInspection    = (int)($documentDetail->is_inspection ?? 0) === 1;
 
                     $invQty   = (float)($documentItemLocation->inventory_uom_qty ?? 0);

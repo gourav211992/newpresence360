@@ -28,6 +28,7 @@ class StockLedgerResource extends JsonResource
             'unconfirmed_stock' => $this->unconfirmed_stock,
             'confirmed_stock_value' => $this->confirmed_stock_value,
             'unconfirmed_stock_value' => $this->unconfirmed_stock_value,
+            'putaway_pending_qty' => $this->putaway_pending_qty,
             'store' => $this->whenLoaded('location'),
             'sub_store' => $this->whenLoaded('store'),
             'item' => $this->whenLoaded('item'),

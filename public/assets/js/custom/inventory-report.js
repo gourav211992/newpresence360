@@ -255,15 +255,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             `<td class='no-wrap'>${report?.store?.name ?? ""}</td>`, // Rack
             `<td class='no-wrap'>${report?.station?.name ?? ""}</td>`, // Station
             `<td class='no-wrap'>${report?.inventory_uom?.name ?? ""}</td>`, // UOM
-            `<td class='no-wrap'>
-                ${
-                    stockType === "R"
-                        ? "Regular"
-                        : stockType === "W"
-                        ? "WIP"
-                        : ""
-                }
-            </td>`, // Stock Type
+            `<td class="no-wrap">${report?.stock_type === "R" ? "Regular" : report?.stock_type === "W" ? "WIP" : report?.stock_type === "S" ? "Sub Standard": report?.stock_type === "J" ? "Rejected": ""}</td>`,
             `<td class='text-end'>${report?.confirmed_stock ?? 0.0}</td>`, // Confirmed Stock Quantity
             `<td class='text-end'>${confirmedStockCost ?? "0.00"}</td>`, // Confirmed Stock Cost
             `<td class='text-end'>${report?.confirmed_stock_value ?? 0.0}</td>`, // Confirmed Stock Value

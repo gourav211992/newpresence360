@@ -146,9 +146,8 @@ class ProductionSlipController extends Controller
                     $query->where('mo_document_number', 'like', '%' . $mo_number . '%');
                 }
 
-                if ($request->filled('consumed_item_code')) {
-
-                    $query->where('consumed_item_code', 'like', '%' . $request->consumed_item_code . '%');
+                if ($request->filled('item_code')) {
+                    $query->where('pslip_item_code', 'like', '%' . $request->item_code . '%');
                 }
             return DataTables::of($query)
                 ->addIndexColumn()

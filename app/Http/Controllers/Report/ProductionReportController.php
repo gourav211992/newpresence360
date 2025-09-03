@@ -55,9 +55,8 @@ class ProductionReportController extends Controller
                     $query->where('mo_document_number', 'like', '%' . $mo_number . '%');
                 }
 
-                if ($request->filled('consumed_item_code')) {
-                      
-                    $query->where('consumed_item_code', 'like', '%' . $request->consumed_item_code . '%');
+                if ($request->filled('item_code')) {
+                    $query->where('pslip_item_code', 'like', '%' . $request->item_code . '%');
                 }
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -164,9 +163,9 @@ class ProductionReportController extends Controller
                     $query->where('mo_document_number', 'like', '%' . $mo_number . '%');
                 }
 
-                if ($request->filled('item_code')) {
-                      
-                    $query->where('item_code', 'like', '%' . $request->item_code . '%');
+                if ($request->filled('item')) {
+                   
+                    $query->where('pslip_item_code', 'like', '%' . $request->item . '%');
                 }
             $results=$query->get();
 
@@ -351,9 +350,9 @@ class ProductionReportController extends Controller
                     $query->where('pwo_document_number', 'like', '%' . $pwo_number . '%');
                 }
 
-                if ($request->filled('item_code')) {
+                if ($request->filled('item')) {
                       
-                    $query->where('item_code', 'like', '%' . $request->item_code . '%');
+                    $query->where('item_code', 'like', '%' . $request->item . '%');
                 }
             $result = $query->get();
 

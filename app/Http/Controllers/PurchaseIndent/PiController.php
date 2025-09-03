@@ -46,8 +46,8 @@ class PiController extends Controller
             $selectedfyYear = Helper::getFinancialYear(Carbon::now());
             $selectColumns = ['id', 'document_date', 'document_status', 'book_id', 'store_id', 'sub_store_id', 'user_id', 'requester_type', 'revision_number', 'document_number'];
             $pis = PurchaseIndent::select($selectColumns)->withDraftListingLogic()
-                    ->whereBetween('document_date',[$selectedfyYear['start_date'], $selectedfyYear['end_date']])
-                    ->latest();
+                ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+                ->latest();
             // Apply filters
             if ($request->filled('date_range')) {
                 $dates = explode(' to ', $request->date_range);
@@ -88,54 +88,54 @@ class PiController extends Controller
                             ]
                         ]
                     ])->render();
-            })
-            ->addColumn('book_name', function ($row) {
-                return $row->book ? $row->book?->book_code : '';
-            })
-            ->filterColumn('book_name', function($query, $keyword) {
-            $query->whereHas('book', function($q) use ($keyword) {
-                $q->where('book_code', 'like', "%{$keyword}%");
-            });
-            })
-            ->addColumn('location', function ($row) {
-                return $row?->store ? $row?->store?->store_name : '';
-            })
-            ->filterColumn('location', function($query, $keyword) {
-            $query->whereHas('store', function($q) use ($keyword) {
-                $q->where('store_name', 'like', "%{$keyword}%");
-            });
-            })
-            ->addColumn('department', function ($row) {
-                if($row->sub_store_id) {
-                    return $row?->sub_store ? $row?->sub_store?->name : '';
-                } else {
-                    return $row?->requester ? $row->requester?->name : '';
-                }
-            })
-            ->editColumn('document_date', function ($row) {
-                return $row->getFormattedDate('document_date') ?? '';
-            })
-            ->editColumn('revision_number', function ($row) {
-                return strval($row->revision_number);
-            })
-            ->addColumn('components', function ($row) {
-                return $row->pi_items->count() ?? 0;
-            })
-            ->rawColumns(['document_status'])
-            ->make(true);
+                })
+                ->addColumn('book_name', function ($row) {
+                    return $row->book ? $row->book?->book_code : '';
+                })
+                ->filterColumn('book_name', function ($query, $keyword) {
+                    $query->whereHas('book', function ($q) use ($keyword) {
+                        $q->where('book_code', 'like', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('location', function ($row) {
+                    return $row?->store ? $row?->store?->store_name : '';
+                })
+                ->filterColumn('location', function ($query, $keyword) {
+                    $query->whereHas('store', function ($q) use ($keyword) {
+                        $q->where('store_name', 'like', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('department', function ($row) {
+                    if ($row->sub_store_id) {
+                        return $row?->sub_store ? $row?->sub_store?->name : '';
+                    } else {
+                        return $row?->requester ? $row->requester?->name : '';
+                    }
+                })
+                ->editColumn('document_date', function ($row) {
+                    return $row->getFormattedDate('document_date') ?? '';
+                })
+                ->editColumn('revision_number', function ($row) {
+                    return strval($row->revision_number);
+                })
+                ->addColumn('components', function ($row) {
+                    return $row->pi_items->count() ?? 0;
+                })
+                ->rawColumns(['document_status'])
+                ->make(true);
         }
         $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $serviceAlias = ConstantHelper::PI_SERVICE_ALIAS;
-	    $user = Helper::getAuthenticatedUser();
+        $user = Helper::getAuthenticatedUser();
         $applicableOrgIds = $user->organizations->pluck('id')->toArray();
-	    $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
+        $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $requesters = Helper::getOrgWiseUserAndEmployees($user->organization_id);
         $locations = InventoryHelper::getAccessibleLocations();
         $applicableOrganizations = Organization::whereIn('id', $applicableOrgIds ?? [0])
-        ->where('status', ConstantHelper::ACTIVE)
-        ->get(['id', 'name']);
-        return view('procurement.pi.index',[
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(['id', 'name']);
+        return view('procurement.pi.index', [
             'servicesBooks' => $servicesBooks,
             'books' => $books,
             'requesters' => $requesters,
@@ -1245,7 +1245,7 @@ class PiController extends Controller
                         'erp_pi_so_mapping.so_id',
                         'erp_pi_so_mapping.item_id',
                         DB::raw('erp_pi_so_mapping.attributes'),
-                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),6) as total_qty')
                     )
                     ->groupBy('erp_pi_so_mapping.so_id', 'erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes', 'erp_pi_so_mapping.vendor_id')
                     ->havingRaw('total_qty > 0')
@@ -1257,7 +1257,7 @@ class PiController extends Controller
                         'erp_pi_so_mapping.vendor_id',
                         'erp_pi_so_mapping.item_id',
                         DB::raw('erp_pi_so_mapping.attributes'),
-                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),2) as total_qty')
+                        DB::raw('ROUND(SUM(erp_pi_so_mapping.qty - erp_pi_so_mapping.pi_item_qty),6) as total_qty')
                     )
                     ->groupBy('erp_pi_so_mapping.item_id', 'erp_pi_so_mapping.attributes', 'erp_pi_so_mapping.vendor_id')
                     ->havingRaw('total_qty > 0')
@@ -1332,7 +1332,7 @@ class PiController extends Controller
                 if ($bufferPerc > 0) {
                     $requiredQty += $requiredQty * $bufferPerc / 100;
                 }
-                $requiredQty = ceil($requiredQty);
+                $requiredQty = $requiredQty;
                 if (!in_array($checkBomExist['sub_type'], ['Expense'])) {
                     $mappingData = [
                         'so_id' => $soId,

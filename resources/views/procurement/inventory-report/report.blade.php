@@ -81,6 +81,8 @@
                                                 <select class="form-select mw-100 select2 stock_type" name="stock_type" id="stock_type">
                                                     <option value="R">Regular</option>
                                                     <option value="W">WIP</option>
+                                                    <option value="S">Sub Standard</option>
+                                                    <option value="J">Rejected</option>
                                                 </select>
                                             </div>
                                         </div>

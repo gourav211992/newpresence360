@@ -31,12 +31,9 @@ class StockLookoutController extends Controller
             throw new ValidationException($validator);
         }
 
-        $itemId = $request->query('item_id');
-        $storeId = $request->query('store_id');
-        $isSubStore = $request->query('is_sub_store');
-        $subStoreId = $request->query('sub_store_id');
-        $attrGroup = $request->query('attribute_name');
-        $attrValue = $request->query('attribute_value');
+        $itemId = $request->input('item_id');
+        $storeId = $request->input('store_id');
+        $subStoreId = $request->input('sub_store_id');
         $search = $request->search;
 
         $selectFields = [
@@ -46,8 +43,6 @@ class StockLookoutController extends Controller
             'store_id',
             'sub_store_id',
             'item_id',
-            'reserved_qty',
-            'hold_qty'
         ];
 
         // Conditionally include 'item_attributes'
@@ -67,15 +62,13 @@ class StockLookoutController extends Controller
                 }]);
             })
             ->when($storeId, function($q) use($storeId){
-                $q->where('store_id', $storeId)->groupBy('store_id');
+                $q->where('store_id', $storeId);
             })
             ->when($subStoreId, function($q) use($subStoreId){
-                $q->where('sub_store_id', $subStoreId)->groupBy('sub_store_id');
+                $q->where('sub_store_id', $subStoreId);
             })
             ->when($itemId, function($query) use($itemId){
-                $query->whereHas('item', function($q) use ($itemId) {
-                     $q->where('id', $itemId);
-                });
+                $query->where('item_id', $itemId);
             })
             ->when($search, function($q) use($search){
                 $q->whereHas('item', function($q) use ($search) {
@@ -94,41 +87,47 @@ class StockLookoutController extends Controller
             ->withDefaultGroupCompanyOrg()
             ->whereNull('utilized_id')
             ->where('transaction_type', 'receipt');
-        
-        // Attribute filtering
-        // if (!empty($attrGroup) && !empty($attrValue)) {
-        //     foreach ($attrGroup as $key => $group) {
-        //         if (!empty($attrValue[$key])) {
-        //             $query->where(function ($subQuery) use ($group, $attrValue, $key) {
-        //                 $subQuery->whereJsonContains('item_attributes', [
-        //                     'attr_name' => $group,
-        //                     'attr_value' => $attrValue[$key]
-        //                 ]);
-        //             });
-        //         }
-        //     }
-        // }
 
         $query->select($selectFields)
-            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as confirmed_stock',
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN (receipt_qty - reserved_qty) ELSE 0 END) as confirmed_stock',
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN receipt_qty ELSE 0 END) as unconfirmed_stock',
-            ['approved', 'approval_not_required', 'posted']
+                ['approved', 'approval_not_required', 'posted']
+            )
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN putaway_pending_qty ELSE 0 END) as putaway_pending_qty',
+                ['approved', 'approval_not_required', 'posted']
+            )
+            ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN reserved_qty ELSE 0 END) as reserved_qty',
+                ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status IN (?, ?, ?) THEN org_currency_cost ELSE 0 END) as confirmed_stock_value',
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN org_currency_cost ELSE 0 END) as unconfirmed_stock_value',
-            ['approved', 'approval_not_required', 'posted']
-        );
+                ['approved', 'approval_not_required', 'posted']
+            );
 
-        // Attributes Check
-        $query->groupBy('item_id');
+        if ($storeId) { 
+            $query->groupBy(['store_id']); 
+        }
+
+        if ($request->is_sub_store == 1) { 
+            $query->groupBy(['sub_store_id']); 
+        }
+
+        if ($subStoreId) { 
+            $query->groupBy(['sub_store_id']); 
+        }
+
+        if($request->is_attribute == 1) {
+            $query->groupBy('item_attributes');
+        }
+
+        $query->groupBy(['item_id']); 
 
         $inventory_reports = $query->paginate(50);
         return [
-            // 'data' => StockLedgerResource::collection($inventory_reports)
             "data" => [
                 'records' =>  StockLedgerResource::collection($inventory_reports),
                 'pagination' => [

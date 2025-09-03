@@ -100,6 +100,11 @@
                         <input type="text" id="so_number" class="form-control"
                             placeholder="Enter SO No." name="so_number"
                             value="{{ request('so_number') }}" />
+                    </div>    
+                    <div class="mb-1">
+                        <label class="form-label" for="fp-range">Product</label>
+                        <input type="text" id="item_name_input" placeholder="Select" value="{{ request('item') }}" class="form-control mw-100 ledgerselecct comp_item_code readonlyrestrict" autocomplete="off">
+                        <input type="hidden" id="item_id_val" name="item" value="{{ request('item') }}">
                     </div>
 
                 </div>
@@ -138,7 +143,7 @@
                                 d.date_range          = $('#fp-range').val();
                                 d.so_document_number  = $('#so_number').val();
                                 d.mo_document_number  = $('#mo_number').val();
-                                d.consumed_item_code  = $('#consumed_item_code').val();
+                                d.item_code  = $('#item_id_val').val();
                             }
                         },
                         columns: [
@@ -349,5 +354,57 @@
                     });
             }
         });
+
+        initializeAutocomplete("item_name_input", "item_id_val", "header_item", "item_code", "item_name");
+
+        function initializeAutocomplete(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: typeVal,
+                            customer_id: $("#customer_id_qt_val").val(),
+                            header_book_id: $("#series_id_input").val()
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item[labelKey2] 
+                                        ? `${item[labelKey1]} (${item[labelKey2]})` 
+                                        : item[labelKey1],
+                                    value: item[labelKey1], // ensures correct value in input
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    $("#" + selector).val(ui.item.label);         // visible field
+                    $("#" + selectorSibling).val(ui.item.value);     // hidden id field
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $("#" + selector).val("");
+                        $("#" + selectorSibling).val("");
+                    }
+                }
+            }).focus(function() {
+                // open dropdown on focus if empty
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
     </script>
 @endsection

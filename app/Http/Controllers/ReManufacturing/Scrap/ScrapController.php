@@ -9,6 +9,7 @@ use App\Models\Unit;
 use App\Helpers\Helper;
 use App\Helpers\BookHelper;
 use App\Helpers\UserHelper;
+use App\Models\ErpAttribute;
 use App\Models\ErpPslipItem;
 use App\Models\Organization;
 use Illuminate\Http\Request;
@@ -165,26 +166,11 @@ class ScrapController extends Controller
 
     public function store(ScrapRequest $request)
     {
-        dd($request->all());
         DB::beginTransaction();
         try {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::findOrFail($user->organization_id);
-
-            $erpScrap = new ErpScrap([
-                'organization_id' => $organization->id,
-                'group_id' => $organization->group_id,
-                'company_id' => $organization->company_id,
-                'department_id' => $request->department_id,
-                'user_id' => $request->user_id,
-                'book_id' => $request->book_id,
-                'book_code' => $request->book_code,
-                'store_id' => $request->store_id,
-                'sub_store_id' => $request->sub_store_id,
-                'remarks' => $request->document_remarks,
-                'document_date' => $request->document_date,
-                'reference_type' => $request->reference_type,
-            ]);
+            // $item_attributes = json_decode($request->item_attributes[0],  true) ?? [];
 
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
             if (! $numberPatternData) {
@@ -192,12 +178,30 @@ class ScrapController extends Controller
             }
 
             $document_number = $numberPatternData['document_number'] ?? $request->document_number;
-            $exists = ErpScrap::where('book_id', $request->book_id)
+            $erpScrap = ErpScrap::where('book_id', $request->book_id)
                 ->where('document_number', $document_number)
-                ->exists();
+                ->first();
 
-            if ($exists) {
+            /* check added */
+            if ($erpScrap) {
                 return response()->json(['message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER, 'error' => ''], 422);
+            }
+
+            if (!$erpScrap) {
+                $erpScrap = new ErpScrap([
+                    'organization_id' => $organization->id,
+                    'group_id' => $organization->group_id,
+                    'company_id' => $organization->company_id,
+                    'department_id' => $request->department_id,
+                    'user_id' => $request->user_id,
+                    'book_id' => $request->book_id,
+                    'book_code' => $request->book_code,
+                    'store_id' => $request->store_id,
+                    'sub_store_id' => $request->sub_store_id,
+                    'remarks' => $request->document_remarks,
+                    'document_date' => $request->document_date,
+                    'reference_type' => $request->reference_type,
+                ]);
             }
 
             $erpScrap->fill([
@@ -217,7 +221,6 @@ class ScrapController extends Controller
             $components = $request->input('components', []);
             if (empty($components)) {
                 DB::rollBack();
-
                 return response()->json(['message' => 'Please add at least one row in component table.', 'error' => ''], 422);
             }
 
@@ -252,33 +255,21 @@ class ScrapController extends Controller
 
                 $erpScrapItem->save();
 
-                // Save Attributes
-                foreach ($item?->itemAttributes ?? [] as $itemAttribute) {
+                foreach ($component['attr_group_id'] as $key => $value) {
 
-                        // ErpScrapItemAttribute::create([
-                        //     'erp_scrap_id' => $erpScrap->id,
-                        //     'scrap_item_idid' => $erpScrap->id,
-                        //     'item_attribute_id' => $itemAttribute->id,
-                        //     'item_code' => $component['item_code'],
-                        //     'attribute_name' => $itemAttribute->attribute_group_id,
-                        //     'attribute_value' => $selectedAttr,
-                        //     'attribute_group_id' => $itemAttribute->attribute_group_id,
-                        //     'attribute_id' => $selectedAttr,
-                        // ]);
+                    $itemAttribute = $item?->itemAttributes()->where('attribute_group_id', $key)->first();
+                    if (!$itemAttribute) continue;
 
-                        $scrapAttr = new scrapItemAttribute;
-                        $scrapAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                        $scrapAttr->scrap_id = $erpScrap->id;
-                        $scrapAttr->scrap_item_id = $erpScrapItem->id;
-                        $scrapAttr->item_attribute_id = $itemAttribute->id;
-                        $scrapAttr->item_code = $component['item_code'] ?? null;
-                        $scrapAttr->attribute_name = $itemAttribute->name;
-                        // $scrapAttr->attribute_id = $itemAttribute->;
-                        $scrapAttr->attribute_value = $scrapAttrName ?? null;
-                        $scrapAttr->attribute_group_id = $itemAttribute->attribute_group_id;
-                        $scrapAttr->attribute_id = $scrapAttrName ?? null;
-                        $scrapAttr->save();
-
+                    $scrapAttr = new ErpScrapItemAttribute;
+                    $scrapAttrName = $value['attr_name'];
+                    $scrapAttr->erp_scrap_id = $erpScrap->id;
+                    $scrapAttr->scrap_item_id = $erpScrapItem->id;
+                    $scrapAttr->attribute_group_id = $itemAttribute->attribute_group_id;
+                    $scrapAttr->item_attribute_id = $itemAttribute->id;
+                    $scrapAttr->item_code = $component['item_code'] ?? null;
+                    $scrapAttr->attribute_name = $key;
+                    $scrapAttr->attribute_value = $scrapAttrName ?? null;
+                    $scrapAttr->save();
                 }
             }
 
@@ -345,6 +336,7 @@ class ScrapController extends Controller
             $scrap = ErpScrap::findOrFail($id);
             $currentStatus = $scrap->document_status;
             $actionType = $request->action_type;
+            $item_attributes = json_decode($request->item_attributes[0],  true) ?? [];
 
             if ($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment') {
                 $revisionData = [
@@ -421,21 +413,24 @@ class ScrapController extends Controller
                 $scrapDetail->save();
 
                 if ($isNewItem) {
-                    // Add attributes fresh
                     foreach ($item?->itemAttributes ?? [] as $itemAttribute) {
-                        $selectedAttr = $component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'] ?? null;
-                        if ($selectedAttr) {
-                            ErpScrapItemAttribute::create([
-                                'erp_scrap_id' => $scrap->id,
-                                'scrap_item_id' => $scrapDetail->id,
-                                'item_attribute_id' => $itemAttribute->id,
-                                'item_code' => $component['item_code'],
-                                'attribute_name' => $itemAttribute->attribute_group_id,
-                                'attribute_value' => $selectedAttr,
-                                'attribute_group_id' => $itemAttribute->attribute_group_id,
-                                'attribute_id' => $selectedAttr,
-                            ]);
+                        $attrIds = [];
+                        if ($itemAttribute->attribute_id && is_array($itemAttribute->attribute_id) && count($itemAttribute->attribute_id)) {
+                            $attrIds = $itemAttribute->attribute_id;
+                            dd($attrIds);
                         }
+                        dd($attrIds);
+
+                        $scrapAttr = new ErpScrapItemAttribute;
+                        $scrapAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
+                        $scrapAttr->erp_scrap_id = $scrap->id;
+                        $scrapAttr->scrap_item_id = $scrapDetail->id;
+                        $scrapAttr->attribute_group_id = $itemAttribute->attribute_group_id;
+                        $scrapAttr->item_attribute_id = $itemAttribute->id;
+                        $scrapAttr->item_code = $component['item_code'] ?? null;
+                        $scrapAttr->attribute_name = $itemAttribute->name;
+                        $scrapAttr->attribute_value = $scrapAttrName ?? null;
+                        $scrapAttr->save();
                     }
                 }
             }

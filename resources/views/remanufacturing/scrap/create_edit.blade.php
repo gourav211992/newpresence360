@@ -253,9 +253,13 @@
                                             <div class="tab-pane active" id="scavengingItems">
                                                 <div class="text-end mb-50">
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                                        <i data-feather="x-circle"></i> Delete</a>
+                                                        <i data-feather="x-circle"></i>
+                                                        Delete
+                                                    </a>
                                                     <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i> Add Item</a>
+                                                        <i data-feather="plus"></i>
+                                                        Add Item
+                                                    </a>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -529,38 +533,6 @@
             }).columns.adjust();
         });
 
-        /* Common Item Detail Fetcher */
-        $(document).on('input change focus', 'table[class$="ItemsTable"] tr input', (e) => {
-            let currentTr = e.target.closest('tr');
-            let $row = $(currentTr);
-            let tab = $row.closest(".tab-pane").attr("id");
-            let itemId = $row.find("[name*='[item_id]']").val();
-            let remark = $row.find("[name*='remark']").val() || '';
-            let uomId = $row.find("[name*='[uom_id]']").val() || '';
-            let qty = $row.find("[name*='[qty]']").val() || '';
-
-            if (!itemId) return;
-
-            let selectedAttr = [];
-            $row.find("[name*='attr_name']").each(function() {
-                if ($(this).val()) selectedAttr.push($(this).val());
-            });
-
-            let type = '{{ request()->route('type') }}';
-            let actionUrl = '{{ route('scrap.get.itemdetail', ['type' => ':type']) }}'.replace(':type', type) +
-                `?tab=${tab}&item_id=${itemId}` +
-                `&selectedAttr=${encodeURIComponent(JSON.stringify(selectedAttr))}` +
-                `&remark=${remark}&uom_id=${uomId}&qty=${qty}`;
-
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if (data.status == 200) {
-                        $(`#${tab} #${tab}sTfoot`).html(data.data.html);
-                    }
-                });
-            });
-        });
-
         $(document).on('click', '.clearPiFilter', (e) => {
             $("#item_name_search").val('');
             $("#item_name_input_qt").val('');
@@ -614,5 +586,11 @@
                 $('#psModal .ps-order-detail > thead .form-check-input').prop('checked', false);
             }
         });
+
+        setTimeout(() => {
+            $("#scavengingItemsTable .mrntableselectexcel tr").each(function(index, item) {
+                setAttributesUIHelper(index, "#scavengingItemsTable");
+            });
+        }, 100);
     </script>
 @endsection

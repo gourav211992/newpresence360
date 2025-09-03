@@ -57,7 +57,7 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Jobs\SendEmailJob;
-use App\Lib\Services\WHM\WhmJob;
+use App\Lib\Services\WHM\UnloadingJob;
 use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Configuration;
@@ -813,7 +813,7 @@ class GateEntryController extends Controller
                 && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
-                (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
+                (new UnloadingJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
             DB::commit();
@@ -1605,7 +1605,7 @@ class GateEntryController extends Controller
                 && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
-                (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
+                (new UnloadingJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
             DB::commit();

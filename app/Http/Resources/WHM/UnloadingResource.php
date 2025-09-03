@@ -38,6 +38,7 @@ class UnloadingResource extends JsonResource
             'series' => optional(optional($morphable)->book)->book_code,
             'consignment_no' => optional($morphable)->consignment_no,
             'supplier_invoice_no' => optional($morphable)->supplier_invoice_no,
+            'is_warehouse_required' => optional($this->subStore)->is_warehouse_required,
             'total_item' => $itemUniqueCodes ? $itemUniqueCodes->unique('item_id')->count() : 0,
             'total_packets' => $itemUniqueCodes ? $itemUniqueCodes->count() : 0,
         ];

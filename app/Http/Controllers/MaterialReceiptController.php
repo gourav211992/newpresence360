@@ -1014,6 +1014,16 @@ class MaterialReceiptController extends Controller
             }
 
             $mrn->lot_number = strtoupper(@$lotNumber);
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if($config && strtolower($config->config_value) === 'yes'){
+                $mrn->is_enforce_uic_scanning = 1;
+            }
             $mrn->save();
             if($mrn){
                 $invoiceLedger = self::maintainStockLedger($mrn);
@@ -1061,12 +1071,7 @@ class MaterialReceiptController extends Controller
                 ], 422);
             }
 
-            // Get configuration detail
-            $config = Configuration::where('type','organization')
-                ->where('type_id', $user->organization_id)
-                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                ->first();
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
@@ -2113,6 +2118,19 @@ class MaterialReceiptController extends Controller
                 $mediaFiles = $mrn->uploadDocuments($request->file('attachment'), 'mrn', false);
             }
             $mrn->is_inspection_completion = $isInspection;
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->whereNull('deleted_at')
+                ->first();
+            if($config && strtolower($config->config_value) === 'yes'){
+                $mrn->is_enforce_uic_scanning = 1;
+            }
+            else
+            {
+                $mrn->is_enforce_uic_scanning = 0;
+            }
             $mrn->save();
             if($mrn && $mrn->items->count() > 0) {
                 $invoiceLedger = self::maintainStockLedger($mrn);
@@ -2165,13 +2183,6 @@ class MaterialReceiptController extends Controller
                     'error' => 'ERR07'
                 ], 422);
             }
-
-
-            // Get configuration detail
-            $config = Configuration::where('type','organization')
-                ->where('type_id', $user->organization_id)
-                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                ->first();
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');

@@ -1579,6 +1579,18 @@
         }
 
         function deleteItemRows() {
+        Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you really want to delete this?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                
+            if (result.isConfirmed) {
+                        
             let deletedItemIds = JSON.parse(localStorage.getItem('deletedSiItemIds')) || [];
             let deletedConsItemIds = JSON.parse(localStorage.getItem('deletedConsItemIds')) || [];
             const allRowsCheck = document.querySelectorAll('#production-items .item_row_checks');
@@ -1671,6 +1683,8 @@
             // } else {
             //     enableHeader();
             // }
+                }
+            });
         }
 
         function setItemRemarks(elementId) {

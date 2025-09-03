@@ -43,12 +43,12 @@
                         data-bs-toggle="modal" data-bs-target="#approveModal" onclick="setRejection()">
                     <i data-feather="x-circle"></i> Reject
                 </button>
-              @endif
+            @endif
 
-               
+                @if($buttons['amend'])
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                         class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-               
+                @endif
                             
 						</div>
 					</div>
@@ -64,7 +64,8 @@
           // Extract data from the work order for show view
           $workOrder = $data ?? null;
           $equipmentDetailsArr = $workOrder && $workOrder->equipment_details ? json_decode($workOrder->equipment_details) : (object)[];
-          $refType = $equipmentDetailsArr->reference_type ?? '';
+		 
+          $refType = $equipmentDetailsArr->equipment_reference_type ?? $workOrder->reference_type ?? '';
           $sparePartsData = $workOrder && $workOrder->spare_parts ? json_decode($workOrder->spare_parts, true) : [];
           $checklistData = $workOrder && $workOrder->checklist_data ? json_decode($workOrder->checklist_data, true) : [];
           
@@ -239,17 +240,23 @@
                       </div>
                     </div>
 
-                     <div class="col-md-3 basic-equipment-field">
+                    <div class="col-md-3 basic-equipment-field">
                       <div class="mb-1">
                         <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>
-                        @php
-                          // Get maintenance type from stored data
-                          $maintenanceTypeId = $equipmentDetailsArr->equipment_maintenance_type_id ?? $equipmentDetailsArr->maintenance_type_id ?? '';
-                          $maintenanceTypeName = $equipmentDetailsArr->equipment_maintenance_type_name ?? $equipmentDetailsArr->maintenance_type_name ?? '';
-                        @endphp
-                        <input type="text" class="form-control" value="{{ $maintenanceTypeName }}" disabled readonly>
-                        <input type="hidden" name="equipment_maintenance_type_id" value="{{ $maintenanceTypeId }}">
-                        <input type="hidden" name="equipment_maintenance_type_name" value="{{ $maintenanceTypeName }}">
+                        <select class="form-select" name="maintenance_type" id="maintenance_type" disabled required>
+                          <option value="">Select Type</option>
+                          @php
+                            $allMaintenanceTypes = [];
+                            foreach(($maintenanceTypesByEquipment ?? []) as $equipmentId => $types) {
+                              foreach($types as $type) {
+                                $allMaintenanceTypes[$type['id']] = $type['name'];
+                              }
+                            }
+                          @endphp
+                          @foreach($allMaintenanceTypes as $id => $name)
+                            <option value="{{ $id }}" @if(($equipmentDetailsArr->equipment_maintenance_type ?? '') == $id) selected @endif>{{ $name }}</option>
+                          @endforeach
+                        </select>
                       </div>
                     </div>
 
@@ -416,9 +423,13 @@
                                             </td>
                                             <td class="poprod-decpt">
                                               @if(($item['data_type'] ?? 'text') === 'boolean')
-                                                <select class="form-select mw-100" disabled>
-                                                  <option selected>{{ ($item['value'] ?? false) ? 'Yes' : 'No' }}</option>
-                                                </select>
+                                                <div class="form-check form-check-primary custom-checkbox ms-50">
+                                                  <input type="checkbox" class="mt-25 form-check-input" 
+                                                         @if($item['value'] ?? false) checked @endif disabled>
+                                                  <label class="mb-50 mt-25 form-check-label">
+                                                    {{ ($item['value'] ?? false) ? 'Yes' : 'No' }}
+                                                  </label>
+                                                </div>
                                               @elseif(($item['data_type'] ?? 'text') === 'number')
                                                 <input type="number" class="form-control mw-100" 
                                                        value="{{ $item['value'] ?? '' }}" disabled readonly>
@@ -510,26 +521,9 @@
                                       </td>
                                       <td>
                                         <input type="hidden" class="attribute" value='{{ $part['attribute'] ?? ($part->attribute ?? "[]") }}'>
-                                        <div class="d-flex flex-wrap gap-1">
-                                          @php
-                                            $attributes = $part['attribute'] ?? ($part->attribute ?? '[]');
-                                            if (is_string($attributes)) {
-                                              $attributesArray = json_decode($attributes, true) ?: [];
-                                            } else {
-                                              $attributesArray = $attributes ?: [];
-                                            }
-                                          @endphp
-                                          @if(!empty($attributesArray))
-                                            @foreach($attributesArray as $attr)
-                                              <span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
-                                                <strong>{{ $attr['group_name'] ?? ($attr['name'] ?? 'Type') }}</strong>: 
-                                                {{ $attr['selected_value_name'] ?? ($attr['value'] ?? 'N/A') }}
-                                              </span>
-                                            @endforeach
-                                          @else
-                                            <span class="text-muted" style="font-size:10px;">No attributes</span>
-                                          @endif
-                                        </div>
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#attribute"
+                                               class="btn p-25 btn-sm btn-outline-secondary attributeBtn" 
+                                               style="font-size: 10px" disabled>Attributes</button>
                                       </td>
                                       <td>
                                         <select class="uom form-select mw-100" name="uom[]" disabled required>
@@ -1233,12 +1227,11 @@
 
 			// Collect Equipment Details Data
 			const equipmentDetails = {
-				reference_type: $('#reference_type').val() || '',
+				equipment_reference_type: $('#reference_type').val() || '',
 				equipment_category: $('#equipment_category_hidden').val() || $('#equipment_category').val() || '',
 				equipment_name: $('#equipment_name_hidden').val() || $('#equipment_name').val() || '',
 				equipment_id: $('#equipment_id').val() || '',
-				equipment_maintenance_type_id: $('#maintenance_type').val() || '',
-				equipment_maintenance_type_name: $('#maintenance_type option:selected').text() || '',
+				equipment_maintenance_type: $('#maintenance_type').val() || '',
 				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_select').val() || '',
 				equipment_problem: $('#problem_hidden').val() || $('#problem_field input').val() || '',
 				equipment_priority: $('#priority_field select').val() || '',

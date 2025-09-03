@@ -53,7 +53,6 @@
                               <tbody>
                                  @isset($data)
                                     @foreach($data as $d)
-                                    
                                        <tr>
                                           <td class="text-nowrap">{{ $loop->iteration }}</td>
                                           <td class="fw-bolder text-dark text-nowrap">
@@ -63,8 +62,7 @@
                                           <td class="text-nowrap">{{ $d->document_number ?? '-' }}</td>
                                           <td>{{ $d?->equipment_name ?? '-' }}</td>
                                           <td class="text-nowrap">{{ $d->equipment_category ?? '' }}</td>
-                                          @php $maintenanceType = json_decode($d->equipment_details); @endphp
-                                          <td class="text-nowrap">{{ $maintenanceType->equipment_maintenance_type_name ?? $maintenanceType->maintenance_type_name ?? '' }}</td>
+                                          <td class="text-nowrap">{{ $d->equipment_defect_type ?? '' }}</td>
                                           <td class="tableactionnew">
                                              <div class="d-flex align-items-center justify-content-end">
                                                 @php 

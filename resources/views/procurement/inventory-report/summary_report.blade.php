@@ -88,6 +88,8 @@
                                         <select class="form-select select2 stock_types" name="stock_type" id="stock_type">
                                             <option value="R">Regular</option>
                                             <option value="W">WIP</option>
+                                            <option value="S">Sub Standard</option>
+                                            <option value="J">Rejected</option>
                                         </select>
                                     </div>
                                     <div class="mb-2">
@@ -504,7 +506,7 @@
                         `<td class="no-wrap">${report?.store?.name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.station?.name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.inventory_uom?.name ?? ""}</td>`,
-                        `<td class="no-wrap">${report?.stock_type === "R" ? "Regular" : report?.stock_type === "W" ? "WIP" : ""}</td>`,
+                        `<td class="no-wrap">${report?.stock_type === "R" ? "Regular" : report?.stock_type === "W" ? "WIP" : report?.stock_type === "S" ? "Sub Standard": report?.stock_type === "J" ? "Rejected": ""}</td>`,
                         `<td class="no-wrap">${report?.so?.book_code ?? ""}-${report?.so?.document_number ?? ""}</td>`,
                         `<td class="no-wrap">${report?.lot_number ?? ""}</td>`,
                         `<td class='no-wrap text-end'>${parseFloat(report?.org_currency_cost_per_unit) ?? 0.00}</td>`,

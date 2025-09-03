@@ -6,6 +6,7 @@ use App\Models\Hsn;
 use App\Models\Item;
 use App\Models\Unit;
 use App\Models\ErpAttribute;
+use App\Models\ItemAttribute;
 use App\Models\Scrap\ErpScrap;
 use App\Models\ErpItemAttribute;
 use Illuminate\Database\Eloquent\Model;
@@ -78,26 +79,41 @@ class ErpScrapItem extends Model
     public function item_attributes_array()
     {
         $itemId = $this->getAttribute('item_id');
-        if (isset($itemId)) {
-            $itemAttributes = ErpItemAttribute::where('item_id', $this->item_id)->get();
-        } else {
-            $itemAttributes = [];
+        if (!$itemId) {
+            return collect([]);
         }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+        $processedData = [];
+        $mappingAttributes = ErpScrapItemAttribute::where('scrap_item_id', $this->getAttribute('id'))
+            ->select(['item_attribute_id as attribute_id', 'attribute_value as attribute_value_id'])
+            ->get()
+            ->toArray();
         foreach ($itemAttributes as $attribute) {
-            $attributesArray = array();
-            $attribute_ids = json_decode($attribute->attribute_id);
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
             $attribute->group_name = $attribute->group?->name;
-            foreach ($attribute_ids as $attributeValue) {
-                $attributeValueData = ErpAttribute::where('id', $attributeValue)->select('id', 'value')->where('status', 'active')->first();
-                if (isset($attributeValueData)) {
-                    $attributeValueData->selected = false;
-                    array_push($attributesArray, $attributeValueData);
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                if ($attributeValueData) {
+                    $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                        return $itemAttr['attribute_id'] == $attribute->id &&
+                            $itemAttr['attribute_value_id'] == $attributeValueData->id;
+                    });
+                    $attributeValueData->selected = $isSelected;
+                    $valuesData[] = $attributeValueData;
                 }
             }
-            $attribute->values_data = $attributesArray;
-            $attribute->only(['id', 'group_name', 'values_data']);
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
         }
-        return $itemAttributes;
+        return collect($processedData);
     }
 
     /**************************

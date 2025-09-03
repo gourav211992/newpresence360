@@ -326,7 +326,7 @@ class PutawayTaskController extends Controller
             'packets.*.packet_id' => ['required', 'string'],
             'packets.*.serial_no' => ['nullable', 'string'],
             'packets.*.manufacturing_year' => ['nullable', 'integer'],
-            'storage_point_id' => ['required']
+            'storage_point_id' => ['nullable']
         ],[
             'packets.required' => 'Packets are required',
             'packets.*.packet_id.required' => 'Each packet must have an packet_id',
@@ -346,6 +346,15 @@ class PutawayTaskController extends Controller
             throw ValidationException::withMessages([
                 'job_id' => ['Job not found.'],
             ]);
+        }
+        
+        $subStore = $job->subStore;
+        if ($subStore && $subStore->is_warehouse_required) {
+            if (!$request->filled('storage_point_id')) {
+                throw ValidationException::withMessages([
+                    'storage_point_id' => ['Storage point is required.'],
+                ]);
+            }
         }
 
         $packetIds = collect($request->packets)->pluck('packet_id')->toArray();
@@ -599,6 +608,7 @@ class PutawayTaskController extends Controller
 
             $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
             $header = $job->morphable;
+            $warehouseRequired = isset($job->subStore->is_warehouse_required) ? $job->subStore->is_warehouse_required : 0;
             $bookId = $header->series_id;
             $docId = $header->id;
             $revisionNumber = $header->revision_number ?? 0;
@@ -607,13 +617,9 @@ class PutawayTaskController extends Controller
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
             // Update stock ledger qty
-            if($job->status == CommonHelper::CLOSED){
+            if($job->status == CommonHelper::CLOSED && $warehouseRequired){
                 $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
                 $subStoreId = $job->sub_store_id;
-                // if($job->trns_type == ConstantHelper::INSPECTION_SERVICE_ALIAS){
-                //     $header = $header->mrn;    
-                //     $detailIds = $header->items()->where('is_inspection',1)->pluck('id')->unique()->toArray();;        
-                // }
 
                 $res = StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL, $subStoreId);
                 if($res['status'] == 'error'){

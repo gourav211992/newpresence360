@@ -160,7 +160,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     }
 
     if (this.classList.contains('scrap_module_form')) {
-        const items = document.getElementsByClassName('comp_item_code');
+        const items = document.getElementsByClassName('attributeBtn');
         for (let index = 0; index < items.length; index++) {
             data.append(`item_attributes[${index}]`, items[index].getAttribute('attribute-array'));
         }
@@ -383,8 +383,6 @@ $(document).on('submit', '.ajax-input-form', function (e) {
  *                           - cleanupRegex: RegExp to remove related keys from FormData.
  */
 function appendSerializedFormRows(formData, containerSelector, jsonKey, options = {}) {
-    console.log(formData);
-
     const {
         rowSelector = 'tr[id^="row_"], .display_overhead_row',
         dataModule = null,

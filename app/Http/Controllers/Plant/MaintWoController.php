@@ -230,15 +230,13 @@ class MaintWoController extends Controller
         $items = Item::where("type", "goods")
             ->with(["uom", "category", "itemAttributes"])
             ->get();
-        
 
-        
         foreach ($items as $item) {
             $itemAttributes = ItemAttribute::where('item_id', $item->id)->get();
             $processedData = [];
+
             foreach ($itemAttributes as $attribute) {
                 $attribute->group_name = $attribute->group?->name;
-               
                 $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)
                     ->select('id', 'value')
                     ->where('status', 'active')
@@ -264,9 +262,6 @@ class MaintWoController extends Controller
             'item_attributes' => $item->attributes,
         ]);
 
-        
-
-        
         $locations = InventoryHelper::getAccessibleLocations();
 
         $defectNotifications = DefectNotification::with(['book', 'equipment', 'location', 'category', 'defectType'])
@@ -678,7 +673,6 @@ class MaintWoController extends Controller
 
     public function update(Request $request, string $id)
     {
-        // dd($request->all());
         $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
@@ -742,11 +736,7 @@ class MaintWoController extends Controller
                 ]);
             }
 
-            // Update work order excluding checklist data (handle separately)
-            $updateData = $request->except(['checklist', 'checklist_data']);
-          
-            $workOrder->update($updateData);
-            
+            $workOrder->update($request->all());
 
             if ($request->hasFile('upload_file')) {
                 $file = $request->file('upload_file');
@@ -960,8 +950,6 @@ class MaintWoController extends Controller
                 $maintenanceChecklists = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $eqpt->id)
                     ->select('erp_equip_maintenance_id', 'name')
                     ->get();
-
-               
                 
 
                 
