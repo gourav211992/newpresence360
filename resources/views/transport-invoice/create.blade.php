@@ -397,7 +397,7 @@
                                              <td></td>
                                           </tr>
                                           <tr valign="top">
-                                             <td id="item_details_td" colspan="8"
+                                             <td id="item_details_td" colspan="9"
                                                 rowspan="10">
                                                 <table class="table border">
                                                    <tr>

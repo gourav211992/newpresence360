@@ -2942,37 +2942,43 @@ class TransporterInvoiceController extends Controller
     }
 
     public function print($id)
-    {
-        // Fetch invoice details
-        $order = ErpTransportInvoice::findOrFail($id);
+{
+    // Fetch invoice details
+    $order = ErpTransportInvoice::findOrFail($id);
 
-        $params = [
-            'item_id'           => 1,
-            'price'             => $order->total_amount ?? 0, // take from order if available
-            'transaction_type'  => 'sale',
-            'party_country_id'  => $order->billing_address_details->country_id ?? 101,
-            'party_state_id'    => $order->billing_address_details->state_id ?? 1,
-            'customer_id'       => $order->customer_id ?? '',
-            'header_book_id'    => $order->book_id ?? '',
-            'store_id'          => $order->store_id ?? 1,
-            'document_id'       => '',
-        ];
+    $params = [
+        'item_id'           => 1,
+        'price'             => $order->total_amount ?? 0,
+        'transaction_type'  => 'sale',
+        'party_country_id'  => $order->billing_address_details->country_id ?? 101,
+        'party_state_id'    => $order->billing_address_details->state_id ?? 1,
+        'customer_id'       => $order->customer_id ?? '',
+        'header_book_id'    => $order->book_id ?? '',
+        'store_id'          => $order->store_id ?? 1,
+        'document_id'       => '',
+    ];
 
-        $url = url('/taxes/calculate-tax/sales/ti');
+    $url = url('/taxes/calculate-tax/sales/ti');
+    $organization = Organization::where('id', $order->organization_id)->first();
 
-        $organization = Organization::where('id', $order->organization_id)->first();
+    $response = Http::get($url, $params);
 
-        // Call the API
-        $response = Http::get($url, $params);
-
-        if ($response->successful()) {
-            $order->tax = $response->json();  // attach tax result dynamically
-        } else {
-            $order->tax = null; // or handle error
-        }
-        // Pass data to print view
-        return view('transport-invoice.print', compact('order','organization'));
+    if ($response->successful()) {
+        $order->tax = $response->json();
+    } else {
+        $order->tax = null;
     }
+
+    // Generate PDF
+    $pdf = Pdf::loadView('transport-invoice.print', compact('order', 'organization'));
+
+    // Return as download
+    // return $pdf->download('transport_invoice_'.$order->id.'.pdf');
+
+    // Or display in browser:
+    return $pdf->stream('transport_invoice_'.$order->id.'.pdf');
+}
+
 
     public function InvoiceMail(Request $request)
     {
