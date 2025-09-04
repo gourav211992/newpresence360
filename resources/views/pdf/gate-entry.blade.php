@@ -227,6 +227,14 @@
                             </tr>
                         @endif
                         <tr>
+                            <td>
+                                <b>Gate Entry ID:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->id }}
+                            </td>
+                        </tr>
+                        <tr>
                             <td style="text-align: center;">
                                 @if ($qrCodeBase64)
                                     <img src="{{ $qrCodeBase64 }}" class="qr-image" style = "margin-top:10px"
