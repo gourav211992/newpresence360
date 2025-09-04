@@ -39,13 +39,9 @@
                                         <line x1="15" y1="9" x2="9" y2="15"></line>
                                         <line x1="9" y1="9" x2="15" y2="15"></line>
                                     </svg> Reject</button>
-                            @endif
-
-
-                            @if($buttons['amend'])
                                 <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                                     class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-                            @endif
+							@endif
                             
 						</div>
 					</div>
@@ -212,6 +208,7 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
+														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -263,9 +260,34 @@
 															<td>
 																<input type="hidden" class="attribute"
 																	value="{{ $part->attribute}}">
-																<a data-bs-toggle="modal" data-bs-target="#attribute"
-																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</a>
+																<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																	@if($part->attribute)
+																		@php
+																			$selectedAttributes = json_decode($part->attribute, true);
+																		@endphp
+																		@if($selectedAttributes && count($selectedAttributes) > 0)
+																			@foreach($selectedAttributes as $selectedAttr)
+																				@php
+																					// Find the attribute group name and value
+																					$attrGroup = $processedData->firstWhere('id', $selectedAttr['item_attribute_id']);
+																					$attrValue = null;
+																					if($attrGroup) {
+																						$attrValue = collect($attrGroup['values_data'])->firstWhere('id', $selectedAttr['value_id']);
+																					}
+																				@endphp
+																				@if($attrGroup && $attrValue)
+																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+																						<strong>{{ $attrGroup['group_name'] }}</strong>: {{ $attrValue['value'] }}
+																					</span>
+																				@endif
+																			@endforeach
+																		@else
+																			<span class="text-muted" style="font-size:10px;">No attributes selected</span>
+																		@endif
+																	@else
+																		<span class="text-muted" style="font-size:10px;">No attributes available</span>
+																	@endif
+																</div>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -277,6 +299,9 @@
 																<input type="number" class="qty form-control mw-100"
 																	name="qty[]" value="{{ $part->qty }}" required />
 															</td>
+															<td class="available_stock">
+																@if(isset($part->available_stock)){{ $part->available_stock }}@else N/A @endif
+															</td>
 														</tr>
 													@endforeach
 												</tbody>
@@ -284,7 +309,7 @@
 
 
 													<tr valign="top">
-														<td colspan="6" rowspan="10">
+														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
 																	<td class="p-0">
@@ -314,6 +339,9 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
+																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -663,6 +691,7 @@
 				$('#part_name').text($selected.find('.item_name').val());
 				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
+				$('#available_stock').text($selected.find('.available_stock').text());
 				let $selectElement = $selected.find('.item_code');
 				let $badgesContainer = $('#attributes_badges'); // container for badges
 
@@ -932,6 +961,11 @@
 		});
 
 		$(document).on('click', '.submitAttributeBtn', (e) => {
+			let $currentRow = $('#attribute_table').data('currentRow');
+			if ($currentRow) {
+				changeAttributeVal($currentRow);
+				updateAttributeBadges($currentRow);
+			}
 			$("#attribute").modal('hide');
 		});
 		initAutoForItem('.item_code');
@@ -1034,11 +1068,13 @@
 				});
 				$attributesTable.find('select').select2();
 
+				// Open the attribute modal
+				$('#attribute').modal('show');
 
 			} else {
 				$attributesTable.html(`
 					<tr>
-						<td colspan="2" class="text-center">No attributes available</td>
+						<td colspan="2" class="text-center">Please select an item first</td>
 					</tr>
 				`);
 			}
@@ -1107,14 +1143,16 @@
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
 
-					setTimeout(() => {
-						if (ui.item.is_attr) {
+					// Check if item has attributes and trigger attribute button
+					if (attr && attr.length > 0) {
+						setTimeout(() => {
 							$input.closest('tr').find('.attributeBtn').trigger('click');
-						} else {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
+						}, 100);
+					} else {
+						setTimeout(() => {
 							$input.closest('tr').find('.qty').val('').focus();
-						}
-					}, 100);
+						}, 100);
+					}
 
 					return false;
 				},

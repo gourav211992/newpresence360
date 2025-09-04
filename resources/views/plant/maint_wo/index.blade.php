@@ -87,7 +87,7 @@
                                                       <i data-feather="more-vertical"></i>
                                                    </button>
                                                    <div class="dropdown-menu dropdown-menu-end">
-                                                      @if ($d->document_status == 'draft')
+                                                      @if ($d->document_status == 'draft' && $d->document_status!='closed')
                                                          <a class="dropdown-item" href="{{ route('maint-wo.edit', $d->id) }}">
                                                             <i data-feather="edit" class="me-50"></i>
                                                             <span>View</span>

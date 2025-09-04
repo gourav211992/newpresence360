@@ -569,8 +569,10 @@ function populateEquipmentModal(response) {
 
 // === Checklist Rendering ===
 function populateChecklistTable(equipmentData, maintenanceTypeId) {
+  console.log('populateChecklistTable called with:', equipmentData, maintenanceTypeId);
   $('.mrntableselectexcel1').empty();
   let checklistsData = equipmentData.equipment?.checklists_data || [];
+  console.log('checklistsData:', checklistsData);
   if (checklistsData && checklistsData.length > 0) {
     let checklistIndex = 1;
     checklistsData.forEach(function (group, groupIndex) {
@@ -687,12 +689,11 @@ function fetchEquipmentSpareParts(equipmentId, maintenanceTypeId) {
   });
 }
 function populateSparePartsTable(sparePartsData) {
-  
   console.log("check the spare parts", sparePartsData);
-  const tableBody = $('#spareParts');
+  const tableBody = $('.mrntableselectexcel');
   tableBody.empty();
   if (!sparePartsData || sparePartsData.length === 0) {
-    tableBody.append('<tr><td colspan="6" class="text-center">No spare parts found</td></tr>');
+    tableBody.append('<tr><td colspan="7" class="text-center">No spare parts found</td></tr>');
     return;
   }
   sparePartsData.forEach(function (part, index) {
@@ -714,8 +715,7 @@ function populateSparePartsTable(sparePartsData) {
         <td class="poprod-decpt">
           <input type="hidden" class="attribute" value='${JSON.stringify(convertToSimpleFormat(part.attributes || []))}'>
           <input type="hidden" class="attribute-enriched" value='${JSON.stringify(part.attributes || [])}'>
-          <button type="button" data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" style="font-size:10px">Attributes</button>
-          <div class="d-flex flex-wrap gap-1 mt-1" id="attribute-badges-${index}">
+          <div class="d-flex flex-wrap gap-1" id="attribute-badges-${index}">
             ${
               (part.attributes || []).map(attr => {
                 return `<span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
@@ -733,18 +733,61 @@ function populateSparePartsTable(sparePartsData) {
         <td>
           <input type="number" class="qty form-control mw-100" name="qty[]" value="${part.qty || 0}" required />
         </td>
+        <td>
+          <input type="number" class="available_stock form-control mw-100" name="available_stock[]" value="${part.available_stock || 0}" readonly />
+        </td>
       </tr>`;
     tableBody.append(row);
   });
 
-  $('#spareParts tr[data-index]').off('click').on('click', function () {
-    const index = $(this).data('index');
-    const partData = sparePartsData[index];
-    if (partData) populatePartDetails(partData);
+  // Use event delegation for AJAX loaded spare parts to work with create.blade.php click handler
+  $('.mrntableselectexcel tr[data-index]').off('click').on('click', function () {
+    // First handle row selection (same as create.blade.php)
+    $(this).addClass('trselected').siblings().removeClass('trselected');
+    
+    // Then call the part details function if it exists (from create.blade.php)
+    if (typeof updateFooterFromSelected === 'function') {
+      updateFooterFromSelected();
+      console.log('Called updateFooterFromSelected from AJAX handler');
+    } else {
+      // Fallback to populatePartDetails if updateFooterFromSelected not available
+      const index = $(this).data('index');
+      const partData = sparePartsData[index];
+      if (partData) {
+        populatePartDetails(partData);
+        console.log('Called populatePartDetails from AJAX handler');
+      }
+    }
   });
+
+  // Auto-select first row and show its details immediately after AJAX load
+  if (sparePartsData && sparePartsData.length > 0) {
+    setTimeout(() => {
+      const $firstRow = $('.mrntableselectexcel tr[data-index="0"]');
+      if ($firstRow.length) {
+        // Select first row
+        $firstRow.addClass('trselected').siblings().removeClass('trselected');
+        
+        // Show its details automatically
+        if (typeof updateFooterFromSelected === 'function') {
+          updateFooterFromSelected();
+          console.log('Auto-selected first spare part and updated details');
+        } else {
+          // Fallback to populatePartDetails
+          const firstPartData = sparePartsData[0];
+          if (firstPartData) {
+            populatePartDetails(firstPartData);
+            console.log('Auto-selected first spare part with populatePartDetails');
+          }
+        }
+      }
+    }, 100); // Small delay to ensure DOM is ready
+  }
 }
 
+// ✅ COMMENTED OUT: Spare parts click handler moved to create.blade.php (like maint BOM)
 // Event delegation for all spare parts rows (including newly added ones)
+/*
 $(document).on('click', '#spareParts tr', function () {
   const $row = $(this);
   
@@ -758,6 +801,7 @@ $(document).on('click', '#spareParts tr', function () {
     uom_name: $row.find('.uom option:selected').text() || 'N/A',
     uom: $row.find('.uom').val() || '',
     qty: $row.find('.qty').val() || '0',
+    item_id: $row.find('.item_id').val() || '',
     attributes: []
   };
   
@@ -775,9 +819,45 @@ $(document).on('click', '#spareParts tr', function () {
     }
   }
   
+  // ✅ FIXED: Set autocomplete field exactly as in maint BOM create (static approach)
+  if (partData.item_code && partData.item_name) {
+    const $input = $row.find('.item_code');
+    
+    // Set values exactly as maint BOM select event (lines 912-921)
+    $input.attr('data-name', partData.item_name);
+    $input.attr('data-code', partData.item_code);
+    $input.attr('data-id', partData.item_id);
+    if (attributeInput.length && attributeInput.val()) {
+      $input.attr('data-attr', attributeInput.val());
+    }
+    
+    // Set form field values (exactly as maint BOM lines 916-918)
+    $input.closest('tr').find('.item_id').val(partData.item_id);
+    $input.closest('tr').find('.item_name').val(partData.item_name);
+    $input.val(partData.item_code);
+    
+    // Set UOM dropdown (exactly as maint BOM line 920-921)
+    // Comment out dynamic data - use static approach
+    // const uomId = $row.find('.uom').val();
+    // const uomName = $row.find('.uom option:selected').text();
+    
+    // Use static UOM data from partData
+    if (partData.uom && partData.uom_name) {
+      let uomOption = `<option value="${partData.uom}">${partData.uom_name}</option>`;
+      $input.closest('tr').find('.uom').empty().append(uomOption);
+    }
+    
+    // Trigger attribute button (exactly as maint BOM lines 923-930)
+    setTimeout(() => {
+      $input.closest('tr').find('.attributeBtn').trigger('click');
+      $input.closest('tr').find('.qty').val('').focus();
+    }, 100);
+  }
+  
   // Populate part details
   populatePartDetails(partData);
 });
+*/
 
 function convertToSimpleFormat(attributesDetailed) {
   if (!attributesDetailed || !Array.isArray(attributesDetailed)) return [];
@@ -787,61 +867,33 @@ function convertToSimpleFormat(attributesDetailed) {
 }
 
 function populatePartDetails(partData) {
-  return `
-  <tr>
-    <td class="customernewsection-form">
-      <div class="form-check form-check-primary custom-checkbox">
-        <input type="checkbox" class="form-check-input row-check">
-        <label class="form-check-label"></label>
-      </div>
-    </td>
-
-    <td class="poprod-decpt">
-      <input type="hidden" class="item_id" value="${partData.item_id || ''}">
-      <input required type="text" placeholder="Select" name="item[]"
-        class="item_code form-control mw-100 ledgerselecct mb-25"
-        value="${partData.item_code || ''}" />
-    </td>
-
-    <td class="poprod-decpt">
-      <input type="text" placeholder="Select"
-        class="item_name form-control mw-100 ledgerselecct mb-25"
-        value="${partData.item_name || ''}" />
-    </td>
-
-    <td class="poprod-decpt">
-      <input type="hidden" class="attribute" value='${JSON.stringify(partData.attributes || [])}'>
-      <button data-bs-toggle="modal" data-bs-target="#attribute"
-        class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-        style="font-size: 10px">Attributes</button>
-    </td>
-
-    <td>
-      <select class="uom form-select mw-100" name="uom[]" required>
-        ${buildUomOptions(partData)}
-      </select>
-    </td>
-
-    <td>
-      <input type="number" class="qty form-control mw-100" name="qty[]"
-        value="${partData.qty || 0}" required />
-    </td>
-  </tr>
-`;
-}
-
-function buildUomOptions(partData) {
-  let html = '';
-  if (Array.isArray(partData.uoms) && partData.uoms.length > 0) {
-    partData.uoms.forEach(u => {
-      html += `<option value="${u.id}" ${u.id == partData.uom_id ? 'selected' : ''}>${u.name}</option>`;
+  console.log("check the partData",partData);
+  
+  // Populate part name
+  const partNameHtml = `<span class="badge rounded-pill badge-light-secondary"><strong>Name</strong>: ${partData.item_name || 'N/A'}</span>`;
+  $('#current_part_name').html(partNameHtml);
+  
+  // Populate UOM
+  const uomHtml = `<span class="badge rounded-pill badge-light-secondary"><strong>UOM</strong>: ${partData.uom_name || partData.uom || 'N/A'}</span>`;
+  $('#current_part_uom').html(uomHtml);
+  
+  // Populate quantity
+  const qtyHtml = `<span class="badge rounded-pill badge-light-secondary"><strong>Quantity</strong>: ${partData.qty || '0'}</span>`;
+  $('#current_part_qty').html(qtyHtml);
+  
+  // Populate attributes
+  const attributesContainer = $('#current_part_attributes');
+  attributesContainer.empty();
+  
+  if (partData.attributes && partData.attributes.length > 0) {
+    let attributesHtml = '';
+    partData.attributes.forEach(function (attr) {
+      attributesHtml += `<span class="badge rounded-pill badge-light-primary me-1 mb-1"><strong>${attr.group_name || attr.group_short_name || 'Attribute'}</strong>: ${attr.selected_value_name || attr.value || 'N/A'}</span>`;
     });
-  } else if (partData.uom_id && partData.uom_name) {
-    html = `<option value="${partData.uom_id}" selected>${partData.uom_name}</option>`;
-  } else if (partData.uom) {
-    html = `<option value="${partData.uom}" selected>${partData.uom}</option>`;
+    attributesContainer.html(attributesHtml);
+  } else {
+    attributesContainer.html('<span class="badge rounded-pill badge-light-secondary">No attributes selected</span>');
   }
-  return html;
 }
 
 function showLoadingIndicator() {
@@ -870,18 +922,36 @@ $(document).on('change', '.equipment-radio', function () {
   $('#equipment_category').prop('readonly', true);
   $('#equipment_name').prop('readonly', true);
   $('#maintenance_type').prop('disabled', true);
+  console.log('window.equipmentModalData:', window.equipmentModalData);
+  console.log('equipmentIndex:', equipmentIndex);
   if (window.equipmentModalData && equipmentIndex !== undefined) {
     const equipmentData = window.equipmentModalData[equipmentIndex];
+    console.log('Selected equipmentData:', equipmentData);
     if (equipmentData) {
       const equipment = Array.isArray(equipmentData) ? equipmentData[0] : equipmentData;
       if (equipment && equipment.equipment.category && equipment.equipment.category.name) {
         $('#equipment_category').val(equipment.equipment.category.name);
       }
+      
+      // Populate equipment_details hidden field
+      const equipmentDetails = {
+        equipment_id: equipmentId,
+        equipment_name: equipmentName,
+        equipment_category: equipment?.equipment?.category?.name || '',
+        maintenance_type_id: maintenanceTypeId,
+        maintenance_type_name: equipment?.maintenance_type?.name || '',
+        reference_type: 'equipment'
+      };
+      $('#equipment_details').val(JSON.stringify(equipmentDetails));
+      console.log('Equipment details populated:', equipmentDetails);
+      
       populateChecklistTable(equipmentData, maintenanceTypeId);
     } else {
+      console.log('No equipmentData found at index:', equipmentIndex);
       $('.mrntableselectexcel1').empty().append(`<tr><td colspan="3" class="text-center text-muted">No checklist data available for this equipment</td></tr>`);
     }
   } else {
+    console.log('window.equipmentModalData or equipmentIndex is undefined');
     $('.mrntableselectexcel1').empty().append(`<tr><td colspan="3" class="text-center text-muted">Equipment data not available</td></tr>`);
   }
   $('#equipmentModal').modal('hide');
@@ -925,6 +995,22 @@ function fillFormFromDefect(defect) {
   $reportInput.prop('disabled', false); setInputValue('#report_date_field input', reportDT); $reportInput.prop('disabled', true);
   const $repBy = $('#report_by_field input');
   $repBy.prop('disabled', false); setInputValue('#report_by_field input', defect?.creator?.name ?? ''); $repBy.prop('disabled', true);
+  
+  // Populate equipment_details hidden field for defect notification
+  const equipmentDetails = {
+    equipment_id: defect?.equipment?.id ?? '',
+    equipment_name: defect?.equipment?.name ?? '',
+    equipment_category: defect?.category?.name ?? '',
+    defect_notification_id: defect?.id ?? '',
+    defect_type: defectTypeName,
+    priority: defect?.priority ?? '',
+    problem: defect?.problem ?? '',
+    report_date_time: defect?.report_date_time ?? '',
+    reported_by: defect?.creator?.name ?? '',
+    reference_type: 'defect_notification'
+  };
+  $('#equipment_details').val(JSON.stringify(equipmentDetails));
+  console.log('Defect equipment details populated:', equipmentDetails);
 }
 function processDefectSelection() {
   const $sel = $('input.defect-radio:checked');
