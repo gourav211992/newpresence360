@@ -193,7 +193,7 @@
 
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_no">Reference No.</label>
                                                     </div>
@@ -201,9 +201,9 @@
                                                         <input type="text" class="form-control" name="reference_no"
                                                             id="reference_no" value="{{ $data->reference_no }}">
                                                     </div>
-                                                </div>
+                                                </div> -->
 
-                                                <div class="row align-items-center mb-1">
+                                                <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_from">Reference From
                                                             <span class="text-danger">*</span></label>
@@ -213,7 +213,7 @@
                                                             class="btn btn-outline-primary btn-sm mb-0 w-100"><i
                                                                 data-feather="plus-square"></i> GRN</a>
                                                     </div>
-                                                </div>
+                                                </div> -->
 
                                                 <div class="row align-items-center mb-2">
                                                     <div class="col-md-3">

@@ -4339,6 +4339,8 @@ class Helper
                 if(count($mrn_detail->batches) > 0)
                 {
                     $count=count($mrn_detail->batches);
+                    $uniqueCodes = $mrn_detail->uniqueCodes->values();
+                   
                     foreach($mrn_detail->batches as $batch)
                     {
                          $asset_code = self::generateAssetCode($category_id);
@@ -4407,7 +4409,7 @@ class Helper
                             $mrn_asset->asset_code = $asset_code;
                             $mrn_asset->asset_id = $asset->id;
                             $mrn_asset->save();
-                            $asset->batchupdateUniqueCodes($batch);
+                            $asset->batchupdateUniqueCodes($uniqueCodes,$batch);
                     }
                    
                 }

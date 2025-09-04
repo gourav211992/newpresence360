@@ -1163,6 +1163,7 @@ class MaterialReceiptController extends Controller
             'saleOrder'
         ])
             ->findOrFail($id);
+        
 
         $items = $mrn['items'] ?? [];
         $referenceType = $mrn['reference_type'] ?? null;

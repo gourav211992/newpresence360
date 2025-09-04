@@ -218,7 +218,7 @@
                                              
 
 
-                                                <div class="row align-items-center mb-1">
+                                                <!-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_no">Reference No.</label>
                                                     </div>
@@ -226,7 +226,7 @@
                                                         <input type="text" class="form-control indian-number" name="reference_no"
                                                             id="reference_no" value="{{ $data->reference_no }}">
                                                     </div>
-                                                </div>
+                                                </div> -->
 
                                                 <div @if($buttons['reference']||$data->mrn_detail_id==null) hidden @endif class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -492,6 +492,52 @@
                                     </div>
                                 </div>
 
+                                  <div class="row customernewsection-form">
+                                    <div class="col-md-12">
+                                        <div class="card quation-card">
+                                            <div class="card-header newheader d-flex justify-content-between align-items-center">
+                                                <h4 class="card-title mb-0">Item Details</h4>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Brand Name <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control indian-number" name="brand_name"
+                                                                id="brand_name"
+                                                                value="{{ $data?->mrnDetail?->assetDetail?->brand_name }}" required />
+                                                        </div>
+                                                    </div>
+                                                      
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Model No <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control indian-number" name="model_no"
+                                                                id="model_no"
+                                                                value="{{ $data?->mrnDetail?->assetDetail?->model_no }}" required />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Batch Number <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control indian-number" name="batch_number"
+                                                                id="batch_number" value="{{ $sub_assets[0]?->batch_number }}"
+                                                                required />
+                                                        </div>
+                                                    </div>
+
+
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="row customernewsection-form" @if($buttons['reference'] && $data->reference_series!="mrn") hidden @endif> 
                                     <div class="col-md-12">
                                         <div class="card quation-card">
@@ -684,7 +730,7 @@
                                 <select class="form-select filter" id="item_name" name="item_name">
                                     <option value="">Select</option>
                                     @foreach ($grn_details->unique('item_id') as $item)
-                                    <option value="{{ $item->item->item_id }}">{{ $item->item->item_name }}</option>
+                                    <option value="{{ $item?->item?->item_id }}">{{ $item?->item?->item_name }}</option>
                                 @endforeach
                                 </select>
                             </div>
@@ -729,7 +775,7 @@
                                             <td>{{ $grn->header->created_at->format('d-m-Y') }}</td>
                                             <td class="fw-bolder text-dark">{{$grn->header->vendor_code}}</td>
                                             <td>{{$grn->header->vendor->company_name}}</td>
-                                            <td>{{$grn->item->item_name}}</td>
+                                            <td>{{$grn?->item?->item_name}}</td>
                                             <td>{{$grn->accepted_qty}}</td>
                                         </tr>
                                         @endisset
@@ -1157,15 +1203,15 @@
     </div>
 
     <div class="modal fade" id="sub_asset" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
+        <div class="modal-dialog  modal-dialog-centered" style="max-width: 1000px">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body px-sm-2 mx-50 pb-2">
                     <h1 class="text-center mb-1" id="shareProjectTitle">Sub Asset</h1>
-                    <div class="table-responsive-md customernewsection-form">
-                        <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"
+                    <div class="table-responsive customernewsection-form" style="max-height:400px">
+                        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail"
                         id="order_tax_main_table">
                      <thead>
                          <tr>
@@ -1182,16 +1228,17 @@
                      </thead>
                      <tbody>
                          @foreach($sub_assets as $index => $sub_asset)
-                         <tr>
-                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $sub_asset->sub_asset_code }}</td>
-                            <td>{{ $sub_asset?->uid }}</td>
-                            <td>{{ $sub_asset?->batch_number }}</td>
-                            <td>{{ $sub_asset?->manufacturing_year }}</td>
-                            <td>{{ $sub_asset?->location?->store_name }}</td>
-                            <td>{{ $sub_asset?->costCenter?->name }}</td>
-                             <td>{{ $sub_asset->current_value }}</td>
-                         </tr>
+                        <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $sub_asset->sub_asset_code ?? '-' }}</td>
+                        <td>{{ $sub_asset?->uid ?? '-' }}</td>
+                        <td>{{ $sub_asset?->batch_number ?? '-' }}</td>
+                        <td>{{ $sub_asset?->manufacturing_year ?? '-' }}</td>
+                        <td class="locationstore">{{ $sub_asset?->location?->store_name ?? '-' }}</td>
+                        <td>{{ $sub_asset?->costCenter?->name ?? '-' }}</td>
+                        <td>{{ $sub_asset->current_value ?? '-' }}</td>
+                    </tr>
+
                          @endforeach
                      </tbody>
                  </table>
@@ -1835,6 +1882,22 @@ $('#location').on('change', function () {
 
 $('#location').trigger('change');
 $('.select2').select2();
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the select element
+    const locationSelect = document.getElementById('location');
+
+    // Check if select exists and has a selected option
+    if (locationSelect && locationSelect.selectedIndex >= 0) {
+        const selectedText = locationSelect.options[locationSelect.selectedIndex].text;
+
+        // Set this text in all table cells with class 'locationstore'
+        document.querySelectorAll('.locationstore').forEach(td => {
+            td.textContent = selectedText;
+        });
+    }
+});
+
 
     </script>
 @endsection
