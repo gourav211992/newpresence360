@@ -29,6 +29,7 @@ class SplitController extends Controller
      */
     public function index(Request $request)
     {
+
         $parentURL = "fixed-asset_split";
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
@@ -68,8 +69,8 @@ class SplitController extends Controller
         $assetCodes = FixedAssetRegistration::whereIn('id', $assetCodes)->get();
         $ledgers = FixedAssetSplit::pluck('ledger_id')->unique();
         $ledgers = Ledger::whereIn('id', $ledgers)->get();
-
-        return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers', ));
+       
+        return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers'));
     }
 
     /**
@@ -109,9 +110,10 @@ class SplitController extends Controller
         $dep_method = $organization->dep_method;
         $locations = InventoryHelper::getAccessibleLocations();
         $groups = Group::whereIn('id', $allChildIds)->get();
+        $fy_months = Helper::getCurrentFinancialYearMonths();
 
 
-        return view('fixed-asset.split.create', compact('groups', 'locations', 'series', 'assets', 'categories', 'new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.split.create', compact('groups', 'locations', 'series', 'assets', 'categories', 'new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method', 'fy_months'));
     }
 
     /**
