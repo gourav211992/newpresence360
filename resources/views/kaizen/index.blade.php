@@ -25,6 +25,9 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-6 ">
                     <div class="form-group breadcrumb-right">
+                          <a href="{{route('kaizens.export')}}" target="_blank" class="btn btn-danger box-shadow-2 btn-sm"><i
+                                        data-feather="download"></i> Export
+                                </a>
                         <button class="btn btn-warning btn-sm mb-sm-0 mb-50" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         <a href="{{ route('kaizen.create') }}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i
@@ -270,7 +273,7 @@
                 const teams = JSON.parse(trigger.getAttribute('data-teams'));
 
                 const body = teamModal.querySelector('#teamModalBody');
-                body.innerHTML = ''; // Clear old content
+                body.innerHTML = ''; 
 
                 Object.entries(teams).forEach(([email, name]) => {
                     const badge =

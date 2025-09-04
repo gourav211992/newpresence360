@@ -329,52 +329,6 @@
                 $totalIGSTValue = 0.0;
             @endphp
             @foreach ($po->po_items as $key => $val)
-                @php
-                    $totalTaxPercentage = 0.0;
-                    if (!empty($val->item) && !empty($val->item->hsn) && !empty($val->item->hsn->code)) {
-                        $hsnCode = $val->item->hsn->code;
-                        $teds = $val->taxes ?? [];
-
-                        if (!isset($hsnGroups[$hsnCode])) {
-                            $hsnGroups[$hsnCode] = [
-                                'hsn_code' => $hsnCode,
-                                'taxable_rate' => 0.0,
-                                'taxable_value' => 0.0,
-                                'tax_amount' => 0.0,
-                                'tax_group' => null,
-                            ];
-                        }
-
-                        foreach ($teds as $ted) {
-                            $taxType = $ted->ted_name;
-                            $taxPercentage = (float) ($ted->ted_perc ?? 0);
-                            $taxableValue = (float) ($ted->assessment_amount ?? 0);
-                            $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
-
-                            if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
-                                $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.0;
-                            }
-
-                            $totalTaxPercentage += $taxPercentage;
-                            $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
-                            $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
-                            $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
-                            $hsnGroups[$hsnCode]['tax_group'] = $ted->ted_group_code ?? $hsnGroups[$hsnCode]['tax_group'];
-                        }
-                    }
-
-                    foreach ($hsnGroups as $hsnCode => &$group) {
-                        $taxAmount = 0.0;
-                        foreach ($group as $i => $value) {
-                            if (str_ends_with($i, '_amount')) {
-                                $taxAmount += (float) $value;
-                            }
-                        }
-                        $group['tax_amount'] = $taxAmount;
-                    }
-                    unset($group);
-                @endphp
-
                 <tr>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
@@ -472,25 +426,6 @@
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right; word-break: break-word;">
                         {{ number_format($netValue, 2) }}
                     </td>
-                    @php
-                        if (count($val->taxes)) {
-                            foreach ($val->taxes as $taxs) {
-                                $taxName = $taxs->ted_name . ' ' . number_format($taxs->ted_perc, 2) . ' %';
-                                if (isset($taxBracket[$taxName])) {
-                                    $taxBracket[$taxName][0] += $taxs->ted_amount;
-                                    $taxBracket[$taxName][1] += $taxs->assessment_amount;
-                                } else {
-                                    $taxBracket[$taxName][0] = $taxs->ted_amount;
-                                    $taxBracket[$taxName][1] = $taxs->assessment_amount;
-                                }
-                            }
-                        }
-                        $totalCGSTValue += $val->cgst_value['value'];
-                        $totalSGSTValue += $val->sgst_value['value'];
-                        $totalIGSTValue += $val->igst_value['value'];
-                        $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
-
-                    @endphp
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right; word-break: break-word;">
                         {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
@@ -556,13 +491,13 @@
                                 {{ number_format($totalTaxableValue, 2) }}
                             </td>
                         </tr>
-                        @foreach ($taxBracket as $tax => $value)
+                        @foreach($taxes as $tax)
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    <b>{{ $tax }} @ {{ number_format($value[1], 2) }}:</b>
+                                    <b>{{ $tax->ted_name }} @ {{  number_format($tax->ted_perc, 2)}}%:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    {{ number_format($value[0], 2) }}
+                                    {{ number_format($tax->total_amount, 2) }}
                                 </td>
                             </tr>
                         @endforeach
@@ -659,26 +594,18 @@
                                 <b>Total Tax</b>
                             </td>
                         </tr>
-                        @foreach ($hsnGroups as $code => $hsnData)
-                            <tr>
-                                <td style="padding: 4px; text-align: center;">{{ $code }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">
-                                    {{ number_format($hsnData['taxable_rate'], 2) }} %</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
-                                    {{ number_format($hsnData['taxable_value'], 2) }}</td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
-                                    {{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : '' }}
-                                </td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
-                                    {{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : '' }}
-                                </td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
-                                    {{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : '' }}
-                                </td>
-                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">
-                                    {{ number_format($hsnData['tax_amount'], 2) }}</td>
-                            </tr>
+                        @foreach ($hsnSummary as $row)
+                        <tr>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ $row['hsn'] }}</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format(($row['total_tax'] / $row['taxable_value']) * 100, 2) }}%</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($row['taxable_value'], 2) }}</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($row['cgst'], 2) }}</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($row['sgst'], 2) }}</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($row['igst'], 2) }}</td>
+                            <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($row['total_tax'], 2) }}</td>
+                        </tr>
                         @endforeach
+
                     </table>
                 </td>
             </tr>

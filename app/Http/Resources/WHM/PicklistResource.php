@@ -29,6 +29,7 @@ class PicklistResource extends JsonResource
             'store_name' => optional($this->store)->store_name,
             'sub_store_id' => $this->sub_store_id,
             'sub_store_name' => optional($this->subStore)->name,
+            'is_warehouse_required' => optional($this->subStore)->is_warehouse_required,
             'doc_no' => optional($morphable)->document_number,
             'doc_date' => optional($morphable)->document_date,
             'book_id' => optional($morphable)->book_id,

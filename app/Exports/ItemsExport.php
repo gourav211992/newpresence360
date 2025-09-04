@@ -30,25 +30,47 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
     public function headings(): array
     {
         $headings = [
+            'Type',
+            'Group',
+            'Sub-Type',
             'Item Code',
             'Item Name',
-            'Group',
             'HSN/SAC',
-            'Type',
-            'Sub-Type',
             'Inventory UOM',
             'Cost Price', 
             'Cost Price Currency',
             'Sale Price', 
             'Sell Price Currency',
-            'Status',
+            'Min Stocking Level',
+            'Max Stocking Level',
+            'Reorder Level',
+            'Min Order Qty',
+            'Lead Days',
+            'Safety Days',
+            'Shelf Life Days',
+            'PO Positive Tolerance',
+            'PO Negative Tolerance',
+            'SO Positive Tolerance',
+            'SO Negative Tolerance',
+            'Is Serial No',
+            'Is Batch No',
+            'Is Expiry',
+            'Is Inspection',
+            'Inspection Checklist',
+            'Storage UOM',
+            'Storage UOM Conversion',
+            'Storage UOM Count',
+            'Storage Weight',
+            'Storage Volume',
+            'Asset Category',
+            'Brand Name',
+            'Model No',
         ];
 
         for ($i = 1; $i <= 10; $i++) {
             array_push($headings,
                 "Attribute {$i} Name",
                 "Attribute {$i} Value",
-                "Required BOM {$i}",
                 "All Checked {$i}"
             );
         }
@@ -77,18 +99,41 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
     public function map($item): array
     {
         $data = [
+            $item->type ?? 'N/A',
+            $item->subcategory->name ?? 'N/A',
+            $item->subTypes->pluck('subType.name')->implode(', ') ?? 'N/A',
             $item->item_code,
             $item->item_name,
-            $item->subcategory->name ?? 'N/A',
             $item->hsn->code ?? 'N/A',
-            $item->type ?? 'N/A',
-            $item->subTypes->pluck('subType.name')->implode(', ') ?? 'N/A',
             $item->uom->name ?? 'N/A',
             $item->cost_price ?? 'N/A',
             $item->costCurrency->short_name ?? 'N/A',
             $item->sell_price ?? 'N/A',
             $item->sellCurrency->short_name ?? 'N/A',
-            $item->status ?? 'N/A',
+            $item->min_stocking_level ?? 'N/A',
+            $item->max_stocking_level ?? 'N/A',
+            $item->reorder_level ?? 'N/A',
+            $item->minimum_order_qty ?? 'N/A',
+            $item->lead_days ?? 'N/A',
+            $item->safety_days ?? 'N/A',
+            $item->shelf_life_days ?? 'N/A',
+            $item->po_positive_tolerance ?? 'N/A',
+            $item->po_negative_tolerance ?? 'N/A',
+            $item->so_positive_tolerance ?? 'N/A',
+            $item->so_negative_tolerance ?? 'N/A',
+            ($item->is_serial_no ?? 0 == 1 ? 'Y' : 'N'), 
+            ($item->is_batch_no ?? 0 == 1 ? 'Y' : 'N'),
+            ($item->is_expiry ?? 0 == 1 ? 'Y' : 'N'),
+            ($item->is_inspection ?? 0 == 1 ? 'Y' : 'N'), 
+            $item->inspectionChecklist->name ?? 'N/A',
+            $item->storageUom->name ?? 'N/A',
+            $item->storage_uom_conversion ?? 'N/A',
+            $item->storage_uom_count ?? 'N/A',
+            $item->storage_weight ?? 'N/A',
+            $item->storage_volume ?? 'N/A',
+            $item->assetCategory->name ?? 'N/A',
+            $item->brand_name ?? 'N/A', 
+            $item->model_no ?? 'N/A',
         ];
 
         $attributes = $item->itemAttributes;
@@ -99,15 +144,18 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         for ($i = 0; $i < 10; $i++) {
             $groupName = $groupedAttributes->keys()[$i] ?? '';
             $groupAttributes = $groupedAttributes->get($groupName, collect()); 
-        
             if ($groupAttributes->isNotEmpty()) {
-                $attributeValues = $groupAttributes->pluck('attribute.value')->unique()->implode(', ');
+                 $attributeValues = $groupAttributes
+                ->flatMap(function($attr) {
+                    return $attr->selectedAttributes()->pluck('value');
+                })
+                ->implode(', ');
+
                 $requiredBom = $groupAttributes->first()->required_bom ?? '';
                 $allChecked = $groupAttributes->first()->all_checked ?? '';
                 $data = array_merge($data, [
                     $groupName,      
-                    $attributeValues, 
-                    $requiredBom,     
+                    $attributeValues,  
                     $allChecked,      
                 ]);
             } else {
@@ -151,7 +199,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 9);
+        $requiredColumns = range(1, 7);
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -180,7 +228,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         }
     
         $totalColumns = count($this->headings());
-        for ($col = 10; $col <= $totalColumns; $col++) {
+        for ($col = 8; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [

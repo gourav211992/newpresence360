@@ -60,6 +60,12 @@ class ItemAttribute extends Model
         return $this->belongsTo(Attribute::class);
     }
 
+    
+    public function selectedAttributes()
+    {
+        return Attribute::whereIn('id', $this->attribute_id ?? [])->get();
+    }
+
     public function group()
     {
         return $this->belongsTo(AttributeGroup::class,'attribute_group_id','id');

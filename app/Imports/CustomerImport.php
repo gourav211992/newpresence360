@@ -128,7 +128,20 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithChunkReading
         DB::beginTransaction();
         $uploadedCustomer = null;
         try {
-            $customerInitials = strtoupper(substr($row['customer_name'], 0, 3));
+            
+            $cleanedName = preg_replace('/[^a-zA-Z0-9\s]/', '', $row['customer_name']);
+            $words = array_values(array_filter(preg_split('/\s+/', trim($cleanedName))));
+
+            if (count($words) === 1) {
+                $customerInitials = strtoupper(substr($words[0], 0, 3));
+            } elseif (count($words) === 2) {
+                $customerInitials = strtoupper(substr($words[0], 0, 2) . substr($words[1], 0, 1));
+            } elseif (count($words) >= 3) {
+                $customerInitials = strtoupper($words[0][0] . $words[1][0] . $words[2][0]);
+            } else {
+                $customerInitials = '';
+            }
+
             $tdsWefDate = $row['tds_wef_date'] ?? null;
             $tdsWefDatee = null;
             if ($tdsWefDate) {

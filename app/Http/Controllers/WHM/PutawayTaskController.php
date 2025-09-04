@@ -32,7 +32,7 @@ class PutawayTaskController extends Controller
                     },'store' => function($q){
                         $q->select('id','store_name');
                     },'subStore' => function($q){
-                        $q->select('id','name');
+                        $q->select('id','name','is_warehouse_required');
                     }])
                     ->where('type', CommonHelper::PUTAWAY)
                     ->when($search, function ($query) use ($search) {
@@ -608,7 +608,7 @@ class PutawayTaskController extends Controller
 
             $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
             $header = $job->morphable;
-            $warehouseRequired = isset($job->subStore->is_warehouse_required) ? $job->subStore->is_warehouse_required : 0;
+
             $bookId = $header->series_id;
             $docId = $header->id;
             $revisionNumber = $header->revision_number ?? 0;
@@ -617,7 +617,7 @@ class PutawayTaskController extends Controller
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
             // Update stock ledger qty
-            if($job->status == CommonHelper::CLOSED && $warehouseRequired){
+            if($job->status == CommonHelper::CLOSED){
                 $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
                 $subStoreId = $job->sub_store_id;
 

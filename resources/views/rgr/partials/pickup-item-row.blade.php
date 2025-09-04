@@ -92,9 +92,9 @@
     </td>
 
     {{-- Hidden fields --}}
-    <input type="hidden" name="rgr_items[{{ $index }}][sub_store_id]" value="{{ $item->sub_store_id }}">
-    <input type="hidden" name="rgr_items[{{ $index }}][category_id]" value="{{ $item->item->subcategory_id }}">
-    <input type="hidden" name="rgr_items[{{ $index }}][hsn_id]" value="{{ $item->hsn_id }}">
+    <input type="hidden" name="rgr_items[{{ $index }}][sub_store_id]" value="{{ $item->sub_store_id ?? ''  }}">
+    <input type="hidden" name="rgr_items[{{ $index }}][category_id]" value="{{ $item->item->subcategory_id ?? ''  }}">
+    <input type="hidden" name="rgr_items[{{ $index }}][hsn_id]" value="{{ $item->hsn_id ?? ''  }}">
     <input type="hidden" name="rgr_items[{{ $index }}][hsn_code]" value="{{ $item->hsn->code ?? '' }}">
     <input type="hidden" name="rgr_items[{{ $index }}][item_remark]" value="{{ $item->item->item_remark ?? '' }}">
 </tr>

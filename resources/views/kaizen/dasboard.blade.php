@@ -233,7 +233,7 @@
 
 
                                         <div class="col-md-12 ">
-                                            <table class="table border payrollconfigured customerdataapp"
+                                            <table class="table border payrollconfigured customerdataapp text-center"
                                                 id="topIdentifiersTable">
                                                 <thead>
                                                     <tr>
@@ -360,7 +360,7 @@
                     },
                     success: function(data) {
                         console.log("Fetched data:", data);
-                        $("#cost").html(data.counts.cost_imp_id);
+                        $("#cost").html(data.counts.total_cost_saving_amt);
                         $("#delivery").html(data.counts.delivery_imp_id);
                         $("#moral").html(data.counts.moral_imp_id);
                         $("#productivity").html(data.counts.productivity_imp_id);
@@ -376,9 +376,9 @@
 
                         function renderCell(value) {
                             if (value && value !== '') {
-                                return `<td class="bg-success text-white"></td>`;
+                                return `<td class="text-success"><b>${value ?? ''}</b></td>`;
                             }
-                            return `<td>${value ?? ''}</td>`;
+                            return `<td>-</td>`;
                         }
 
                         $.each(rows, function(i, row) {
@@ -393,7 +393,7 @@
                                         <span class="text-success">Counter Measure:</span> ${row.countermeasure}
                                     </h6>
                                 </td>
-                                <td><span class="badge rounded-pill badge-light-secondary">${row.department}</span></td>
+                                <td><span class="badge rounded-pill bg-primary">${row.department}</span></td>
                                 <td>${row.designation}</td>
                                 ${renderCell(row.cost)}
                                 ${renderCell(row.delivery)}
@@ -417,8 +417,8 @@
                             let newRow = `
                             <tr>
                                 <td>${i+1}</td>
-                                <td><span class="badge rounded-pill badge-light-secondary">${identifier.name}</span></td>
-                                <td><span class="badge rounded-pill badge-light-primary">${identifier.count}</span></td>
+                                <td><span class="badge rounded-pill border border-primary text-primary">${identifier.name}</span></td>
+                                <td><span class="badge rounded-pill text-white" style="background: linear-gradient(45deg, #6a11cb, #2575fc);">${identifier.count}</span></td>
                             </tr>
                             `;
                             $("#topIdentifiersTable tbody").append(newRow);
@@ -474,9 +474,10 @@
                             'safety_imp_id': 'Safety',
                         };
                         $.each(data.counts, function(key, value) {
-
-                            labels.push(labelMap[key] || key);
-                            values.push(value);
+                           if(key!='total_cost_saving_amt'){
+                               labels.push(labelMap[key] || key);
+                               values.push(value);
+                           }
                         });
                         donutChart(labels, values);
 
@@ -544,8 +545,7 @@
                 });
             }
         });
-        // Usage:
-        // donutChart(["A", "B", "C"], [10, 5, 7], "Total 22");
+      
     </script>
 
 

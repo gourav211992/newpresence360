@@ -28,6 +28,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/edit/{id}', 'edit')->name('kaizen.edit');
         Route::get('/view/{id}', 'view')->name('kaizen.view');
         Route::get('/download-pdf/{id}', 'pdfView')->name('kaizen.pdf-view');
+        Route::get('/export', 'exportKaizens')->name('kaizens.export');
     });
 
     Route::prefix('designation')->controller(DesignationController::class)->group(function () {

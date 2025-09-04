@@ -210,7 +210,7 @@
                                                             </div>
                                                         @endforeach
 
-                                                          {{-- Scrap Checkbox --}}
+                                                          {{-- Scrap Checkbox --}} 
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_scrap" value="0">
                                                                 <input type="checkbox" class="form-check-input subTypeCheckbox" id="scrapCheckbox" name="is_scrap" value="1" 
@@ -2721,9 +2721,6 @@
             generateItemCode();
         });
 
-        if (!isItemReferenced && itemCodeType === 'Auto') {
-            generateItemCode();
-        }
         itemInitialInput.on('input', function() {
             let value = $(this).val().toUpperCase();
             if (value.length > 3) {

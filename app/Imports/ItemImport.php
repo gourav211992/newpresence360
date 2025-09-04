@@ -205,7 +205,18 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 }
                 $subCategoryInitials = '';
                 $itemName = $row['item_name'] ?? '';
-                $itemInitials = strtoupper(substr($itemName, 0, 3));
+                $cleanedItemName = preg_replace('/[^a-zA-Z0-9\s]/', '', $itemName);
+                $words = preg_split('/\s+/', trim($cleanedItemName));
+                $words = array_filter($words, fn($word) => strlen($word) > 0);
+
+                if (count($words) === 1) {
+                    $itemInitials = strtoupper(substr($words[0], 0, 3));
+                } elseif (count($words) === 2) {
+                    $itemInitials = strtoupper(substr($words[0], 0, 2) . substr($words[1], 0, 1));
+                } elseif (count($words) >= 3) {
+                    $itemInitials = strtoupper($words[0][0] . $words[1][0] . $words[2][0]);
+                }
+                $itemInitials = substr($itemInitials, 0, 3);
                 $subTypeRaw = $row['sub_type'] ?? null;
                 $subType = $subTypeRaw ? explode(',', $subTypeRaw) : [];
                 $itemType = ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods');
@@ -235,10 +246,10 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
 
                  // Apply asset validation only when the type is 'G' (Goods)
                 if ($itemType === 'Goods' && $isAsset == 1) {
-                    $assetCategory = $row['assetcategory'] ?? null;
+                    $assetCategory = $row['asset_category'] ?? null;
 
                     $brandName = $row['brand'] ?? null;
-                    $modelNo = $row['modelno'] ?? null;
+                    $modelNo = $row['model_no'] ?? null;
 
                     if (empty($assetCategory)) {
                         $errorMessages[] = "Asset Category is required when item is marked as an asset.";
@@ -278,6 +289,19 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     if (!$skipRow && !empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
                         $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
                     }
+                }
+
+                if (($row['is_inspection'] ?? 'N') === 'Y' && empty($row['inspection_checklist'])) {
+                    $errorMessages[] = "Inspection Checklist is required when Inspection is Yes.";
+                    $skipRow = true;
+                }
+
+                $isExpiry = ($row['is_expiry'] ?? 'N') === 'Y';
+                $shelfLifeDays = $row['shelf_life_days'] ?? null;
+
+                if ($isExpiry && empty($shelfLifeDays)) {
+                    $errorMessages[] = "Shelf Life Days is required when item has expiry.";
+                    $skipRow = true;
                 }
 
                 if ($skipRow) {
@@ -323,19 +347,33 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'is_traded_item' => $isTradedItem,
                     'is_asset' => $isAsset,
                     'is_scrap' => $isScrap,
-                    'asset_category_id' => $row['assetcategory'] ?? null,
+                    'asset_category_id' => $row['asset_category'] ?? null,
                     'brand_name' => $row['brand'] ?? null,
-                    'model_no' => $row['modelno'] ?? null,
+                    'model_no' => $row['model_no'] ?? null,
                     'remarks' => "Processing item upload",
                     'batch_no' => $batchNo,
                     'user_id' => $user->id,
                     'min_stocking_level' => $row['min_stocking_level'] ?? null,
                     'max_stocking_level' => $row['max_stocking_level'] ?? null,
                     'reorder_level' => $row['reorder_level'] ?? null,
-                    'minimum_order_qty' => $row['minimum_order_qty'] ?? null,
+                    'min_order_qty' => $row['min_order_qty'] ?? null,
                     'lead_days' => $row['lead_days'] ?? null,
                     'safety_days' => $row['safety_days'] ?? null,
                     'shelf_life_days' => $row['shelf_life_days'] ?? null,
+                    'po_positive_tolerance' => $row['po_positive_tolerance'] ?? null,
+                    'po_negative_tolerance' => $row['po_negative_tolerance'] ?? null,
+                    'so_positive_tolerance' => $row['so_positive_tolerance'] ?? null,
+                    'so_negative_tolerance' => $row['so_negative_tolerance'] ?? null,
+                    'is_serial_no' => ($row['is_serial_no'] ?? 'N') === 'Y' ? 1 : 0,
+                    'is_batch_no' => ($row['is_batch_no'] ?? 'N') === 'Y' ? 1 : 0,
+                    'is_expiry' => $isExpiry ? 1 : 0,
+                    'is_inspection' => ($row['is_inspection'] ?? 'N') === 'Y' ? 1 : 0,
+                    'inspection_checklist' => $row['inspection_checklist'] ?? null,
+                    'storage_uom' => $row['storage_uom'] ?? null,
+                    'storage_uom_conversion' => $row['storage_uom_conversion'] ?? null,
+                    'storage_uom_count' => $row['storage_uom_count'] ?? null,
+                    'storage_weight' => $row['storage_weight'] ?? null,
+                    'storage_volume' => $row['storage_volume'] ?? null,
                     'attributes' => json_encode($attributes),
                     'specifications' => json_encode($specifications),
                     'alternate_uoms' => json_encode($alternateUoms),
@@ -405,6 +443,10 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
             $assetCategoryId = null;
             $expectedLife = null;
             $maintenanceSchedule = null;
+            $storageUomId = $uomId; 
+            $storageUomConversion = 1; 
+            $storageUomCount = 1; 
+            $inspectionChecklistId = null;
             if (!empty($uploadedItem->subcategory)) {
                 try {
                     $subCategory = $this->service->getSubCategory($uploadedItem->subcategory);
@@ -474,6 +516,35 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 }
             }
 
+            if (($uploadedItem->is_inspection ?? 0) == 1 && !empty($uploadedItem->inspection_checklist)) {
+                try {
+                    $inspectionChecklistId = $this->service->getInspectionByNameAndType($uploadedItem->inspection_checklist);
+                    if (!$inspectionChecklistId) {
+                        $errors[] = "Invalid Inspection Checklist Name.";
+                    }
+                } catch (Exception $e) {
+                    $errors[] = "Error fetching inspection: " . $e->getMessage();
+                }
+            }
+
+            $shelfLifeDays = (($uploadedItem->is_expiry ?? 0) == 1) ? ($uploadedItem->shelf_life_days ?? null) : null;
+            // Storage UOM Handling
+            if (!empty($uploadedItem->storage_uom)) {
+                try {
+                    $storageUomId = $this->service->getUomId($uploadedItem->storage_uom);
+                } catch (Exception $e) {
+                    $errors[] = "Error fetching storage UOM: " . $e->getMessage();
+                }
+
+                if ($storageUomId === $uomId) {
+                    $storageUomConversion = 1;
+                    $storageUomCount = $uploadedItem->storage_uom_count ?? 1;
+                } else {
+                    $storageUomConversion = $uploadedItem->storage_uom_conversion ?? 1;
+                    $storageUomCount = 1;
+                }
+            }
+
             if (!empty($uploadedItem->attributes)) {
                 $attributes = json_decode($uploadedItem->attributes, true);
                 $this->service->validateItemAttributes($attributes, $errors);
@@ -509,10 +580,24 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'min_stocking_level' => $uploadedItem->min_stocking_level ?? null,
                     'max_stocking_level' => $uploadedItem->max_stocking_level ?? null,
                     'reorder_level' => $uploadedItem->reorder_level ?? null,
-                    'minimum_order_qty' => $uploadedItem->minimum_order_qty ?? null,
+                    'minimum_order_qty' => $uploadedItem->min_order_qty  ?? null,
                     'lead_days' => $uploadedItem->lead_days ?? null,
                     'safety_days' => $uploadedItem->safety_days ?? null,
                     'shelf_life_days' => $uploadedItem->shelf_life_days ?? null,
+                    'po_positive_tolerance' => $uploadedItem->po_positive_tolerance ?? null,
+                    'po_negative_tolerance' => $uploadedItem->po_negative_tolerance ?? null,
+                    'so_positive_tolerance' => $uploadedItem->so_positive_tolerance ?? null,
+                    'so_negative_tolerance' => $uploadedItem->so_negative_tolerance ?? null,
+                    'is_serial_no' => $uploadedItem->is_serial_no ?? 0,
+                    'is_batch_no' => $uploadedItem->is_batch_no ?? 0,
+                    'is_expiry' => $uploadedItem->is_expiry ?? 0,
+                    'is_inspection' => $uploadedItem->is_inspection ?? 0,
+                    'inspection_checklist_id' => $inspectionChecklistId, 
+                    'storage_uom_id' => $storageUomId,
+                    'storage_uom_conversion' => $storageUomConversion,
+                    'storage_uom_count' => $storageUomCount,
+                    'storage_weight' => $uploadedItem->storage_weight ?? null,
+                    'storage_volume' => $uploadedItem->storage_volume ?? null,
                     'item_remarks' => $uploadedItem->remarks ?? null,
                     'is_traded_item' => $subTypeData['is_traded_item'] ?? 0,
                     'is_asset'       => $subTypeData['is_asset'] ?? 0,

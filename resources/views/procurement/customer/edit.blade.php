@@ -2290,10 +2290,6 @@
             });
         }
 
-        if (customerCodeType === 'Auto') {
-            generateCustomerCode(); 
-        }
-
         companyNameInput.on('input change', function() {
             const companyName = $(this).val().trim();  
             customerInitialInput.val(getCustomerInitials(companyName)); 

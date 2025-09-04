@@ -11,7 +11,10 @@ use Dompdf\Options;
 use Illuminate\Support\Arr;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\InspectionRequest;
@@ -31,7 +34,6 @@ use App\Models\InspectionDetailHistory;
 use App\Models\InspectionItemLocation;
 use App\Models\InspectionItemAttributeHistory;
 
-use App\Models\MrnBatchDetail;
 
 use App\Models\Hsn;
 use App\Models\Tax;
@@ -61,17 +63,18 @@ use App\Models\AlternateUOM;
 use App\Models\ErpSaleOrder;
 use App\Models\Organization;
 use App\Models\NumberPattern;
+use App\Models\MrnBatchDetail;
 use App\Models\AttributeGroup;
 use App\Models\EwayBillMaster;
-
-use App\Models\ErpEinvoice;
-use App\Models\ErpEinvoiceLog;
+use App\Models\Configuration;
+use App\Models\InspChecklistHistory;
 
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\BookHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
+use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
@@ -82,17 +85,15 @@ use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
 
 use App\Jobs\SendEmailJob;
-use App\Services\InspectionService;
-use App\Services\MrnDeleteService;
-use App\Services\InspectionCheckAndUpdateService;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\PurchaseReturnExport;
-use App\Helpers\CommonHelper;
+
 use App\Lib\Services\WHM\WhmJob;
-use App\Models\Configuration;
-use App\Models\InspChecklistHistory;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Services\Inspection\DeleteService;
+use App\Services\Inspection\InspectionService;
+use App\Services\Inspection\UpdateAddressService;
+use App\Services\Inspection\CheckAndUpdateService;
+
+use App\Exports\PurchaseReturnExport;
+use App\Lib\Services\WHM\PutawayJob;
 
 class InspectionController extends Controller
 {
@@ -319,76 +320,21 @@ class InspectionController extends Controller
             $inspection->total_amount = 0.00;
             $inspection->save();
 
-            $vendorBillingAddress = $inspection->billingAddress ?? null;
-            $vendorShippingAddress = $inspection->shippingAddress ?? null;
-            if ($vendorBillingAddress) {
-                $billingAddress = $inspection->bill_address_details()->firstOrNew([
-                    'type' => 'billing',
-                ]);
-                $billingAddress->fill([
-                    'address' => $vendorBillingAddress->address,
-                    'country_id' => $vendorBillingAddress->country_id,
-                    'state_id' => $vendorBillingAddress->state_id,
-                    'city_id' => $vendorBillingAddress->city_id,
-                    'pincode' => $vendorBillingAddress->pincode,
-                    'phone' => $vendorBillingAddress->phone,
-                    'fax_number' => $vendorBillingAddress->fax_number,
-                ]);
-                $billingAddress->save();
-            }
-
-            if ($vendorShippingAddress) {
-                $shippingAddress = $inspection->ship_address_details()->firstOrNew([
-                    'type' => 'shipping',
-                ]);
-                $shippingAddress->fill([
-                    'address' => $vendorShippingAddress->address,
-                    'country_id' => $vendorShippingAddress->country_id,
-                    'state_id' => $vendorShippingAddress->state_id,
-                    'city_id' => $vendorShippingAddress->city_id,
-                    'pincode' => $vendorShippingAddress->pincode,
-                    'phone' => $vendorShippingAddress->phone,
-                    'fax_number' => $vendorShippingAddress->fax_number,
-                ]);
-                $shippingAddress->save();
-            }
-            # Store location address
-            if($inspection?->erpStore)
-            {
-                $storeAddress  = $inspection?->erpStore->address;
-                $storeLocation = $inspection->store_address()->firstOrNew();
-                $storeLocation->fill([
-                    'type' => 'location',
-                    'address' => $storeAddress->address,
-                    'country_id' => $storeAddress->country_id,
-                    'state_id' => $storeAddress->state_id,
-                    'city_id' => $storeAddress->city_id,
-                    'pincode' => $storeAddress->pincode,
-                    'phone' => $storeAddress->phone,
-                    'fax_number' => $storeAddress->fax_number,
-                ]);
-                $storeLocation->save();
+            // ✅ Capture Address response
+            $addressService = new UpdateAddressService();
+            $addressResponse = $addressService->updateAddress($inspection);
+            if($addressResponse['status'] === 'error') {
+                \DB::rollBack();
+                return response()->json([
+                    'message' => $addressResponse['message'],
+                    'error' => 'ERR04'
+                ], 422);
             }
 
             if (isset($request->all()['components'])) {
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    // Check Inspection CheckLists
-                    // if($item && count($item->loadInspectionChecklists())) {
-                    //     $inspectionData = (isset($component['inspectionData']) && is_string($component['inspectionData']))
-                    //             ? json_decode($component['inspectionData'], true)
-                    //             : $component['inspectionData'];
-                    //     $inspectionValidator = InspectionHelper::validateInspectionCheckList((array) $inspectionData, $item);
-                    //     if(!$inspectionValidator['status']) {
-                    //         DB::rollBack();
-                    //         return response() -> json([
-                    //             'message' => $inspectionValidator['message'],
-                    //             'error' => 'Inspection001'
-                    //         ], 422);
-                    //     }
-                    // }
-
                     if ($item) {
                         // Normalize to something countable
                         $checklists = $item->loadInspectionChecklists();
@@ -406,7 +352,6 @@ class InspectionController extends Controller
                             }
 
                             $inspectionValidator = InspectionHelper::validateInspectionCheckList((array)$inspectionData, $item);
-
                             if (!$inspectionValidator['status']) {
                                 DB::rollBack(); // keep only if you're inside a transaction
                                 return response()->json([
@@ -431,6 +376,7 @@ class InspectionController extends Controller
                             ], 422);
                         }
                     }
+
                     $so_id = null;
                     $inputQty = 0.00;
                     $balanceQty = 0.00;
@@ -441,12 +387,30 @@ class InspectionController extends Controller
                         $mrn_detail_id = $mrnDetail->id ?? null;
                         $mrnHeaderId = $component['mrn_header_id'];
                         if ($mrnDetail) {
-                            $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
+                            $inputQty = $component['order_qty'];
+                            $acceptedQty = $component['accepted_qty'];
+                            $rejectedQty = $component['rejected_qty'];
                             $balanceQty = ($mrnDetail->order_qty - ($mrnDetail->inspection_qty ?? 0.00));
+                            $rejectQty = ($inputQty - $acceptedQty);
+
                             if($balanceQty < $inputQty){
                                 DB::rollBack();
                                 return response()->json([
-                                    'message' => 'Input qty can not be greater than balance qty.'
+                                    'message' => 'Inspected qty can not be greater than '.$balanceQty.'.'
+                                ], 422);
+                            }
+
+                            if($inputQty < $acceptedQty){
+                                DB::rollBack();
+                                return response()->json([
+                                    'message' => 'Accepted qty can not be greater than '.$inputQty.'.'
+                                ], 422);
+                            }
+
+                            if($rejectQty < $rejectedQty){
+                                DB::rollBack();
+                                return response()->json([
+                                    'message' => 'Rejected qty can not be greater than ' .$rejectQty. '.'
                                 ], 422);
                             }
                             $mrnDetail->inspection_qty += floatval($inputQty);
@@ -578,7 +542,11 @@ class InspectionController extends Controller
                                 ], 422);
                             }
                         } else {
-                            \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
+                            \DB::rollBack();
+                            return response()->json([
+                                'message' => "Invalid JSON for itemChecklists: " .$component['inspectionData'],
+                                'error' => ''
+                            ], 422);
                         }
                     }
 
@@ -658,6 +626,7 @@ class InspectionController extends Controller
                 $mediaFiles = $inspection->uploadDocuments($request->file('attachment'), 'pb', false);
             }
             $inspection->mrn_header_id = $mrnHeaderId;
+            $inspection->is_enforce_uic_scanning = 1;
             $inspection->save();
             if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
                 $updateMrn = InspectionHelper::updateMrnDetail($inspection);
@@ -679,18 +648,8 @@ class InspectionController extends Controller
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->whereNull('deleted_at')
                 ->first();
-
-            // if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-            //     $mainStore = $inspection?->erpSubStore?->is_warehouse_required;
-            //     $rejectedStore = $inspection?->rejectedSubStore?->is_warehouse_required;
-            //     if($mainStore){
-            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'main_store');
-            //     }
-            //     if($rejectedStore && $inspection->rejectedSubStore){
-            //         (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader', 'rejected_store');
-            //     }
-            // }
 
             // Preconditions: approved status AND config = 'yes'
             $approvedSet = (array) ConstantHelper::DOCUMENT_STATUS_APPROVED;
@@ -702,20 +661,20 @@ class InspectionController extends Controller
                 $rejectedSubStore = $inspection->rejectedSubStore;
 
                 // Compute flags (treat null as false)
-                $mainNeedsPutaway     = (int) ($mainSubStore->is_warehouse_required ?? 0) === 1;
-                $rejectedNeedsPutaway = (int) ($rejectedSubStore->is_warehouse_required ?? 0) === 1;
+                // $mainNeedsPutaway     = (int) ($mainSubStore->is_warehouse_required ?? 0) === 1;
+                // $rejectedNeedsPutaway = (int) ($rejectedSubStore->is_warehouse_required ?? 0) === 1;
 
                 // Build targets and create jobs in one pass
                 $targets = [];
-                if ($mainNeedsPutaway) {
+                if ($mainSubStore) {
                     $targets[] = 'main_store';
                 }
-                if ($rejectedSubStore && $rejectedNeedsPutaway) {
+                if ($mainSubStore && $rejectedSubStore) {
                     $targets[] = 'rejected_store';
                 }
 
                 if (!empty($targets)) {
-                    $whmJob = new WhmJob();
+                    $whmJob = new PutawayJob();
                     foreach ($targets as $target) {
                         $whmJob->createJob($inspection->id, \App\Models\InspectionHeader::class, $jobType = null, $target);
                     }
@@ -1709,12 +1668,14 @@ class InspectionController extends Controller
             'item_id'            => $component['item_id'] ?? null,
             'mrn_header_id'      => $component['mrn_header_id'] ?? null,
             'mrn_detail_id'      => $component['mrn_detail_id'] ?? null,
-            'inspection_dtl_id' => $component['inspection_dtl_id'] ?? null,
+            'inspection_dtl_id'  => $component['inspection_dtl_id'] ?? null,
             'qty'                => $component['order_qty'] ?? null,
+            'accepted_qty'       => $component['accepted_qty'] ?? null,
+            'rejected_qty'       => $component['rejected_qty'] ?? null,
             'type'               => $refType ?? '',
         ];
 
-        $checkService = new InspectionCheckAndUpdateService();
+        $checkService = new CheckAndUpdateService();
         $data = $checkService->validateOrderQuantity($inputData);
         return $data;
     }
@@ -1726,11 +1687,13 @@ class InspectionController extends Controller
             'item_id'            => $request->item_id,
             'mrn_header_id'      => $request->mrn_header_id,
             'mrn_detail_id'      => $request->mrn_detail_id,
-            'inspection_dtl_id'      => $request->inspection_dtl_id,
+            'inspection_dtl_id'  => $request->inspection_dtl_id,
             'qty'                => $request->qty,
+            'accepted_qty'       => $component['accepted_qty'] ?? null,
+            'rejected_qty'       => $component['rejected_qty'] ?? null,
             'type'               => $request->type,
         ];
-        $checkService = new InspectionCheckAndUpdateService();
+        $checkService = new CheckAndUpdateService();
         $data = $checkService->validateOrderQuantity($inputData);
         if ($data['status'] === 'success') {
             return response()->json(['message' => $data['message'], 'status' => 200, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
@@ -1988,12 +1951,9 @@ class InspectionController extends Controller
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
         $soId= $request->so_id ?? null;
-        $mrnItems = null;
-        $storeId = $request->header_store_id ?? null;
-        $subStoreId = $request->sub_store_id ?? null;
-        $itemSearch = $request->item_search ?? null;
         $detailsIds = $request->details_ids ?? '';
         $headerId = $request->header_id ?? '';
+        $mrnItems = null;
 
         if (is_string($detailsIds)) {
             $detailsIds = array_filter(explode(',', $detailsIds));
@@ -2005,39 +1965,36 @@ class InspectionController extends Controller
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         $selectColumn = ['id','mrn_header_id','so_id','item_id','item_code','item_name','uom_id','uom_code','order_qty','inspection_qty','remark'];
         $mrnItems = MrnDetail::select($selectColumn)
-                    ->where('is_inspection', 1)
-                    ->where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $selected_mrn_ids, $itemSearch,$storeId,$subStoreId, $soId, $mrnDocNumber) {
-                    if(count($selected_mrn_ids)) {
-                        $query->whereNotIn('id',$selected_mrn_ids);
-                    }
-                    $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$subStoreId,$mrnDocNumber, $vendorId) {
-                        $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                        if(count($applicableBookIds)) {
-                            $mrnHeader->whereIn('book_id',$applicableBookIds);
-                        }
-                        if($storeId) {
-                            $mrnHeader->where('store_id', $storeId);
-                        }
-                        // if($subStoreId) {
-                        //     $mrnHeader->where('sub_store_id', $subStoreId);
-                        // }
-                        if($mrnDocNumber) {
-                            $mrnHeader->where('id', $mrnDocNumber);
-                        }
-                        if ($vendorId) {
-                            $mrnHeader->where('vendor_id', $vendorId);
-                        }
-                    });
-                    if($soId) {
-                        $query->where('so_id', $soId);
-                    }
-                    if ($itemSearch) {
-                        $query->whereHas('item', function ($query) use ($itemSearch) {
-                            $query->searchByKeywords($itemSearch);
-                        });
-                    }
-                    $query->whereRaw('order_qty > inspection_qty');
+            ->where('is_inspection', 1)
+            ->where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $selected_mrn_ids, $itemSearch,$storeId,$subStoreId, $soId, $mrnDocNumber) {
+            if(count($selected_mrn_ids)) {
+                $query->whereNotIn('id',$selected_mrn_ids);
+            }
+            $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$subStoreId,$mrnDocNumber, $vendorId) {
+                $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+                if(count($applicableBookIds)) {
+                    $mrnHeader->whereIn('book_id',$applicableBookIds);
+                }
+                if($storeId) {
+                    $mrnHeader->where('store_id', $storeId);
+                }
+                if($mrnDocNumber) {
+                    $mrnHeader->where('id', $mrnDocNumber);
+                }
+                if ($vendorId) {
+                    $mrnHeader->where('vendor_id', $vendorId);
+                }
+            });
+            if($soId) {
+                $query->where('so_id', $soId);
+            }
+            if ($itemSearch) {
+                $query->whereHas('item', function ($query) use ($itemSearch) {
+                    $query->searchByKeywords($itemSearch);
                 });
+            }
+            $query->whereRaw('order_qty > inspection_qty');
+        });
 
         if ($request->type === 'create' && count($selected_mrn_ids)) {
             $mrnItems->whereNotIn('erp_mrn_details.id', $selected_mrn_ids);

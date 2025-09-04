@@ -28,6 +28,8 @@ use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
+use App\Lib\Services\WHM\PickingJob;
+use App\Lib\Services\WHM\PutawayJob;
 use App\Lib\Services\WHM\UnloadingJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Bom;
@@ -643,7 +645,7 @@ class DocumentApprovalController extends Controller
                 ->first();
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+                (new PutawayJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
             if ($request->action_type === 'deviation-closed') {
@@ -1028,7 +1030,7 @@ class DocumentApprovalController extends Controller
             ->first();
 
             if(in_array($doc->document_status, [ConstantHelper::APPROVED]) && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($doc->id,'App\Models\ErpPlHeader');
+                (new PickingJob)->createJob($doc->id,'App\Models\ErpPlHeader');
             }
             DB::commit();
             return response()->json([
@@ -1295,6 +1297,19 @@ class DocumentApprovalController extends Controller
 
             if($inspection->document_status == ConstantHelper::APPROVED) {
                 $updateMrn = InspectionHelper::updateMrnDetail($inspection);
+            }
+
+            // Get login user detail
+            $user = Helper::getAuthenticatedUser();
+            
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+
+            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+                (new PutawayJob)->createJob($inspection->id,'App\Models\MrnHeader');
             }
 
             DB::commit();

@@ -992,94 +992,6 @@
             });
         }
 
-        /*Add New Row*/
-        $(document).on('click', '#addNewItemBtn', (e) => {
-            if (!checkBasicFilledDetail()) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please fill header detail first',
-                    icon: 'error',
-                });
-                return false;
-            }
-            if (!checkVendorFilledDetail()) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please fill vendor detail first',
-                    icon: 'error',
-                });
-                return false;
-            }
-            let rowsLength = $("#itemTable > tbody > tr").length;
-            /*Check last tr data shoud be required*/
-            let lastRow = $('#itemTable .mrntableselectexcel tr:last');
-            let lastTrObj = {
-                item_id: "",
-                attr_require: true,
-                row_length: lastRow.length
-            };
-
-            if (lastRow.length == 0) {
-                lastTrObj.attr_require = false;
-                lastTrObj.item_id = "0";
-            }
-
-            if (lastRow.length > 0) {
-                let item_id = lastRow.find("[name*='item_id']").val();
-                if (lastRow.find("[name*='attr_name']").length) {
-                    var emptyElements = lastRow.find("[name*='attr_name']").filter(function () {
-                        return $(this).val().trim() === '';
-                    });
-                    attr_require = emptyElements?.length ? true : false;
-                } else {
-                    attr_require = true;
-                }
-
-                lastTrObj = {
-                    item_id: item_id,
-                    attr_require: attr_require,
-                    row_length: lastRow.length
-                };
-
-                if ($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && item_id) {
-                    lastTrObj.attr_require = false;
-                }
-            }
-
-            let actionUrl = '{{route("inspection.item.row")}}' + '?count=' + rowsLength + '&component_item=' + JSON.stringify(lastTrObj);
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if (data.status == 200) {
-                        // $("#submit-button").click();
-                        if (rowsLength) {
-                            $("#itemTable > tbody > tr:last").after(data.data.html);
-                        } else {
-                            $("#itemTable > tbody").html(data.data.html);
-                        }
-                        initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
-                        $(".poSelect").hide();
-                        $(".joSelect").hide();
-                        $(".soSelect").hide();
-                        $("#vendor_name").prop('readonly', true);
-                        $(".editAddressBtn").addClass('d-none');
-                    } else if (data.status == 422) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message || 'An unexpected error occurred.',
-                            icon: 'error',
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Someting went wrong!',
-                            icon: 'error',
-                        });
-                    }
-                });
-            });
-        });
-
         /*Delete Row*/
         $(document).on('click', '#deleteBtn', (e) => {
             let itemIds = [];
@@ -1909,10 +1821,14 @@
                     localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
                     $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
 
-                    $(".module_type").val(modelType);
-                    $("#itemTable .mrntableselectexcel").append(pos);
+                    if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                        $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
+                    } else {
+                        $("#itemTable .mrntableselectexcel").empty().append(pos);
+                    }
                     initializeAutocomplete2(".comp_item_code");
                     $("#mrnModal").modal('hide');
+                    // focusAndScrollToLastRowInput();
 
                     // UI Locks
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);

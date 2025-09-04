@@ -54,7 +54,7 @@ class PutawayJob
 
         $type = $jobType ?? CommonHelper::getJobType($namespace);
         $trnstype = CommonHelper::getJobTransactionType($namespace);
-
+        
         // Step 2: Get or Create Job (prevents duplicate job on edit)
         $job = ErpWhmJob::firstOrCreate(
             [
@@ -111,7 +111,7 @@ class PutawayJob
             ->where('detail_id',$detail->id)
             ->where('item_id',$detail->item_id)
             ->get();
-
+        
         // Check if this is MrnDetail and has gate_entry_detail_id
         if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
             if ($batchData->count() > 0) {
@@ -119,7 +119,7 @@ class PutawayJob
                     $qty = isset($batch->accepted_inv_uom_qty) & $batch->accepted_inv_uom_qty ? $batch->accepted_inv_uom_qty : intval($batch->inventory_uom_qty);
                     $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
                     if ($existingQRCodes->count() > 0) {
-                        $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, $batch);
+                        $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::RECEIPT, $trnstype, $batch);
                     }else {
                         // ❗ Fall back to fresh QR code creation
                         $this->createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch, $qty);
@@ -131,7 +131,7 @@ class PutawayJob
 
             $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
             if ($existingQRCodes->count() > 0) {
-                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype, NULL);
+                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::RECEIPT, $trnstype, NULL);
                 return; // exit after copying
             }
         }

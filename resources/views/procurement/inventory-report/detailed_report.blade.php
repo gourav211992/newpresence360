@@ -828,7 +828,7 @@
                 const actionUrl = `{{ route('inventory-report.item.attr') }}?item_id=${itemId}`;
                 const response = await fetch(actionUrl);
                 const data = await response.json();
-                if (data.status === 200) {$('#item').val()
+                if (data.status === 200 && data.data.html) {$('#item').val()
                     $("#attribute tbody").html(data.data.html);
                     const isItemSelected = $('#item').val() !== '';
                     $('#store_id, #sub_store_id').prop(

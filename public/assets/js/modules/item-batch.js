@@ -366,14 +366,12 @@ $(document).on("click", "#saveItemBatchBtn", function (e) {
             if (
                 !/^\d{4}$/.test(manufacturing_year) ||
                 yr <= 1900 ||
-                yr >= currentYear
+                yr > currentYear
             ) {
                 $year
                     .addClass("is-invalid")
                     .after(
-                        `<div class="invalid-feedback">Manufacturing year must be a valid past year (1901–${
-                            currentYear - 1
-                        }).</div>`
+                        `<div class="invalid-feedback">Manufacturing year must be a valid past year (1901–${currentYear}).</div>`
                     );
                 isValid = false;
             }

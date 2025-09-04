@@ -25,6 +25,7 @@ use App\Models\ErpPickupItemAttribute;
 use App\Models\AttributeGroup;
 use App\Models\Attribute;
 use App\Models\ItemAttribute;
+use App\Models\ErpRgrStoreMapping;
 use App\Models\Item;
 use App\Models\ErpStore;
 use Yajra\DataTables\DataTables;
@@ -190,25 +191,34 @@ class RgrController extends Controller
 
             // 5. Save RGR Header
             $rgr->save();
-            // ✅ Save RGR ID into ErpPickupSchedule
              ErpPickupSchedule::where('id', $request->input('pickup_schedule_id'))
                 ->update([
                     'rgr_id' => $rgr->id
                 ]);
     
             // 6. Save RGR Items
-        if ($request->has('rgr_items') && is_array($request->input('rgr_items'))) {
+         if ($request->has('rgr_items') && is_array($request->input('rgr_items'))) {
                 foreach ($request->input('rgr_items') as $itemData) {
 
                     $item = Item::with('uom')->find($itemData['item_id']);
                     $inventoryUomQty = ItemHelper::convertToBaseUom( $item->id, $itemData['uom_id'] ?? 0, $itemData['qty'] ?? 0);
+                    $subStoreId = null;
+                    $categoryId = $itemData['category_id'] ?? $item->subcategory_id ?? null;
+                    if ($request->input('store_id') && $categoryId) {
+                        $storeMapping = ErpRgrStoreMapping::where('store_id', $request->input('store_id'))
+                            ->where('category_id', $categoryId)
+                            ->first();
+
+                        $subStoreId = $storeMapping ? $storeMapping->sub_store_id : null;
+                    }
+                    $subStoreId = $storeMapping ? $storeMapping->sub_store_id : null;
 
                     $rgrItem = new ErpRgrItem;
                     $rgrItem->rgr_id = $rgr->id;
                     $rgrItem->item_id = $itemData['item_id'];
                     $rgrItem->hsn_id = $itemData['hsn_id'] ?? null;
                     $rgrItem->category_id = $itemData['category_id'] ?? null;
-                    $rgrItem->sub_store_id = $itemData['sub_store_id'] ?? null;
+                    $rgrItem->sub_store_id = $subStoreId; 
                     $rgrItem->item_uid = $itemData['item_uid'] ?? '';
                     $rgrItem->item_code = $itemData['item_code'] ?? '';
                     $rgrItem->item_name = $itemData['item_name'] ?? '';
@@ -402,6 +412,15 @@ class RgrController extends Controller
 
                     $item = Item::with('uom')->find($itemData['item_id']);
                     $inventoryUomQty = ItemHelper::convertToBaseUom($item->id,$itemData['uom_id'] ?? 0,$itemData['qty'] ?? 0);
+                    $subStoreId = null;
+                    $categoryId = $itemData['category_id'] ?? $item->subcategory_id ?? null;
+                    if ($request->input('store_id') && $categoryId) {
+                        $storeMapping = ErpRgrStoreMapping::where('store_id', $request->input('store_id'))
+                            ->where('category_id', $categoryId)
+                            ->first();
+
+                        $subStoreId = $storeMapping ? $storeMapping->sub_store_id : null;
+                    }
                     if (isset($itemData['id'])) {
                         // Update existing item
                         $rgrItem = ErpRgrItem::find($itemData['id']);
@@ -409,7 +428,7 @@ class RgrController extends Controller
                             $rgrItem->item_id = $itemData['item_id'];
                             $rgrItem->hsn_id = $itemData['hsn_id'] ?? null;
                             $rgrItem->category_id = $itemData['category_id'] ?? null;
-                            $rgrItem->sub_store_id = $itemData['sub_store_id'] ?? null;
+                            $rgrItem->sub_store_id = $subStoreId;
                             $rgrItem->item_uid = $itemData['item_uid'] ?? '';
                             $rgrItem->item_code = $itemData['item_code'] ?? '';
                             $rgrItem->item_name = $itemData['item_name'] ?? '';
@@ -444,7 +463,7 @@ class RgrController extends Controller
                         $rgrItem->item_id = $itemData['item_id'];
                         $rgrItem->hsn_id = $itemData['hsn_id'] ?? null;
                         $rgrItem->category_id = $itemData['category_id'] ?? null;
-                        $rgrItem->sub_store_id = $itemData['sub_store_id'] ?? null;
+                        $rgrItem->sub_store_id = $subStoreId;
                         $rgrItem->item_uid = $itemData['item_uid'] ?? '';
                         $rgrItem->item_code = $itemData['item_code'] ?? '';
                         $rgrItem->item_name = $itemData['item_name'] ?? '';

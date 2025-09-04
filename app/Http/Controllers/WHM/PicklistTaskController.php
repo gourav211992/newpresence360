@@ -11,7 +11,7 @@ use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
-use App\Lib\Services\WHM\WhmJob;
+use App\Lib\Services\WHM\PickingJob;
 use App\Models\ErpPlHeader;
 use App\Models\ErpPlItem;
 use App\Models\StockLedgerReservation;
@@ -31,7 +31,7 @@ class PicklistTaskController extends Controller
         $jobs = ErpWhmJob::with(['store' => function($q){
                         $q->select('id','store_name');
                     },'subStore' => function($q){
-                        $q->select('id','name');
+                        $q->select('id','name','is_warehouse_required');
                     }, 'morphable.items' => function($q){
                         $q->select('id','pl_header_id','picked_qty');
                     }])
@@ -232,7 +232,7 @@ class PicklistTaskController extends Controller
             'job_id' => ['required'],
             'pl_item_id' => ['required'],
             'packet_ids' => ['required', 'array'],
-            'storage_point_id' => ['required']
+            'storage_point_id' => ['nullable']
         ],[
             'job_id.required' => 'Job id is required',
             'pl_item_id.required' => 'Picklist item id is required',
@@ -254,6 +254,15 @@ class PicklistTaskController extends Controller
             ]);
         }
 
+        $subStore = $job->subStore;
+        if ($subStore && $subStore->is_warehouse_required) {
+            if (!$request->filled('storage_point_id')) {
+                throw ValidationException::withMessages([
+                    'storage_point_id' => ['Storage point is required.'],
+                ]);
+            }
+        }
+
         $detail = ErpPlItem::find($request->pl_item_id);
         if(!$detail){
             throw ValidationException::withMessages([
@@ -273,8 +282,12 @@ class PicklistTaskController extends Controller
         $mrnIds = $reservedStock->pluck('receipt_detail_id')
             ->toArray();
 
+        $storagePointId = $request->storage_point_id ?? NULL;
         $packets = ErpItemUniqueCode::whereIn('item_uid', $request->packet_ids)
-            ->where('storage_point_id',$request->storage_point_id)
+            // ->where('storage_point_id',$request->storage_point_id)
+            ->when($storagePointId, function ($query) use ($storagePointId) {
+                $query->where('storage_point_id', $storagePointId);
+            })
             ->where('item_id',$detail->item_id)
             ->whereNull('utilized_id')
             ->whereIn('morphable_id',$mrnIds)
@@ -325,7 +338,7 @@ class PicklistTaskController extends Controller
             }
 
             $header = $job->morphable;
-            (new WhmJob())->generateQRCodesForPickList($detail, $header, $job->id, $request->packet_ids, $request->storage_point_id, $user, CommonHelper::PICKING, $transType);
+            (new PickingJob())->scanQRCodes($detail, $header, $job->id, $request->packet_ids, $storagePointId, $user, CommonHelper::PICKING, $transType);
 
 
             \DB::commit();
@@ -473,6 +486,9 @@ class PicklistTaskController extends Controller
                     }
                 }
             }
+
+            $subStoreId = $header->staging_sub_store_id ?? NULL;
+            (new PickingJob())->generateQRCodes($subStoreId,$job);
 
             \DB::commit();
             return [

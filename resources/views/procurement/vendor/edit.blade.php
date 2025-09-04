@@ -2577,10 +2577,6 @@ $(document).ready(function() {
             });
         }
 
-        if (vendorCodeType === 'Auto') {
-            generateVendorCode(); 
-        }
-
         companyNameInput.on('input change', function() {
             const companyName = $(this).val().trim();  
             vendorInitialInput.val(getVendorInitials(companyName)); 

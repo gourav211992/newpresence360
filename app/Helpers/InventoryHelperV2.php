@@ -48,6 +48,7 @@ class InventoryHelperV2
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->whereNull('deleted_at')
                 ->first();
 
             $cfgYes = $config && strcasecmp((string) $config->config_value, 'yes') === 0;
@@ -56,15 +57,18 @@ class InventoryHelperV2
             static $subStoreWarehouseCache = [];
 
             // returns true if sub-store (or its store) requires warehouse/putaway
-            $subStoreHasWarehouse = function (?int $subStoreId) use (&$subStoreWarehouseCache): bool {
+            $subStoreHasWarehouse = function (?int $subStoreId) use (&$subStoreWarehouseCache, $documentHeader): bool {
                 if (!$subStoreId) return false;
                 if (array_key_exists($subStoreId, $subStoreWarehouseCache)) {
                     return $subStoreWarehouseCache[$subStoreId];
                 }
 
                 // Only fetch the flag columns; adjust model/columns if different
-                $sub = ErpSubStore::select('id','is_warehouse_required')->find($subStoreId);
-                $flag = (int)($sub->is_warehouse_required ?? 0) === 1;
+                // $sub = ErpSubStore::select('id','is_warehouse_required')->find($subStoreId);
+                // $flag = (int)($sub->is_warehouse_required ?? 0) === 1;
+
+                $sub = $documentHeader->is_enforce_uic_scanning;
+                $flag = (int)($sub ?? 0) === 1;
 
                 return $subStoreWarehouseCache[$subStoreId] = $flag;
             };
@@ -402,7 +406,7 @@ class InventoryHelperV2
             }
             $isIssueStockDelete = 1;
         }
-      
+
         if ($isIssueStockDelete) {
             if(count($issueStock->attributes) > 0){
                 $issueStock?->attributes?->delete();

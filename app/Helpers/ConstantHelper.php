@@ -589,6 +589,7 @@ class ConstantHelper
     const TECHNICAL_FILES = 'technical-files';
     const RESEARCH_FILES = 'research-files';
 
+    const STORE_MAPPING_SERVICE_ALIAS = 'store-mapping';
     const ITEM_BUNDLE_SERVICE_ALIAS = 'item-bundles';
     const ITEM_SERVICE_ALIAS = 'items';
     const LEDGERS_SERVICE_ALIAS = 'ledgers';
@@ -799,6 +800,7 @@ class ConstantHelper
         self::MAINT_WO=>'PlantMaintWo',
         self::DEFECT_NOTIFICATION=>'DefectNotification',
 
+        self::STORE_MAPPING_SERVICE_ALIAS => 'ErpStoreMapping',
         self::ITEM_BUNDLE_SERVICE_ALIAS => 'ErpItemBundle',
         self::ITEM_SERVICE_ALIAS => 'Item',
         self::LEDGERS_SERVICE_ALIAS => 'Ledger',
@@ -937,6 +939,7 @@ class ConstantHelper
         self::PAGE_LENGTH_100,
     ];
 
+    const SCRAP = 'Scrap';
     const STOCKK = 'Stock';
     const STOCKK_LABEL = 'Self';
     const SHOP_FLOOR = 'Shop floor';
@@ -1169,4 +1172,10 @@ class ConstantHelper
         ['label' => 'Wear and Tear', 'value' => self::DAMAGE_NATURE_WEAR_AND_TEAR],
     ];
 
+    const DAMAGE_TYPE = [
+        ['label' => 'Transit damage', 'value' => 'transit_damage'],
+        ['label' => 'Wrong Product', 'value' => 'wrong_product'],
+        ['label' => 'Missing Product', 'value' => 'missing_product'],
+        ['label' => 'Extra Asset', 'value' => 'extra_asset'],
+    ];
 }

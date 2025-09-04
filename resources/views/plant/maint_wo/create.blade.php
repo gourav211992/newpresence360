@@ -57,6 +57,7 @@
         <input type="hidden" name="selected_bom_id" id="selected_bom_id">
         <input type="hidden" name="checklist_data" id="checklist_data">
         <input type="hidden" name="equipment_details" id="equipment_details">
+        <input type="hidden" name="equipment_maintenance_type_name" id="equipment_maintenance_type_name">
 
         {{-- readonly/selection data --}}
         <input type="hidden" name="defect_notification_id" id="defect_notification_id_hidden" value="">
@@ -192,7 +193,7 @@
                     <div class="col-md-3 basic-equipment-field">
                       <div class="mb-1">
                         <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>
-                        <select class="form-select" name="maintenance_type" id="maintenance_type" disabled required>
+                        <select class="form-select" name="equipment_maintenance_type_id" id="maintenance_type" disabled required>
                           @php
                             $allMaintenanceTypes = [];
                             foreach(($maintenanceTypesByEquipment ?? []) as $equipmentId => $types) {
@@ -370,93 +371,110 @@
 
                       <div class="row">
                         <div class="col-md-12">
-                          <div class="table-responsive pomrnheadtffotsticky">
-                            <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                              <thead>
-                                <tr>
-                                  <th width="62" class="customernewsection-form">
-                                    <div class="form-check form-check-primary custom-checkbox">
-                                      <input type="checkbox" class="form-check-input" id="checkAll">
-                                      <label class="form-check-label" for="checkAll"></label>
-                                    </div>
-                                  </th>
-                                  <th width="285">Item Code</th>
-                                  <th width="208">Item Name</th>
-                                  <th>Attributes</th>
-                                  <th>UOM</th>
-                                  <th>Qty</th>
-                                </tr>
-                              </thead>
-                              <tbody class="mrntableselectexcel" id="spareParts">
-                                <tr class="trselected">
-                                  <td class="customernewsection-form">
-                                    <div class="form-check form-check-primary custom-checkbox">
-                                      <input type="checkbox" class="form-check-input row-check" id="row_first">
-                                      <label class="form-check-label" for="row_first"></label>
-                                    </div>
-                                  </td>
-                                  <td class="poprod-decpt">
-                                    <input type="hidden" class="item_id">
-                                    <input required type="text" placeholder="Select" name="item[]" class="item_code form-control mw-100 ledgerselecct mb-25" />
-                                  </td>
-                                  <td class="poprod-decpt">
-                                    <input type="text" placeholder="Select" class="item_name form-control mw-100 ledgerselecct mb-25" />
-                                  </td>
-                                  <td class="poprod-decpt">
-                                    <input type="hidden" class="attribute">
-                                    <button type="button" data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" style="font-size:10px">Attributes</button>
-                                  </td>
-                                  <td>
-                                    <select class="uom form-select mw-100" name="uom[]" required></select>
-                                  </td>
-                                  <td>
-                                    <input type="number" class="qty form-control mw-100" name="qty[]" required />
-                                  </td>
-                                </tr>
-                              </tbody>
-                              <tfoot>
-                                <tr valign="top">
-                                  <td colspan="6" rowspan="10">
-                                    <table class="table border">
-                                      <tr>
-                                        <td class="p-0">
-                                          <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Part Details</strong></h6>
-                                        </td>
-                                      </tr>
-                                      <tr id="current_part_name_row">
-                                        <td class="poprod-decpt">
-                                          <div id="current_part_name">
-                                            
-                                          </div>
-                                        </td>
-                                      </tr>
-                                      <tr id="current_part_uom_row">
-                                        <td class="poprod-decpt">
-                                          <div id="current_part_uom">
-                                            
-                                          </div>
-                                        </td>
-                                      </tr>
-                                      <tr id="current_part_qty_row">
-                                        <td class="poprod-decpt">
-                                          <div id="current_part_qty">
-                                            
-                                          </div>
-                                        </td>
-                                      </tr>
-                                      <tr id="current_part_attributes_row">
-                                        <td class="poprod-decpt">
-                                          <div id="current_part_attributes">
-                                            
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    </table>
-                                  </td>
-                                </tr>
-                              </tfoot>
-                            </table>
-                          </div>
+						<div class="table-responsive pomrnheadtffotsticky">
+											<table id="itemTable"
+												class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+												<thead>
+													<tr>
+														<th width="62" class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input"
+																	id="checkAll">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</th>
+														<th width="285">Item Code</th>
+														<th width="208">Item Name</th>
+														<th>Attributes</th>
+														<th>UOM</th>
+														<th>Qty</th>
+													</tr>
+												</thead>
+												<tbody class="mrntableselectexcel">
+													<tr class="trselected">
+														<td class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input row-check"
+																	id="Email">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</td>
+														<td class="poprod-decpt">
+															<input type="hidden" class="item_id">
+															<input required type="text" placeholder="Select" name="item[]"
+																class="item_code form-control mw-100 ledgerselecct mb-25" />
+														</td>
+														<td required class="poprod-decpt">
+															<input type="text" placeholder="Select"
+																class="item_name form-control mw-100 ledgerselecct mb-25" />
+														</td>
+
+														<td class="poprod-decpt">
+															<input type="hidden" class="attribute">
+															<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																<!-- Attribute badges will be displayed here -->
+															</div>
+														</td>
+														<td>
+															<select class="uom form-select mw-100" name="uom[]" required>
+
+															</select>
+														</td>
+														<td><input type="number" class="qty form-control mw-100"
+																name="qty[]" required /></td>
+													</tr>
+												</tbody>
+												<tfoot>
+
+
+													<tr valign="top">
+														<td colspan="6" rowspan="10">
+															<table class="table border">
+																<tr>
+																	<td class="p-0">
+																		<h6
+																			class="text-dark mb-0 bg-light-primary py-1 px-50">
+																			<strong>Part Details</strong>
+																		</h6>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="poitemtxt mw-100"><strong>Name</strong>:<span
+																				id="part_name"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt" id="attributes_badges">
+																		
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Inv.
+																				UOM</strong>: <span id="uom"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
+																			<span id="qty"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	{{-- <td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>:
+																			<span id="remarks"></span></span>
+																	</td> --}}
+																</tr>
+															</table>
+														</td>
+
+													</tr>
+
+												</tfoot>
+											</table>
+										</div>
                         </div>
                       </div>
 
@@ -849,7 +867,6 @@
 	<script>
 		const itemsData = @json($items);
 		
-		
 		let rowCount = 1;
 		$(window).on('load', function () {
 			if (feather) {
@@ -866,36 +883,119 @@
 		});
 
 		$(document).on('keydown', function (e) {
-			if (e.which == 38) {
-				$('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
-			} else if (e.which == 40) {
-				$('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+			// Only handle arrow keys and only when not typing in input/textarea/select
+			if ((e.which == 38 || e.which == 40) && 
+				!$(e.target).is('input, textarea, select') && 
+				$('.trselected').length > 0) {
+				
+				e.preventDefault(); // Prevent default arrow key behavior
+				
+				if (e.which == 38) {
+					$('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
+				} else if (e.which == 40) {
+					$('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+				}
+				$('html, body').scrollTop($('.trselected').offset().top - 200);
+				updateFooterFromSelected();
 			}
-			$('html, body').scrollTop($('.trselected').offset().top - 200);
-			updateFooterFromSelected();
 		});
-	
+		$(document).on('click', '.mrntableselectexcel tr', function () {
+			$(this).addClass('trselected').siblings().removeClass('trselected');
+			$('html, body').scrollTop($(this).offset().top - 200);
+			updateFooterFromSelected();
+			console.log('Spare part row clicked, updating footer...');
+		});
 		function updateFooterFromSelected() {
 			let $selected = $('.trselected');
+			console.log('updateFooterFromSelected called, selected rows:', $selected.length);
+			
 			if ($selected.length) {
-				console.log("qty " + $selected.find('.qty').val());
-				$('#part_name').text($selected.find('.item_name').val());
-				$('#uom').text($selected.find('.uom option:selected').text());
-				$('#qty').text($selected.find('.qty').val());
+				console.log("Selected row found, processing...");
 				
-				// Update attribute badges for selected row
-				updateAttributeBadges($selected);
+				// Get basic part details
+				let partName = $selected.find('.item_name').val() || 'N/A';
+				let uomText = $selected.find('.uom option:selected').text() || $selected.find('.uom').val() || 'N/A';
+				let qty = $selected.find('.qty').val() || '0';
+				
+				console.log('Part details extracted:', {
+					partName: partName,
+					uomText: uomText,
+					qty: qty
+				});
+				
+				// Update part details display
+				$('#part_name').text(partName);
+				$('#uom').text(uomText);
+				$('#qty').text(qty);
+				
+				console.log('Part details updated in DOM');
+				
+				let $selectElement = $selected.find('.item_code');
+				let $badgesContainer = $('#attributes_badges'); // container for badges
 
+				// Handle attributes - check for both static and AJAX loaded data
+				let attributesData = [];
+				
+				// First try to get from AJAX loaded data (attribute-enriched hidden field)
+				let $enrichedInput = $selected.find('.attribute-enriched');
+				if ($enrichedInput.length && $enrichedInput.val()) {
+					try {
+						attributesData = JSON.parse($enrichedInput.val());
+						console.log('Using AJAX loaded attributes:', attributesData);
+					} catch (e) {
+						console.log('Error parsing enriched attributes:', e);
+					}
+				}
+				
+				// If no AJAX data, try static data approach
+				if (!attributesData.length && $selectElement.val() !== "") {
+					let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+					let $hiddenInput = $selected.find('.attribute');
+					let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+						? JSON.parse($hiddenInput.val())
+						: [];
+
+					if (attributesJSON.length) {
+						attributesData = attributesJSON.map(function(element) {
+							// Find selected value from existingAttributes
+							let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
+							let selectedVal = selectedValObj ? selectedValObj.value_id : '';
+
+							// Find text for selected value
+							let selectedText = '';
+							if (selectedVal) {
+								let valObj = element.values_data.find(v => v.id === selectedVal);
+								selectedText = valObj ? valObj.value : '';
+							}
+							
+							return {
+								group_name: element.group_name,
+								selected_value_name: selectedText,
+								value: selectedText
+							};
+						}).filter(attr => attr.selected_value_name || attr.value);
+					}
+				}
+
+				// Display attributes
+				if (attributesData.length) {
+					let badgesHtml = '';
+					attributesData.forEach(function(attr) {
+						let displayValue = attr.selected_value_name || attr.value || 'N/A';
+						let groupName = attr.group_name || attr.group_short_name || 'Attribute';
+						
+						badgesHtml += `
+							<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+								<strong>${groupName}</strong>: <span>${displayValue}</span>
+							</span>
+						`;
+					});
+					$badgesContainer.html(badgesHtml);
+				} else {
+					$badgesContainer.html('<span class="text-muted">No attributes selected</span>');
+				}
 			}
 		}
-		
-		// Initialize autocomplete for existing spare parts row when document is ready
-		$(document).ready(function() {
-			console.log('Document ready - initializing autocomplete for existing rows');
-			console.log('Found .item_code elements:', $('.item_code').length);
-			initAutoForItem('.item_code');
-		});
-
 		$('#addNewRowBtn').on('click', function () {
 			rowCount++;
 			let newRow = `<tr>
@@ -907,18 +1007,20 @@
 																</div>
 															</td>
 															<td class="poprod-decpt">
-								<input type="hidden" class="item_id">
-								<input required type="text" placeholder="Select" name="item[]"
-					class="item_code form-control mw-100 ledgerselecct mb-25" />
-							</td>
-							<td class="poprod-decpt">
-								<input type="text" placeholder="Select" class="item_name form-control mw-100 ledgerselecct mb-25" />
-							</td>
-							<td class="poprod-decpt">
-				<input type="hidden" class="attribute">
-				<button data-bs-toggle="modal" data-bs-target="#attribute"
-					class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-					style="font-size: 10px">Attributes</button>
+																<input type="hidden" class="item_id">
+																<input required type="text" placeholder="Select" name="item[]"
+																	class="item_code form-control mw-100 ledgerselecct mb-25" />
+															</td>
+															<td required class="poprod-decpt">
+																<input type="text" placeholder="Select"
+																	class="item_name form-control mw-100 ledgerselecct mb-25" />
+															</td>
+
+															<td class="poprod-decpt">
+																<input type="hidden" class="attribute">
+																<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																	<!-- Attribute badges will be displayed here -->
+																</div>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -929,7 +1031,6 @@
 																	required /></td>
 														</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
-			// Initialize autocomplete for all item_code elements (including new row)
 			initAutoForItem('.item_code');
 
 		});
@@ -937,17 +1038,17 @@
 			let $rows = $('.mrntableselectexcel tr');
 			let $checked = $rows.find('.row-check:checked');
 
-			// Prevent deletion if only one row exists
-			if ($rows.length <= 1) {
-				showToast('error', 'At least one row is required.');
-				return;
-			}
+			// // Prevent deletion if only one row exists
+			// if ($rows.length <= 1) {
+			// 	showToast('error', 'At least one row is required.');
+			// 	return;
+			// }
 
-			// Prevent deletion if checked rows would remove all
-			if ($rows.length - $checked.length < 1) {
-				showToast('error', 'You must keep at least one row.');
-				return;
-			}
+			// // Prevent deletion if checked rows would remove all
+			// if ($rows.length - $checked.length < 1) {
+			// 	showToast('error', 'You must keep at least one row.');
+			// 	return;
+			// }
 
 			// Remove only the checked rows
 			$checked.closest('tr').remove();
@@ -957,23 +1058,21 @@
 			let isChecked = $(this).is(':checked');
 			$('.mrntableselectexcel .row-check').prop('checked', isChecked);
 		});
+		
+		$('#book_id').trigger('change');
 		initAutoForItem('.item_code');
 		function updateJsonData() {
-			// Collect Spare Parts Data
 			const allRows = [];
 
 			$('.mrntableselectexcel tr').each(function () {
 				const row = $(this);
 				const itemId = row.find('.item_id').val();
-				const itemCode = row.find('.item_code').val();
-				const itemName = row.find('.item_name').val();
 
-				// Include row if it has item_id OR if it has item_code/item_name (for newly added rows)
-				if (itemId || itemCode || itemName) {
+				if (itemId) { // skip empty rows
 					const rowData = {
-						item_id: itemId || '',
-						item_code: itemCode || '',
-						item_name: itemName || '',
+						item_id: itemId,
+						item_code: row.find('.item_code').val() || '',
+						item_name: row.find('.item_name').val() || '',
 						attribute: row.find('.attribute').val() || '',
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
@@ -984,71 +1083,6 @@
 			});
 
 			$('#spare_parts').val(JSON.stringify(allRows));
-
-			// Collect Checklist Data
-			const checklistData = [];
-			let checklistIndex = 0;
-
-			$('.mrntableselectexcel1 tr').each(function () {
-				const row = $(this);
-				const checklistName = row.find('td:nth-child(2)').text().trim();
-				
-				// Skip header rows and empty rows
-				if (checklistName && !checklistName.includes('Checklist') && checklistName !== '#' && checklistName !== 'Checklist') {
-					return;
-				}
-				
-				if (checklistName && checklistName.includes('Checklist')) {
-					const textInput = row.find('input[type="text"]');
-					const checkboxInput = row.find('input[type="checkbox"]');
-					
-					let value = '';
-					let type = '';
-					
-					if (textInput.length > 0) {
-						value = textInput.val() || '';
-						type = 'text';
-					} else if (checkboxInput.length > 0) {
-						value = checkboxInput.is(':checked');
-						type = 'checkbox';
-					}
-					
-					if (type) {
-						checklistData.push({
-							index: ++checklistIndex,
-							name: checklistName,
-							type: type,
-							value: value
-						});
-					}
-				}
-			});
-
-			$('#checklist_data').val(JSON.stringify(checklistData));
-
-			// Collect Equipment Details Data
-			const equipmentDetails = {
-				equipment_reference_type: $('#reference_type').val() || '',
-				equipment_category: $('#equipment_category_hidden').val() || $('#equipment_category').val() || '',
-				equipment_name: $('#equipment_name_hidden').val() || $('#equipment_name').val() || '',
-				equipment_id: $('#equipment_id').val() || '',
-				equipment_maintenance_type: $('#maintenance_type').val() || '',
-				equipment_defect_type: $('#defect_type_hidden').val() || $('#defect_type_select').val() || '',
-				equipment_problem: $('#problem_hidden').val() || $('#problem_field input').val() || '',
-				equipment_priority: $('#priority_field select').val() || '',
-				equipment_report_date: $('#report_date_time_hidden').val() || $('#report_date_field input').val() || '',
-				equipment_reported_by: $('#reported_by_hidden').val() || $('#report_by_field input').val() || '',
-				equipment_detailed_observations: $('#detailed_observations_field textarea').val() || '',
-				equipment_supporting_documents: $('#supporting_documents_field input')[0]?.files[0]?.name || ''
-			};
-
-			$('#equipment_details').val(JSON.stringify(equipmentDetails));
-			
-			console.log('Form data collected:', {
-				spare_parts: allRows.length + ' items',
-				checklist: checklistData.length + ' items', 
-				equipment_details: equipmentDetails
-			});
 		}
 
 
@@ -1121,6 +1155,7 @@
 
 		
 		function initAutoForItem(selector, type) {
+			
 			console.log("check the seelector and type",selector,type);
 			
 			$(selector).autocomplete({
@@ -1168,7 +1203,6 @@
 					
 					response(results);
 				},
-				minLength: 2,
 				select: function (event, ui) {
 					let $input = $(this);
 					let itemCode = ui.item.code;
@@ -1189,14 +1223,73 @@
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
 
-					setTimeout(() => {
-						if (ui.item.is_attr) {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
-						} else {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
+					// Display attribute badges if item has attributes
+					if (attr && attr.length > 0) {
+						let badgesHtml = '';
+						attr.forEach(function(attribute) {
+							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+							</span>`;
+						});
+						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
+						
+						// Automatically open attribute modal if item has attributes
+						setTimeout(() => {
+							// Trigger attribute modal by simulating click on attribute button logic
+							let $tr = $input.closest('tr');
+							let $attributesTable = $('#attribute_table');
+							$attributesTable.data('currentRow', $tr);
+							
+							// Populate modal with attributes
+							let attributesJSON = attr;
+							let $hiddenInput = $tr.find('.attribute');
+							let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+								? JSON.parse($hiddenInput.val())
+								: [];
+
+							if (attributesJSON.length > 0) {
+								let innerHtml = ``;
+								$.each(attributesJSON, function (index, element) {
+									let optionsHtml = ``;
+									$.each(element.values_data, function (i, value) {
+										let isSelected = existingAttributes.some(attr =>
+											attr.item_attribute_id === element.id && attr.value_id === value.id
+										);
+										optionsHtml += `<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>`;
+									});
+
+									innerHtml += `
+										<tr>
+											<td>
+												${element.group_name}
+												<input type="hidden" name="id" value="${element.id}">
+											</td>
+											<td>
+												<select class="form-select select2" style="max-width:100% !important;">
+													<option value="">Select</option>
+													${optionsHtml}
+												</select>
+											</td>
+										</tr>
+									`;
+								});
+
+								$attributesTable.html(innerHtml);
+								$attributesTable.find('select').off('change').on('change', function () {
+									changeAttributeVal($tr);
+								});
+								$attributesTable.find('select').select2();
+								
+								// Open the modal
+								$('#attribute').modal('show');
+							}
+						}, 100);
+					} else {
+						$input.closest('tr').find('#attribute-badges').html('');
+						setTimeout(() => {
 							$input.closest('tr').find('.qty').val('').focus();
-						}
-					}, 100);
+						}, 100);
+					}
 
 					return false;
 				},
@@ -1448,6 +1541,7 @@
 			// Populate equipment fields
 			$('#equipment_name').val(selectedEquipment.data('equipment-name'));
 			$('#equipment_id').val(selectedEquipment.data('equipment-id'));
+			$('#selected_equipment_id').val(selectedEquipment.data('equipment-id')); // Store for maintenance type handler
 			$('#maintenance_type').val(selectedEquipment.data('maintenance-type'));
 			
 			// Keep only basic equipment fields visible and read-only for equipment selection
@@ -1499,6 +1593,7 @@
 						// Equipment
 						if (defect.equipment) {
 							$('#equipment_id').val(defect.equipment.id);
+							$('#selected_equipment_id').val(defect.equipment.id); // Store for maintenance type handler
 							$('#equipment_name').val(defect.equipment.document_number || defect.equipment.name || '');
 						}
 
@@ -1564,6 +1659,23 @@
 							}
 						} else {
 							supportingDiv.remove();
+						}
+
+						// Populate Maintenance Type dropdown
+						if (response.maintenance_types && response.maintenance_types.length > 0) {
+							var maintenanceTypeSelect = $('#maintenance_type');
+							maintenanceTypeSelect.empty();
+							maintenanceTypeSelect.append('<option value="">Select Maintenance Type</option>');
+							
+							$.each(response.maintenance_types, function(index, type) {
+								maintenanceTypeSelect.append('<option value="' + type.id + '" data-name="' + type.name + '">' + type.name + '</option>');
+							});
+							
+							maintenanceTypeSelect.prop('disabled', false);
+							console.log('Maintenance types populated:', response.maintenance_types.length);
+						} else {
+							$('#maintenance_type').empty().append('<option value="">No maintenance types available</option>').prop('disabled', true);
+							console.log('No maintenance types available for this equipment');
 						}
 
 						// Hidden fields
@@ -1668,6 +1780,65 @@
 		// 	$('#supporting_documents_field input').prop('disabled', false); // Keep file upload enabled
 		// }
 
+
+		// Maintenance Type change handler to update checklist
+		$(document).on('change', '#maintenance_type', function() {
+			var maintenanceTypeId = $(this).val();
+			var maintenanceTypeName = $(this).find('option:selected').data('name') || $(this).find('option:selected').text();
+			var equipmentId = $('#selected_equipment_id').val();
+			
+			// Store maintenance type name in hidden field
+			$('#equipment_maintenance_type_name').val(maintenanceTypeName);
+			
+			if (maintenanceTypeId && equipmentId) {
+				// Clear existing checklist
+				$('#checklistTableBody').empty();
+				
+				// Show loading state
+				$('#checklistTableBody').html('<tr><td colspan="3" class="text-center">Loading checklists...</td></tr>');
+				
+				$.ajax({
+					url: "{{ route('defect-notification.get-checklists') }}",
+					type: 'POST',
+					data: {
+						_token: $('meta[name="csrf-token"]').attr('content'),
+						equipment_id: equipmentId,
+						maintenance_type_id: maintenanceTypeId
+					},
+					success: function(response) {
+						$('#checklistTableBody').empty();
+						
+						if (response.status && response.checklists && response.checklists.length > 0) {
+							$.each(response.checklists, function(index, checklist) {
+								var inputField = '';
+								if (checklist.type === 'boolean') {
+									inputField = '<input type="checkbox" class="form-check-input" name="checklist[' + checklist.id + ']" value="1">';
+								} else {
+									inputField = '<input type="text" class="form-control" name="checklist[' + checklist.id + ']" placeholder="Enter value">';
+								}
+								
+								var row = '<tr>' +
+									'<td>' + (index + 1) + '</td>' +
+									'<td>' + checklist.name + '</td>' +
+									'<td>' + inputField + '</td>' +
+									'</tr>';
+								
+								$('#checklistTableBody').append(row);
+							});
+							console.log('Checklists loaded:', response.checklists.length);
+						} else {
+							$('#checklistTableBody').html('<tr><td colspan="3" class="text-center text-muted">No checklists available for this maintenance type</td></tr>');
+						}
+					},
+					error: function(xhr, status, error) {
+						console.error('Error loading checklists:', error);
+						$('#checklistTableBody').html('<tr><td colspan="3" class="text-center text-danger">Error loading checklists</td></tr>');
+					}
+				});
+			} else {
+				$('#checklistTableBody').html('<tr><td colspan="3" class="text-center text-muted">Please select equipment and maintenance type</td></tr>');
+			}
+		});
 
 		//Search function for the defect modal 
 
@@ -1823,53 +1994,6 @@
 					feather.replace(); // Re-initialize feather icons
 				}
 			});
-		});
-
-		// Function to update attribute badges display
-		function updateAttributeBadges($row) {
-			if (!$row) return;
-
-			let $selectElement = $row.find('.item_code');
-			let $badgesContainer = $('#attributes_badges');
-
-			if ($selectElement.val() !== "") {
-				let $hiddenInput = $row.find('.attribute');
-				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
-					? JSON.parse($hiddenInput.val())
-					: [];
-
-				if (!existingAttributes.length) {
-					$badgesContainer.html('');
-					return;
-				}
-
-				let badgesHtml = '';
-
-				// Display badges for each selected attribute
-				$.each(existingAttributes, function (index, attr) {
-					if (attr.attribute_name && attr.attribute_value) {
-						badgesHtml += `
-							<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
-								<strong>${attr.attribute_name}</strong> : ${attr.attribute_value}
-							</span>
-						`;
-					}
-				});
-
-				$badgesContainer.html(badgesHtml);
-
-			} else {
-				$badgesContainer.html('');
-			}
-		}
-
-		// Update badges when modal is closed
-		$(document).on('click', '.submitAttributeBtn', (e) => {
-			let $currentRow = $('#attribute_table').data('currentRow');
-			if ($currentRow) {
-				updateAttributeBadges($currentRow);
-			}
-			$("#attribute").modal('hide');
 		});
 
 		});

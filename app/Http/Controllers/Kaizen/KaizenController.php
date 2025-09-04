@@ -15,6 +15,8 @@ use App\Lib\Validation\Kaizen\KaizenStoreRequest as Validator;
 use App\Models\Employee;
 use App\Models\Kaizen\ErpKaizenDocument;
 use App\Models\Kaizen\ErpKaizenTeam;
+use App\Exports\Kaizen\KaizenExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use PDF;
 
@@ -561,5 +563,13 @@ class KaizenController extends Controller
             'score' => $score,
             'total_score' => 80
         ];
+    }
+
+    public function exportKaizens(Request $request)
+    {
+        $fromDate = $request->from_date ?? now()->subMonth();
+        $toDate = $request->to_date ?? now();
+
+        return Excel::download(new KaizenExport($fromDate, $toDate), 'Kaizens.xlsx');
     }
 }

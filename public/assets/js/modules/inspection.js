@@ -580,3 +580,21 @@ function getRejectedSubStores(storeLocationId) {
         },
     });
 }
+
+// Auto scroll when row added
+function focusAndScrollToLastRowInput(
+    inputSelector = ".comp_item_code",
+    tableSelector = "#itemTable"
+) {
+    let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+    let $input = $lastRow.find(inputSelector);
+
+    // if ($input.length) {
+    //     $input.focus().autocomplete('search', '');
+    //     $input[0].scrollIntoView({
+    //         behavior: 'smooth',
+    //         block: 'center',
+    //         inline: 'nearest'
+    //     });
+    // }
+}

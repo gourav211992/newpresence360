@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\ItemSpecification;
+use App\Models\InspectionChecklist;
 use App\Models\AlternateUOM;
 use App\Models\AttributeGroup;
 use App\Models\Attribute;
@@ -168,10 +169,11 @@ class ItemImportExportService
     {
         $category = Category::withDefaultGroupCompanyOrg()
         ->where('name', $categoryName)
+        ->where('status', ConstantHelper::ACTIVE) 
         ->first();
 
         if (!$category) {
-            throw new Exception("Category not found : {$categoryName}");
+            throw new Exception("Category not found or not active : {$categoryName}");
         }
 
         return $category;
@@ -181,14 +183,15 @@ class ItemImportExportService
     {
         $category = Category::withDefaultGroupCompanyOrg()
             ->where('name', $categoryName)
+            ->where('status', ConstantHelper::ACTIVE) 
             ->first();
 
         if (!$category) {
-            throw new Exception("Group not found: {$categoryName}");
+            throw new Exception("Group not found or not active: {$categoryName}");
         }
 
         if ($category->subCategories()->exists()) {
-            $subCategories=$category->subCategories()->get();
+            $subCategories=$category->subCategories()->where('status', ConstantHelper::ACTIVE)->get();
             foreach ($subCategories as $subcat) {
                 if ($subcat->name == $categoryName) {
                     if ($subcat->subCategories()->exists()) {
@@ -207,10 +210,11 @@ class ItemImportExportService
     public function getSalesPersonId($salesPerson)
     {
         $salesPerson = Employee::where('name', $salesPerson)
+        ->where('status', ConstantHelper::ACTIVE) 
         ->first();
 
         if (!$salesPerson) {
-            throw new Exception("Sales Person not found: {$salesPerson}");
+            throw new Exception("Sales Person not found or not active: {$salesPerson}");
         }
 
         return $salesPerson->id;  
@@ -220,9 +224,10 @@ class ItemImportExportService
     {
         $hsn = Hsn::withDefaultGroupCompanyOrg()
               ->where('code', $hsnCode)
+              ->where('status', ConstantHelper::ACTIVE) 
               ->first();
         if (!$hsn) {
-            throw new Exception("HSN Code not found: {$hsnCode}");
+            throw new Exception("HSN Code not found or not active: {$hsnCode}");
         }
         return $hsn->id;
     }
@@ -231,18 +236,21 @@ class ItemImportExportService
     {
         $uom = Unit::withDefaultGroupCompanyOrg()
                ->where('name', $uomName)
+               ->where('status', ConstantHelper::ACTIVE) 
                ->first();
         if (!$uom) {
-            throw new Exception("UOM not found: {$uomName}");
+            throw new Exception("UOM not found or not active: {$uomName}");
         }
         return $uom->id;
     }
 
     public function getCurrencyId($currencyName)
     {
-        $currency = Currency::where('short_name', $currencyName)->first();
+        $currency = Currency::where('short_name', $currencyName)
+        ->where('status', ConstantHelper::ACTIVE) 
+        ->first();
         if (!$currency) {
-            throw new Exception("Currency not found: {$currencyName}");
+            throw new Exception("Currency not found or not active: {$currencyName}");
         }
         return $currency->id;
     }
@@ -251,26 +259,43 @@ class ItemImportExportService
     {
         $paymentTerm = PaymentTerm::withDefaultGroupCompanyOrg()
                               ->where('name', $paymentTermName)
+                              ->where('status', ConstantHelper::ACTIVE) 
                               ->first();
         if (!$paymentTerm) {
-            throw new Exception("Payment term not found: {$paymentTermName}");
+            throw new Exception("Payment term not found or not active: {$paymentTermName}");
         }
         return $paymentTerm->id;
     }
 
+    public function getInspectionByNameAndType($inspectionName)
+    {
+        $inspection = InspectionChecklist::where('name', $inspectionName)
+            ->where('type', 'Item')
+            ->where('status', ConstantHelper::ACTIVE) 
+            ->first();
+
+        if (!$inspection) {
+            throw new \Exception("Inspection not found or not active: {$inspectionName}");
+        }
+
+        return $inspection->id;
+    }
 
   public function getLedgerAndGroupIds($ledgerCode, $ledgerGroupName)
     {
         try {
             $ledger = Ledger::withDefaultGroupCompanyOrg()
                 ->where('code', $ledgerCode)
+                ->where('status', 1) 
                 ->first();
 
             if (!$ledger) {
                 throw new Exception('Ledger not found for the given ledger code.');
             }
 
-            $ledgerGroup = Group::where('name', $ledgerGroupName)->first();
+             $ledgerGroup = Group::where('name', $ledgerGroupName)
+                ->where('status', ConstantHelper::ACTIVE) 
+                ->first();
             if (!$ledgerGroup) {
                 throw new Exception('Ledger Group not found for the given ledger group name.');
             }
@@ -394,9 +419,11 @@ class ItemImportExportService
 
         if (isset($orgTypeCode)) {
             $normalizedCode = ucwords(strtolower($orgTypeCode));
-            $orgType = OrganizationType::whereRaw('LOWER(name) = ?', [strtolower($normalizedCode)])->first();
+            $orgType = OrganizationType::whereRaw('LOWER(name) = ?', [strtolower($normalizedCode)])
+            ->where('status', ConstantHelper::ACTIVE) 
+            ->first();
             if (!$orgType) {
-                throw new Exception("Organization Type not found: {$orgTypeCode}");
+                throw new Exception("Organization Type not found or not active: {$orgTypeCode}");
             }
             return $orgType->id;
         }
@@ -536,9 +563,10 @@ class ItemImportExportService
         try {
             $attributeGroup = AttributeGroup::withDefaultGroupCompanyOrg()
             ->where('name', $attributeName)
+            ->where('status', ConstantHelper::ACTIVE)
             ->first();
             if (!$attributeGroup) {
-                throw new Exception("AttributeGroup not found: {$attributeName}");
+                throw new Exception("AttributeGroup not found or not active: {$attributeName}");
             }
             return $attributeGroup;
         } catch (Exception $e) {
@@ -617,10 +645,11 @@ class ItemImportExportService
         try {
             $productSpecificationGroup = ProductSpecification::withDefaultGroupCompanyOrg()
             ->where('name', $groupName)
+            ->where('status', ConstantHelper::ACTIVE)
             ->first();
             
             if (!$productSpecificationGroup) {
-                $errorMessage = "ProductSpecificationGroup not found for group name: {$groupName}";
+                $errorMessage = "ProductSpecificationGroup not found or not active for group name: {$groupName}";
                 $errors[] = $errorMessage;
                 return null; 
             }

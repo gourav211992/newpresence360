@@ -108,7 +108,7 @@ use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
 use App\Helpers\CommonHelper;
 use App\Helpers\Configuration\Constants;
-use App\Lib\Services\WHM\WhmJob;
+use App\Lib\Services\WHM\PutawayJob;
 use App\Models\Configuration;
 use App\Models\ErpMiItem;
 use App\Models\ErpMrnPaymentTerm;
@@ -1072,7 +1072,7 @@ class MaterialReceiptController extends Controller
             }
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+                (new PutawayJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
             // Purchase Summary
@@ -2185,7 +2185,7 @@ class MaterialReceiptController extends Controller
             }
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
-                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+                (new PutawayJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){

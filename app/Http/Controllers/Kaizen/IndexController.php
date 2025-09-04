@@ -63,16 +63,28 @@ class IndexController extends Controller
         ];
 
         // 2) Query for all kaizens (without limit) just for counts
-        $kaizensForCount = ErpKaizen::where('organization_id', $user->organization_id)
-            ->whereBetween('created_at', [$fromDate, $toDate]) 
-            ->get($columns);
+        // $kaizensForCount = ErpKaizen::where('organization_id', $user->organization_id)
+        //     ->whereBetween('created_at', [$fromDate, $toDate]) 
+        //     ->get($columns);
 
-        // Count non-null values
-        $counts = collect($columns)->mapWithKeys(function ($col) use ($kaizensForCount) {
-            return [
-                $col => $kaizensForCount->whereNotNull($col)->where($col, '!=', '')->count()
-            ];
-        });
+        // // Count non-null values
+        // $counts = collect($columns)->mapWithKeys(function ($col) use ($kaizensForCount) {
+        //     return [
+        //         $col => $kaizensForCount->whereNotNull($col)->where($col, '!=', '')->count()
+        //     ];
+        // });
+        $counts = ErpKaizen::where('organization_id', $user->organization_id)
+            ->whereBetween('created_at', [$fromDate, $toDate])
+            ->selectRaw("
+                COUNT(NULLIF(productivity_imp_id, '')) as productivity_imp_id,
+                COUNT(NULLIF(quality_imp_id, '')) as quality_imp_id,
+                COUNT(NULLIF(moral_imp_id, '')) as moral_imp_id,
+                COUNT(NULLIF(delivery_imp_id, '')) as delivery_imp_id,
+                COUNT(NULLIF(cost_imp_id, '')) as cost_imp_id,
+                COUNT(NULLIF(safety_imp_id, '')) as safety_imp_id,
+                SUM(cost_saving_amt) as total_cost_saving_amt
+            ")
+            ->first();
 
         // 3) Query with relations + limit (for list)
         $kaizens = ErpKaizen::with([
@@ -129,7 +141,7 @@ class IndexController extends Controller
                 'count' => $group->count(),
             ];
         })->sortByDesc('count')->take(3)->values(); 
-      
+        $counts->total_cost_saving_amt=Helper::currencyFormat($counts->total_cost_saving_amt, 'display');
         return response()->json([
             'counts' => $counts,
             'topIdentifiers' => $topIdentifiers,

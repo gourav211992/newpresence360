@@ -897,7 +897,7 @@
                 let actionUrl = '{{route("inventory-report.item.attr")}}'+'?item_id='+itemId;
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
-                        if (data.status == 200) {
+                        if (data.status == 200 && data.data.html) {
                             $("#attribute tbody").empty();
                             $("#attribute table tbody").append(data.data.html);
                             if ($('#attributes').is(':checked')) {

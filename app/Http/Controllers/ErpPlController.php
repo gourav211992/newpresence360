@@ -19,7 +19,7 @@ use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPlRequest;
 use App\Models\Address;
 use App\Helpers\DynamicFieldHelper;
-use App\Lib\Services\WHM\WhmJob;
+use App\Lib\Services\WHM\PickingJob;
 use App\Models\AttributeGroup;
 use App\Models\Category;
 use App\Models\ErpPlDynamicField;
@@ -730,7 +730,7 @@ class ErpPlController extends Controller
                 ->first();
 
                 if(in_array($PL->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                    (new WhmJob)->createJob($PL->id,'App\Models\ErpPlHeader');
+                    (new PickingJob)->createJob($PL->id,'App\Models\ErpPlHeader');
                 }
                 
                 DB::commit();

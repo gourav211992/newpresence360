@@ -127,7 +127,20 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
         foreach ($rows as $row) {
             DB::beginTransaction();
             try {
-                $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3));
+                
+                $cleanedName = preg_replace('/[^a-zA-Z0-9\s]/', '', $row['vendor_name']);
+                $words = array_values(array_filter(preg_split('/\s+/', trim($cleanedName))));
+
+                if (count($words) === 1) {
+                    $vendorInitials = strtoupper(substr($words[0], 0, 3));
+                } elseif (count($words) === 2) {
+                    $vendorInitials = strtoupper(substr($words[0], 0, 2) . substr($words[1], 0, 1));
+                } elseif (count($words) >= 3) {
+                    $vendorInitials = strtoupper($words[0][0] . $words[1][0] . $words[2][0]);
+                } else {
+                    $vendorInitials = '';
+                }
+
                 $tdsWefDate = $row['tds_wef_date'] ?? null;
                 $tdsWefDatee = null;
                 if ($tdsWefDate) {

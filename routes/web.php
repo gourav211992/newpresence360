@@ -24,6 +24,7 @@ use App\Http\Controllers\ErpPqController;
 use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\ErpRgrStoreMappingController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ErpBinController;
@@ -2558,6 +2559,18 @@ Route::middleware(['user.auth'])->group(function () {
         Route::put('/{id}', 'update')->name('update');
         Route::delete('/{id}', 'destroy')->name('destroy');
         Route::get('/store-wise', 'getSubStoresOfStore')->name('get.from.stores');
+    });
+
+   Route::prefix('rgr-store-mappings')->controller(ErpRgrStoreMappingController::class)->group(function () {
+        Route::get('/', 'index')->name('store-mappings.index');
+        Route::post('/', 'store')->name('store-mappings.store');
+        Route::get('/create', 'create')->name('store-mappings.create');
+        Route::get('/{id}/edit', 'edit')->name('store-mappings.edit');
+        Route::put('/{id}', 'update')->name('store-mappings.update');
+        Route::delete('/destroy', 'destroy')->name('store-mappings.destroy'); 
+        Route::get('/autocomplete/categories', 'categories')->name('autocomplete.categories');
+        Route::get('/autocomplete/stores', 'stores')->name('autocomplete.stores');
+        Route::get('/autocomplete/substores', 'substores')->name('autocomplete.substores');
     });
 
     Route::prefix('budgets')->controller(BudgetController::class)->group(function () {

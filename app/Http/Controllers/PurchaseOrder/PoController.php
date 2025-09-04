@@ -241,7 +241,8 @@ class PoController extends Controller
             $companyCountryId = $firstAddress->country_id;
             $companyStateId = $firstAddress->state_id;
         }
-
+        $itemImportFile = asset('templates/PurchaseOrderImport.xlsx');
+        
         return view('procurement.po.create', [
             'fromState'=> $companyStateId,
             'fromCountry'=> $companyCountryId,
@@ -1992,77 +1993,120 @@ class PoController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $po = PurchaseOrder::with(['vendor', 'currency', 'po_items', 'book', 'headerExpenses', 'TermsCondition'])
-            ->findOrFail($id);
 
-        $totalItemValue = $po->po_items()
-                ->selectRaw('SUM(order_qty * rate) as total')
-                ->value('total') ?? 0.00;
-        $totalItemDiscount = $po->po_items()->sum('item_discount_amount') ?? 0.00;
+        $po = PurchaseOrder::with([
+            'vendor',
+            'currency',
+            'po_items',
+            'book',
+            'headerExpenses',
+            'TermsCondition',
+            'pi_item_mappings'
+        ])->findOrFail($id);
+
+        // ✅ Totals
+        $totalItemValue      = $po->po_items()->selectRaw('SUM(order_qty * rate) as total')->value('total') ?? 0.00;
+        $totalItemDiscount   = $po->po_items()->sum('item_discount_amount') ?? 0.00;
         $totalHeaderDiscount = $po->po_items()->sum('header_discount_amount') ?? 0.00;
-        $totalTaxes = $po->po_items()->sum('tax_amount') ?? 0.00;
+
+        // ✅ Taxable Value
         $totalTaxableValue = ($totalItemValue - ($totalItemDiscount + $totalHeaderDiscount));
-        $totalAfterTax = ($totalTaxableValue + $totalTaxes);
-        $totalAmount = ($totalAfterTax + $po->total_expense_value ?? 0.00);
+
+        // ✅ Get grouped tax TEDs
+        $taxes = PurchaseOrderTed::where('purchase_order_id', $po->id)
+            ->where('ted_type', 'Tax')
+            ->select(
+                'ted_type',
+                'ted_id',
+                'ted_name',
+                'ted_perc',
+                DB::raw('SUM(ted_amount) as total_amount'),
+                DB::raw('SUM(assessment_amount) as total_assessment_amount')
+            )
+            ->groupBy('ted_name', 'ted_perc')
+            ->get();
+
+        // ✅ Sum tax amount
+        $totalTaxes = $taxes->sum('total_amount');
+
+        // ✅ After tax
+        $totalAfterTax = $totalTaxableValue + $totalTaxes;
+
+        // ✅ Expenses
+        $totalExpenses = $po->headerExpenses->sum(fn($exp) => $exp->ted_amount + $exp->tax_amount);
+
+        // ✅ Final amount
+        $totalAmount = $totalAfterTax + $totalExpenses;
+
         $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
+
         $imagePath = public_path('assets/css/midc-logo.jpg');
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$po->document_status] ?? '';
         $path = 'pdf.po2';
         $fileName = 'Purchase-Order-' . date('Y-m-d') . '.pdf';
-        $taxes = PurchaseOrderTed::where('purchase_order_id', $po->id)
-        ->where('ted_type', 'Tax')
-        ->select('ted_type','ted_id','ted_name', 'ted_perc', DB::raw('SUM(ted_amount) as total_amount'), DB::raw('SUM(assessment_amount) as total_assessment_amount'))
-        ->groupBy('ted_name', 'ted_perc')
-        ->get();
-        $sellerShippingAddress = $po->latestShippingAddress();
-        $sellerBillingAddress = $po->latestBillingAddress();
-        $buyerAddress = $po->latestDeliveryAddress();
-        # Indent number
+
+        // ✅ Reference text from PI
         $uniquePiIds = $po->pi_item_mappings->pluck('pi_id')->unique()->values()->toArray();
-        $references = PurchaseIndent::whereIn('id', $uniquePiIds)->select('id','book_code','document_number')->get();
-        $referenceText = '';
-        if($references?->count()) {
-            $referenceText = $references?->map(fn($ref) => "{$ref->book_code} - {$ref->document_number}")->implode(', ');
-        }
-        $findSo = $po->po_items()
-                    ->whereNotNull('so_id')
-                    ->count();
-        if($findSo) {
-            $soTracking = true;
-        } else {
-            $soTracking = false;
-        }
+        $references = PurchaseIndent::whereIn('id', $uniquePiIds)
+            ->select('id', 'book_code', 'document_number')
+            ->get();
+        $referenceText = $references?->count()
+            ? $references->map(fn($ref) => "{$ref->book_code} - {$ref->document_number}")->implode(', ')
+            : '';
+
+        // ✅ SO Tracking
+        $soTracking = $po->po_items()->whereNotNull('so_id')->exists();
+
         $isDifferentCurrency = intval($po?->currency_id) !== intval($po?->org_currency_id);
-        $pdf = PDF::loadView(
-            $path,
-            [
-                'referenceText' => $referenceText,
-                'user' => $user,
-                'po'=> $po,
-                'organization' => $organization,
-                'organizationAddress' => $organizationAddress,
-                'totalItemValue' => $totalItemValue,
-                'totalItemDiscount' =>$totalItemDiscount,
-                'totalHeaderDiscount' => $totalHeaderDiscount,
-                'totalTaxes' =>$totalTaxes,
-                'totalTaxableValue' =>$totalTaxableValue,
-                'totalAfterTax' =>$totalAfterTax,
-                'totalAmount'=>$totalAmount,
-                'amountInWords'=>$amountInWords,
-                'imagePath' => $imagePath,
-                'docStatusClass' => $docStatusClass,
-                'taxes' => $taxes,
-                'sellerShippingAddress' => $sellerShippingAddress,
-                'sellerBillingAddress' => $sellerBillingAddress,
-                'buyerAddress' => $buyerAddress,
-                'soTracking' => $soTracking,
-                'isDifferentCurrency' => $isDifferentCurrency
-            ]
-        );
+
+        $sellerShippingAddress = $po->latestShippingAddress();
+        $sellerBillingAddress  = $po->latestBillingAddress();
+        $buyerAddress          = $po->latestDeliveryAddress();
+
+        $hsnSummary = $po->po_items->groupBy(fn($item) => $item->hsn?->code)->map(function($items, $hsn) {
+            $taxableValue = $items->sum(fn($i) => ($i->order_qty * $i->rate) - $i->item_discount_amount - $i->header_discount_amount);
+            $cgst = $items->sum(fn($i) => $i->cgst_value['value']);
+            $sgst = $items->sum(fn($i) => $i->sgst_value['value']);
+            $igst = $items->sum(fn($i) => $i->igst_value['value']);
+            return [
+                'hsn' => $hsn,
+                'taxable_value' => $taxableValue,
+                'cgst' => $cgst,
+                'sgst' => $sgst,
+                'igst' => $igst,
+                'total_tax' => $cgst + $sgst + $igst,
+            ];
+        });
+                
+        $pdf = PDF::loadView($path, [
+            'referenceText'       => $referenceText,
+            'user'                => $user,
+            'po'                  => $po,
+            'organization'        => $organization,
+            'organizationAddress' => $organizationAddress,
+            'totalItemValue'      => $totalItemValue,
+            'totalItemDiscount'   => $totalItemDiscount,
+            'totalHeaderDiscount' => $totalHeaderDiscount,
+            'totalTaxes'          => $totalTaxes,
+            'totalTaxableValue'   => $totalTaxableValue,
+            'totalAfterTax'       => $totalAfterTax,
+            'totalExpenses'       => $totalExpenses,
+            'totalAmount'         => $totalAmount,
+            'amountInWords'       => $amountInWords,
+            'imagePath'           => $imagePath,
+            'docStatusClass'      => $docStatusClass,
+            'taxes'               => $taxes,
+            'sellerShippingAddress'=> $sellerShippingAddress,
+            'sellerBillingAddress' => $sellerBillingAddress,
+            'buyerAddress'        => $buyerAddress,
+            'hsnSummary'          => $hsnSummary,
+            'soTracking'          => $soTracking,
+            'isDifferentCurrency' => $isDifferentCurrency,
+        ]);
+
         return $pdf->stream($fileName);
     }
-
-    # Get PI Item List
+# Get PI Item List
     public function getPi(Request $request)
     {
         $storeId = $request->store_id ?? null;
