@@ -52,6 +52,7 @@ class FixedAssetSub extends Model
         $locationId = $asset?->location_id; // Assuming location_id is available in the parent asset
 
         $subAssets = [];
+        
         $unitValue = $totalValue / $quantity;
         $salvageValueUnit = $salvageValue / $quantity;
 

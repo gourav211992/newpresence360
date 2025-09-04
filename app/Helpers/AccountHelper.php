@@ -53,12 +53,13 @@ class AccountHelper
                 $query->orWhereNull('book_id');
             }
         }
-      
+        
         if ($itemId) {
             $item = Item::find($itemId);
             if (!$item) {
                 return ['message' => 'Record not found for the given item IDs.'];
             }
+           
     
             if ($item->category_id) {
                 $query->where('category_id', $item->category_id);
@@ -77,6 +78,7 @@ class AccountHelper
                     $query->orWhereNull('sub_category_id');
                 }
             }
+            
     
             $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(item_id, '$[*]')) LIKE ?", ['%' . $itemId . '%']);
             $itemQuery = clone $query;

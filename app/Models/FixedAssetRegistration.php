@@ -209,7 +209,9 @@ class FixedAssetRegistration extends Model
     public function updateUniqueCodes()
     {
         $sub_assets = $this->subAsset()->orderBy('id')->get();
+       
         $detail = $this->mrnDetail;
+      
         if ($detail && $detail->uniqueCodes && $detail->uniqueCodes->isNotEmpty()) {
             $codes = $detail->uniqueCodes->values(); // reset keys
             DB::transaction(function () use ($codes, $sub_assets) {
@@ -242,5 +244,23 @@ class FixedAssetRegistration extends Model
             }
         
     }
+    public function batchupdateUniqueCodes($batch)
+{
+    $sub_assets = $this->subAsset()->orderBy('id')->get();
+    
+    DB::transaction(function () use ($batch, $sub_assets) {
+        // Batch quantity ke hisab se sub-assets update karo
+        for ($j = 0; $j < (int)$batch->inventory_uom_qty; $j++) {
+            if(isset($sub_assets[$j])) { // safe check
+                $sub_assets[$j]->update([
+                    'batch_number' => $batch->batch_number ?? null,
+                    'manufacturing_year' => $batch->manufacturing_year ?? null,
+                ]);
+            }
+        }
+    }); 
+}
+
+
     
 }

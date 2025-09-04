@@ -136,7 +136,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$mrn->book_id}}" readonly>
-                                                        <input readonly type="text" class="form-control" value="{{$mrn->book->book_code}}" id="book_code">
+                                                        <input readonly type="text" class="form-control" value="{{$mrn->book?->book_code}}" id="book_code">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">

@@ -265,7 +265,7 @@ class FinancialPostingHelper
 
         }
         //Call helpers according to service
-
+        
         if ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) {
             $entries = self::dnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
@@ -5777,7 +5777,7 @@ class FinancialPostingHelper
 
             // Stock Account
             $stockLedgerDetails = AccountHelper::getStockLedgerGroupAndLedgerId($document->organization_id, $docItem->item_id, $document->book_id);
-
+           
             $stockLedgerId = is_a($stockLedgerDetails, Collection::class) ? @$stockLedgerDetails->first()['ledger_id'] : null;
             $stockLedgerGroupId = is_a($stockLedgerDetails, Collection::class) ? @$stockLedgerDetails->first()['ledger_group'] : null;
             $stockLedger = Ledger::find($stockLedgerId);

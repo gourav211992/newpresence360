@@ -4638,6 +4638,7 @@ class MaterialReceiptController extends Controller
 
     public function postMrn(Request $request)
     {
+       
         try {
             DB::beginTransaction();
             // Asset Registration
@@ -4661,11 +4662,14 @@ class MaterialReceiptController extends Controller
             ]);
         } catch(\Exception $ex) {
             \DB::rollBack();
-            return response() -> json([
-                'status' => 'exception',
-                'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage()
-            ]);
+           return response()->json([
+    'status' => 'exception',
+    'message' => 'Some internal error occurred',
+    'error' => $ex->getMessage(),
+    'file' => $ex->getFile(),
+    'line' => $ex->getLine()
+]);
+
         }
     }
 
