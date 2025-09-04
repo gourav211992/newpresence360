@@ -1696,28 +1696,42 @@ function onItemClick(itemRowId)
                         `;
 
                         // ✅ now iterate locations of this LR
-                        lr.locations.forEach(location => {
+                       lr.locations.forEach(location => {
+                        // Check agar charo value empty/invalid nahi hai
+                        if (
+                            (location.route_name && location.route_name !== 'null' && location.route_name !== 'undefined') ||
+                            (location.no_of_articles && location.no_of_articles !== 'null' && location.no_of_articles !== 'undefined') ||
+                            (location.weight && location.weight !== 'null'  && location.weight !== 'undefined')
+                        ) {
                             lrs += `
                             <tr>
-                            <td class="poprod-decpt">
-                            <div class="row-line">
-                                <span class="badge rounded-pill badge-light-primary">
-                                    <strong>Point Name</strong>: <span>${location.route_name}</span>
-                                </span>
-                                <span class="badge rounded-pill badge-light-primary">
-                                    <strong>Freight Charges</strong>: <span>${location.amount}</span>
-                                </span>
-                                <span class="badge rounded-pill badge-light-primary">
-                                    <strong>No Of articles</strong>: <span>${location.no_of_articles}</span>
-                                </span>
-                                <span class="badge rounded-pill badge-light-primary">
-                                    <strong>Weight</strong>: <span>${location.weight}</span>
-                                </span>
-                            </div>
-                            </td>
+                                <td class="poprod-decpt">
+                                    <div class="row-line">
+                                        ${location.route_name && location.route_name !== 'null' && location.route_name !== 'undefined' ? `
+                                        <span class="badge rounded-pill badge-light-primary">
+                                            <strong>Point Name</strong>: <span>${location.route_name}</span>
+                                        </span>` : ''}
+
+                                        ${location.amount && location.amount !== 'null'  && location.amount !== 'undefined' ? `
+                                        <span class="badge rounded-pill badge-light-primary">
+                                            <strong>Freight Charges</strong>: <span>${location.amount}</span>
+                                        </span>` : ''}
+
+                                        ${location.no_of_articles && location.no_of_articles !== 'null' && location.no_of_articles !== 'undefined' ? `
+                                        <span class="badge rounded-pill badge-light-primary">
+                                            <strong>No Of articles</strong>: <span>${location.no_of_articles}</span>
+                                        </span>` : ''}
+
+                                        ${location.weight && location.weight !== 'null' && location.weight !== 'undefined' ? `
+                                        <span class="badge rounded-pill badge-light-primary">
+                                            <strong>Weight</strong>: <span>${location.weight}</span>
+                                        </span>` : ''}
+                                    </div>
+                                </td>
                             </tr>
                             `;
-                        });
+                        }
+                    });
                     });
 
                     

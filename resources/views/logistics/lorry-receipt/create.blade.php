@@ -589,7 +589,7 @@
                                                                                     </tr>
                                                                                     <tr>
                                                                                         <td><strong>Freight Charges</strong></td>
-                                                                                        <td id="FreightCharges" class="text-end">0.00</td>
+                                                                                        <td id="FreightChargeshtml" class="text-end">0.00</td>
                                                                                     </tr>
                                                                                     <tr class="voucher-tab-foot">
                                                                                         <td class="text-primary"><strong>Total Freight Charges</strong></td>
@@ -713,7 +713,7 @@
 
     $('#subTotalAmount').text(subTotal.toFixed(2));
     $('#lrCharges').text(lr.toFixed(2));
-    $('#FreightCharges').text(freightCharge.toFixed(2));
+    $('#FreightChargeshtml').text(freightCharge.toFixed(2));
     $('#totalFreightAmount').text(total.toFixed(2));
 console.log($('#totalFreightAmount').html());
 
@@ -1270,6 +1270,9 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#freight_charges').val(response.freight_charges).prop('disabled', true);
                 $('#distanceInput').val(response.distance);
                 $('#freightCharges').val(response.freight_charges);
+                $('#FreightChargeshtml').text(
+                    parseFloat(response.freight_charges ?? 0)
+                );
                 $('#no_of_bundles').val(response.no_bundle);
                 $('#per_bundles').val(response.per_bundle);
                 $('#no_bundles').val(response.no_bundle);
@@ -1280,18 +1283,24 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
                 $('#routeSource').text(response.source_name);
                 $('#routeDestination').text(response.destination_name);
+                calculateTotals();
                 }else if(response.message && response.message.includes('No freight charge found')){
                     console.log('else wala part');
                 $('#distance').val('').prop('disabled', false);
                 $('#freight_charges').val('').prop('disabled', false);
                 $('#distanceInput').val('');
                 $('#freightCharges').val('');
+                $('#FreightChargeshtml').text('0.00');
 
                 // ✅ Set text content for display
-                $('#routeVehicle').text('');
-                $('#routeCapacity').text('');
-                $('#routeSource').text('');
-                $('#routeDestination').text('');
+                $('#routePoints').html('');
+                $('#routeWeight').html('');
+                $('#routeArticles').html('');
+                $('#routeVehicle').html('');
+                $('#routeCapacity').html('');
+                $('#routeSource').html('');
+                $('#routeDestination').html('');
+                calculateTotals();
                 }
                 
 
@@ -1300,13 +1309,18 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#distance').val('').prop('disabled', false);
                 $('#freight_charges').val('').prop('disabled', false);
                 $('#distanceInput').val('');
-                // $('#freightCharges').val('');
+                $('#freightCharges').val('');
+                $('#FreightChargeshtml').text('0.00');
 
                 // ✅ Set text content for display
-                $('#routeVehicle').text('');
-                $('#routeCapacity').text('');
-                $('#routeSource').text('');
-                $('#routeDestination').text('');
+                $('#routePoints').html('');
+                $('#routeWeight').html('');
+                $('#routeArticles').html('');
+                $('#routeVehicle').html('');
+                $('#routeCapacity').html('');
+                $('#routeSource').html('');
+                $('#routeDestination').html('');
+                calculateTotals();
             }
         });
     }
@@ -1947,6 +1961,7 @@ function clearTableAndFields() {
     $('#freeAmountGlobal').val('');
     $('#distanceInput').val('');
     $('#freightCharges').val('');
+    $('#FreightChargeshtml').text('0.00');
 
     calculateTotals();
     fetchFreightCharge();
@@ -1956,6 +1971,7 @@ function clearTableAndFields() {
     $('#freightCharges').val('');
     
     $('#FreightCharges').html('0.0');
+    $('#FreightChargeshtml').text('0.00');
     $('#routePoints').html('');
     $('#routeWeight').html('');
     $('#routeArticles').html('');
@@ -1973,7 +1989,7 @@ $(document).on('sourceDestination', 'input.route-master-autocomplete', function 
     $('#totalFreightInput').val('');
     $('#freightCharges').val('');
     
-    $('#FreightCharges').html('0.0');
+    $('#FreightChargeshtml').text('0.00');
     if (tableHasData()) {
         clearTableAndFields();
     }
@@ -1985,7 +2001,7 @@ $(document).on('vehicleNumberSelected', '.vehicle-number-autocomplete', function
     $('#totalFreightAmount').html('0.0');
     $('#totalFreightInput').val('');
     $('#freightCharges').val('');
-    $('#FreightCharges').html('0.0');
+    $('#FreightChargeshtml').text('0.0');
     if (tableHasData()) {
         clearTableAndFields();
     }

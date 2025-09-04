@@ -328,6 +328,7 @@ class ErpLorryReceiptController extends Controller
         $organization = $user->organization;
 
         DB::beginTransaction();
+        // dd($request->all());
 
         try {
             
@@ -395,9 +396,24 @@ class ErpLorryReceiptController extends Controller
             $lr->sub_total         = $request->sub_total ?? 0;
             $lr->total_charges     = $request->total_freight ?? 0;
             $lr->remarks           = $request->remarks;
-            $lr->document_status   = $request->status;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
+            if ($request->status == ConstantHelper::SUBMITTED) 
+            {
+                    $bookId = $request->book_id;
+                    $docId = $lr->id;
+                    $remarks = $lr->remarks;
+                    $attachments = $request->file('attachment');
+                    $currentLevel = $lr->approval_level;
+                    $revisionNumber = $lr->revision_number ?? 0;
+                    $actionType = 'submit'; // Approve // reject // submit
+                    $modelName = get_class($lr);
+                    $totalValue = $lr->total_charges ?? 0;
+                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                    $lr->document_status = $approveDocument['approvalStatus'] ?? $lr->status;
+                    $lr->save();
+            } 
+            // dd($lr);
             $this->handleLorryMediaUploads($request, $lr);
 
 

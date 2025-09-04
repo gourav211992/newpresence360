@@ -610,7 +610,7 @@
                                                    <td class="poprod-decpt">
                                                       <span class="badge rounded-pill badge-light-primary"><strong>Weight</strong>: <span id="routeWeight">{{ @$total_weight ?? 0 }}</span></span>
                                                       <span class="badge rounded-pill badge-light-primary"><strong>No of Article</strong>: <span id="routeArticles">{{ $total_articles ?? 0 }}</span></span>
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Points</strong>:<span id="routePoints"> {{ @$lr->locations->count() }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Points</strong>:<span id="routePoints"> {{ @$lr->locations->count() > 1 ? $lr->locations->count() : 0 }}</span></span>
                                                    </td>
                                                 </tr>
                                                 <tr>
@@ -640,7 +640,7 @@
                                                 </tr>
                                                 <tr>
                                                    <td><strong>Freight Charges</strong></td>
-                                                   <td id="FreightCharges" class="text-end">{{ number_format(@$lr->freight_charges, 2) }}</td>
+                                                   <td id="FreightChargeshtml" class="text-end">{{ number_format(@$lr->freight_charges, 2) }}</td>
                                                 </tr>
                                                 <tr class="voucher-tab-foot">
                                                    <td class="text-primary"><strong>Total Freight Charges</strong></td>
@@ -1001,7 +1001,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $('#freightAmount').text(subTotal.toFixed(2));
     $('#subTotalAmount').text(subTotal.toFixed(2));
     $('#lrCharges').text(lr.toFixed(2));
-    $('#FreightCharges').text(freightCharge.toFixed(2));
+    $('#FreightChargeshtml').text(freightCharge.toFixed(2));
     $('#totalFreightAmount').text(total.toFixed(2));
 
     // Update hidden fields
@@ -1532,60 +1532,80 @@ $('.vehicle-number-autocomplete').each(function () {
         const destinationId      = destId     || $('input[name="destination_id"]').val();
         vehicleId = vehicleId  || $('input[name="vehicle_number_id"]').val();
         const customerId      = custId     || $('input[name="customer_id"]').val();
-    const formStatus = $('input[name="document_status"]').val();
-    
 
-    if (!sourceId || !destinationId) return;
+        console.log("Final values =>", sourceId, destId, vehicleId, custId);
 
-    $.ajax({
-        url: '/freight-charge-details',
-        method: 'GET',
-        data: {
+        if (!sourceId || !destinationId) return;
+
+        $.ajax({
+            url: '/freight-charge-details',
+            method: 'GET',
+            data: {
                 source_id: sourceId,
                 destination_id: destinationId,
                 vehicle_id:vehicleId,
                 customer_id:customerId
-        },
-        success: function (response) {
-            $('#distance').val(response.distance);
-            $('#distanceInput').val(response.distance);
-            $('#freight_charges').val(response.freight_charges);
-            $('#freightCharges').val(response.freight_charges);
-            if($('#no_of_bundles').val() != '')
-            {
+            },
+            success: function (response) {
+                if(response.message == 'Get freight charge data'){
+                $('#distance').val(response.distance).prop('disabled', true);
+                $('#freight_charges').val(response.freight_charges).prop('disabled', true);
+                $('#distanceInput').val(response.distance);
+                $('#freightCharges').val(response.freight_charges);
+                $('#FreightChargeshtml').text(
+                    parseFloat(response.freight_charges ?? 0)
+                );
                 $('#no_of_bundles').val(response.no_bundle);
-            }
-            $('#per_bundles').val(response.per_bundle);
-            $('#no_bundles').val(response.no_bundle);
-            $('#no_bundles_amount').val(response.freight_charges);
+                $('#per_bundles').val(response.per_bundle);
+                $('#no_bundles').val(response.no_bundle);
+                $('#no_bundles_amount').val(response.freight_charges);
 
-            // Set labels
-            $('#routeVehicle').text(response.vehicle_type_name);
-            $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
-            $('#routeSource').text(response.source_name);
-            $('#routeDestination').text(response.destination_name);
-
-            if (formStatus === 'submitted' || formStatus === 'approved') {
-                $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', true);
-            }
-        },
-        error: function () {
-            // $('#vehicle_type_name').val('');
-            // $('.vehicle-type-id').val('');
-            // $('#distance').val('');
-            // $('#distanceInput').val('');
-            // $('#freight_charges').val('');
-            // $('#freightCharges').val('');
-            $('#distance').val('').prop('disabled', false);
+                // ✅ Set text content for display
+                $('#routeVehicle').text(response.vehicle_type_name);
+                $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
+                $('#routeSource').text(response.source_name);
+                $('#routeDestination').text(response.destination_name);
+                calculateTotals();
+                }else if(response.message && response.message.includes('No freight charge found')){
+                    console.log('else wala part');
+                $('#distance').val('').prop('disabled', false);
                 $('#freight_charges').val('').prop('disabled', false);
                 $('#distanceInput').val('');
+                $('#freightCharges').val('');
+                $('#FreightChargeshtml').text('0.00');
 
-            if (formStatus !== 'submitted' && formStatus !== 'approved') {
-                $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', false);
+                // ✅ Set text content for display
+                $('#routePoints').html('');
+                $('#routeWeight').html('');
+                $('#routeArticles').html('');
+                $('#routeVehicle').html('');
+                $('#routeCapacity').html('');
+                $('#routeSource').html('');
+                $('#routeDestination').html('');
+                calculateTotals();
+                }
+                
+
+            },
+            error: function () {
+                $('#distance').val('').prop('disabled', false);
+                $('#freight_charges').val('').prop('disabled', false);
+                $('#distanceInput').val('');
+                $('#freightCharges').val('');
+                $('#FreightChargeshtml').text('0.00');
+
+                // ✅ Set text content for display
+                $('#routePoints').html('');
+                $('#routeWeight').html('');
+                $('#routeArticles').html('');
+                $('#routeVehicle').html('');
+                $('#routeCapacity').html('');
+                $('#routeSource').html('');
+                $('#routeDestination').html('');
+                calculateTotals();
             }
-        }
-    });
-}
+        });
+    }
 
 
 let oldSource = $('input[name="source_name"]').val();
