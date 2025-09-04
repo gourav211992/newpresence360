@@ -73,7 +73,7 @@
                                                                                     </div>
                                                                                 </td>
                                                                                 <td class="poprod-decpt">
-                                                                                    <input type="text" placeholder="Select Category"class="form-control mw-100 ledgerselecct mb-25 category-autocomplete"value="{{ $mapping->category?->name }}" data-id="{{ $mapping->category_id }}">
+                                                                                    <input type="text" placeholder="Select Category"class="form-control mw-100 ledgerselecct mb-25 item-category-autocomplete" value="{{ $mapping->category?->name }}" data-id="{{ $mapping->category_id }}">
                                                                                     <input type="hidden" name="store_mappings[{{ $index }}][category_id]" value="{{ $mapping->category_id }}" class="category-id-hidden">
                                                                                 </td>
                                                                                <td class="poprod-decpt">
@@ -236,7 +236,7 @@ function initAutocomplete(selector, url, extraDataFunc = null) {
 }
 
 // ------------------ WIP AUTOCOMPLETE ------------------
-initAutocomplete('.category-autocomplete', "{{ route('autocomplete.categories') }}");
+initAutocomplete('.item-category-autocomplete', "{{ route('autocomplete.categories') }}");
 initAutocomplete('.store-autocomplete', "{{ route('autocomplete.stores') }}");
 initAutocomplete('.substore-autocomplete', "{{ route('autocomplete.substores') }}", function($input){
     return {store_id: $input.closest('tr').find('.store-autocomplete').attr('data-id')};
@@ -261,7 +261,7 @@ $('#addRow').on('click', function () {
             </div>
         </td>
         <td class="poprod-decpt">
-            <input type="text" placeholder="Select Category" class="form-control mw-100 ledgerselecct mb-25 category-autocomplete" data-id="">
+            <input type="text" placeholder="Select Category" class="form-control mw-100 ledgerselecct mb-25 item-category-autocomplete" data-id="">
             <input type="hidden" name="store_mappings[${wipRowIdx}][category_id]" value="" class="category-id-hidden">
         </td>
         <td class="poprod-decpt">

@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class InspectionHeader extends Model
 {
-    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait, DefaultGroupCompanyOrg, DynamicFieldsTrait;
 
 
     protected $table = 'erp_insp_headers';
@@ -81,6 +81,7 @@ class InspectionHeader extends Model
         'item_discount',
         'header_discount',
         'total_discount',
+        'reference_type',
         'gst',
         'gst_details',
         'taxable_amount',
@@ -231,14 +232,19 @@ class InspectionHeader extends Model
         return $this->hasMany(InspectionDetail::class, 'header_id');
     }
 
+    public function batches()
+    {
+        return $this->hasMany(InspBatchDetail::class, 'header_id');
+    }
+
     public function ship_address()
     {
-        return $this->belongsTo(ErpAddress::class,'shipping_address');
+        return $this->belongsTo(ErpAddress::class, 'shipping_address');
     }
 
     public function bill_address()
     {
-        return $this->belongsTo(ErpAddress::class,'billing_address');
+        return $this->belongsTo(ErpAddress::class, 'billing_address');
     }
 
     public function billingAddress()
@@ -263,12 +269,12 @@ class InspectionHeader extends Model
 
     public function store_address()
     {
-        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type','location')->with(['city', 'state', 'country']);
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'location')->with(['city', 'state', 'country']);
     }
 
     public function location_address_details()
     {
-        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type',  'location');
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'location');
     }
 
     public function addresses()
@@ -288,7 +294,7 @@ class InspectionHeader extends Model
 
     public function paymentTerm()
     {
-        return $this->belongsTo(PaymentTerm::class,'payment_term_id');
+        return $this->belongsTo(PaymentTerm::class, 'payment_term_id');
     }
 
     // public function getTotalAmountAttribute()
@@ -299,7 +305,7 @@ class InspectionHeader extends Model
     /*Header Level Discount*/
     public function headerDiscount()
     {
-        return $this->hasMany(InspectionTed::class, 'header_id')->where('ted_level', 'H')->where('ted_type','Discount');
+        return $this->hasMany(InspectionTed::class, 'header_id')->where('ted_level', 'H')->where('ted_type', 'Discount');
     }
 
     /*Total discount header level total_header_disc_amount*/
@@ -310,7 +316,7 @@ class InspectionHeader extends Model
 
     public function expenses()
     {
-        return $this->hasMany(InspectionTed::class,'header_id')->where('ted_type', '=', 'Expense')
+        return $this->hasMany(InspectionTed::class, 'header_id')->where('ted_type', '=', 'Expense')
             ->where('ted_level', '=', 'H');
     }
 
@@ -327,12 +333,12 @@ class InspectionHeader extends Model
 
     public function pb_ted()
     {
-        return $this->hasMany(InspectionTed::class,'header_id');
+        return $this->hasMany(InspectionTed::class, 'header_id');
     }
 
     public function pb_ted_tax()
     {
-        return $this->hasMany(InspectionTed::class,'header_id')->where('ted_type','Tax');
+        return $this->hasMany(InspectionTed::class, 'header_id')->where('ted_type', 'Tax');
     }
 
     public function getGrandTotalAmountAttribute()
@@ -342,12 +348,12 @@ class InspectionHeader extends Model
 
     public function createdBy()
     {
-        return $this->belongsTo(User::class,'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function updatedBy()
     {
-        return $this->belongsTo(User::class,'updated_by');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function latestBillingAddress()

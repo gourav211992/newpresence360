@@ -3800,12 +3800,12 @@
                         if (currentOrder?.customer_terms) {
                             $('#summernote1').summernote('code', currentOrder?.customer_terms);
                         }
-                        if (currentOrder?.customer_terms_id) {
-                            $("#customer_terms_id").val(currentOrder?.customer_terms_id);
-                        }
-                        if (currentOrder?.customer_terms_name) {
-                            $("#terms").val(currentOrder?.customer_terms_name);
-                        }
+                        // if (currentOrder?.customer_terms_id) {
+                        //     $("#customer_terms_id").val(currentOrder?.customer_terms_id);
+                        // }
+                        // if (currentOrder?.customer_terms_name) {
+                        //     $("#terms").val(currentOrder?.customer_terms_name);
+                        // }
                         //Credit Days
                         if (currentOrder?.credit_days) {
                             $("#credit_days_input").val(currentOrder.credit_days);

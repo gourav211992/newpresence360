@@ -2456,6 +2456,9 @@ $(document).on("input", ".asn_number", function () {
 $(document).on("click", ".asn_process", function () {
     const asnInput = $(".process_number");
     const asnNumber = asnInput.val().trim();
+    let headerBookId = $("#book_id").val() || '';
+    let locationId = $("[name='header_store_id']").val() || '';
+
 
     const moduleType = $("input[name='process_type']:checked").val();
 
@@ -2477,6 +2480,8 @@ $(document).on("click", ".asn_process", function () {
             _token: $('meta[name="csrf-token"]').attr("content"),
             asn_number: asnNumber,
             module_type: moduleType,
+            header_book_id: headerBookId,
+            location_id: locationId,
         },
         beforeSend: function () {
             button.prop("disabled", true).text("Processing...");

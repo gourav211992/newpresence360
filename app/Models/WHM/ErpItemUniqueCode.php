@@ -73,6 +73,11 @@ class ErpItemUniqueCode extends Model
         return $this->belongsTo(Item::class, 'item_id');
     }
 
+    public function job()
+    {
+        return $this->belongsTo(ErpWhmJob::class, 'job_id');
+    }
+
     public function actionBy()
     {
         return $this->belongsTo(Employee::class, 'action_by');

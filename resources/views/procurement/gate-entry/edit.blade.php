@@ -7,8 +7,8 @@
     </style>
 @endsection
 @section('content')
-    <form id="mrnEditForm" data-module="ge" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}"
-        data-redirect="/gate-entries" enctype="multipart/form-data">
+    <form id="mrnEditForm" data-module="ge" class="ajax-input-form" method="POST"
+        action="{{ route('gate-entry.update', $mrn->id) }}" data-redirect="/gate-entries" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <div class="app-content content ">
@@ -41,7 +41,11 @@
                                     class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                @if(!intval(request('amendment') ?? 0) && $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT && $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
+                                @if (
+                                    !intval(request('amendment') ?? 0) &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
                                     <a href="{{ route('gate-entry.generate-pdf', $mrn->id) }}" target="_blank"
                                         class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
@@ -116,7 +120,8 @@
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</button>
                                         @if (@$mrn->deviationJob)
-                                            <button type="button" data-bs-toggle="modal" id="deviation-button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                            <button type="button" data-bs-toggle="modal" id="deviation-button"
+                                                class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                                 Deviation</button>
                                         @endif
                                     @endif
@@ -205,7 +210,7 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                @if (($mrn->document_status == 'draft' || $mrn->document_status == 'rejected'))
+                                                @if ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected')
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
                                                             <label class="form-label">Reference From <span
@@ -230,8 +235,9 @@
                                                         <input type="hidden" name="reference_type"
                                                             class="form-control reference_type" id="reference_type_input"
                                                             readonly>
-                                                        <input type="hidden" name="purchase_order_id" class="form-control"
-                                                        value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
+                                                        <input type="hidden" name="purchase_order_id"
+                                                            class="form-control"
+                                                            value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
                                                     </div>
                                                 </div>
                                             </div>
@@ -320,12 +326,17 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
+                                                                    <label class="form-label w-100">Vendor Address <span
+                                                                            class="text-danger">*</span> <a
+                                                                            href="javascript:;"
+                                                                            class="float-end font-small-2 editAddressBtn d-none"
+                                                                            data-type="billing"><i
+                                                                                data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
-                                                                        @if($mrn->latestBillingAddress())
-                                                                            {{$mrn->latestBillingAddress()->display_address}}
+                                                                        @if ($mrn->latestBillingAddress())
+                                                                            {{ $mrn->latestBillingAddress()->display_address }}
                                                                         @else
-                                                                            {{$mrn->bill_address?->display_address}}
+                                                                            {{ $mrn->bill_address?->display_address }}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -378,25 +389,25 @@
                                             <div class="card-body">
                                                 <div class="row">
                                                     <!-- <div class="col-md-3">
-                                                                    <div class="mb-1">
-                                                                        <label class="form-label">
-                                                                            Gate Entry No.
-                                                                        </label>
-                                                                        <input type="text" name="gate_entry_no"
-                                                                            class="form-control bg-white" value="{{ @$mrn->gate_entry_no }}"
-                                                                            placeholder="Enter Gate Entry no">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-3">
-                                                                    <div class="mb-1">
-                                                                        <label class="form-label">
-                                                                            Gate Entry Date
-                                                                        </label>
-                                                                        <input type="date" name="gate_entry_date" value="{{ date('Y-m-d', strtotime($mrn->gate_entry_date)) }}"
-                                                                            class="form-control bg-white gate-entry" id="datepicker2"
-                                                                            placeholder="Enter Gate Entry Date">
-                                                                    </div>
-                                                                </div> -->
+                                                                                    <div class="mb-1">
+                                                                                        <label class="form-label">
+                                                                                            Gate Entry No.
+                                                                                        </label>
+                                                                                        <input type="text" name="gate_entry_no"
+                                                                                            class="form-control bg-white" value="{{ @$mrn->gate_entry_no }}"
+                                                                                            placeholder="Enter Gate Entry no">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="col-md-3">
+                                                                                    <div class="mb-1">
+                                                                                        <label class="form-label">
+                                                                                            Gate Entry Date
+                                                                                        </label>
+                                                                                        <input type="date" name="gate_entry_date" value="{{ date('Y-m-d', strtotime($mrn->gate_entry_date)) }}"
+                                                                                            class="form-control bg-white gate-entry" id="datepicker2"
+                                                                                            placeholder="Enter Gate Entry Date">
+                                                                                    </div>
+                                                                                </div> -->
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
@@ -472,8 +483,7 @@
                                                                 Manual Entry No.
                                                             </label>
                                                             <input type="text" name="manual_entry_no"
-                                                                value="{{ @$mrn->manual_entry_no }}"
-                                                                class="form-control"
+                                                                value="{{ @$mrn->manual_entry_no }}" class="form-control"
                                                                 placeholder="Enter Manual Entry No.">
                                                         </div>
                                                     </div>
@@ -1041,15 +1051,13 @@
     <div class="modal fade" id="deviateModal" tabindex="-1" aria-labelledby="deviateModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
-                <form class="ajax-input-form"
-                    method="POST"
-                    action="{{ route('document.approval.gate-entry') }}"
-                    data-redirect="{{ route('gate-entry.index') }}"
-                    enctype="multipart/form-data">
+                <form class="ajax-input-form" method="POST" action="{{ route('document.approval.gate-entry') }}"
+                    data-redirect="{{ route('gate-entry.index') }}" enctype="multipart/form-data">
 
                     @csrf
                     <input type="hidden" name="action_type" id="action_type">
-                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn->deviationJob?->id ?? '' }}">
+                    <input type="hidden" name="closing_job_id" id="closing_job_id"
+                        value="{{ $mrn->deviationJob?->id ?? '' }}">
                     <input type="hidden" name="id" value="{{ $mrn->id ?? '' }}">
 
                     <!-- Modal Header -->
@@ -1057,7 +1065,8 @@
                         <h5 class="modal-title fw-bold" id="deviateModalLabel">
                             <i class="bi bi-exclamation-triangle me-2"></i>Unloading Deviation
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
                     </div>
 
                     <!-- Modal Body -->
@@ -1078,14 +1087,16 @@
                             <div class="col">
                                 <div class="bg-light rounded p-1 border">
                                     <h6 class="mb-1 text-secondary">Deviation</h6>
-                                    <h5 class="mb-0 fw-bold {{ ($itemUniqueCodes['pending_unique_codes'] > 0) ? 'text-danger' : 'text-dark' }}">{{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
+                                    <h5
+                                        class="mb-0 fw-bold {{ $itemUniqueCodes['pending_unique_codes'] > 0 ? 'text-danger' : 'text-dark' }}">
+                                        {{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="remarks" class="form-label fw-semibold text-dark">Remarks</label>
                             <textarea maxlength="250" name="closing_remarks" id="remarks" class="form-control" rows="4"
-                                    placeholder="Enter your remarks here..."></textarea>
+                                placeholder="Enter your remarks here..."></textarea>
                             <!-- <div class="form-text text-muted">Max 250 characters</div> -->
                         </div>
                     </div>
@@ -1107,14 +1118,13 @@
 @section('scripts')
     <script type="text/javascript">
         var actionUrlTax = '{{ route('gate-entry.tax.calculation') }}';
-        var qtyChangeUrl = '{{ route("gate-entry.get.validate-quantity") }}';
+        var qtyChangeUrl = '{{ route('gate-entry.get.validate-quantity') }}';
     </script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-datatable.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-attr-ui.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/js/modules/gate-entry.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
-
         let tableRowCount = $('.mrntableselectexcel tr').length;
         let currentProcessType = @json($mrn->reference_type);
 
@@ -1122,13 +1132,11 @@
         window.onload = () => {
             currentProcessType = @json($mrn->reference_type);
             $("#reference_type_input").val(currentProcessType);
-            if(currentProcessType === null)
-            {
+            if (currentProcessType === null) {
                 $(".joSelect").hide();
                 $(".poSelect").hide();
                 $(".asn-container").hide();
-            }
-            else{
+            } else {
                 if (currentProcessType === 'po') {
                     $(".joSelect").hide();
                     $(".poSelect").show();
@@ -1150,7 +1158,9 @@
             const ids = @json($detailsIds);
 
             if (['po', 'jo', 'so'].includes(currentProcessType)) {
-                localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
+                localStorage.setItem(
+                    `selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON
+                    .stringify(ids));
             }
         };
 
@@ -1176,7 +1186,8 @@
         @else
             @if ($mrn->document_status != 'draft' && $mrn->document_status != 'rejected')
                 $(':input').prop('readonly', true);
-                $('textarea[name="amend_remark"], textarea[name="closing_remarks"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false)
+                $('textarea[name="amend_remark"], textarea[name="closing_remarks"], input[type="file"][name="amend_attachment[]"]')
+                    .prop('readonly', false)
                     .prop('disabled', false);
                 $('select').not('.amendmentselect select').prop('disabled', true);
                 $("#deleteBtn").remove();
@@ -1689,12 +1700,11 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
-            if(currentProcessType && currentProcessType != null)
-            {
+            if (currentProcessType && currentProcessType != null) {
                 rowCount = tableRowCount;
             }
             let detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
-            let actionUrl = '{{ route("gate-entry.item.attr") }}' + '?item_id=' + itemId + '&detail_id=' + detail_id +
+            let actionUrl = '{{ route('gate-entry.item.attr') }}' + '?item_id=' + itemId + '&detail_id=' + detail_id +
                 `&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -1731,7 +1741,7 @@
             if (!itemId) return;
 
             let selectedAttr = [];
-            $(currentTr).find("[name*='[attr_name]']").each(function () {
+            $(currentTr).find("[name*='[attr_name]']").each(function() {
                 const val = $(this).val();
                 if (val) selectedAttr.push(val);
             });
@@ -2465,20 +2475,21 @@
             $("#reference_type_input").val('po');
             tableRowCount = $('.mrntableselectexcel tr').length;
             $("#poModal").modal('show');
-            currentProcessType='po';
+            currentProcessType = 'po';
             openPurchaseRequest();
             const tableSelector = '#poModal .po-order-detail';
             if ($(tableSelector).length) {
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
-                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function() {
                         const currentAsn = $(this).attr('data-current-asn');
                         const isChecked = $(this).is(':checked');
 
                         // If data-current-asn is valid
                         if (currentAsn && currentAsn !== 'null') {
-                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked',
+                                isChecked);
                         }
                     });
                 } else {
@@ -2487,25 +2498,24 @@
             }
         });
 
-        function getSelectedPoTypes()
-        {
+        function getSelectedPoTypes() {
             let moduleTypes = [];
             $('.po_item_checkbox:checked').each(function() {
-                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+                moduleTypes.push($(this).attr(
+                    'data-module')); // Corrected: Get attribute value instead of setting it
             });
             return moduleTypes;
         }
 
-        function openPurchaseRequest()
-        {
-            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+        function openPurchaseRequest() {
+            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
+                "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
             initializeAutocompleteQt("asn_no_input_qt", "asn_id_qt_val", "po_asn_document_qt", "document_number", "");
             initializeAutocompleteQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
         }
 
-        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
+        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#poModal';
             if (currentProcessType == 'jo')
                 modalType = '#joModal';
@@ -2519,9 +2529,9 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id : $("#vendor_id_qt_val").val(),
-                            header_book_id : $("#book_id").val(),
-                            store_id : $("#store_id_po").val() || '',
+                            vendor_id: $("#vendor_id_qt_val").val(),
+                            header_book_id: $("#book_id").val(),
+                            store_id: $("#store_id_po").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -2550,7 +2560,7 @@
                         }
                     });
                 },
-                appendTo : modalType,
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -2595,56 +2605,53 @@
                 so_id = '',
                 item_search = '',
                 selected_po_ids = '';
-                // header_ids = '';
-                // details_ids = '';
+            // header_ids = '';
+            // details_ids = '';
 
-            if(currentProcessType === 'po')
-            {
+            if (currentProcessType === 'po') {
                 let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
                 selectedPoIds = JSON.parse(selectedPoIds);
                 selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
                 document_date = $("[name ='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#document_id_qt_val").val() || '',
-                item_id = $("#item_id_qt_val").val() || '',
-                vendor_id = $("#vendor_id_qt_val").val(),
-                store_id = $("#store_id").val() || '',
-                so_id = $("#po_so_qt_val").val() || '',
-                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '',
-                selected_po_ids = encodeURIComponent(selectedPoIds)
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#document_id_qt_val").val() || '',
+                    item_id = $("#item_id_qt_val").val() || '',
+                    vendor_id = $("#vendor_id_qt_val").val(),
+                    store_id = $("#store_id").val() || '',
+                    so_id = $("#po_so_qt_val").val() || '',
+                    item_search = $("#item_name_search").length ? $("#item_name_search").val() : '',
+                    selected_po_ids = encodeURIComponent(selectedPoIds)
             }
-            if(currentProcessType === 'jo')
-            {
+            if (currentProcessType === 'jo') {
                 let selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
                 selectedJoIds = JSON.parse(selectedJoIds);
                 selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
                 document_date = $("[name='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#jo_document_id_qt_val").val() || '',
-                item_id = $("#jo_item_id_qt_val").val() || '',
-                vendor_id = $("#jo_vendor_id_qt_val").val(),
-                store_id = $("#jo_store_id").val() || '',
-                so_id = $("#jo_so_qt_val").val() || '',
-                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '',
-                selected_po_ids = encodeURIComponent(selectedJoIds)
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#jo_document_id_qt_val").val() || '',
+                    item_id = $("#jo_item_id_qt_val").val() || '',
+                    vendor_id = $("#jo_vendor_id_qt_val").val(),
+                    store_id = $("#jo_store_id").val() || '',
+                    so_id = $("#jo_so_qt_val").val() || '',
+                    item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '',
+                    selected_po_ids = encodeURIComponent(selectedJoIds)
             }
-            if(currentProcessType === 'so')
-            {
+            if (currentProcessType === 'so') {
                 let selectedSoIds = localStorage.getItem('selectedSoIds') ?? '[]';
                 selectedSoIds = JSON.parse(selectedSoIds);
                 selectedSoIds = encodeURIComponent(JSON.stringify(selectedSoIds));
                 document_date = $("[name='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#so_document_id_qt_val").val() || '',
-                item_id = $("#so_item_id_qt_val").val() || '',
-                vendor_id = $("#so_vendor_id_qt_val").val(),
-                store_id = $("#so_store_id").val() || '',
-                so_id = $("#so_so_qt_val").val() || '',
-                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '',
-                selected_po_ids = encodeURIComponent(selectedSoIds)
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#so_document_id_qt_val").val() || '',
+                    item_id = $("#so_item_id_qt_val").val() || '',
+                    vendor_id = $("#so_vendor_id_qt_val").val(),
+                    store_id = $("#so_store_id").val() || '',
+                    so_id = $("#so_so_qt_val").val() || '',
+                    item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '',
+                    selected_po_ids = encodeURIComponent(selectedSoIds)
             }
             // if(@json($headerIds) && @json($detailsIds))
             // {
@@ -2674,42 +2681,134 @@
             };
         }
 
-        function getPurchaseOrders()
-        {
-            const ajaxUrl = '{{ route("gate-entry.get.po", ["type" => "edit"]) }}';
+        function getPurchaseOrders() {
+            const ajaxUrl = '{{ route('gate-entry.get.po', ['type' => 'edit']) }}';
             var columns = [];
-            columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
-                { data: 'po_doc', name: 'po_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'po_date', name: 'po_date', render: renderData, orderable: false, searchable: false },
-                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
-                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+            columns = [{
+                    data: 'id',
+                    visible: false,
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'select_checkbox',
+                    name: 'select_checkbox',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'vendor',
+                    name: 'vendor',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'po_doc',
+                    name: 'po_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'po_date',
+                    name: 'po_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_doc',
+                    name: 'si_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_date',
+                    name: 'si_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_code',
+                    name: 'item_code',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_name',
+                    name: 'item_name',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'attributes',
+                    name: 'attributes',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'order_qty',
+                    name: 'order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inv_order_qty',
+                    name: 'inv_order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'ge_qty',
+                    name: 'ge_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty',
+                    name: 'balance_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'rate',
+                    name: 'rate',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'total_amount',
+                    name: 'total_amount',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -2922,13 +3021,14 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
-                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function() {
                         const currentAsn = $(this).attr('data-current-asn');
                         const isChecked = $(this).is(':checked');
 
                         // If data-current-asn is valid
                         if (currentAsn && currentAsn !== 'null') {
-                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked',
+                                isChecked);
                         }
                     });
                 }
@@ -2936,24 +3036,25 @@
             }
         });
 
-        function getSelectedJoTypes()
-        {
+        function getSelectedJoTypes() {
             let moduleTypes = [];
             $('.jo_item_checkbox:checked').each(function() {
-                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+                moduleTypes.push($(this).attr(
+                    'data-module')); // Corrected: Get attribute value instead of setting it
             });
             return moduleTypes;
         }
 
-        function openJoRequest()
-        {
-            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "jo_vendor_list", "jo_vendor_code", "company_name");
-            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "jo_document_number", "");
-            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "jo_document_number");
+        function openJoRequest() {
+            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "jo_vendor_list", "jo_vendor_code",
+                "company_name");
+            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt",
+                "jo_document_number", "");
+            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code",
+                "jo_document_number");
         }
 
-        function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
+        function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#joModal';
             if (currentProcessType == 'jo')
                 modalType = '#joModal';
@@ -2967,9 +3068,9 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id : $("#jo_vendor_id_qt_val").val(),
-                            header_book_id : $("#jo_book_id").val(),
-                            store_id : $("#store_id_jo").val() || '',
+                            vendor_id: $("#jo_vendor_id_qt_val").val(),
+                            header_book_id: $("#jo_book_id").val(),
+                            store_id: $("#store_id_jo").val() || '',
                         },
                         success: function(data) {
                             resjonse($.map(data, function(item) {
@@ -2985,7 +3086,7 @@
                         }
                     });
                 },
-                appendTo : modalType,
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -3019,42 +3120,134 @@
             return data ? data : '';
         }
 
-        function getJobOrders()
-        {
-            const ajaxUrl = '{{ route("gate-entry.get.jo", ["type" => "edit"]) }}';
+        function getJobOrders() {
+            const ajaxUrl = '{{ route('gate-entry.get.jo', ['type' => 'edit']) }}';
             var columns = [];
-            columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
-                { data: 'jo_doc', name: 'jo_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'jo_date', name: 'jo_date', render: renderData, orderable: false, searchable: false },
-                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
-                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+            columns = [{
+                    data: 'id',
+                    visible: false,
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'select_checkbox',
+                    name: 'select_checkbox',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'vendor',
+                    name: 'vendor',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'jo_doc',
+                    name: 'jo_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'jo_date',
+                    name: 'jo_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_doc',
+                    name: 'si_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_date',
+                    name: 'si_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_code',
+                    name: 'item_code',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_name',
+                    name: 'item_name',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'attributes',
+                    name: 'attributes',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'order_qty',
+                    name: 'order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inv_order_qty',
+                    name: 'inv_order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'ge_qty',
+                    name: 'ge_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty',
+                    name: 'balance_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'rate',
+                    name: 'rate',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'total_amount',
+                    name: 'total_amount',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -3070,20 +3263,19 @@
         });
 
         /*Checkbox for jo/si item list*/
-        $(document).on('change','.jo-order-detail > thead .form-check-input',(e) => {
+        $(document).on('change', '.jo-order-detail > thead .form-check-input', (e) => {
             if (e.target.checked) {
-                $(".jo-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',true);
+                $(".jo-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', true);
                 });
             } else {
-                $(".jo-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',false);
+                $(".jo-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', false);
                 });
             }
         });
 
-        function getSelectedJoIDS()
-        {
+        function getSelectedJoIDS() {
             let ids = [];
             let asnIds = [];
             let asnItemIds = [];
@@ -3139,9 +3331,10 @@
                     minLength: 0,
                     source: function(request, resjonse) {
                         let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                        $("#itemTable tbody [id*='row_']").each(function(index, item) {
+                            if (Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find(
+                                    '[name*="[item_id]"]').val()));
                             }
                         });
                         $.ajax({
@@ -3150,8 +3343,8 @@
                             dataType: 'json',
                             data: {
                                 q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                                type: 'goods_item_list',
+                                selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                             },
                             success: function(data) {
                                 resjonse($.map(data, function(item) {
@@ -3160,18 +3353,19 @@
                                         label: `${item.item_name} (${item.item_code})`,
                                         code: item.item_code || '',
                                         item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
+                                        item_name: item.item_name,
+                                        uom_name: item.uom?.name,
+                                        uom_id: item.uom_id,
+                                        hsn_id: item.hsn?.id,
+                                        hsn_code: item.hsn?.code,
+                                        alternate_u_o_ms: item.alternate_u_o_ms,
+                                        is_attr: item.item_attributes_count,
                                     };
                                 }));
                             },
                             error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.resjonseText);
+                                console.error('Error fetching customer data:', xhr
+                                    .resjonseText);
                             }
                         });
                     },
@@ -3196,19 +3390,21 @@
                         $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        if (ui.item?.alternate_u_o_ms) {
+                            for (let alterItem of ui.item.alternate_u_o_ms) {
+                                uomOption +=
+                                    `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
                         $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
-                            if(ui.item.is_attr) {
+                            if (ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('')
+                                    .focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -3218,7 +3414,7 @@
                     change: function(event, ui) {
                         if (!ui.item) {
                             $(this).val("");
-                                // $('#itemId').val('');
+                            // $('#itemId').val('');
                             $(this).attr('data-name', '');
                             $(this).attr('data-code', '');
                         }
@@ -3233,7 +3429,7 @@
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val() || '';
             let groupItems = [];
-            $('tr[data-group-item]').each(function () {
+            $('tr[data-group-item]').each(function() {
                 let groupItemData = $(this).data('group-item');
                 groupItems.push(groupItemData);
             });
@@ -3255,15 +3451,15 @@
             asnProcess(processData, 'jo-process');
         });
 
-        function getLocation(locationId = '')
-        {
-            let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
+        function getLocation(locationId = '') {
+            let actionUrl = '{{ route('store.get') }}' + '?location_id=' + locationId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         let options = '';
                         data.data.locations.forEach(function(location) {
-                            options+= `<option value="${location.id}">${location.store_code}</option>`;
+                            options +=
+                                `<option value="${location.id}">${location.store_code}</option>`;
                         });
                         $("[name='header_store_id']").empty().append(options);
                     } else {
@@ -3340,20 +3536,20 @@
             const transactionDate = $("[name='document_date']").val();
             const type = $("meta[name='route-type']").attr("content"); // blade->meta
 
-            const baseRoute = processType === 'jo'
-                ? '{{ route("gate-entry.process.jo-item") }}'
-                : '{{ route("gate-entry.process.po-item") }}';
+            const baseRoute = processType === 'jo' ?
+                '{{ route('gate-entry.process.jo-item') }}' :
+                '{{ route('gate-entry.process.po-item') }}';
 
             const actionUrl = baseRoute
-                .replace(':type', type)
-                + '?ids=' + encodeURIComponent(ids)
-                + '&asnIds=' + encodeURIComponent(asnIds)
-                + '&asnItemIds=' + encodeURIComponent(asnItemIds)
-                + '&moduleTypes=' + moduleTypes
-                + '&tableRowCount=' + tableRowCount
-                + '&currency_id=' + encodeURIComponent(currencyId)
-                + '&d_date=' + encodeURIComponent(transactionDate)
-                + '&current_row_count=' + current_row_count;
+                .replace(':type', type) +
+                '?ids=' + encodeURIComponent(ids) +
+                '&asnIds=' + encodeURIComponent(asnIds) +
+                '&asnItemIds=' + encodeURIComponent(asnItemIds) +
+                '&moduleTypes=' + moduleTypes +
+                '&tableRowCount=' + tableRowCount +
+                '&currency_id=' + encodeURIComponent(currencyId) +
+                '&d_date=' + encodeURIComponent(transactionDate) +
+                '&current_row_count=' + current_row_count;
 
             fetch(actionUrl)
                 .then(res => res.json())
@@ -3425,7 +3621,8 @@
                         $("[name='transporter_name']").val(vendorAsn.transporter_name);
                         $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
                     } else {
-                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']")
+                            .val('');
                     }
 
                     // Expenses
@@ -3487,7 +3684,8 @@
             $(".editAddressBtn").removeClass('d-none');
             $("#vendor_name").val('').prop('readonly', false);
             $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
-            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html(
+                '<option value="">Select</option>');
             $(".shipping_detail, .billing_detail").text('-');
             $("#reference_from").removeClass('d-none');
 

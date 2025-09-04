@@ -67,7 +67,13 @@ class AttributeRequest extends FormRequest
                 'string',
                 'max:100'
             ],
-            'subattribute.*.value' => 'nullable|string|max:100',
+            'subattribute.*.value' => [
+                'nullable',
+                'string',
+                'max:100',
+                'regex:/^[^\'"]*$/', 
+            ],
+
             'subattribute.*.id' => 'nullable|exists:erp_attributes,id',
             'organization_id' => 'nullable|exists:organizations,id',
             'group_id' => 'nullable|exists:groups,id',
@@ -90,6 +96,7 @@ class AttributeRequest extends FormRequest
             'subattribute.*.value.required' => 'The attribute value is required.',
             'subattribute.*.value.string' => 'The attribute value must be a string.',
             'subattribute.*.value.max' => 'The attribute value may not be greater than 100 characters.',
+            'subattribute.*.value.regex' => 'Quotes are not allowed in attribute values.',
         ];
     }
 

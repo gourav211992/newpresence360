@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\View\BomVsConsumption;
 use App\Models\View\ProductionTracking;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 class ProductionReportController extends Controller
 {
         public function bomVsActualReport(Request $request)
@@ -250,6 +250,7 @@ class ProductionReportController extends Controller
                 ->where('group_id', $groupId)
                 ->where('company_id', $companyId)
                 ->where('organization_id', $organizationId)
+                ->where('main_so_item', 1)
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->orderByDesc('id'); 
                  if ($request->filled('date_range')) {
@@ -323,7 +324,8 @@ class ProductionReportController extends Controller
         $query = ProductionTracking::where('group_id', $groupId)
             ->where('company_id', $companyId)
             ->where('organization_id', $organizationId)
-            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->where('main_so_item', 1);
                 if ($request->filled('date_range')) {
                     $dates = explode(' to ', $request->date_range);
 
@@ -446,10 +448,11 @@ class ProductionReportController extends Controller
                         'f.name as sub_store_name',
                         'f.code as sub_store_code'
                     ])->where('b.group_id', $groupId)
-                    ->where('a.id', $id)
+                    ->where('a.pwo_id', $details->pwo_id)
+                    ->where('a.so_item_id', $details->so_item_id)
                     ->where('b.company_id', $companyId)
                     ->where('b.organization_id', $organizationId)
-                    ->orderByDesc('a.id');
+                    ->orderByDesc('a.so_item_id');
         }
         if($request->pdf){
             $get=$query->get();

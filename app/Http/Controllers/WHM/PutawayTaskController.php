@@ -6,9 +6,11 @@ use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\UnloadingResource;
+use App\Models\ErpMaterialIssueHeader;
 use App\Models\Item;
 use App\Models\MrnBatchDetail;
 use App\Models\MrnHeader;
@@ -36,11 +38,11 @@ class PutawayTaskController extends Controller
                     }])
                     ->where('type', CommonHelper::PUTAWAY)
                     ->when($search, function ($query) use ($search) {
-                        $query->whereHasMorph('morphable', ['App\Models\MrnHeader','App\Models\InspectionHeader'], function ($q) use ($search) {
+                        $query->whereHasMorph('morphable', ['App\Models\MrnHeader','App\Models\InspectionHeader', 'App\Models\ErpMaterialIssueHeader'], function ($q) use ($search) {
                              $q->where(function($q2) use ($search) {
                                 $q2->where('document_number', 'like', "%{$search}%")
-                                ->orWhere('consignment_no', 'like', "%{$search}%")
-                                ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
+                                // ->orWhere('consignment_no', 'like', "%{$search}%")
+                                // ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
                                 ->orWhereHas('book', function ($bookQuery) use ($search) {
                                     $bookQuery->where('book_code', 'like', "%{$search}%");
                                 });
@@ -519,39 +521,43 @@ class PutawayTaskController extends Controller
 
     }
 
-    // public function scannedPackets(Request $request){
-    //     $validator = Validator::make($request->all(),[
-    //         'job_id' => ['required'],
-    //     ],[
-    //         'job_id.required' => 'Job id is required',
-    //     ]);
+    public function scannedItemQrs(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'putaway_item_id' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required',
+            'putaway_item_id.required' => 'Putaway item id is required',
+        ]);
 
-    //     if ($validator->fails()) {
-    //         throw new ValidationException($validator);
-    //     }
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
 
-    //     \DB::beginTransaction();
-    //     try {
-    //         // Fetch Scanned Packets
-    //         $scannedPackets = ErpItemUniqueCode::with(['vendor' => function ($q) {
-    //             $q->select('id', 'vendor_code', 'company_name');
-    //         },'storagePoint' => function($q){
-    //             $q->select('id', 'storage_number');
-    //         }])
-    //         ->where('job_id',$request->job_id)
-    //         ->where('status',CommonHelper::SCANNED)
-    //         ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
-    //         ->get();
+        \DB::beginTransaction();
+        try {
+            // Fetch Scanned Packets
+            $scannedPackets = ErpItemUniqueCode::with(['vendor' => function ($q) {
+                $q->select('id', 'vendor_code', 'company_name');
+            },'storagePoint' => function($q){
+                $q->select('id', 'storage_number');
+            }])
+            ->where('job_id',$request->job_id)
+            ->where('morphable_id', $request->putaway_item_id)
+            ->where('job_type', CommonHelper::PUTAWAY)
+            ->where('status',CommonHelper::SCANNED)
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
+            ->get();
 
-    //         \DB::commit();
-    //         return [
-    //             'data' => $scannedPackets
-    //         ];
-    //     } catch (\Exception $e) {
-    //         \DB::rollback();
-    //         throw new ApiGenericException($e->getMessage());
-    //     }
-    // }
+            \DB::commit();
+            return [
+                'data' => $scannedPackets
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
 
     public function closeJob(Request $request){
         $validator = Validator::make($request->all(),[
@@ -621,12 +627,26 @@ class PutawayTaskController extends Controller
                 $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
                 $subStoreId = $job->sub_store_id;
 
-                $res = StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL, $subStoreId);
-                if($res['status'] == 'error'){
-                    \DB::rollback();
-                    return[
-                        'message' => $res['message']
-                    ];
+                //Stock Ledger
+                if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+                    $mi = ErpMaterialIssueHeader::find($job->morphable_id);
+                    if ($mi) {
+                        $miItemIds = $mi -> items -> pluck('id') -> toArray();
+                        $receiveRecords = InventoryHelper::settlementOfInventoryAndStock($mi->id, $miItemIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $mi->document_status, 'receipt');
+                        if ($receiveRecords['status'] == 'error') {
+                            return $receiveRecords['message'];
+                        } else {
+                            return "";
+                        }
+                    }
+                } else if ($job -> trns_type === ConstantHelper::MRN_SERVICE_ALIAS || $jpb -> trns_type === ConstantHelper::INSPECTION_SERVICE_ALIAS) {
+                    $res = StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL, $subStoreId);
+                    if($res['status'] == 'error'){
+                        \DB::rollback();
+                        return[
+                            'message' => $res['message']
+                        ];
+                    }
                 }
             }
 

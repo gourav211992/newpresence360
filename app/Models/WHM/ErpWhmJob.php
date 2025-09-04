@@ -4,12 +4,14 @@ namespace App\Models\WHM;
 
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
+use App\Models\Organization;
+use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ErpWhmJob extends Model
 {
-    use HasFactory;
+    use HasFactory, DefaultGroupCompanyOrg;
 
     protected $fillable = [
         'group_id',
@@ -49,6 +51,11 @@ class ErpWhmJob extends Model
     public function subStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class, 'organization_id');
     }
 
 }

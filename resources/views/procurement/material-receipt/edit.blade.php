@@ -1,19 +1,25 @@
 @extends('layouts.app')
+
 @section('styles')
     <style>
-        .tooltip-inner { text-align: left}
+        .tooltip-inner {
+            text-align: left
+        }
     </style>
 @endsection
 @section('content')
     @php
-        $routeName = $servicesBooks['services'][0]->alias ??  "material-receipt";
-        $routeAlias = ($routeName && ($routeName == 'mrn')) ? 'material-receipt' : $routeName;
-        $routeRedirect = ($routeAlias && ($routeAlias == 'material-receipt')) ? 'material-receipts' : $routeAlias;
+        $routeName = $servicesBooks['services'][0]->alias ?? 'material-receipt';
+        $routeAlias = $routeName && $routeName == 'mrn' ? 'material-receipt' : $routeName;
+        $routeRedirect = $routeAlias && $routeAlias == 'material-receipt' ? 'material-receipts' : $routeAlias;
     @endphp
-    <form id="mrnEditForm" data-module="mrn" class="ajax-input-form" method="POST" action="{{ route('material-receipt.update', $mrn->id) }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
+    <form id="mrnEditForm" data-module="mrn" class="ajax-input-form" method="POST"
+        action="{{ route('material-receipt.update', $mrn->id) }}" data-redirect="/{{ $routeRedirect }}"
+        enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
-        <input type="hidden" name="inspection_required" id="inspection_required" class="inspection_required" value="">
+        <input type="hidden" name="inspection_required" id="inspection_required" class="inspection_required"
+            value="">
         <div class="app-content content ">
             <div class="content-overlay"></div>
             <div class="header-navbar-shadow"></div>
@@ -24,7 +30,7 @@
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
                                     <h2 class="content-header-title float-start mb-0">
-                                        {{$servicesBooks['services'][0]->name ?? "GRN"}}
+                                        {{ $servicesBooks['services'][0]->name ?? 'GRN' }}
                                     </h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
@@ -38,70 +44,128 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <input type="hidden" name="document_status" value="{{$mrn->document_status}}" id="document_status">
-                                <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
+                                <input type="hidden" name="document_status" value="{{ $mrn->document_status }}"
+                                    id="document_status">
+                                <button type="button" onClick="javascript: history.go(-1)"
+                                    class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                @if(!intval(request('amendment') ?? 0) && $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT && $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
-                                    <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                @if (
+                                    !intval(request('amendment') ?? 0) &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED &&
+                                        $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
+                                    <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                             <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <path
+                                                d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                            </path>
                                             <rect x="6" y="14" width="12" height="8"></rect>
                                         </svg>
                                         Print
                                     </a>
-                                    {{-- <a href="{{ route('material-receipt.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                            <rect x="6" y="14" width="12" height="8"></rect>
-                                        </svg>
-                                        Print Labels
-                                    </a> --}}
+                                    @if ($mrn->is_inspection_completion == 1 && $mrn->is_enforce_uic_scanning == 1)
+                                        <a href="{{ route('barcodes.page', $mrn->id) . '?module_type=' . $serviceAlias . '&reference_id=' }}"
+                                            target="_blank"
+                                            class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-printer">
+                                                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                                <path
+                                                    d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                                </path>
+                                                <rect x="6" y="14" width="12" height="8"></rect>
+                                            </svg>
+                                            Print Labels
+                                        </a>
+                                    @endif
                                 @endif
-                                @if($buttons['draft'])
-                                    <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
+                                @if ($buttons['draft'])
+                                    <button type="submit"
+                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action"
+                                        value="draft">
                                         <i data-feather='save'></i> Save as Draft
                                     </button>
                                 @endif
-                                @if($buttons['submit'])
-                                    <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted">
+                                @if ($buttons['submit'])
+                                    <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
+                                        value="submitted">
                                         <i data-feather="check-circle"></i> Submit
                                     </button>
                                 @endif
-                                @if($buttons['approve'])
-                                    <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                                    <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                                @if ($buttons['approve'])
+                                    <button type="button" class="btn btn-primary btn-sm" id="approved-button"
+                                        name="action" value="approved"><i data-feather="check-circle"></i>
+                                        Approve</button>
+                                    <button type="button" id="reject-button"
+                                        class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="feather feather-x-circle">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="15" y1="9" x2="9" y2="15">
+                                            </line>
+                                            <line x1="9" y1="9" x2="15" y2="15">
+                                            </line>
+                                        </svg> Reject</button>
                                 @endif
-                                @if(($mrn->is_inspection_completion === 1) && $buttons['post'])
-                                    <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
+                                @if ($mrn->is_inspection_completion === 1 && $buttons['post'])
+                                    <button id="postButton" onclick="onPostVoucherOpen();" type="button"
+                                        class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="feather feather-check-circle">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg> Post</button>
                                 @endif
-                                @if($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
+                                @if ($buttons['voucher'])
+                                    <button type="button" onclick="onPostVoucherOpen('posted');"
+                                        class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            class="feather feather-file-text">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13">
+                                            </line>
+                                            <line x1="16" y1="17" x2="8" y2="17">
+                                            </line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg> Voucher</button>
                                 @endif
-                                @if($buttons['amend'] && intval(request('amendment') ?? 0))
-                                    <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
+                                @if ($buttons['amend'] && intval(request('amendment') ?? 0))
+                                    <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i
+                                            data-feather="check-circle"></i> Submit</button>
                                 @else
-                                    @if($buttons['amend'])
+                                    @if ($buttons['amend'])
                                         <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0">
                                             <i data-feather='edit'></i> Amendment
                                         </button>
                                     @endif
                                 @endif
                                 <!-- @if (@$mrn->deviationJob)
-                                    <input type="hidden" name="mrn_head_id" id="mrn_head_id" value="{{ $mrn?->id }}">
-                                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn?->deviationJob?->id }}">
-                                    <button type="button" data-bs-toggle="modal" id="deviation-button"
-                                    class="btn btn-primary btn-sm mb-50 mb-sm-0">
-                                        <i data-feather='edit'></i> Deviation
-                                    </button>
-                                @endif -->
-                                @if($buttons['revoke'])
-                                    <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
+    <input type="hidden" name="mrn_head_id" id="mrn_head_id" value="{{ $mrn?->id }}">
+                                                                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn?->deviationJob?->id }}">
+                                                                    <button type="button" data-bs-toggle="modal" id="deviation-button"
+                                                                    class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                                                        <i data-feather='edit'></i> Deviation
+                                                                    </button>
+    @endif -->
+                                @if ($buttons['revoke'])
+                                    <button id="revokeButton" type="button"
+                                        class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
+                                        Revoke</button>
                                 @endif
                             </div>
                         </div>
@@ -115,7 +179,8 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div
+                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
@@ -123,8 +188,10 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6 text-sm-end">
-                                                <span class="badge rounded-pill badge-light-{{$mrn->display_status === 'Posted' ? 'info' : 'secondary'}} forminnerstatus">
-                                                    <span class = "text-dark" >Status</span> : <span class="{{$docStatusClass}}">{{$mrn->display_status}}</span>
+                                                <span
+                                                    class="badge rounded-pill badge-light-{{ $mrn->display_status === 'Posted' ? 'info' : 'secondary' }} forminnerstatus">
+                                                    <span class="text-dark">Status</span> : <span
+                                                        class="{{ $docStatusClass }}">{{ $mrn->display_status }}</span>
                                                 </span>
                                             </div>
                                         </div>
@@ -132,37 +199,48 @@
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Series <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$mrn->book_id}}" readonly>
-                                                        <input readonly type="text" class="form-control" value="{{$mrn->book?->book_code}}" id="book_code">
+                                                        <input type="hidden" name="book_id" class="form-control"
+                                                            id="book_id" value="{{ $mrn->book_id }}" readonly>
+                                                        <input readonly type="text" class="form-control"
+                                                            value="{{ $mrn->book->book_code }}" id="book_code">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Document No <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document No <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control document_number" readonly value="{{@$mrn->document_number}}" id="document_number">
+                                                        <input type="text" class="form-control document_number"
+                                                            readonly value="{{ @$mrn->document_number }}"
+                                                            id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Document Date <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" id="document_date" name="document_date" class="form-control document_date" value="{{ date('Y-m-d', strtotime($mrn->document_date)) }}" >
+                                                        <input type="date" id="document_date" name="document_date"
+                                                            class="form-control document_date"
+                                                            value="{{ date('Y-m-d', strtotime($mrn->document_date)) }}">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select header_store_id" id="header_store_id" name="header_store_id">
-                                                            @foreach($locations as $erpStore)
-                                                                <option value="{{$erpStore->id}}"
+                                                        <select class="form-select header_store_id" id="header_store_id"
+                                                            name="header_store_id">
+                                                            @foreach ($locations as $erpStore)
+                                                                <option value="{{ $erpStore->id }}"
                                                                     {{ $mrn->store_id == $erpStore->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($erpStore->store_name) }}
                                                                 </option>
@@ -172,41 +250,44 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Store <span
+                                                                class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
-                                                            <option value="{{$mrn->sub_store_id}}" data-warehouse-required="{{$mrn?->is_warehouse_required}}">
+                                                        <select class="form-select sub_store" id="sub_store_id"
+                                                            name="sub_store_id">
+                                                            <option value="{{ $mrn->sub_store_id }}"
+                                                                data-warehouse-required="{{ $mrn?->is_warehouse_required }}">
                                                                 {{ ucfirst($mrn?->erpSubStore?->name) }}
                                                             </option>
                                                         </select>
                                                     </div>
-                                                    <input type="hidden" class="is_warehouse_required" name="is_warehouse_required" id="is_warehouse_required" value="{{$mrn?->is_warehouse_required}}">
+                                                    <input type="hidden" class="is_warehouse_required"
+                                                        name="is_warehouse_required" id="is_warehouse_required"
+                                                        value="{{ $mrn?->is_warehouse_required }}">
                                                 </div>
-                                                @if (
-                                                        ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected')
-                                                    )
+                                                @if ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected')
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
                                                             <label class="form-label">Reference From <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-5 action-button">
-                                                                <button type="button"
-                                                                    class="btn btn-outline-primary btn-sm mb-0 poSelect">
-                                                                    <i data-feather="plus-square"></i>
-                                                                    Outstanding PO
-                                                                </button>
-                                                                <button type="button"
-                                                                    class="btn btn-outline-primary btn-sm mb-0 joSelect">
-                                                                    <i data-feather="plus-square"></i>
-                                                                    Outstanding JO
-                                                                </button>
-                                                                <button type="button"
-                                                                    class="btn btn-outline-primary btn-sm mb-0 soSelect">
-                                                                    <i data-feather="plus-square"></i>
-                                                                    Outstanding SO
-                                                                </button>
+                                                            <button type="button"
+                                                                class="btn btn-outline-primary btn-sm mb-0 poSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding PO
+                                                            </button>
+                                                            <button type="button"
+                                                                class="btn btn-outline-primary btn-sm mb-0 joSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding JO
+                                                            </button>
+                                                            <button type="button"
+                                                                class="btn btn-outline-primary btn-sm mb-0 soSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding SO
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 @endif
@@ -217,14 +298,18 @@
                                                         </div>
                                                         <div class="col-md-5">
                                                             <input type="hidden" name="reference_type"
-                                                                class="form-control reference_type" id="reference_type_input"
+                                                                class="form-control reference_type"
+                                                                id="reference_type_input"
                                                                 value="{{ $mrn->reference_type }}" readonly>
                                                         </div>
                                                     </div>
                                                 @endif
                                             </div>
                                             {{-- Approval History Section --}}
-                                            @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
+                                            @include('partials.approval-history', [
+                                                'document_status' => $mrn->document_status,
+                                                'revision_number' => $revision_number,
+                                            ])
                                         </div>
                                     </div>
                                 </div>
@@ -240,36 +325,61 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct vendor_name" id="vendor_name" name="vendor_name" {{(count(($mrn->items)) > 0 ? 'readonly' : '')}} value="{{@$mrn->vendor->company_name}}" />
-                                                            <input type="hidden" value="{{@$mrn->vendor_id}}" id="vendor_id" name="vendor_id" />
-                                                            <input type="hidden" value="{{@$mrn->vendor_code}}" id="vendor_code" name="vendor_code" />
-                                                            @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
-                                                                <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                            <label class="form-label">Vendor <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" placeholder="Select"
+                                                                class="form-control mw-100 ledgerselecct vendor_name"
+                                                                id="vendor_name" name="vendor_name"
+                                                                {{ count($mrn->items) > 0 ? 'readonly' : '' }}
+                                                                value="{{ @$mrn->vendor->company_name }}" />
+                                                            <input type="hidden" value="{{ @$mrn->vendor_id }}"
+                                                                id="vendor_id" name="vendor_id" />
+                                                            <input type="hidden" value="{{ @$mrn->vendor_code }}"
+                                                                id="vendor_code" name="vendor_code" />
+                                                            @if ($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
+                                                                <input type="hidden"
+                                                                    value="{{ $mrn->latestShippingAddress() }}"
+                                                                    id="shipping_id" name="shipping_id" />
+                                                                <input type="hidden" id="billing_id"
+                                                                    value="{{ $mrn->latestBillingAddress()->id }}"
+                                                                    name="billing_id" />
+                                                                <input type="hidden"
+                                                                    value="{{ $mrn->latestBillingAddress()->state?->id }}"
+                                                                    id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden"
+                                                                    value="{{ $mrn->latestBillingAddress()->country?->id }}"
+                                                                    id="hidden_country_id" name="hidden_country_id" />
                                                             @else
-                                                                <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
-                                                                <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{ $mrn->ship_to }}"
+                                                                    id="shipping_id" name="shipping_id" />
+                                                                <input type="hidden" id="billing_id"
+                                                                    value="{{ $mrn->billing_to }}" name="billing_id" />
+                                                                <input type="hidden"
+                                                                    value="{{ $mrn?->billingAddress?->state?->id }}"
+                                                                    id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden"
+                                                                    value="{{ $mrn?->billingAddress?->country?->id }}"
+                                                                    id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Currency <span
+                                                                    class="text-danger">*</span></label>
                                                             <select class="form-select" name="currency_id" disabled>
-                                                                <option value="{{@$mrn->currency_id}}">{{@$mrn->currency->name}}</option>
+                                                                <option value="{{ @$mrn->currency_id }}">
+                                                                    {{ @$mrn->currency->name }}</option>
                                                             </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Payment Terms <span
+                                                                    class="text-danger">*</span></label>
                                                             <select class="form-select" name="payment_term_id" disabled>
-                                                                <option value="{{@$mrn->payment_term_id}}">{{@$mrn->paymentTerm->name}}</option>
+                                                                <option value="{{ @$mrn->payment_term_id }}">
+                                                                    {{ @$mrn->paymentTerm->name }}</option>
                                                             </select>
                                                         </div>
                                                     </div>
@@ -279,7 +389,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control mw-100"
                                                                 id="credit_days" name="credit_days"
-                                                                value="{{ @$mrn->credit_days }}" readonly/>
+                                                                value="{{ @$mrn->credit_days }}" readonly />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -289,12 +399,17 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
+                                                                    <label class="form-label w-100">Vendor Address <span
+                                                                            class="text-danger">*</span> <a
+                                                                            href="javascript:;"
+                                                                            class="float-end font-small-2 editAddressBtn d-none"
+                                                                            data-type="billing"><i
+                                                                                data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
-                                                                        @if($mrn->latestBillingAddress())
-                                                                            {{$mrn->latestBillingAddress()->display_address}}
+                                                                        @if ($mrn->latestBillingAddress())
+                                                                            {{ $mrn->latestBillingAddress()->display_address }}
                                                                         @else
-                                                                            {{$mrn->bill_address?->display_address}}
+                                                                            {{ $mrn->bill_address?->display_address }}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -306,10 +421,12 @@
                                                             <p>Billing Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
+                                                                    <label class="form-label w-100">Billing Address <span
+                                                                            class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim org_address">{{$deliveryAddress}}</div>
+                                                                    <div class="mrnaddedd-prim org_address">
+                                                                        {{ $deliveryAddress }}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -319,10 +436,12 @@
                                                             <p>Delivery Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
+                                                                    <label class="form-label w-100">Delivery Address <span
+                                                                            class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim delivery_address">{{$deliveryAddress}}</div>
+                                                                    <div class="mrnaddedd-prim delivery_address">
+                                                                        {{ $deliveryAddress }}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -342,11 +461,13 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    @if($mrn->cost_center_id !== null)
+                                                    @if ($mrn->cost_center_id !== null)
                                                         <div class="col-md-3" id="cost_center_div" style="display:none;">
                                                             <div class="mb-1">
-                                                                <label class="form-label">Cost Center <span class="text-danger">*</span></label>
-                                                                <select class="form-select cost_center" id="cost_center_id" name="cost_center_id">
+                                                                <label class="form-label">Cost Center <span
+                                                                        class="text-danger">*</span></label>
+                                                                <select class="form-select cost_center"
+                                                                    id="cost_center_id" name="cost_center_id">
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -354,7 +475,9 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">LOT No </label>
-                                                            <input type="text" name="lot_number" value="{{@$mrn->lot_number}}" class="form-control" readonly>
+                                                            <input type="text" name="lot_number"
+                                                                value="{{ @$mrn->lot_number }}" class="form-control"
+                                                                readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -364,7 +487,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="gate_entry_no"
-                                                                class="form-control gate_entry_no" value="{{@$mrn->gate_entry_no}}"
+                                                                class="form-control gate_entry_no"
+                                                                value="{{ @$mrn->gate_entry_no }}"
                                                                 placeholder="Enter Gate Entry no" readonly>
                                                         </div>
                                                     </div>
@@ -374,9 +498,11 @@
                                                                 Gate Entry Date
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="date" name="gate_entry_date" value="{{date('Y-m-d', strtotime($mrn->gate_entry_date))}}"
-                                                                class="form-control gate-entry gate_entry_date" id="datepicker2"
-                                                                placeholder="Enter Gate Entry Date" readonly>
+                                                            <input type="date" name="gate_entry_date"
+                                                                value="{{ date('Y-m-d', strtotime($mrn->gate_entry_date)) }}"
+                                                                class="form-control gate-entry gate_entry_date"
+                                                                id="datepicker2" placeholder="Enter Gate Entry Date"
+                                                                readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -385,8 +511,8 @@
                                                                 E-Way Bill No.
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="text" name="eway_bill_no" value="{{@$mrn->eway_bill_no}}"
-                                                                class="form-control"
+                                                            <input type="text" name="eway_bill_no"
+                                                                value="{{ @$mrn->eway_bill_no }}" class="form-control"
                                                                 placeholder="Enter Eway Bill No.">
                                                         </div>
                                                     </div>
@@ -396,17 +522,18 @@
                                                                 Consignment No.
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="text" name="consignment_no" value="{{@$mrn->consignment_no}}"
-                                                                class="form-control"
+                                                            <input type="text" name="consignment_no"
+                                                                value="{{ @$mrn->consignment_no }}" class="form-control"
                                                                 placeholder="Enter Consignment No.">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
-                                                            Supplier Invoice No.
+                                                                Supplier Invoice No.
                                                             </label>
-                                                            <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
+                                                            <input type="text" name="supplier_invoice_no"
+                                                                value="{{ @$mrn->supplier_invoice_no }}"
                                                                 class="form-control supplier_invoice_no"
                                                                 placeholder="Enter Supplier Invoice No.">
                                                         </div>
@@ -417,19 +544,21 @@
                                                                 Supplier Invoice Date
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="date" name="supplier_invoice_date" value="{{date('Y-m-d', strtotime($mrn->supplier_invoice_date))}}"
-                                                                class="form-control gate-entry supplier_invoice_date" id="datepicker3"
+                                                            <input type="date" name="supplier_invoice_date"
+                                                                value="{{ date('Y-m-d', strtotime($mrn->supplier_invoice_date)) }}"
+                                                                class="form-control gate-entry supplier_invoice_date"
+                                                                id="datepicker3"
                                                                 placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">
-                                                            Transporter Name
+                                                                Transporter Name
                                                             </label>
-                                                            <input type="text" name="transporter_name" value="{{@$mrn->transporter_name}}"
-                                                                class="form-control"
-                                                                placeholder="Enter Transporter Name">
+                                                            <input type="text" name="transporter_name"
+                                                                value="{{ @$mrn->transporter_name }}"
+                                                                class="form-control" placeholder="Enter Transporter Name">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -437,14 +566,13 @@
                                                             <label class="form-label">
                                                                 Vehicle No.
                                                                 <i class="ml-2 fas fa-info-circle text-primary"
-                                                                data-bs-toggle="tooltip"
-                                                                data-bs-html="true"
-                                                                title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
+                                                                    data-bs-toggle="tooltip" data-bs-html="true"
+                                                                    title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
                                                             <input type="text" name="vehicle_no"
-                                                            class="form-control vehicle_no"
-                                                            value="{{@$mrn->vehicle_no}}"
-                                                            placeholder="Enter Vehicle No." />
+                                                                class="form-control vehicle_no"
+                                                                value="{{ @$mrn->vehicle_no }}"
+                                                                placeholder="Enter Vehicle No." />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -454,7 +582,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="manual_entry_no"
-                                                                class="form-control" value="{{@$mrn->manual_entry_no}}"
+                                                                class="form-control" value="{{ @$mrn->manual_entry_no }}"
                                                                 placeholder="Enter Manual Entry no">
                                                         </div>
                                                     </div>
@@ -463,7 +591,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12 {{(isset($mrn) && count($mrn -> dynamic_fields)) > 0 ? '' : 'd-none'}}">
+                                <div
+                                    class="col-md-12 {{ (isset($mrn) && count($mrn->dynamic_fields)) > 0 ? '' : 'd-none' }}">
                                     @if (isset($dynamicFieldsUI))
                                         {!! $dynamicFieldsUI !!}
                                     @endif
@@ -479,13 +608,17 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <button type="button" id="importItem" class="btn btn-sm btn-outline-primary importItem" onclick="openImportItemModal('edit', {{$mrn->id}})">
+                                                    <button type="button" id="importItem"
+                                                        class="btn btn-sm btn-outline-primary importItem"
+                                                        onclick="openImportItemModal('edit', {{ $mrn->id }})">
                                                         <i data-feather="upload"></i> Import Item
                                                     </button>
-                                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                                                    <a href="javascript:;" id="deleteBtn"
+                                                        class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete
                                                     </a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary addNewItemBtn">
+                                                    <a href="javascript:;" id="addNewItemBtn"
+                                                        class="btn btn-sm btn-outline-primary addNewItemBtn">
                                                         <i data-feather="plus"></i> Add New Item
                                                     </a>
                                                 </div>
@@ -494,15 +627,19 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad itemTable"
+                                                    <table id="itemTable"
+                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad itemTable"
                                                         data-json-key="components_json"
                                                         data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
-                                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input" id="Email">
-                                                                        <label class="form-check-label" for="Email"></label>
+                                                                    <div
+                                                                        class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="Email">
+                                                                        <label class="form-check-label"
+                                                                            for="Email"></label>
                                                                     </div>
                                                                 </th>
                                                                 <th width="150px">Item Code</th>
@@ -510,8 +647,7 @@
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
                                                                 <th class="text-end">
-                                                                    {{ $mrn->reference_type == 'po' ? 'PO Qty' :
-                                                                    ($mrn->reference_type == 'jo' ? 'JO Qty' : 'Qty') }}
+                                                                    {{ $mrn->reference_type == 'po' ? 'PO Qty' : ($mrn->reference_type == 'jo' ? 'JO Qty' : 'Qty') }}
                                                                 </th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
@@ -530,13 +666,13 @@
                                                             <tr class="totalsubheadpodetail">
                                                                 <td colspan="10"></td>
                                                                 <td class="text-end" id="totalItemValue">
-                                                                    {{@$mrn->items->sum('basic_value')}}
+                                                                    {{ @$mrn->items->sum('basic_value') }}
                                                                 </td>
                                                                 <td class="text-end" id="totalItemDiscount">
-                                                                    {{@$mrn->items->sum('discount_amount')}}
+                                                                    {{ @$mrn->items->sum('discount_amount') }}
                                                                 </td>
                                                                 <td class="text-end" id="TotalEachRowAmount">
-                                                                    {{@$mrn->items->sum('net_value')}}
+                                                                    {{ @$mrn->items->sum('net_value') }}
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
@@ -545,7 +681,10 @@
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
                                                                                 <td class="p-0">
-                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                                                    <h6
+                                                                                        class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                                        <strong>Item Details</strong>
+                                                                                    </h6>
                                                                                 </td>
                                                                             </tr>
                                                                             <tr>
@@ -565,18 +704,28 @@
                                                                     <table class="table border mrnsummarynewsty">
                                                                         <tr>
                                                                             <td colspan="2" class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
+                                                                                <h6
+                                                                                    class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
                                                                                     <strong>Document Summary</strong>
                                                                                     <div class="addmendisexpbtn">
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
+                                                                                        <button type="button"
+                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}}
+                                                                                            Tax</button>
+                                                                                        <button type="button"
+                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i
+                                                                                                data-feather="plus"></i>
+                                                                                            Discount</button>
+                                                                                        <button type="button"
+                                                                                            class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i
+                                                                                                data-feather="plus"></i>
+                                                                                            Expenses</button>
                                                                                     </div>
                                                                                 </h6>
                                                                             </td>
                                                                         </tr>
                                                                         <tr class="totalsubheadpodetail">
-                                                                            <td width="55%"><strong>Sub Total</strong></td>
+                                                                            <td width="55%"><strong>Sub Total</strong>
+                                                                            </td>
                                                                             <td class="text-end" id="f_sub_total">
                                                                                 <!-- {{ number_format(@$mrn->total_item_amount, 2) }} -->
                                                                             </td>
@@ -587,22 +736,26 @@
                                                                                 <!-- {{ number_format(@$mrn->item_discount, 2) }} -->
                                                                             </td>
                                                                         </tr>
-                                                                        @if($mrn->headerDiscount)
+                                                                        @if ($mrn->headerDiscount)
                                                                             <tr id="f_header_discount_hidden">
                                                                                 <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">
-                                                                                    {{$mrn->headerDiscount()->sum('ted_amount')}}
+                                                                                <td class="text-end"
+                                                                                    id="f_header_discount">
+                                                                                    {{ $mrn->headerDiscount()->sum('ted_amount') }}
                                                                                 </td>
                                                                             </tr>
                                                                         @else
-                                                                            <tr class="d-none" id="f_header_discount_hidden">
+                                                                            <tr class="d-none"
+                                                                                id="f_header_discount_hidden">
                                                                                 <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">0.00</td>
+                                                                                <td class="text-end"
+                                                                                    id="f_header_discount">0.00</td>
                                                                             </tr>
                                                                         @endif
                                                                         <tr class="totalsubheadpodetail">
                                                                             <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value" amount="">
+                                                                            <td class="text-end" id="f_taxable_value"
+                                                                                amount="">
                                                                                 <!-- {{ number_format(@$mrn->taxable_amount, 2) }} -->
                                                                             </td>
                                                                         </tr>
@@ -623,12 +776,16 @@
                                                                             <td class="text-end" id="f_exp">
                                                                                 <!-- {{ number_format(@$mrn->expense_amount, 2) }} -->
                                                                             </td>
-                                                                            <input type="hidden" name="expense_amount" class="text-end" id="expense_amount" value="{{$mrn->expense_amount}}">
+                                                                            <input type="hidden" name="expense_amount"
+                                                                                class="text-end" id="expense_amount"
+                                                                                value="{{ $mrn->expense_amount }}">
                                                                         </tr>
                                                                         <tr class="voucher-tab-foot">
-                                                                            <td class="text-primary"><strong>Total After Exp.</strong></td>
+                                                                            <td class="text-primary"><strong>Total After
+                                                                                    Exp.</strong></td>
                                                                             <td>
-                                                                                <div class="quottotal-bg justify-content-end">
+                                                                                <div
+                                                                                    class="quottotal-bg justify-content-end">
                                                                                     <h5 id="f_total_after_exp">
                                                                                         <!-- {{ number_format(@$mrn->total_amount, 2) }} -->
                                                                                     </h5>
@@ -646,11 +803,18 @@
                                                         <div class="col-md-4">
                                                             <div class="mb-1">
                                                                 <label class="form-label">Upload Document</label>
-                                                                <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_mrn_preview')" multiple>
-                                                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                                                <input type="file" name="attachment[]"
+                                                                    class="form-control"
+                                                                    onchange="addFiles(this,'main_mrn_preview')" multiple>
+                                                                <span
+                                                                    class="text-primary small">{{ __('message.attachment_caption') }}</span>
                                                             </div>
                                                         </div>
-                                                        @include('partials.document-preview',['documents' => $mrn->getDocuments(), 'document_status' => $mrn->document_status,'elementKey' => 'main_mrn_preview'])
+                                                        @include('partials.document-preview', [
+                                                            'documents' => $mrn->getDocuments(),
+                                                            'document_status' => $mrn->document_status,
+                                                            'elementKey' => 'main_mrn_preview',
+                                                        ])
                                                     </div>
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
@@ -671,14 +835,15 @@
         </div>
         {{-- Discount summary modal --}}
         @include('procurement.material-receipt.partials.summary-disc-modal')
-        {{-- Add expenses modal--}}
+        {{-- Add expenses modal --}}
         @include('procurement.material-receipt.partials.summary-exp-modal')
         {{-- Asset Detail Modal --}}
         @include('procurement.material-receipt.partials.asset-detail-modal')
         {{-- Item Batch --}}
         @include('procurement.material-receipt.partials.item-batch-modal')
         {{-- Edit Address --}}
-        <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle"
+            aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             </div>
         </div>
@@ -718,7 +883,8 @@
     </div>
 
     {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle"
+        aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -733,17 +899,21 @@
                                 <td>#</td>
                                 <td>
                                     <label class="form-label">Type<span class="text-danger">*</span></label>
-                                    <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-                                    <input type = "hidden" id = "new_item_discount_id" />
-                                    <input type = "hidden" id = "new_item_dis_name" />
+                                    <input type="text" id="new_item_dis_name_select" placeholder="Select"
+                                        class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off"
+                                        value="">
+                                    <input type="hidden" id="new_item_discount_id" />
+                                    <input type="hidden" id="new_item_dis_name" />
                                 </td>
                                 <td>
                                     <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
+                                    <input step="any" type="number" id="new_item_dis_perc"
+                                        class="form-control mw-100" />
                                 </td>
                                 <td>
                                     <label class="form-label">Value <span class="text-danger">*</span></label>
-                                    <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
+                                    <input step="any" type="number" id="new_item_dis_value"
+                                        class="form-control mw-100" />
                                 </td>
                                 <td>
                                     <a href="javascript:;" id="add_new_item_dis" class="text-primary can_hide">
@@ -754,7 +924,8 @@
                         </thead>
                     </table>
                     <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                        <table id="eachRowDiscountTable"
+                            class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                             <thead>
                                 <tr>
                                     <th>S.No</th>
@@ -786,7 +957,7 @@
 
     {{-- Item Remark Modal --}}
     <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" >
+        <div class="modal-dialog  modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -816,7 +987,8 @@
     <!-- Item Locations Modal End -->
 
     {{-- Delete component modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -827,14 +999,15 @@
                     <h2>Are you sure?</h2>
                     <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteConfirm" class="btn btn-primary" >Confirm</button>
+                    <button type="button" id="deleteConfirm" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Delete Item discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -845,14 +1018,15 @@
                     <h2>Are you sure?</h2>
                     <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteItemDiscConfirm" class="btn btn-primary" >Confirm</button>
+                    <button type="button" id="deleteItemDiscConfirm" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Delete Header discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -863,14 +1037,15 @@
                     <h2>Are you sure?</h2>
                     <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderDiscConfirm" class="btn btn-primary" >Confirm</button>
+                    <button type="button" id="deleteHeaderDiscConfirm" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Delete header exp modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -881,7 +1056,7 @@
                     <h2>Are you sure?</h2>
                     <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderExpConfirm" class="btn btn-primary" >Confirm</button>
+                    <button type="button" id="deleteHeaderExpConfirm" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
@@ -894,7 +1069,8 @@
     @include('procurement.material-receipt.partials.tax-detail-modal')
 
     {{-- Amendment Modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header p-0 bg-transparent">
@@ -903,7 +1079,8 @@
                 <div class="modal-body alertmsg text-center warning">
                     <i data-feather='alert-circle'></i>
                     <h2>Are you sure?</h2>
-                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Document</strong>? After Amendment this action cannot be undone.</p>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Document</strong>? After Amendment
+                        this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
                 </div>
@@ -912,66 +1089,70 @@
     </div>
 
     <!-- GL Posting Modal -->
-    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
-		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-			<div class="modal-content">
-				<div class="modal-header">
-					<div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
+    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal"
+        aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher
+                            Details</h4>
                     </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<div class="row">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control" disabled="" >
+                                <input id="voucher_book_code" class="form-control" disabled="">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
+                                <input id="voucher_doc_no" class="form-control" disabled="" value="">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                <input id = "voucher_date" class="form-control" disabled="" value="">
+                                <input id="voucher_date" class="form-control" disabled="" value="">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                <input id = "voucher_currency" class="form-control" disabled="" value="">
+                                <input id="voucher_currency" class="form-control" disabled="" value="">
                             </div>
                         </div>
-						<div class="col-md-12">
-							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-									<thead>
-										<tr>
-											<th>Type</th>
-											<th>Group</th>
-											<th>Leadger Code</th>
-											<th>Leadger Name</th>
+                        <div class="col-md-12">
+                            <div class="table-responsive">
+                                <table
+                                    class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Group</th>
+                                            <th>Leadger Code</th>
+                                            <th>Leadger Name</th>
                                             <th class="text-end">Debit</th>
                                             <th class="text-end">Credit</th>
-										</tr>
-									</thead>
-									<tbody id="posting-table"></tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="text-end">
-					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="posting-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <button style="margin: 1%;" onclick="postVoucher(this);" id="posting_button" type="button"
+                        class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
     {{-- Storage Points --}}
     @include('procurement.material-receipt.partials.storage-point-modal')
     {{-- Add Outstanding PO modal --}}
@@ -984,15 +1165,13 @@
     <div class="modal fade" id="deviateModal" tabindex="-1" aria-labelledby="deviateModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
-                <form class="ajax-input-form"
-                    method="POST"
-                    action="{{ route('document.approval.material-receipt') }}"
-                    data-redirect="{{ route('material-receipt.index') }}"
-                    enctype="multipart/form-data">
+                <form class="ajax-input-form" method="POST" action="{{ route('document.approval.material-receipt') }}"
+                    data-redirect="{{ route('material-receipt.index') }}" enctype="multipart/form-data">
 
                     @csrf
                     <input type="hidden" name="action_type" id="action_type">
-                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn->deviationJob?->id ?? '' }}">
+                    <input type="hidden" name="closing_job_id" id="closing_job_id"
+                        value="{{ $mrn->deviationJob?->id ?? '' }}">
                     <input type="hidden" name="id" value="{{ $mrn->id ?? '' }}">
 
                     <!-- Modal Header -->
@@ -1000,7 +1179,8 @@
                         <h5 class="modal-title fw-bold" id="deviateModalLabel">
                             <i class="bi bi-exclamation-triangle me-2"></i>Putaway Deviation
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
                     </div>
 
                     <!-- Modal Body -->
@@ -1021,16 +1201,18 @@
                             <div class="col">
                                 <div class="bg-light rounded p-1 border">
                                     <h6 class="mb-1 text-secondary">Deviation</h6>
-                                    <h5 class="mb-0 fw-bold {{ ($itemUniqueCodes['pending_unique_codes'] > 0) ? 'text-danger' : 'text-dark' }}">{{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
+                                    <h5
+                                        class="mb-0 fw-bold {{ $itemUniqueCodes['pending_unique_codes'] > 0 ? 'text-danger' : 'text-dark' }}">
+                                        {{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
                                 </div>
                             </div>
                             <!-- <div id="deviation-batch-table-wrap" class="mt-3"></div>
-                            <input type="hidden" name="deviation_breakup_json" id="deviation_breakup_json"> -->
+                                                                <input type="hidden" name="deviation_breakup_json" id="deviation_breakup_json"> -->
                         </div>
                         <div class="mb-3">
                             <label for="remarks" class="form-label fw-semibold text-dark">Remarks</label>
                             <textarea maxlength="250" name="closing_remarks" id="remarks" class="form-control" rows="4"
-                                    placeholder="Enter your remarks here..."></textarea>
+                                placeholder="Enter your remarks here..."></textarea>
                             <!-- <div class="form-text text-muted">Max 250 characters</div> -->
                         </div>
                     </div>
@@ -1050,39 +1232,36 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-attr-ui.js') }}"></script>
     <script type="text/javascript">
-        var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
+        var actionUrlTax = '{{ route('material-receipt.tax.calculation') }}';
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/asset-registration.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/item-batch.js')}}"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
-    <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-datatable.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/mrn.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/asset-registration.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/item-batch.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/import-item.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
-        var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
+        var qtyChangeUrl = '{{ route('material-receipt.get.validate-quantity') }}';
         let taxCalUrl = '{{ route('tax.group.calculate') }}';
 
         let currentIndex = '';
 
-        if(currentProcessType == 'jo')
-        {
+        if (currentProcessType == 'jo') {
             document.getElementById('rateHeader').textContent = 'Service Charge';
             $("#addNewItemBtn").hide();
             $("#importItem").hide();
         }
-        if(currentProcessType == 'po')
-        {
+        if (currentProcessType == 'po') {
             document.getElementById('rateHeader').textContent = 'Rate';
             $("#addNewItemBtn").hide();
             $("#importItem").hide();
         }
-        if(currentProcessType == 'so')
-        {
+        if (currentProcessType == 'so') {
             document.getElementById('rateHeader').textContent = 'Rate';
             $("#addNewItemBtn").hide();
             $("#importItem").hide();
@@ -1096,8 +1275,8 @@
             localStorage.removeItem('deletedHeaderExpTedIds');
             localStorage.removeItem('deletedItemLocationIds');
             localStorage.removeItem('deletedMrnItemIds');
-        },0);
-        @if($subStoreCount > 0)
+        }, 0);
+        @if ($subStoreCount > 0)
             // Set colspan to 9
             $("td.dynamic-colspan").attr("colspan", 10);
             $("td.dynamic-summary-colspan").attr("colspan", 10);
@@ -1116,12 +1295,12 @@
         let exist_payment_term_id = @json($existPaymentTermId);
         let exist_credit_days = @json($existCreditDays);
 
-        @if($buttons['amend'] && intval(request('amendment') ?? 0))
-
+        @if ($buttons['amend'] && intval(request('amendment') ?? 0))
         @else
-            @if(($mrn->document_status != 'draft') && ($mrn->document_status != 'rejected'))
+            @if ($mrn->document_status != 'draft' && $mrn->document_status != 'rejected')
                 $(':input').prop('readonly', true);
-                $('textarea[name="amend_remark"], textarea[name="closing_remarks"], input[type="file"][name="amend_attachment[]"]').prop('readonly', false).prop('disabled', false);
+                $('textarea[name="amend_remark"], textarea[name="closing_remarks"], input[type="file"][name="amend_attachment[]"]')
+                    .prop('readonly', false).prop('disabled', false);
                 $('select').not('.amendmentselect select').prop('disabled', true);
                 $("#deleteBtn").remove();
                 $("#addNewItemBtn").remove();
@@ -1135,14 +1314,14 @@
                 $('a.add-batch-row-header, button.add-batch-row-header').remove();
                 $('a.remove-batch-row, button.remove-batch-row, .delete-batch-row-header').remove();
 
-                $(document).on('show.bs.modal', function (e) {
-                    if(e.target.id != 'approveModal') {
-                        if(e.target.id != 'deviateModal') {
+                $(document).on('show.bs.modal', function(e) {
+                    if (e.target.id != 'approveModal') {
+                        if (e.target.id != 'deviateModal') {
                             $(e.target).find('.modal-footer').remove();
                         }
                         $('select').not('.amendmentselect select').prop('disabled', true);
                     }
-                    if(e.target.id == 'approveModal') {
+                    if (e.target.id == 'approveModal') {
                         $(e.target).find(':input').prop('readonly', false);
                         $(e.target).find('select').prop('readonly', false);
                     }
@@ -1161,7 +1340,7 @@
         @endif
 
         // Change BookId
-        $(document).on('change','#book_id', (e) => {
+        $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
                 getDocNumberByBookId(bookId);
@@ -1176,14 +1355,15 @@
             let document_date = $("[name='document_date']").val();
             let storeId = $("[name='header_store_id']").val();
             let subStoreId = $("[name='sub_store_id']").val();
-            let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
+            let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId + '&document_date=' +
+                document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
                         setServiceParameters(parameters);
 
-                        if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
+                        if (parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
                             $("#tax_required").val(parameters?.tax_required[0]);
                         } else {
                             $("#tax_required").val("");
@@ -1193,7 +1373,7 @@
                         $(".inspection_required").val(parameters?.inspection_required[0]);
                         applyInspectionState();
                     }
-                    if(data.status == 404) {
+                    if (data.status == 404) {
                         $("#book_code").val('');
                         $("#document_number").val('');
                         $("#tax_required").val("");
@@ -1210,7 +1390,7 @@
         setTimeout(() => {
             let bookId = $("#book_id").val();
             getDocNumberByBookId(bookId);
-        },1000);
+        }, 1000);
 
         /*Set Service Parameter*/
         function setServiceParameters(parameters) {
@@ -1220,7 +1400,7 @@
             let isPast = false;
             if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
                 let futureDate = new Date();
-                futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/);
+                futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/ );
                 // docDateInput.val(futureDate.toISOString().split('T')[0]);
                 docDateInput.attr("min", new Date().toISOString().split('T')[0]);
                 isFeature = true;
@@ -1230,7 +1410,7 @@
             }
             if (parameters.back_date_allowed && parameters.back_date_allowed.includes('yes')) {
                 let backDate = new Date();
-                backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/);
+                backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/ );
                 // docDateInput.val(backDate.toISOString().split('T')[0]);
                 // docDateInput.attr("max", "");
                 isPast = true;
@@ -1239,12 +1419,12 @@
                 docDateInput.attr("min", new Date().toISOString().split('T')[0]);
             }
             /*Date Validation*/
-            if(isFeature && isPast) {
+            if (isFeature && isPast) {
                 docDateInput.removeAttr('min');
                 docDateInput.removeAttr('max');
             }
 
-        /*Reference from*/
+            /*Reference from*/
         }
 
         /*Vendor drop down*/
@@ -1258,7 +1438,7 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:'vendor_list'
+                            type: 'vendor_list'
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -1300,12 +1480,13 @@
             });
         }
         initializeAutocomplete1("#vendor_name");
+
         function vendorOnChange(vendorId) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
+            let actionUrl = "{{ route('material-receipt.get.address') }}" + '?id=' + vendorId + '&store_id=' + store_id;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.data?.currency_exchange?.status == false) {
+                    if (data.data?.currency_exchange?.status == false) {
                         $("#vendor_name").val('');
                         $("#vendor_id").val('');
                         $("#vendor_code").val('');
@@ -1313,7 +1494,8 @@
                         $("#hidden_country_id").val('');
                         // $("#vendor_id").trigger('blur');
                         $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append(
+                            '<option value="">Select</option>');
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({
@@ -1323,33 +1505,36 @@
                         });
                         return false;
                     }
-                    if(data.status == 200) {
-                    $("#vendor_name").val(data?.data?.vendor?.company_name);
-                    $("#vendor_id").val(data?.data?.vendor?.id);
-                    $("#vendor_code").val(data?.data?.vendor.vendor_code);
-                    let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                    // let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-                    $('[name="currency_id"]').empty().append(curOption);
-                    // $('[name="payment_term_id"]').empty().append(termOption);
-                    $("#shipping_id").val(data.data.shipping.id);
-                    $("#billing_id").val(data.data.billing.id);
-                    // $(".shipping_detail").text(data.data.shipping.display_address);
-                    $(".billing_detail").text(data.data.billing.display_address);
-                    $(".delivery_address").text(data.data.delivery_address);
-                    $(".org_address").text(data.data.org_address);
+                    if (data.status == 200) {
+                        $("#vendor_name").val(data?.data?.vendor?.company_name);
+                        $("#vendor_id").val(data?.data?.vendor?.id);
+                        $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                        let curOption =
+                            `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
+                        // let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                        $('[name="currency_id"]').empty().append(curOption);
+                        // $('[name="payment_term_id"]').empty().append(termOption);
+                        $("#shipping_id").val(data.data.shipping.id);
+                        $("#billing_id").val(data.data.billing.id);
+                        // $(".shipping_detail").text(data.data.shipping.display_address);
+                        $(".billing_detail").text(data.data.billing.display_address);
+                        $(".delivery_address").text(data.data.delivery_address);
+                        $(".org_address").text(data.data.org_address);
 
-                    $("#hidden_state_id").val(data.data.vendor_address.state.id);
-                    $("#hidden_country_id").val(data.data.vendor_address.country.id);
+                        $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                        $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
-                        if(data.data.error_message) {
+                        if (data.data.error_message) {
                             $("#vendor_name").val('');
                             $("#vendor_id").val('');
                             $("#vendor_code").val('');
                             $("#hidden_state_id").val('');
                             $("#hidden_country_id").val('');
                             // $("#vendor_id").trigger('blur');
-                            $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            $("select[name='currency_id']").empty().append(
+                                '<option value="">Select</option>');
+                            $("select[name='payment_term_id']").empty().append(
+                                '<option value="">Select</option>');
                             // $(".shipping_detail").text('-');
                             $(".billing_detail").text('-');
                             Swal.fire({
@@ -1370,8 +1555,8 @@
             $(selector).autocomplete({
                 source: function(request, response) {
                     let selectedAllItemIds = [];
-                    $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                        if(Number($(item).find('[name*="item_id"]').val())) {
+                    $("#itemTable tbody [id*='row_']").each(function(index, item) {
+                        if (Number($(item).find('[name*="item_id"]').val())) {
                             selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
                         }
                     });
@@ -1381,8 +1566,8 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:'goods_item_list',
-                            selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            type: 'goods_item_list',
+                            selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -1391,26 +1576,26 @@
                                     label: `${item.item_name} (${item.item_code})`,
                                     code: item.item_code || '',
                                     item_id: item.id,
-                                    item_name:item.item_name,
-                                    is_inspection:item.is_inspection,
-                                    uom_name:item.uom?.name,
-                                    uom_id:item.uom_id,
-                                    hsn_id:item.hsn?.id,
-                                    hsn_code:item.hsn?.code,
-                                    alternate_u_o_ms:item.alternate_u_o_ms,
-                                    is_attr:item.item_attributes_count,
+                                    item_name: item.item_name,
+                                    is_inspection: item.is_inspection,
+                                    uom_name: item.uom?.name,
+                                    uom_id: item.uom_id,
+                                    hsn_id: item.hsn?.id,
+                                    hsn_code: item.hsn?.code,
+                                    alternate_u_o_ms: item.alternate_u_o_ms,
+                                    is_attr: item.item_attributes_count,
                                     is_asset: item.is_asset,
-                                    asset_name:item.item_name,
+                                    asset_name: item.item_name,
                                     asset_category_id: item.asset_category_id,
                                     asset_category_name: item.asset_category?.name,
                                     brand_name: item.brand_name,
                                     model_no: item.model_no,
                                     estimated_life: item.expected_life,
-                                    salvage_percentage: item.salvage_percentage?? 0,
+                                    salvage_percentage: item.salvage_percentage ?? 0,
                                     salvage_value: 0,
                                     procurement_type: 'BUY',
                                     is_batch_number: item.is_batch_no,
-                                    is_expiry : item.is_expiry,
+                                    is_expiry: item.is_expiry,
                                 };
                             }));
                         },
@@ -1445,9 +1630,10 @@
                     closestTr.find('[name*=hsn_code]').val(hsnCode);
                     closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
                     let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                    if(ui.item?.alternate_u_o_ms) {
-                        for(let alterItem of ui.item.alternate_u_o_ms) {
-                        uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                    if (ui.item?.alternate_u_o_ms) {
+                        for (let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption +=
+                                `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                         }
                     }
                     closestTr.find('[name*=uom_id]').append(uomOption);
@@ -1492,13 +1678,13 @@
                         transaction_type: transactionType,
                         party_country_id: partyCountryId,
                         party_state_id: partyStateId,
-                        rowCount : rowCount
+                        rowCount: rowCount
                     }).toString();
                     getItemDetail(closestTr);
                     let storeLocation = $('.header_store_id').val();
                     getSubStores(storeLocation, itemId);
                     setTimeout(() => {
-                        if(ui.item.is_attr) {
+                        if (ui.item.is_attr) {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
                         } else {
                             $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -1524,12 +1710,12 @@
             });
         }
         initializeAutocomplete2(".comp_item_code");
-        $(document).on('click','#addNewItemBtn', (e) => {
+        $(document).on('click', '#addNewItemBtn', (e) => {
             // for component item code
             let storeLocation = $('.header_store_id').val();
             getSubStores(storeLocation);
             var supplierName = $('#vendor_name').val();
-            if(!supplierName){
+            if (!supplierName) {
                 Swal.fire(
                     "Warning!",
                     "Please select vendor first!",
@@ -1541,19 +1727,19 @@
             /*Check last tr data shoud be required*/
             let lastRow = $('#itemTable .mrntableselectexcel tr:last');
             let lastTrObj = {
-                item_id : "",
-                attr_require : true,
-                row_length : lastRow.length
+                item_id: "",
+                attr_require: true,
+                row_length: lastRow.length
             };
 
-            if(lastRow.length == 0) {
+            if (lastRow.length == 0) {
                 lastTrObj.attr_require = false;
                 lastTrObj.item_id = "0";
             }
 
-            if(lastRow.length > 0) {
+            if (lastRow.length > 0) {
                 let item_id = lastRow.find("[name*='item_id']").val();
-                if(lastRow.find("[name*='attr_name']").length) {
+                if (lastRow.find("[name*='attr_name']").length) {
                     var emptyElements = lastRow.find("[name*='attr_name']").filter(function() {
                         return $(this).val().trim() === '';
                     });
@@ -1563,21 +1749,22 @@
                 }
 
                 lastTrObj = {
-                    item_id : item_id,
-                    attr_require : attr_require,
-                    row_length : lastRow.length
+                    item_id: item_id,
+                    attr_require: attr_require,
+                    row_length: lastRow.length
                 };
 
-                if($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && item_id) {
+                if ($("tr[id*='row_']:last").find("[name*='[attr_group_id]']").length == 0 && item_id) {
                     lastTrObj.attr_require = false;
                 }
             }
 
-            let actionUrl = '{{route("material-receipt.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+            let actionUrl = '{{ route('material-receipt.item.row') }}' + '?count=' + rowsLength +
+                '&component_item=' + JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                            // $("#submit-button").click();
+                        // $("#submit-button").click();
                         if (rowsLength) {
                             $("#itemTable > tbody > tr:last").after(data.data.html);
                         } else {
@@ -1585,7 +1772,7 @@
                         }
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
-                    } else if(data.status == 422) {
+                    } else if (data.status == 422) {
                         Swal.fire({
                             title: 'Error!',
                             text: data.message || 'An unexpected error occurred.',
@@ -1603,7 +1790,7 @@
         });
 
         /*Delete Row*/
-        $(document).on('click','#deleteBtn', (e) => {
+        $(document).on('click', '#deleteBtn', (e) => {
             let itemIds = [];
             let editItemIds = [];
             let poItemIds = [];
@@ -1613,13 +1800,16 @@
                 let po_detail_id = Number($(tr).find('[name*="[po_detail_id]"]').val()) || 0;
                 let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
                 if (po_detail_id > 0 && mrn_detail_id > 0) {
-                    poItemIds.push({ index: trIndex + 1, po_detail_id: po_detail_id });
+                    poItemIds.push({
+                        index: trIndex + 1,
+                        po_detail_id: po_detail_id
+                    });
                 }
             });
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {
-                    if($(this).attr('data-id')) {
+                    if ($(this).attr('data-id')) {
                         editItemIds.push($(this).attr('data-id'));
                     } else {
                         itemIds.push($(this).val());
@@ -1627,11 +1817,11 @@
                 }
             });
             if (itemIds.length) {
-                itemIds.forEach(function(item,index) {
+                itemIds.forEach(function(item, index) {
                     $(`#row_${item}`).remove();
                 });
             }
-            if(editItemIds.length == 0 && itemIds.length == 0) {
+            if (editItemIds.length == 0 && itemIds.length == 0) {
                 Swal.fire({
                     title: 'Error!',
                     text: "Please first add & select row item.",
@@ -1640,11 +1830,11 @@
                 return false;
             }
             if (editItemIds.length) {
-                $("#deleteComponentModal").find("#deleteConfirm").attr('data-ids',JSON.stringify(editItemIds));
+                $("#deleteComponentModal").find("#deleteConfirm").attr('data-ids', JSON.stringify(editItemIds));
                 $("#deleteComponentModal").modal('show');
             }
-            if(!$("tr[id*='row_']").length) {
-                $("#itemTable > thead .form-check-input").prop('checked',false);
+            if (!$("tr[id*='row_']").length) {
+                $("#itemTable > thead .form-check-input").prop('checked', false);
                 // $(".prSelect").prop('disabled',false);
             }
             setTableCalculation(true);
@@ -1675,21 +1865,21 @@
         });
 
         /*For comp attr*/
-        function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+        function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
             let checkAttr = 0;
-            if(currentProcessType && currentProcessType != null)
-            {
+            if (currentProcessType && currentProcessType != null) {
                 rowCount = tableRowCount;
                 let isPo = $(tr).find('[name*="purchase_order_item_id"]').val() ? 1 : 0;
                 let isJo = $(tr).find('[name*="job_order_item_id"]').val() ? 1 : 0;
-                if((!isPo) || (!isJo)) {
-                    if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+                if ((!isPo) || (!isJo)) {
+                    if ($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
                         checkAttr = 1;
                     }
                 }
             }
             let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&checkAttr=${checkAttr}`;
+            let actionUrl = '{{ route('material-receipt.item.attr') }}' + '?item_id=' + itemId + '&mrn_detail_id=' +
+                mrn_detail_id + `&rowCount=${rowCount}&selectedAttr=${selectedAttr}&checkAttr=${checkAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1697,7 +1887,8 @@
                         $("#attribute table tbody").append(data.data.html)
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
-                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data
+                            .data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1709,7 +1900,7 @@
         }
 
         /*Display item detail*/
-        $(document).on('change focus', '#itemTable tr input ', function(e){
+        $(document).on('change focus', '#itemTable tr input ', function(e) {
             let currentTr = e.target.closest('tr');
             getItemDetail(currentTr);
         });
@@ -1724,7 +1915,7 @@
             if (!itemId) return;
 
             let selectedAttr = [];
-            $(currentTr).find("[name*='[attr_name]']").each(function () {
+            $(currentTr).find("[name*='[attr_name]']").each(function() {
                 const val = $(this).val();
                 if (val) selectedAttr.push(val);
             });
@@ -1735,8 +1926,8 @@
                 po_detail_id: getVal("[name*='[po_detail_id]']"),
                 job_order_id: getVal("[name*='[job_order_id]']"),
                 jo_detail_id: getVal("[name*='[jo_detail_id]']"),
-                store_id : $('.header_store_id').val(),
-                sub_store_id : $('.sub_store').val(),
+                store_id: $('.header_store_id').val(),
+                sub_store_id: $('.sub_store').val(),
                 remark: getVal("[name*='[remark]']"),
                 uom_id: getVal("[name*='[uom_id]']"),
                 qty: getVal("[name*='[order_qty]']"),
@@ -1747,7 +1938,10 @@
                 type: currentProcessType,
             };
 
-            let actionUrl = '{{ route('material-receipt.get.itemdetail') }}?' + new URLSearchParams(data).toString();
+            let actionUrl =
+                '{{ route('material-receipt.get.itemdetail') }}?' +
+                new URLSearchParams(data)
+                .toString();
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -1757,31 +1951,35 @@
                         applyInspectionState();
 
                         var approvedStockLedger = data.data.checkApprovedQuantity;
-                        if(approvedStockLedger)
-                        {
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                            let approved_stock = approvedStockLedger['approvedStock'];
-                            let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                            let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                            let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                            if (qty < approved_stock) {
-                                if (qtyElement.length > 0) {  // Ensure the element was found
-                                    qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                    rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
+                        if (approvedStockLedger) {
+                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] ==
+                                    'error')) {
+                                let approved_stock = approvedStockLedger['approvedStock'];
+                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
+                                let rejQtyElement = $(currentTr).find(
+                                    "[name*='[rejected_qty]']"); // Get the jQuery object, not the value
+                                let rejQty = rejQtyElement.val() ||
+                                    ''; // Get the value of the rejected_qty input
+                                if (qty < approved_stock) {
+                                    if (qtyElement.length > 0) { // Ensure the element was found
+                                        qtyElement.val(
+                                            receipt_qty); // Set the value of qtyElement (jQuery object)
+                                        rejQtyElement.val(
+                                            0.00); // Set the value of qtyElement (jQuery object)
+                                    } else {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: "Accepted quantity input not found",
+                                            icon: 'error',
+                                        });
+                                    }
                                 } else {
                                     Swal.fire({
                                         title: 'Error!',
-                                        text: "Accepted quantity input not found",
+                                        text: "Accepted quantity is higher than the approved stock.",
                                         icon: 'error',
                                     });
                                 }
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: "Accepted quantity is higher than the approved stock.",
-                                    icon: 'error',
-                                });
-                            }
                             }
                         }
 
@@ -1796,7 +1994,8 @@
             let vendorId = $("#vendor_id").val();
             let onChange = 0;
             let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl =
+                `{{ route('material-receipt.edit.address') }}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1825,7 +2024,8 @@
                 return false;
             }
             let onChange = 1;
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl =
+                `{{ route('material-receipt.edit.address') }}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1855,7 +2055,7 @@
                 })
                 .catch(error => console.error('Error fetching countries:', error));
 
-            countrySelect.on('change', function () {
+            countrySelect.on('change', function() {
                 let countryValue = $(this).val();
                 let stateSelect = $('#state_id');
                 stateSelect.empty().append('<option value="">Select State</option>'); // Reset state dropdown
@@ -1866,7 +2066,8 @@
                         .then(data => {
                             data.data.states.forEach(state => {
                                 const isSelected = state.value === selectedAddress.state.id;
-                                stateSelect.append(new Option(state.label, state.value, isSelected, isSelected));
+                                stateSelect.append(new Option(state.label, state.value, isSelected,
+                                    isSelected));
                             });
                             if (selectedAddress.state.value) {
                                 stateSelect.trigger('change');
@@ -1875,7 +2076,7 @@
                         .catch(error => console.error('Error fetching states:', error));
                 }
             });
-            $('#state_id').on('change', function () {
+            $('#state_id').on('change', function() {
                 let stateValue = $(this).val();
                 let citySelect = $('#city');
                 citySelect.empty().append('<option value="">Select City</option>');
@@ -1885,7 +2086,8 @@
                         .then(data => {
                             data.data.cities.forEach(city => {
                                 const isSelected = city.value === selectedAddress.city.id;
-                                citySelect.append(new Option(city.label, city.value, isSelected, isSelected));
+                                citySelect.append(new Option(city.label, city.value, isSelected,
+                                    isSelected));
                             });
                         })
                         .catch(error => console.error('Error fetching cities:', error));
@@ -1896,50 +2098,50 @@
         }
 
         /* Address Submit */
-        $(document).on('click', '.submitAddress', function (e) {
+        $(document).on('click', '.submitAddress', function(e) {
             $('.ajax-validation-error-span').remove();
             e.preventDefault();
             var innerFormData = new FormData();
-            $('#edit-address').find('input,textarea,select').each(function () {
+            $('#edit-address').find('input,textarea,select').each(function() {
                 innerFormData.append($(this).attr('name'), $(this).val());
             });
-            var method = "POST" ;
-            var url = '{{route("material-receipt.address.save")}}';
+            var method = "POST";
+            var url = '{{ route('material-receipt.address.save') }}';
             fetch(url, {
-                method: method,
-                body: innerFormData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                return response.json();
-            })
-            .then(data => {
-                if(data.status == 200) {
-                    let addressType = $("#address_type").val();
-                    if(addressType == 'shipping') {
-                        $("#shipping_id").val(data.data.new_address.id);
-                        $(".shipping_detail").text(data.data.new_address.display_address);
+                    method: method,
+                    body: innerFormData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status == 200) {
+                        let addressType = $("#address_type").val();
+                        if (addressType == 'shipping') {
+                            $("#shipping_id").val(data.data.new_address.id);
+                            $(".shipping_detail").text(data.data.new_address.display_address);
+                        } else {
+                            $("#billing_id").val(data.data.new_address.id);
+                            $(".billing_detail").text(data.data.new_address.display_address);
+                        }
+                        $("#edit-address").modal('hide');
                     } else {
-                        $("#billing_id").val(data.data.new_address.id);
-                        $(".billing_detail").text(data.data.new_address.display_address);
+                        let formObj = $("#edit-address");
+                        let errors = data.errors;
+                        for (const [key, errorMessages] of Object.entries(errors)) {
+                            var name = key.replace(/\./g, "][").replace(/\]$/, "");
+                            formObj.find(`[name="${name}"]`).parent().append(
+                                `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
+                            );
+                        }
                     }
-                    $("#edit-address").modal('hide');
-                } else {
-                    let formObj = $("#edit-address");
-                    let errors = data.errors;
-                    for (const [key, errorMessages] of Object.entries(errors)) {
-                        var name = key.replace(/\./g, "][").replace(/\]$/, "");
-                        formObj.find(`[name="${name}"]`).parent().append(
-                            `<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">${errorMessages[0]}</span>`
-                        );
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Form submission error:', error);
-            });
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                });
 
         });
 
@@ -1980,7 +2182,7 @@
             let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
             let rowIndex = $(e.target).closest('tr').index();
             let id = e.target.closest('a').getAttribute('data-id') || 0;
-            if(Number(id)) {
+            if (Number(id)) {
                 $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-id', id);
                 $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-row-index', rowIndex);
                 $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-row-count', rowCount);
@@ -1989,7 +2191,7 @@
         });
 
         /*Delete server side rows*/
-        $(document).on('click','#deleteItemDiscConfirm', (e) => {
+        $(document).on('click', '#deleteItemDiscConfirm', (e) => {
             let rowCount = e.target.getAttribute('data-row-count') || $("#disItemFooter #row_count").val();
             let id = e.target.getAttribute('data-id');
             let dataRowId = Number(e.target.getAttribute('data-row-index'));
@@ -2002,22 +2204,23 @@
             localStorage.setItem('deletedItemDiscTedIds', JSON.stringify(ids));
 
             let total_head_dis = 0;
-            $("[name*='[item_d_amnt]']").each(function(index,item) {
-                total_head_dis+=Number($(item).val());
+            $("[name*='[item_d_amnt]']").each(function(index, item) {
+                total_head_dis += Number($(item).val());
             });
             $("#disItemFooter #total").text(total_head_dis.toFixed(2));
             $(`[id*='row_${rowCount}']`).find("[name*='[discounts]'").remove();
 
             let hiddenDis = '';
             let totalAmnt = 0;
-            $(".display_discount_row").find("[name*='[item_d_amnt]']").each(function(index,item) {
+            $(".display_discount_row").find("[name*='[item_d_amnt]']").each(function(index, item) {
                 let key = index + 1;
                 let id = $(item).closest('tr').find(`[name*="[item_d_id]"]`).val();
                 let name = $(item).closest('tr').find(`[name*="[item_d_name]"]`).val();
                 let perc = $(item).closest('tr').find(`[name*="[item_d_perc]"]`).val();
                 let amnt = $(item).val();
-                totalAmnt+=Number(amnt);
-                hiddenDis+= `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index+1}][id]">
+                totalAmnt += Number(amnt);
+                hiddenDis +=
+                    `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index+1}][id]">
                 <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index+1}][dis_name]">
                 <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index+1}][dis_perc]">
                 <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index+1}][dis_amount]">`;
@@ -2031,7 +2234,7 @@
         $(document).on("click", ".deleteSummaryDiscountRow", (e) => {
             let id = $(e.target.closest('tr')).find('[name*="[d_id]"]').val();
             const rowIndex = $(e.target).closest('tr').index();
-            if(id) {
+            if (id) {
                 $("#deleteHeaderDiscModal").find("#deleteHeaderDiscConfirm").attr('data-id', id);
                 $("#deleteHeaderDiscModal").find("#deleteHeaderDiscConfirm").attr('data-row-index', rowIndex);
                 $("#deleteHeaderDiscModal").modal('show');
@@ -2039,7 +2242,7 @@
         });
 
         /*Delete server side rows*/
-        $(document).on('click','#deleteHeaderDiscConfirm', (e) => {
+        $(document).on('click', '#deleteHeaderDiscConfirm', (e) => {
             let id = e.target.getAttribute('data-id');
             let dataRowId = e.target.getAttribute('data-row-index');
             $("#deleteHeaderDiscModal").modal('hide');
@@ -2052,9 +2255,10 @@
             let itemValue = Number($("#TotalEachRowAmount").attr('amount'));
             $('.display_summary_discount_row [name*="[d_perc]"]').each(function(index, item) {
                 let perc = Number($(item).val());
-                if(perc) {
+                if (perc) {
                     let disAmount = itemValue * Number(perc) / 100;
-                    $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', true).val(disAmount.toFixed(2));
+                    $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', true).val(disAmount
+                        .toFixed(2));
                 } else {
                     $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', false).val('');
                 }
@@ -2068,7 +2272,7 @@
         $(document).on("click", ".deleteExpRow", (e) => {
             let id = $(e.target.closest('tr')).find('[name*="[e_id]"]').val();
             const rowIndex = $(e.target).closest('tr').index();
-            if(id) {
+            if (id) {
                 $("#deleteHeaderExpModal").find("#deleteHeaderExpConfirm").attr('data-id', id);
                 $("#deleteHeaderExpModal").find("#deleteHeaderExpConfirm").attr('data-row-index', rowIndex);
                 $("#deleteHeaderExpModal").modal('show');
@@ -2076,7 +2280,7 @@
         });
 
         /*Delete server side rows*/
-        $(document).on('click','#deleteHeaderExpConfirm', (e) => {
+        $(document).on('click', '#deleteHeaderExpConfirm', (e) => {
             let id = e.target.getAttribute('data-id');
             let dataRowId = e.target.getAttribute('data-row-index');
             $("#deleteHeaderExpModal").modal('hide');
@@ -2092,11 +2296,12 @@
             let itemValue = Number($("#f_total_after_tax").attr('amount'));
             $('.display_summary_exp_row [name*="[e_perc]"]').each(function(index, item) {
                 let perc = Number($(item).val());
-                if(perc) {
+                if (perc) {
                     let total = itemValue * perc / 100;
-                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',true).val(total.toFixed(2));
+                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly', true).val(total.toFixed(
+                        2));
                 } else {
-                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',false).val('');
+                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly', false).val('');
                 }
             });
 
@@ -2123,10 +2328,10 @@
 
         // # Revision Number On Chage
         $(document).on('change', '#revisionNumber', (e) => {
-            let actionUrl = location.pathname + '?revisionNumber='+e.target.value;
-            let revision_number = Number("{{$revision_number}}");
+            let actionUrl = location.pathname + '?revisionNumber=' + e.target.value;
+            let revision_number = Number("{{ $revision_number }}");
             let revisionNumber = Number(e.target.value);
-            if(revision_number == revisionNumber) {
+            if (revision_number == revisionNumber) {
                 location.href = actionUrl;
             } else {
                 window.open(actionUrl, '_blank');
@@ -2141,7 +2346,7 @@
         /*Amendment btn submit*/
         $(document).on('click', '#amendmentBtnSubmit', (e) => {
             let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
-            if(!remark) {
+            if (!remark) {
                 e.preventDefault();
                 $("#amendRemarkError").removeClass("d-none");
                 return false;
@@ -2153,8 +2358,7 @@
             }
         });
 
-        function resetPostVoucher()
-        {
+        function resetPostVoucher() {
             document.getElementById('voucher_doc_no').value = '';
             document.getElementById('voucher_date').value = '';
             document.getElementById('voucher_book_code').value = '';
@@ -2163,18 +2367,18 @@
             document.getElementById('posting_button').style.display = 'none';
         }
 
-        function onPostVoucherOpen(type = "not_posted")
-        {
+        function onPostVoucherOpen(type = "not_posted") {
             // resetPostVoucher();
-            const apiURL = "{{route('material-receipt.posting.get')}}";
+            const apiURL = "{{ route('material-receipt.posting.get') }}";
             let urlType = '';
-            if(type == "not_posted"){
+            if (type == "not_posted") {
                 urlType = "get";
-            } else{
+            } else {
                 urlType = "view";
             }
             $.ajax({
-                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" + "{{isset($mrn) ? $mrn -> id : ''}}"  + "&type=" + urlType,
+                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" +
+                    "{{ isset($mrn) ? $mrn->id : '' }}" + "&type=" + urlType,
                 type: "GET",
                 dataType: "json",
                 success: function(data) {
@@ -2202,7 +2406,7 @@
                             `
                         });
                     });
-                    voucherEntriesHTML+= `
+                    voucherEntriesHTML += `
                     <tr>
                         <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
                         <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
@@ -2211,7 +2415,8 @@
                     `;
                     document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
                     document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
-                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
+                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format(
+                        'D/M/Y');
                     document.getElementById('voucher_book_code').value = voucherEntries.book_code;
                     document.getElementById('voucher_currency').value = voucherEntries.currency_code;
                     if (type === "posted") {
@@ -2225,68 +2430,66 @@
 
         }
 
-        function postVoucher(element)
-        {
+        function postVoucher(element) {
             Swal.fire({
-            title: 'Are you sure?',
-            text: "Note: you want to submit the details, after that you can not make any changes to that",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, post it!',
-            cancelButtonText: 'Cancel'
+                title: 'Are you sure?',
+                text: "Note: you want to submit the details, after that you can not make any changes to that",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, post it!',
+                cancelButtonText: 'Cancel'
             }).then((result) => {
-            if (result.isConfirmed) {
-            const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
-            const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
-            const postingApiUrl = "{{route('material-receipt.post')}}"
-            if (bookId && documentId) {
-                $.ajax({
-                    url: postingApiUrl,
-                    type: "POST",
-                    dataType: "json",
-                    contentType: "application/json", // Specifies the request payload type
-                    data: JSON.stringify({
-                        // Your JSON request data here
-                        book_id: bookId,
-                        document_id: documentId,
-                    }),
-                    success: function(data) {
-                        const response = data.data;
-                        if (response.status) {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: response.message,
-                                icon: 'success',
-                            });
-                            location.reload();
-                        } else {
-                            Swal.fire({
-                                title: 'Error!',
-                                text: response.message,
-                                icon: 'error',
-                            });
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occured',
-                            icon: 'error',
+                if (result.isConfirmed) {
+                    const bookId = "{{ isset($mrn) ? $mrn->book_id : '' }}";
+                    const documentId = "{{ isset($mrn) ? $mrn->id : '' }}";
+                    const postingApiUrl = "{{ route('material-receipt.post') }}"
+                    if (bookId && documentId) {
+                        $.ajax({
+                            url: postingApiUrl,
+                            type: "POST",
+                            dataType: "json",
+                            contentType: "application/json", // Specifies the request payload type
+                            data: JSON.stringify({
+                                // Your JSON request data here
+                                book_id: bookId,
+                                document_id: documentId,
+                            }),
+                            success: function(data) {
+                                const response = data.data;
+                                if (response.status) {
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: response.message,
+                                        icon: 'success',
+                                    });
+                                    location.reload();
+                                } else {
+                                    Swal.fire({
+                                        title: 'Error!',
+                                        text: response.message,
+                                        icon: 'error',
+                                    });
+                                }
+                            },
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Some internal error occured',
+                                    icon: 'error',
+                                });
+                            }
                         });
                     }
-                });
-            }
-            }
-            else{
-                $('#postvoucher').modal('hide');
-            }
+                } else {
+                    $('#postvoucher').modal('hide');
+                }
             })
         }
 
         // Function to initialize the product section autocomplete
         function initializeStationAutocomplete() {
             $("[name*='store_section']").autocomplete({
-                source: function (request, response) {
+                source: function(request, response) {
                     $.ajax({
                         url: '/search',
                         method: 'GET',
@@ -2295,8 +2498,8 @@
                             q: request.term,
                             type: 'store'
                         },
-                        success: function (data) {
-                            const mappedData = $.map(data, function (item) {
+                        success: function(data) {
+                            const mappedData = $.map(data, function(item) {
                                 return {
                                     id: item.id,
                                     label: item.store_code,
@@ -2305,27 +2508,27 @@
                             response(mappedData);
 
                         },
-                        error: function (xhr) {
+                        error: function(xhr) {
                             console.error('Error fetching data:', xhr.responseText);
                         }
                     });
                 },
                 minLength: 0,
-                select: function (event, ui) {
+                select: function(event, ui) {
                     $(this).val(ui.item.label);
                     $(this).closest('td').find("[name*='[store_id]']").val(ui.item.id);
                     $(this).closest('td').find("[name*='[erp_store_code]']").val(ui.item.label);
                     return false;
                 },
-                change: function (event, ui) {
+                change: function(event, ui) {
                     if (!ui.item) {
-                    $(this).val("");
-                    $(this).closest('td').find("[name*='[store_id]']").val("");
-                    $(this).closest('td').find("[name*='[erp_store_code]']").val("");
+                        $(this).val("");
+                        $(this).closest('td').find("[name*='[store_id]']").val("");
+                        $(this).closest('td').find("[name*='[erp_store_code]']").val("");
                     }
                 },
                 // appendTo: "#addSectionItemPopup"
-            }).focus(function () {
+            }).focus(function() {
                 if (this.value === "") {
                     $(this).closest('td').find("[name*='[store_id]']").val("");
                     $(this).closest('td').find("[name*='[erp_store_code]']").val("");
@@ -2335,8 +2538,7 @@
         }
 
         // Get Item Rate
-        function getItemCostPrice(currentTr)
-        {
+        function getItemCostPrice(currentTr) {
             let vendorId = $("#vendor_id").val();
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val();
@@ -2351,10 +2553,10 @@
                 attributes: attributes,
                 uom_id: uomId
             });
-            let actionUrl = '{{ route("items.get.cost") }}'+'?'+queryParams.toString();
+            let actionUrl = '{{ route('items.get.cost') }}' + '?' + queryParams.toString();
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         let cost = data?.data?.cost || 0;
                         $(currentTr).find("input[name*='[rate]']").val(cost);
                     }
@@ -2364,10 +2566,10 @@
 
         // Revoke Document
         $(document).on('click', '#revokeButton', (e) => {
-            let actionUrl = '{{ route("material-receipt.revoke.document") }}'+ '?id='+'{{$mrn->id}}';
+            let actionUrl = '{{ route('material-receipt.revoke.document') }}' + '?id=' + '{{ $mrn->id }}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 'error') {
+                    if (data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
                             text: data.message,
@@ -2391,9 +2593,10 @@
                     minLength: 0,
                     source: function(request, response) {
                         let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                        $("#itemTable tbody [id*='row_']").each(function(index, item) {
+                            if (Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find(
+                                    '[name*="[item_id]"]').val()));
                             }
                         });
                         $.ajax({
@@ -2402,8 +2605,8 @@
                             dataType: 'json',
                             data: {
                                 q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                                type: 'goods_item_list',
+                                selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                             },
                             success: function(data) {
                                 response($.map(data, function(item) {
@@ -2412,18 +2615,19 @@
                                         label: `${item.item_name} (${item.item_code})`,
                                         code: item.item_code || '',
                                         item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
+                                        item_name: item.item_name,
+                                        uom_name: item.uom?.name,
+                                        uom_id: item.uom_id,
+                                        hsn_id: item.hsn?.id,
+                                        hsn_code: item.hsn?.code,
+                                        alternate_u_o_ms: item.alternate_u_o_ms,
+                                        is_attr: item.item_attributes_count,
                                     };
                                 }));
                             },
                             error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
+                                console.error('Error fetching customer data:', xhr
+                                    .responseText);
                             }
                         });
                     },
@@ -2447,15 +2651,16 @@
                         $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        if (ui.item?.alternate_u_o_ms) {
+                            for (let alterItem of ui.item.alternate_u_o_ms) {
+                                uomOption +=
+                                    `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
                         $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
-                            if(ui.item.is_attr) {
+                            if (ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
@@ -2468,7 +2673,7 @@
                     change: function(event, ui) {
                         if (!ui.item) {
                             $(this).val("");
-                                // $('#itemId').val('');
+                            // $('#itemId').val('');
                             $(this).attr('data-name', '');
                             $(this).attr('data-code', '');
                         }
@@ -2482,44 +2687,47 @@
 
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val() || '';
-            let actionUrl = '{{ route("material-receipt.process.import-item") }}';
+            let actionUrl = '{{ route('material-receipt.process.import-item') }}';
 
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         $(".header_store_id").prop('disabled', true);
                         initializeAutocomplete2(".comp_item_code");
                         $("#importItemModal").modal('hide');
-                        $(".importItem").prop('disabled',true);
-                        $(".poSelect").prop('disabled',true);
+                        $(".importItem").prop('disabled', true);
+                        $(".poSelect").prop('disabled', true);
                         $("select[name='currency_id']").prop('disabled', true);
                         $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
+                        $("#vendor_name").prop('readonly', true);
                         $(".editAddressBtn").addClass('d-none');
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data
+                                .pos);
                         } else {
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
                         let locationId = $("[name='header_store_id']").val();
                         // getLocation(locationId);
-                        getSubStores(locationId, item='');
+                        getSubStores(locationId, item = '');
                         updateImportItemData(data.status);
                         setTimeout(() => {
                             setTableCalculation(true);
-                        },500);
+                        }, 500);
 
                     }
-                    if(data.status == 422) {
+                    if (data.status == 422) {
                         updateImportItemData(data.status);
                         $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
+                        $("#vendor_name").val('').prop('readonly', false);
                         $("#vendor_id").val('');
                         $("#vendor_code").val('');
                         $("#hidden_state_id").val('');
                         $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $("select[name='currency_id']").empty().append(
+                            '<option value="">Select</option>').prop('readonly', false);
+                        $("select[name='payment_term_id']").empty().append(
+                            '<option value="">Select</option>').prop('readonly', false);
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({
@@ -2533,7 +2741,7 @@
             });
         });
 
-        $(document).on('click','td[id*="itemAttribute_"]', (e) => {
+        $(document).on('click', 'td[id*="itemAttribute_"]', (e) => {
             let dataAttributes = $(e.target).attr('data-attributes');
             // dataAttributes = JSON.parse(dataAttributes);
             // dataAttributes.
@@ -2543,8 +2751,7 @@
         let poOrderTable;
         $(document).on('click', '.poSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
-            if(tableRowCount)
-            {
+            if (tableRowCount) {
                 let poDetailIds = [];
                 $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
                     let poDetailId = $(this).find("input[name*='[purchase_order_id]']").val();
@@ -2555,7 +2762,7 @@
                 localStorage.setItem('selectedPoIds', JSON.stringify(poDetailIds));
             }
             $("#poModal").modal('show');
-            currentProcessType='po';
+            currentProcessType = 'po';
             const tableSelector = '#poModal .po-order-detail';
             $(tableSelector).DataTable().clear().destroy();
             openPurchaseRequest();
@@ -2564,19 +2771,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
-                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function() {
                         const currentAsn = $(this).attr('data-current-asn');
                         const currentGe = $(this).attr('data-current-ge');
                         const isChecked = $(this).is(':checked');
 
                         // If data-current-asn is valid
                         if (currentAsn && currentAsn !== 'null') {
-                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked',
+                                isChecked);
                         }
 
                         // If data-current-ge is valid
                         if (currentGe && currentGe !== 'null') {
-                            $(`.po_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                            $(`.po_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked',
+                                isChecked);
                         }
                     });
                 }
@@ -2592,17 +2801,16 @@
             getJobOrders();
         });
 
-        function getSelectedPoTypes()
-        {
+        function getSelectedPoTypes() {
             let moduleTypes = [];
             $('.po_item_checkbox:checked').each(function() {
-                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+                moduleTypes.push($(this).attr(
+                    'data-module')); // Corrected: Get attribute value instead of setting it
             });
             return moduleTypes;
         }
 
-        function getSelectedPaymentTerms()
-        {
+        function getSelectedPaymentTerms() {
             let paymentIds = [];
             let paymentTerms = [];
             let CreditDays = [];
@@ -2619,9 +2827,9 @@
             };
         }
 
-        function openPurchaseRequest()
-        {
-            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+        function openPurchaseRequest() {
+            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
+                "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
             initializeAutocompleteQt("asn_no_input_qt", "asn_id_qt_val", "po_asn_document_qt", "document_number", "");
             initializeAutocompleteQt("ge_no_input_qt", "ge_id_qt_val", "po_ge_document_qt", "document_number", "");
@@ -2700,7 +2908,7 @@
             });
         }
 
-        window.onload = function () {
+        window.onload = function() {
             currentProcessType = @json($mrn->reference_type);
             asnHeaderIds = @json($asnHeaderIds);
             asnDetailsIds = @json($asnDetailsIds);
@@ -2709,18 +2917,15 @@
             $("#reference_type_input").val(currentProcessType);
             $(".supplier_invoice_no").prop('readonly', false);
             $(".supplier_invoice_date").prop('readonly', false);
-            if(asnHeaderIds.length || asnDetailsIds.length)
-            {
+            if (asnHeaderIds.length || asnDetailsIds.length) {
                 $(".supplier_invoice_no").prop('readonly', true);
                 $(".supplier_invoice_date").prop('readonly', true);
             }
-            if(currentProcessType === null)
-            {
+            if (currentProcessType === null) {
                 $(".joSelect").hide();
                 $(".poSelect").hide();
                 $(".soSelect").hide();
-            }
-            else{
+            } else {
                 if (currentProcessType === 'po') {
                     $(".joSelect").hide();
                     $(".poSelect").show();
@@ -2741,7 +2946,9 @@
             const ids = @json($detailsIds);
 
             if (['po', 'jo', 'so'].includes(currentProcessType)) {
-                localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
+                localStorage.setItem(
+                    `selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON
+                    .stringify(ids));
             }
         };
 
@@ -2763,133 +2970,252 @@
                 so_id = '',
                 item_search = '',
                 selected_po_ids = '';
-            if(currentProcessType === 'po')
-            {
+            if (currentProcessType === 'po') {
                 let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
                 selectedPoIds = JSON.parse(selectedPoIds);
                 selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
                 document_date = $("[name ='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#document_id_qt_val").val() || '',
-                asn_number = $("#asn_id_qt_val").val() || '',
-                ge_number = $("#ge_id_qt_val").val() || '',
-                item_id = $("#item_id_qt_val").val() || '',
-                vendor_id = $("#vendor_id_qt_val").val(),
-                store_id = $(".header_store_id").val() || '',
-                so_id = $("#po_so_qt_val").val() || '',
-                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#document_id_qt_val").val() || '',
+                    asn_number = $("#asn_id_qt_val").val() || '',
+                    ge_number = $("#ge_id_qt_val").val() || '',
+                    item_id = $("#item_id_qt_val").val() || '',
+                    vendor_id = $("#vendor_id_qt_val").val(),
+                    store_id = $(".header_store_id").val() || '',
+                    so_id = $("#po_so_qt_val").val() || '',
+                    item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedPoIds)
             }
-            if(currentProcessType === 'jo')
-            {
+            if (currentProcessType === 'jo') {
                 let selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
                 selectedJoIds = JSON.parse(selectedJoIds);
                 selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
                 document_date = $("[name='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#jo_document_id_qt_val").val() || '',
-                asn_number = $("#jo_asn_id_qt_val").val() || '',
-                ge_number = $("#jo_ge_id_qt_val").val() || '',
-                item_id = $("#jo_item_id_qt_val").val() || '',
-                vendor_id = $("#jo_vendor_id_qt_val").val(),
-                store_id = $(".header_store_id").val() || '',
-                so_id = $("#jo_so_qt_val").val() || '',
-                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#jo_document_id_qt_val").val() || '',
+                    asn_number = $("#jo_asn_id_qt_val").val() || '',
+                    ge_number = $("#jo_ge_id_qt_val").val() || '',
+                    item_id = $("#jo_item_id_qt_val").val() || '',
+                    vendor_id = $("#jo_vendor_id_qt_val").val(),
+                    store_id = $(".header_store_id").val() || '',
+                    so_id = $("#jo_so_qt_val").val() || '',
+                    item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedJoIds)
             }
-            if(currentProcessType === 'so')
-            {
+            if (currentProcessType === 'so') {
                 let selectedSoIds = localStorage.getItem('selectedSoIds') ?? '[]';
                 selectedSoIds = JSON.parse(selectedSoIds);
                 selectedSoIds = encodeURIComponent(JSON.stringify(selectedSoIds));
                 document_date = $("[name='document_date']").val() || '',
-                header_book_id = $("#book_id").val() || '',
-                series_id = $("#book_id_qt_val").val() || '',
-                document_number = $("#so_document_id_qt_val").val() || '',
-                asn_number = $("#so_asn_id_qt_val").val() || '',
-                ge_number = $("#so_ge_id_qt_val").val() || '',
-                item_id = $("#so_item_id_qt_val").val() || '',
-                vendor_id = $("#so_vendor_id_qt_val").val(),
-                store_id = $(".header_store_id").val() || '',
-                so_id = $("#so_so_qt_val").val() || '',
-                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
+                    header_book_id = $("#book_id").val() || '',
+                    series_id = $("#book_id_qt_val").val() || '',
+                    document_number = $("#so_document_id_qt_val").val() || '',
+                    asn_number = $("#so_asn_id_qt_val").val() || '',
+                    ge_number = $("#so_ge_id_qt_val").val() || '',
+                    item_id = $("#so_item_id_qt_val").val() || '',
+                    vendor_id = $("#so_vendor_id_qt_val").val(),
+                    store_id = $(".header_store_id").val() || '',
+                    so_id = $("#so_so_qt_val").val() || '',
+                    item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedSoIds)
             }
 
             return {
-                    document_date: document_date,
-                    header_book_id: header_book_id,
-                    series_id: series_id,
-                    document_number: document_number,
-                    asn_number: asn_number,
-                    ge_number: ge_number,
-                    item_id: item_id,
-                    vendor_id: vendor_id,
-                    store_id: store_id,
-                    so_id: so_id,
-                    item_search: item_search,
-                    selected_po_ids: selected_po_ids,
-                    header_ids: encodeURIComponent(header_ids),
-                    details_ids: encodeURIComponent(details_ids),
-                    asn_header_ids: encodeURIComponent(asn_header_ids),
-                    asn_details_ids: encodeURIComponent(asn_details_ids),
-                    ge_header_ids: encodeURIComponent(ge_header_ids),
-                    ge_details_ids: encodeURIComponent(ge_details_ids)
-                };
+                document_date: document_date,
+                header_book_id: header_book_id,
+                series_id: series_id,
+                document_number: document_number,
+                asn_number: asn_number,
+                ge_number: ge_number,
+                item_id: item_id,
+                vendor_id: vendor_id,
+                store_id: store_id,
+                so_id: so_id,
+                item_search: item_search,
+                selected_po_ids: selected_po_ids,
+                header_ids: encodeURIComponent(header_ids),
+                details_ids: encodeURIComponent(details_ids),
+                asn_header_ids: encodeURIComponent(asn_header_ids),
+                asn_details_ids: encodeURIComponent(asn_details_ids),
+                ge_header_ids: encodeURIComponent(ge_header_ids),
+                ge_details_ids: encodeURIComponent(ge_details_ids)
+            };
         }
 
-        function getPurchaseOrders()
-        {
-            const ajaxUrl = '{{ route("material-receipt.get.po", ["type" => "edit"]) }}';
+        function getPurchaseOrders() {
+            const ajaxUrl = '{{ route('material-receipt.get.po', ['type' => 'edit']) }}';
             var columns = [];
-            columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
-                { data: 'po_doc', name: 'po_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'po_date', name: 'po_date', render: renderData, orderable: false, searchable: false },
-                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
-                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+            columns = [{
+                    data: 'id',
+                    visible: false,
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'select_checkbox',
+                    name: 'select_checkbox',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'vendor',
+                    name: 'vendor',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'po_doc',
+                    name: 'po_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'po_date',
+                    name: 'po_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_doc',
+                    name: 'si_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_date',
+                    name: 'si_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_doc',
+                    name: 'ge_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_date',
+                    name: 'ge_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_code',
+                    name: 'item_code',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_name',
+                    name: 'item_name',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'attributes',
+                    name: 'attributes',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'order_qty',
+                    name: 'order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inv_order_qty',
+                    name: 'inv_order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'ge_qty',
+                    name: 'ge_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'grn_qty',
+                    name: 'grn_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty',
+                    name: 'balance_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'rate',
+                    name: 'rate',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'total_amount',
+                    name: 'total_amount',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'payment_term',
+                    name: 'payment_term',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'credit_days',
+                    name: 'credit_days',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -2917,8 +3243,7 @@
             }
         });
 
-        function getSelectedPoIDS()
-        {
+        function getSelectedPoIDS() {
             let ids = [];
             let asnIds = [];
             let asnItemIds = [];
@@ -2991,9 +3316,10 @@
                     minLength: 0,
                     source: function(request, response) {
                         let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                        $("#itemTable tbody [id*='row_']").each(function(index, item) {
+                            if (Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find(
+                                    '[name*="[item_id]"]').val()));
                             }
                         });
                         $.ajax({
@@ -3002,8 +3328,8 @@
                             dataType: 'json',
                             data: {
                                 q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                                type: 'goods_item_list',
+                                selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                             },
                             success: function(data) {
                                 response($.map(data, function(item) {
@@ -3012,18 +3338,19 @@
                                         label: `${item.item_name} (${item.item_code})`,
                                         code: item.item_code || '',
                                         item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
+                                        item_name: item.item_name,
+                                        uom_name: item.uom?.name,
+                                        uom_id: item.uom_id,
+                                        hsn_id: item.hsn?.id,
+                                        hsn_code: item.hsn?.code,
+                                        alternate_u_o_ms: item.alternate_u_o_ms,
+                                        is_attr: item.item_attributes_count,
                                     };
                                 }));
                             },
                             error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
+                                console.error('Error fetching customer data:', xhr
+                                    .responseText);
                             }
                         });
                     },
@@ -3048,19 +3375,21 @@
                         $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        if (ui.item?.alternate_u_o_ms) {
+                            for (let alterItem of ui.item.alternate_u_o_ms) {
+                                uomOption +=
+                                    `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
                         $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
-                            if(ui.item.is_attr) {
+                            if (ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('')
+                                    .focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -3070,7 +3399,7 @@
                     change: function(event, ui) {
                         if (!ui.item) {
                             $(this).val("");
-                                // $('#itemId').val('');
+                            // $('#itemId').val('');
                             $(this).attr('data-name', '');
                             $(this).attr('data-code', '');
                         }
@@ -3085,7 +3414,7 @@
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val() || '';
             let groupItems = [];
-            $('tr[data-group-item]').each(function () {
+            $('tr[data-group-item]').each(function() {
                 let groupItemData = $(this).data('group-item');
                 groupItems.push(groupItemData);
             });
@@ -3112,8 +3441,7 @@
         let joOrderTable;
         $(document).on('click', '.joSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
-            if(tableRowCount)
-            {
+            if (tableRowCount) {
                 let poDetailIds = [];
                 $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
                     let poDetailId = $(this).find("input[name*='[purchase_order_id]']").val();
@@ -3125,7 +3453,7 @@
             }
 
             $("#joModal").modal('show');
-            currentProcessType='jo';
+            currentProcessType = 'jo';
             openJoRequest();
             const tableSelector = '#joModal .jo-order-detail';
             $(tableSelector).DataTable().clear().destroy();
@@ -3134,45 +3462,49 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
-                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function() {
                         const currentAsn = $(this).attr('data-current-asn');
                         const currentGe = $(this).attr('data-current-ge');
                         const isChecked = $(this).is(':checked');
 
                         // If data-current-asn is valid
                         if (currentAsn && currentAsn !== 'null') {
-                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked',
+                                isChecked);
                         }
 
                         // If data-current-ge is valid
                         if (currentGe && currentGe !== 'null') {
-                            $(`.jo_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                            $(`.jo_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked',
+                                isChecked);
                         }
                     });
                 }
             }
         });
 
-        function getSelectedJoTypes()
-        {
+        function getSelectedJoTypes() {
             let moduleTypes = [];
             $('.jo_item_checkbox:checked').each(function() {
-                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+                moduleTypes.push($(this).attr(
+                    'data-module')); // Corrected: Get attribute value instead of setting it
             });
             return moduleTypes;
         }
 
-        function openJoRequest()
-        {
-            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "jo_vendor_code", "company_name");
-            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "jo_document_number", "");
-            initializeAutocompleteJoQt("jo_asn_no_input_qt", "jo_asn_id_qt_val", "jo_asn_document_qt", "document_number", "");
+        function openJoRequest() {
+            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "jo_vendor_code",
+                "company_name");
+            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt",
+                "jo_document_number", "");
+            initializeAutocompleteJoQt("jo_asn_no_input_qt", "jo_asn_id_qt_val", "jo_asn_document_qt", "document_number",
+                "");
             initializeAutocompleteJoQt("jo_ge_no_input_qt", "jo_ge_id_qt_val", "jo_ge_document_qt", "document_number", "");
-            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "jo_document_number");
+            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code",
+                "jo_document_number");
         }
 
-        function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
+        function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#joModal';
             if (currentProcessType == 'jo')
                 modalType = '#joModal';
@@ -3186,9 +3518,9 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id : $("#jo_vendor_id_qt_val").val(),
-                            header_book_id : $("#jo_book_id").val(),
-                            store_id : $("#store_id_jo").val() || '',
+                            vendor_id: $("#jo_vendor_id_qt_val").val(),
+                            header_book_id: $("#jo_book_id").val(),
+                            store_id: $("#store_id_jo").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -3217,7 +3549,7 @@
                         }
                     });
                 },
-                appendTo : modalType,
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -3252,56 +3584,178 @@
         }
 
 
-        function getJobOrders()
-        {
-            const ajaxUrl = '{{ route("material-receipt.get.jo", ["type" => "create"]) }}';
+        function getJobOrders() {
+            const ajaxUrl = '{{ route('material-receipt.get.jo', ['type' => 'create']) }}';
             var columns = [];
-            columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
-                { data: 'jo_doc', name: 'jo_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'jo_date', name: 'jo_date', render: renderData, orderable: false, searchable: false },
-                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
-                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+            columns = [{
+                    data: 'id',
+                    visible: false,
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'select_checkbox',
+                    name: 'select_checkbox',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'vendor',
+                    name: 'vendor',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'jo_doc',
+                    name: 'jo_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'jo_date',
+                    name: 'jo_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_doc',
+                    name: 'si_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'si_date',
+                    name: 'si_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_doc',
+                    name: 'ge_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_date',
+                    name: 'ge_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_code',
+                    name: 'item_code',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_name',
+                    name: 'item_name',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'attributes',
+                    name: 'attributes',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'order_qty',
+                    name: 'order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inv_order_qty',
+                    name: 'inv_order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'ge_qty',
+                    name: 'ge_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'grn_qty',
+                    name: 'grn_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty',
+                    name: 'balance_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'rate',
+                    name: 'rate',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'total_amount',
+                    name: 'total_amount',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'payment_term', name: 'payment_term', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'payment_term',
+                    name: 'payment_term',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'credit_days', name: 'credit_days', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'credit_days',
+                    name: 'credit_days',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -3317,20 +3771,19 @@
         });
 
         /*Checkbox for jo/si item list*/
-        $(document).on('change','.jo-order-detail > thead .form-check-input',(e) => {
+        $(document).on('change', '.jo-order-detail > thead .form-check-input', (e) => {
             if (e.target.checked) {
-                $(".jo-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',true);
+                $(".jo-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', true);
                 });
             } else {
-                $(".jo-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',false);
+                $(".jo-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', false);
                 });
             }
         });
 
-        function getSelectedJoIDS()
-        {
+        function getSelectedJoIDS() {
             let ids = [];
             let asnIds = [];
             let asnItemIds = [];
@@ -3520,7 +3973,7 @@
             asnProcess(processData, 'jo-process');
         });
 
-         /*Open So model*/
+        /*Open So model*/
         let soOrderTable;
         $(document).on('click', '.soSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
@@ -3539,8 +3992,7 @@
             }
         });
 
-        function getSelectedSoTypes()
-        {
+        function getSelectedSoTypes() {
             let moduleTypes = [];
             $('.so_item_checkbox:checked').each(function() {
                 moduleTypes.push($(this).attr('data-module'));
@@ -3548,15 +4000,15 @@
             return moduleTypes;
         }
 
-        function openSaleRequest()
-        {
-            initializeAutocompleteSQt("so_vendor_code_input_qt", "so_vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-            initializeAutocompleteSQt("so_document_no_input_qt", "so_document_id_qt_val", "so_document_qt", "document_number", "");
+        function openSaleRequest() {
+            initializeAutocompleteSQt("so_vendor_code_input_qt", "so_vendor_id_qt_val", "vendor_list", "vendor_code",
+                "company_name");
+            initializeAutocompleteSQt("so_document_no_input_qt", "so_document_id_qt_val", "so_document_qt",
+                "document_number", "");
             initializeAutocompleteSQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
         }
 
-        function initializeAutocompleteSQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
-        {
+        function initializeAutocompleteSQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#soModal';
 
             $("#" + selector).autocomplete({
@@ -3568,9 +4020,9 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id : $("#vendor_id_qt_val").val(),
-                            header_book_id : $("#book_id").val(),
-                            item_search : $("#item_search_id_qt_val").val() || '',
+                            vendor_id: $("#vendor_id_qt_val").val(),
+                            header_book_id: $("#book_id").val(),
+                            item_search: $("#item_search_id_qt_val").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -3597,7 +4049,7 @@
                         }
                     });
                 },
-                appendTo : modalType,
+                appendTo: modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
@@ -3631,46 +4083,144 @@
             return data ? data : '';
         }
 
-        function getSaleOrders()
-        {
-            const ajaxUrl = '{{ route("material-receipt.get.so", ["type" => "create"]) }}';
+        function getSaleOrders() {
+            const ajaxUrl = '{{ route('material-receipt.get.so', ['type' => 'create']) }}';
             var columns = [];
-            columns = [
-                { data: 'id',visible: false, orderable: true, searchable: false},
-                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
-                { data: 'so_doc', name: 'so_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'so_date', name: 'so_date', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
-                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
-                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+            columns = [{
+                    data: 'id',
+                    visible: false,
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'select_checkbox',
+                    name: 'select_checkbox',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'vendor',
+                    name: 'vendor',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'so_doc',
+                    name: 'so_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'so_date',
+                    name: 'so_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_doc',
+                    name: 'ge_doc',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'ge_date',
+                    name: 'ge_date',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_code',
+                    name: 'item_code',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'item_name',
+                    name: 'item_name',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'attributes',
+                    name: 'attributes',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'order_qty',
+                    name: 'order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'inv_order_qty',
+                    name: 'inv_order_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'ge_qty',
+                    name: 'ge_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'grn_qty',
+                    name: 'grn_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'balance_qty',
+                    name: 'balance_qty',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'rate',
+                    name: 'rate',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
-                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                {
+                    data: 'total_amount',
+                    name: 'total_amount',
+                    render: renderData,
+                    orderable: false,
+                    searchable: false,
+                    createdCell: function(td, cellData, rowData, row, col) {
                         $(td).addClass('text-end');
                     }
                 },
@@ -3686,20 +4236,19 @@
         });
 
         /*Checkbox for po/si item list*/
-        $(document).on('change','.so-order-detail > thead .form-check-input',(e) => {
+        $(document).on('change', '.so-order-detail > thead .form-check-input', (e) => {
             if (e.target.checked) {
-                $(".so-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',true);
+                $(".so-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', true);
                 });
             } else {
-                $(".so-order-detail > tbody .form-check-input").each(function(){
-                    $(this).prop('checked',false);
+                $(".so-order-detail > tbody .form-check-input").each(function() {
+                    $(this).prop('checked', false);
                 });
             }
         });
 
-        function getSelectedSoIDS()
-        {
+        function getSelectedSoIDS() {
             let ids = [];
             let referenceNos = [];
             $('.so_item_checkbox:checked').each(function() {
@@ -3754,9 +4303,10 @@
                     minLength: 0,
                     source: function(request, response) {
                         let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="[item_id]"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                        $("#itemTable tbody [id*='row_']").each(function(index, item) {
+                            if (Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find(
+                                    '[name*="[item_id]"]').val()));
                             }
                         });
                         $.ajax({
@@ -3765,8 +4315,8 @@
                             dataType: 'json',
                             data: {
                                 q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                                type: 'goods_item_list',
+                                selectedAllItemIds: JSON.stringify(selectedAllItemIds)
                             },
                             success: function(data) {
                                 response($.map(data, function(item) {
@@ -3775,18 +4325,19 @@
                                         label: `${item.item_name} (${item.item_code})`,
                                         code: item.item_code || '',
                                         item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                        is_attr:item.item_attributes_count,
+                                        item_name: item.item_name,
+                                        uom_name: item.uom?.name,
+                                        uom_id: item.uom_id,
+                                        hsn_id: item.hsn?.id,
+                                        hsn_code: item.hsn?.code,
+                                        alternate_u_o_ms: item.alternate_u_o_ms,
+                                        is_attr: item.item_attributes_count,
                                     };
                                 }));
                             },
                             error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
+                                console.error('Error fetching customer data:', xhr
+                                    .responseText);
                             }
                         });
                     },
@@ -3811,19 +4362,21 @@
                         $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        if (ui.item?.alternate_u_o_ms) {
+                            for (let alterItem of ui.item.alternate_u_o_ms) {
+                                uomOption +=
+                                    `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
                         $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
-                            if(ui.item.is_attr) {
+                            if (ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('')
+                                    .focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -3833,7 +4386,7 @@
                     change: function(event, ui) {
                         if (!ui.item) {
                             $(this).val("");
-                                // $('#itemId').val('');
+                            // $('#itemId').val('');
                             $(this).attr('data-name', '');
                             $(this).attr('data-code', '');
                         }
@@ -3848,7 +4401,7 @@
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val() || '';
             let groupItems = [];
-            $('tr[data-group-item]').each(function () {
+            $('tr[data-group-item]').each(function() {
                 let groupItemData = $(this).data('group-item');
                 groupItems.push(groupItemData);
             });
@@ -3858,17 +4411,17 @@
             ids = JSON.stringify(ids);
             moduleTypes = JSON.stringify(moduleTypes);
             let type = 'so'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route("material-receipt.process.so-item") }}'
-            + '?ids=' + encodeURIComponent(ids)
-            + '&type=' + type
-            + '&moduleTypes=' + moduleTypes
-            + '&tableRowCount=' + tableRowCount
-            + '&currency_id=' + encodeURIComponent(currencyId)
-            + '&d_date=' + encodeURIComponent(transactionDate)
+            let actionUrl = '{{ route('material-receipt.process.so-item') }}' +
+                '?ids=' + encodeURIComponent(ids) +
+                '&type=' + type +
+                '&moduleTypes=' + moduleTypes +
+                '&tableRowCount=' + tableRowCount +
+                '&currency_id=' + encodeURIComponent(currencyId) +
+                '&d_date=' + encodeURIComponent(transactionDate)
             // + '&groupItems=' + encodeURIComponent(groupItems);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         let soOrder = data?.data?.saleOrder;
                         vendorOnChange(data?.data?.vendor?.id, 'so', soOrder.id);
                         let result = getSelectedSoIDS();
@@ -3891,7 +4444,8 @@
                         let finalExpenses = data?.data?.finalExpenses;
 
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data
+                                .pos);
                         } else {
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
@@ -3899,13 +4453,13 @@
                         $("#soModal").modal('hide');
                         $("select[name='currency_id']").prop('disabled', true);
                         $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
+                        $("#vendor_name").prop('readonly', true);
                         $(".editAddressBtn").addClass('d-none');
-                        $("#vendor_name").prop('readonly',true);
-                        if(soOrder.type == 'supplier-invoice'){
+                        $("#vendor_name").prop('readonly', true);
+                        if (soOrder.type == 'supplier-invoice') {
                             $("[name='supplier_invoice_no']").val(soOrder.document_number);
                             $("[name='supplier_invoice_date']").val(soOrder.document_date);
-                        } else{
+                        } else {
                             $("[name='supplier_invoice_no']").val();
                             $("[name='supplier_invoice_date']").val();
                         }
@@ -3914,11 +4468,11 @@
                         let locationId = $("[name='header_store_id']").val();
                         // getLocation(locationId);
 
-                        if(finalDiscounts.length) {
+                        if (finalDiscounts.length) {
                             let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
+                            finalDiscounts.forEach(function(item, index) {
                                 index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
+                                rows += `<tr class="display_summary_discount_row">
                                         <td>${index}</td>
                                         <td>${item.ted_name}
                                             <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
@@ -3940,18 +4494,19 @@
                                     </tr>`
                             });
 
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row')
+                                .remove();
                             $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
                             $("#f_header_discount_hidden").removeClass('d-none');
                         } else {
                             $("#f_header_discount_hidden").addClass('d-none');
                         }
 
-                        if(finalExpenses.length) {
+                        if (finalExpenses.length) {
                             let rows = '';
-                            finalExpenses.forEach(function(item,index) {
+                            finalExpenses.forEach(function(item, index) {
                                 index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
+                                rows += `<tr class="display_summary_exp_row">
                                         <td>${index}</td>
                                         <td>${item.ted_name}
                                             <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
@@ -3980,30 +4535,32 @@
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
-                            if(idsLength > 1)
-                            {
-                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                            if (idsLength > 1) {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index,
+                                    item) {
                                     currentIndex = index + 1;
-                                    if(tableRowCount>0)
-                                    {
+                                    if (tableRowCount > 0) {
                                         currentIndex = tableRowCount + 1;
                                     }
-                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                    setAttributesUIHelper(currentIndex,
+                                        "#itemTable");
                                 });
                             }
                             currentIndex = tableRowCount + 1;
-                            setAttributesUIHelper(currentIndex,"#itemTable");
-                        },500);
+                            setAttributesUIHelper(currentIndex, "#itemTable");
+                        }, 3000);
                     }
-                    if(data.status == 422) {
+                    if (data.status == 422) {
                         $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
+                        $("#vendor_name").val('').prop('readonly', false);
                         $("#vendor_id").val('');
                         $("#vendor_code").val('');
                         $("#hidden_state_id").val('');
                         $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $("select[name='currency_id']").empty().append(
+                            '<option value="">Select</option>').prop('readonly', false);
+                        $("select[name='payment_term_id']").empty().append(
+                            '<option value="">Select</option>').prop('readonly', false);
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({
@@ -4033,7 +4590,7 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:type,
+                            type: type,
                             ids: JSON.stringify(ids)
                         },
                         success: function(data) {
@@ -4079,15 +4636,15 @@
             });
         }
 
-        function getLocation(locationId = '')
-        {
-            let actionUrl = '{{ route("store.get") }}'+'?location_id='+locationId;
+        function getLocation(locationId = '') {
+            let actionUrl = '{{ route('store.get') }}' + '?location_id=' + locationId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    if(data.status == 200) {
+                    if (data.status == 200) {
                         let options = '';
                         data.data.locations.forEach(function(location) {
-                            options+= `<option value="${location.id}">${location.store_code}</option>`;
+                            options +=
+                                `<option value="${location.id}">${location.store_code}</option>`;
                         });
                         $("[name='header_store_id']").empty().append(options);
                     } else {
@@ -4104,9 +4661,9 @@
         setTimeout(() => {
             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                 let currentIndex = index + 1;
-                setAttributesUIHelper(currentIndex,"#itemTable");
+                setAttributesUIHelper(currentIndex, "#itemTable");
             });
-        },100);
+        }, 100);
         // ASN Process
         function asnProcess(asnData, moduleProcess) {
             const current_row_count = $("tbody tr[id*='row_']").length;
@@ -4129,26 +4686,26 @@
             const transactionDate = $("[name='document_date']").val();
             const type = $("meta[name='route-type']").attr("content"); // blade->meta
 
-            const baseRoute = processType === 'jo'
-                ? '{{ route("material-receipt.process.jo-item") }}'
-                : '{{ route("material-receipt.process.po-item") }}';
+            const baseRoute = processType === 'jo' ?
+                '{{ route('material-receipt.process.jo-item') }}' :
+                '{{ route('material-receipt.process.po-item') }}';
 
             const actionUrl = baseRoute
-                .replace(':type', type)
-                + '?ids=' + encodeURIComponent(ids)
-                + '&asnIds=' + encodeURIComponent(asnIds)
-                + '&asnItemIds=' + encodeURIComponent(asnItemIds)
-                + '&geIds=' + encodeURIComponent(geIds)
-                + '&geItemIds=' + encodeURIComponent(geItemIds)
-                + '&moduleTypes=' + moduleTypes
-                + '&paymentTerms=' + paymentTerms
-                + '&creditDays=' + creditDays
-                + '&tableRowCount=' + tableRowCount
-                + '&currency_id=' + encodeURIComponent(currencyId)
-                + '&d_date=' + encodeURIComponent(transactionDate)
-                + '&existPaymentTermId=' + encodeURIComponent(existPaymentTermId)
-                + '&existCreditDays=' + encodeURIComponent(existCreditDays)
-                + '&current_row_count=' + current_row_count;
+                .replace(':type', type) +
+                '?ids=' + encodeURIComponent(ids) +
+                '&asnIds=' + encodeURIComponent(asnIds) +
+                '&asnItemIds=' + encodeURIComponent(asnItemIds) +
+                '&geIds=' + encodeURIComponent(geIds) +
+                '&geItemIds=' + encodeURIComponent(geItemIds) +
+                '&moduleTypes=' + moduleTypes +
+                '&paymentTerms=' + paymentTerms +
+                '&creditDays=' + creditDays +
+                '&tableRowCount=' + tableRowCount +
+                '&currency_id=' + encodeURIComponent(currencyId) +
+                '&d_date=' + encodeURIComponent(transactionDate) +
+                '&existPaymentTermId=' + encodeURIComponent(existPaymentTermId) +
+                '&existCreditDays=' + encodeURIComponent(existCreditDays) +
+                '&current_row_count=' + current_row_count;
 
             fetch(actionUrl)
                 .then(res => res.json())
@@ -4235,7 +4792,8 @@
                         $("[name='transporter_name']").val(vendorAsn.transporter_name);
                         $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
                     } else {
-                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']")
+                            .val('');
                     }
 
                     // Expenses
@@ -4299,7 +4857,7 @@
                         $("#new_exp_perc").val("").prop("readonly", false);
                         $("#new_exp_value").val("").prop("readonly", false);
                         let total_head_exp = 0;
-                        $("[name*='[total]']").each(function (index, item) {
+                        $("[name*='[total]']").each(function(index, item) {
                             total_head_exp += Number($(item).val());
                         });
 
@@ -4315,15 +4873,15 @@
                             setAttributesUIHelper(index + 1, "#itemTable");
                         });
                     }, 3000);
-                    const firstPaymentId   = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0
-                        ? asnData.payment_ids[0]
-                        : '';
-                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0
-                        ? asnData.payment_terms[0]
-                        : '';
-                    const firstCreditDays  = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0
-                        ? asnData.credit_days[0]
-                        : 0;
+                    const firstPaymentId = Array.isArray(asnData.payment_ids) && asnData.payment_ids.length > 0 ?
+                        asnData.payment_ids[0] :
+                        '';
+                    const firstPaymentTerm = Array.isArray(asnData.payment_terms) && asnData.payment_terms.length > 0 ?
+                        asnData.payment_terms[0] :
+                        '';
+                    const firstCreditDays = Array.isArray(asnData.credit_days) && asnData.credit_days.length > 0 ?
+                        asnData.credit_days[0] :
+                        0;
                     let payOption = '';
                     if (firstPaymentId && firstPaymentTerm) {
                         payOption = `<option value="${firstPaymentId}">${firstPaymentTerm}</option>`;
@@ -4345,7 +4903,8 @@
             $(".editAddressBtn").removeClass('d-none');
             $("#vendor_name").val('').prop('readonly', false);
             $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
-            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html(
+                '<option value="">Select</option>');
             $(".shipping_detail, .billing_detail").text('-');
             $("#reference_from").removeClass('d-none');
             $('.asn_process').prop('disabled', false);
@@ -4361,24 +4920,24 @@
         function applyInspectionState() {
             const inspectionRequired = $('.inspection_required').val() === 'yes';
 
-            $('tr[id^="row_"]').each(function () {
+            $('tr[id^="row_"]').each(function() {
                 const $row = $(this);
-                const $order   = $row.find('input[name*="[order_qty]"]');
+                const $order = $row.find('input[name*="[order_qty]"]');
                 const $accepted = $row.find('input.accepted_qty');
                 const $rejected = $row.find('input.rejected_qty');
 
                 const orderQty = parseFloat($order.val()) || 0;
 
                 if (inspectionRequired) {
-                // Required: accepted = 0; lock both fields
-                $accepted.val(0).prop('readonly', true);
-                $rejected.prop('readonly', true);
-                // (Optional) also zero rejected if you want:
-                // $rejected.val(0);
+                    // Required: accepted = 0; lock both fields
+                    $accepted.prop('readonly', true);
+                    $rejected.prop('readonly', true);
+                    // (Optional) also zero rejected if you want:
+                    // $rejected.val(0);
                 } else {
-                // Not required: accepted = order qty; unlock both fields
-                $accepted.val(orderQty).prop('readonly', true);
-                $rejected.prop('readonly', true);
+                    // Not required: accepted = order qty; unlock both fields
+                    $accepted.val(orderQty).prop('readonly', true);
+                    $rejected.prop('readonly', true);
                 }
             });
         }

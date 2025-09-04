@@ -2,6 +2,7 @@
 
 use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
+use App\Http\Controllers\PurchaseOrderImportController;
 use App\Models\DefectNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -191,6 +192,7 @@ use App\Http\Controllers\LoanManagement\LoanDisbursementReportController;
 use App\Http\Controllers\ErpItemBundleController;
 use App\Http\Controllers\RgrController;
 use App\Http\Controllers\WHM\RgrJobController;
+use App\Http\Controllers\PrintBarcodeController;
 
 
 
@@ -345,7 +347,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/group/generate-prefix', [GroupController::class, 'generate_prefix'])->name('generate-group-prefix');
     Route::post('/group/check-prefix', [GroupController::class, 'checkPrefix'])->name('groups-check-prefix');
     Route::resource('ledgers', LedgerController::class)->except(['show']);
-    Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
+    Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');
+    ;
     Route::get('/search/ledger', [LedgerController::class, 'getLedger'])->name('ledger.search');
     Route::get('/ledger/import', [LedgerController::class, 'showImportForm'])->name('ledger.show.import');
     Route::post('/ledger/import', [LedgerController::class, 'import'])->name('ledger.import');
@@ -431,7 +434,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/import', 'showImportForm')->name('vendors.import');
         Route::post('/import', 'import')->name('vendors.import.post');
         Route::get('export-successful-vendors', 'exportSuccessfulVendors')->name('vendors.export.successful');
-        Route::get('export-failed-vendors', 'exportFailedVendors')->name('vendors.export.failed');;
+        Route::get('export-failed-vendors', 'exportFailedVendors')->name('vendors.export.failed');
+        ;
         Route::get('/{id}', 'show')->name('vendor.show');
         Route::get('/{id}/edit', 'edit')->name('vendor.edit');
         Route::put('/{id}', 'update')->name('vendor.update');
@@ -472,8 +476,10 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/import', 'showImportForm')->name('customers.import');
         Route::post('/import', 'import')->name('customers.import.post');
         Route::post('/revoke', 'revoke')->name('customer.revoke');
-        Route::get('export-successful-customers', 'exportSuccessfulCustomers')->name('customers.export.successful');;
-        Route::get('export-failed-customers', 'exportFailedCustomers')->name('customers.export.failed');;
+        Route::get('export-successful-customers', 'exportSuccessfulCustomers')->name('customers.export.successful');
+        ;
+        Route::get('export-failed-customers', 'exportFailedCustomers')->name('customers.export.failed');
+        ;
         Route::post('/generate-item-code', 'generateCustomerCode')->name('generate-customer-code');
         Route::get('/search', 'getCustomer')->name('customers.search');
         Route::get('/{id}', 'show')->name('customer.show');
@@ -710,7 +716,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/', 'store')->name('item.store');
         Route::post('/revoke', 'revoke')->name('item.revoke');
         Route::get('/import', 'showImportForm')->name('items.show.import');
-        Route::get('export-successful-items', 'exportSuccessfulItems')->name('items.export.successful');;
+        Route::get('export-successful-items', 'exportSuccessfulItems')->name('items.export.successful');
+        ;
         Route::get('export-failed-items', 'exportFailedItems')->name('items.export.failed');
         Route::post('/import', 'import')->name('items.import');
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-item-code');
@@ -1604,13 +1611,14 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('gate-entry', 'gateEntry')->name('gate-entry');
         });
 
-    // # All type documents Amendements
-    // Route::prefix('amendement')
-    // ->name('document.amendement.')
-    // ->controller(AmendementController::class)
-    // ->group(function () {
-    //     Route::get('amendment-submit/{id}', 'mrnAmendmentSubmit')->name('material-receipt');
-    // });
+    # WHM Barcode Routes
+    Route::name('barcodes.')
+        ->controller(PrintBarcodeController::class)
+        ->group(function () {
+            Route::get('barcodes/{id}', 'page')->name('page');
+            Route::get('barcodes/{id}/data', 'data')->name('data');
+            Route::get('barcodes/print/{module_type}/{id}', 'print')->name('print');
+        });
 
     // Inventory Report routes
     Route::prefix('inventory-reports')
@@ -1897,7 +1905,7 @@ Route::middleware(['user.auth'])->group(function () {
             // Route::post('location-listing', 'locationListing')->name('get.locations');
             // Route::post('sub-location-listing', 'subLocationListing')->name('get.sub-locations');
             // Route::post('mrn-listing', 'mrnListing')->name('get.mrn-listing');
-
+    
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
             Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
@@ -2478,7 +2486,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/logistics/route-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
     Route::delete('/logistics/route-master/delete-multiple', [ErpRouteMasterController::class, 'deleteMultiple'])->name('logistics.route-master.delete-multiple');
     Route::get('/logistics/route-master/get-states-by-country', [ErpRouteMasterController::class, 'getStatesByCountry'])->name('logistics.route-master.get-states-by-country');
-    Route::get('/logistics/route-master/get-cities-by-state',   [ErpRouteMasterController::class, 'getCitiesByState'])->name('logistics.route-master.get-cities-by-state');
+    Route::get('/logistics/route-master/get-cities-by-state', [ErpRouteMasterController::class, 'getCitiesByState'])->name('logistics.route-master.get-cities-by-state');
 
     //Lorry Receipt
     Route::get('/logistics/lorry-receipt', [ErpLorryReceiptController::class, 'index'])->name('logistics.lorry-receipt.index');
@@ -2525,7 +2533,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('store.create');
         Route::post('/', 'store')->name('store.store');
         Route::post('/rack', 'rackStore')->name('rack.store');
-    Route::post('/shelf', 'shelfStore')->name('shelf.store');
+        Route::post('/shelf', 'shelfStore')->name('shelf.store');
         Route::post('/bin', 'binStore')->name('bin.store');
         Route::get('/get-racks', 'getRacks')->name('store.getRacks');
         Route::get('/get-shelfs', 'getShelves')->name('store.getShelves');
@@ -2694,7 +2702,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
             // Route::post('/assessment-proceed', 'assessmentProceed')->name('assessment-proceed');
-
+    
         });
 
     Route::prefix('admin')->name('admin.')->group(function () {
@@ -3142,9 +3150,17 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
     });
+    Route::prefix('purchase-order/import')->controller(PurchaseOrderImportController::class)->name('purchaseOrder.')->group(function () {
+        Route::get('/', 'import')->name('import.index');
+        Route::post('save', 'importSave')->name('import.save');
+        Route::post('store', 'bulkUploadOrders')->name('import.store');
+        Route::post('item/save', 'importSaveItem')->name('import.item.save');
+        Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
+    });
     Route::get('/import/{alias}', [GenericImportController::class, 'import'])->name('generic.import.page');
     Route::post('/import-save/{alias}', [GenericImportController::class, 'importSave'])->name('generic.import.save');
     Route::get('/import-sample/{alias}', [GenericImportController::class, 'downloadSample'])->name('generic.import.sample.download');
+    Route::post('/import-errors/{alias}', [GenericImportController::class, 'downloadInvalid'])->name('generic.import.invalid.download');
 
 
 

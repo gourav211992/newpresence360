@@ -44,7 +44,7 @@ use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
 use App\Http\Requests\ErpSaleInvoiceRequest;
-use App\Lib\Services\WHM\WhmJob;
+use App\Lib\Services\WHM\DispatchJob;
 use App\Models\Country;
 use App\Models\Address;
 use App\Models\DiscountMaster;
@@ -1701,7 +1701,7 @@ class ErpSaleInvoiceController extends Controller
                 // Create job
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                     if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                        (new WhmJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
+                        (new DispatchJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
                     }
                 }
                 DB::commit();

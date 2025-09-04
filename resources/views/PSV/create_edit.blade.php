@@ -579,6 +579,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+
                 <!-- File Upload -->
                 <div class="mb-3">
                     <label for="fileUpload" class="form-label fw-semibold">Upload File</label>
@@ -606,6 +607,7 @@
                 <!-- Action Buttons -->
                 <div class="mt-4 text-end">
                     <button type="button" class="btn btn-success" id="sampleBtn">Download Sample</button>
+                    <button type="button" class="btn btn-warning" id="errorDownloadBtn">Download Invalid Rows</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelBtn">Cancel</button>
                     <button type="button" class="btn btn-primary" id="proceedBtn" style="display:none;">Proceed</button>
                 </div>
@@ -624,8 +626,11 @@
                             </button>
                         </li>
                     </ul>
+
                     <button type="button" class="btn btn-primary mt-3 d-none" id="submitBtn">Import Items</button>
+
                     <div class="tab-content border border-top-0" id="importTabsContent">
+                        <!-- Valid Items Tab -->
                         <div class="tab-pane fade show active" id="validTabPane" role="tabpanel" aria-labelledby="valid-tab">
                             <div class="table-responsive">
                                 <table class="datatables-basic table myrequesttablecbox">
@@ -636,6 +641,8 @@
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Invalid Items Tab -->
                         <div class="tab-pane fade" id="invalidTabPane" role="tabpanel" aria-labelledby="invalid-tab">
                             <div class="table-responsive">
                                 <table class="datatables-basic table myrequesttablecbox">
@@ -647,11 +654,14 @@
                             </div>
                         </div>
                     </div>
-                </div>
+
+                </div> <!-- End parsedPreview -->
+
             </div>
         </div>
     </div>
 </div>
+
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 {{-- 
@@ -4416,251 +4426,234 @@ document.addEventListener('input', function (e) {
         form.append(`<input type="hidden" name="psv_header_id" value="${psvHeaderId ?? ''}">`);
     }
 
-$(function() {
-    // Handle file selection
-    $(document).on('change', '#fileUpload', function (e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        handleFileSelected(file);
-    });
-    let parsedValidRows = [];
-    // Proceed button AJAX upload
-    $(document).on('click', '#proceedBtn', function () {
-        const fileInput = $('#fileUpload')[0];
-        if (!fileInput.files.length) {
-            displayError('Please select a file to upload.');
-            return;
-        }
-        const file = fileInput.files[0];
-        let formData = new FormData();
-        formData.append('attachment', file);
+    $(function() {
+        let parsedValidRows = [];
 
-        // Add any extra data if needed (store_id/type/psv_header_id)
-        $('#importItemModal input[type=hidden]').each(function() {
-            formData.append($(this).attr('name'), $(this).val());
+        // Handle file selection
+        $(document).on('change', '#fileUpload', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            handleFileSelected(file); // optional function for UI preview
+            $('#fileNameDisplay').removeClass('d-none');
+            $('#selectedFileName').text(file.name);
+            $('#proceedBtn').show();
         });
-        $('#upload-error').hide().html('');
-        $('#uploadProgress').removeClass('d-none');
-        $('#uploadProgressBar').css('width', '0%').text('0%');
 
-        $.ajax({
-            url: "{{ route('generic.import.save', ['alias' => 'psv']) }}",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            xhr: function () {
-                let xhr = new window.XMLHttpRequest();
-                xhr.upload.addEventListener("progress", function (evt) {
-                    if (evt.lengthComputable) {
-                        const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                        $('#uploadProgressBar').css('width', percentComplete + '%').text(percentComplete + '%');
-                    }
-                }, false);
-                return xhr;
-            },
-            success: function (response) {
-                $('#uploadProgressBar').addClass('bg-success').text('Uploaded');
-
-                const validRows = response.data.valid || [];
-                const invalidRows = response.data.invalid || [];
-                const headers = response.headers || {};
-
-                // Update valid count
-                $('#valid-count').text(`(${validRows.length})`);
-                $('#invalid-count').text(`(${invalidRows.length})`);
-
-                // Show preview section
-                $('#parsedPreview').removeClass('d-none').show();
-
-                // Build table headers dynamically
-                function buildHeaderRow(headersMap, target) {
-                    let headerHtml = '';
-                    for (const key in headersMap) {
-                        headerHtml += `<th>${headersMap[key]}</th>`;
-                    }
-                    headerHtml += `<th>Row</th><th>Errors</th>`;
-                    $(target).html(headerHtml);
-                }
-
-                buildHeaderRow(headers, '#valid-table-header');
-                buildHeaderRow(headers, '#invalid-table-header');
-
-                // Build table body
-                function buildTableRows(data, headersMap) {
-                    return data.map(row => {
-                        let rowHtml = '<tr>';
-                        for (const key in headersMap) {
-                            rowHtml += `<td>${row[key] ?? ''}</td>`;
-                        }
-                        rowHtml += `<td>${row.row_number ?? ''}</td>`;
-                        if (row.errors?.length) {
-                            const errors = row.errors.map(e => `<li>${e}</li>`).join('');
-                            rowHtml += `<td><ul class="mb-0">${errors}</ul></td>`;
-                        } else {
-                            rowHtml += `<td>-</td>`;
-                        }
-                        rowHtml += '</tr>';
-                        return rowHtml;
-                    }).join('');
-                }
-                parsedValidRows = validRows;
-                $('#valid-table-body').html(buildTableRows(validRows, headers));
-                $('#invalid-table-body').html(buildTableRows(invalidRows, headers));
-                $("#submitBtn").removeClass('d-none');
-                window.lastParsedImport = {
-                    valid: validRows,
-                    invalid: invalidRows,
-                    headers: headers
-                };
-                Swal.fire({
-                    title: 'Success!',
-                    text: response.message || 'File uploaded and parsed successfully.',
-                    icon: 'success',
-                });
-            },
-            error: function (xhr) {
-                $('#upload-error').removeClass('d-none').text(xhr.responseJSON?.message || 'Upload failed');
-                $('#uploadProgress').addClass('d-none');
-                $('#uploadProgressBar').removeClass('bg-success').css('width', '0%').text('0%');
+        // Proceed button: Upload & parse file
+        $(document).on('click', '#proceedBtn', function () {
+            const fileInput = $('#fileUpload')[0];
+            if (!fileInput.files.length) {
+                Swal.fire('Error', 'Please select a file to upload.', 'error');
+                return;
             }
-        });
-    });
-    
+            const file = fileInput.files[0];
+            let formData = new FormData();
+            formData.append('attachment', file);
 
-    $('#submitBtn').on('click', function () {
-        const validRows = window.lastParsedImport?.valid || [];
-        const headers = window.lastParsedImport?.headers || {};
-        const tbody = $('#item_header');
-        console.log('table',tbody);
-        tbody.empty(); // Clear existing rows
-        let currentIndex = tbody.find('tr').length;
-        console.log('validRows', validRows);
-        validRows.forEach((row, i) => {
-            console.log('Processing row:', row);
-            const index = currentIndex + i;
-            const itemId = row.item_id || '';
-            const itemCode = row.item_code || '';
-            const itemName = row.item_name || '';
-            const uomId = row.uom_id || '';
-            const uomName = row.uom_name || '';
-            const rate = row.rate || 0;
-            const physicalQty = row.physical_qty || 0;
-            const remarks = row.remarks || '';
-            const attributeValue = row.attribute_value || '';
-            const attributeGroupId = row.attribute_group_id || '';
-            const itemValue = (rate * physicalQty).toFixed(2);
+            // Include hidden inputs if needed
+            $('#importItemModal input[type=hidden]').each(function() {
+                formData.append($(this).attr('name'), $(this).val());
+            });
 
-            const rowHtml = `
-            <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');">
-                <input type="hidden" id="psv_item_id_${index}" name="psv_item_id[]" value="">
-                <td class="customernewsection-form">
-                    <div class="form-check form-check-primary custom-checkbox">
-                        <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_${index}" del-index="${index}">
-                        <label class="form-check-label" for="item_checkbox_${index}"></label>
-                    </div>
-                </td>
-                <td class="poprod-decpt">
-                    <input type="text" id="items_dropdown_${index}" name="item_code[${index}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${row.item_name ?? ''}" data-code="${row.item_code ?? ''}" data-id="${row.item_id ?? ''}" hsn_code="${row.hsn_code ?? ''}" item-name="${row.item_name ?? ''}" specs='${JSON.stringify(row.specifications ?? [])}' attribute-array='${JSON.stringify(row.item_attribute_array ?? [])}' value="${row.item_code ?? ''}" readonly>
-                    <input type="hidden" name="item_id[]" id="items_dropdown_${index}_value" value="${row.item_id ?? ''}">
-                </td>
-                <td>
-                    <input type="text" id="items_name_${index}" class="form-control mw-100" value="${itemName}" name="item_name[${index}]" readonly>
-                </td>
-                <td id="attribute_section_${index}">
-                    <button id="attribute_button_${index}" type="button" class="btn p-25 btn-sm btn-outline-secondary"" onclick="setItemAttributes('items_dropdown_${index}', '${index}', false);" data-bs-toggle="modal" data-bs-target="#attribute">Attributes</button>
-                    <input type="hidden" name="attribute_value_${index}" value="${attributeValue}">
-                </td>
-                <td>
-                    <select class="form-select" name="uom_id[]" id="uom_dropdown_${index}">
-                        <option value="${uomId}" selected>${uomName}</option>
-                    </select>
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_physical_qty_${index}" value="${physicalQty}" name="item_physical_qty[${index}]" class="form-control mw-100 text-end" oninput="setVariance(this, ${index});setValue(${index});">
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_confirmed_qty_${index}" value="0.00" name="item_confirmed_qty[${index}]" class="form-control mw-100 text-end" readonly>
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_unconfirmed_qty_${index}" value="0.00" name="item_unconfirmed_qty[${index}]" class="form-control mw-100 text-end" readonly>
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_variance_qty_${index}" value="${physicalQty}" name="item_balance_qty[${index}]" class="form-control mw-100 text-end" readonly>
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_rate_${index}" value="${rate}" name="item_rate[${index}]" class="form-control mw-100 text-end" oninput="setValue(${index});">
-                </td>
-                <td class="numeric-alignment">
-                    <input type="text" id="item_value_${index}" value="${itemValue}" name="item_value[${index}]" class="form-control mw-100 text-end" readonly>
-                </td>
-                <td>
-                    <div class="d-flex">
-                        <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick="setItemRemarks('item_remarks_${index}');">
-                            <span data-bs-toggle="tooltip" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span>
-                        </div>
-                    </div>
-                    <input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]" value="${remarks}">
-                </td>
-            </tr>`;
-            tbody.append(rowHtml);
-             // Post-append initializations
-            initializeAutocomplete1("items_dropdown_" + index, index);
-            onItemClick(index);
-            const itemCodeInput = document.getElementById('items_dropdown_' + index);
-            const uomCodeInput = document.getElementById('uom_dropdown_' + index);
-            itemCodeInput.addEventListener('input', () => checkStockData(index));
-            uomCodeInput.addEventListener('input', () => checkStockData(index));
-            setAttributesUI(index);
-            console.log('Row added:', rowHtml);
-        });
-        console.log('Parsed valid rows:', parsedValidRows);
-        renderIcons()
-        $(".Item_Search_section").hide();
-        $('#importItemModal').modal('hide');
-    });
+            $('#upload-error').hide().html('');
+            $('#uploadProgress').removeClass('d-none');
+            $('#uploadProgressBar').css('width', '0%').text('0%');
 
-    // Cancel button
-    $('#cancelBtn').on('click', function () {
-        $('#fileUpload').val('');
-        $('#fileNameDisplay').hide();
-        $('#upload-error').hide();
-        $('#proceedBtn').hide();
-    });
+            $.ajax({
+                url: "{{ route('generic.import.save', ['alias' => 'psv']) }}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function () {
+                    let xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function (evt) {
+                        if (evt.lengthComputable) {
+                            const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                            $('#uploadProgressBar').css('width', percentComplete + '%').text(percentComplete + '%');
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function (response) {
+                    $('#uploadProgressBar').addClass('bg-success').text('Uploaded');
 
-    // Sample download button
-    $('#sampleBtn').on('click', function () {
-        $.ajax({
-            url: "{{ route('generic.import.sample.download', ['alias' => 'psv']) }}",
-            type: "GET",
-            xhrFields: { responseType: 'blob' },
-            success: function (data, status, xhr) {
-                let disposition = xhr.getResponseHeader('Content-Disposition');
-                let filename = "sample_import.xlsx";
-                if (disposition && disposition.indexOf('filename=') !== -1) {
-                    let matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                    if (matches?.[1]) {
-                        filename = matches[1].replace(/['"]/g, '');
+                    const validRows = response.data.valid || [];
+                    const invalidRows = response.data.invalid || [];
+                    const headers = response.headers || {};
+
+                    $('#valid-count').text(`(${validRows.length})`);
+                    $('#invalid-count').text(`(${invalidRows.length})`);
+                    $('#parsedPreview').removeClass('d-none');
+
+                    // Build table headers
+                    function buildHeaderRow(headersMap, target) {
+                        let headerHtml = '';
+                        for (const key in headersMap) {
+                            headerHtml += `<th>${headersMap[key]}</th>`;
+                        }
+                        headerHtml += `<th>Row</th><th>Errors</th>`;
+                        $(target).html(headerHtml);
                     }
+                    buildHeaderRow(headers, '#valid-table-header');
+                    buildHeaderRow(headers, '#invalid-table-header');
+
+                    // Build table body
+                    function buildTableRows(data, headersMap) {
+                        return data.map(row => {
+                            let rowHtml = '<tr>';
+                            for (const key in headersMap) {
+                                rowHtml += `<td>${row[key] ?? ''}</td>`;
+                            }
+                            rowHtml += `<td>${row.row_number ?? ''}</td>`;
+                            if (row.errors?.length) {
+                                const errors = row.errors.map(e => `<li>${e}</li>`).join('');
+                                rowHtml += `<td><ul class="mb-0">${errors}</ul></td>`;
+                            } else {
+                                rowHtml += `<td>-</td>`;
+                            }
+                            rowHtml += '</tr>';
+                            return rowHtml;
+                        }).join('');
+                    }
+
+                    parsedValidRows = validRows;
+                    $('#valid-table-body').html(buildTableRows(validRows, headers));
+                    $('#invalid-table-body').html(buildTableRows(invalidRows, headers));
+                    window.lastParsedImport = { valid: validRows, invalid: invalidRows, headers: headers };
+                    $("#submitBtn").removeClass('d-none');
+
+                    Swal.fire({
+                        title: 'Success!',
+                        text: response.message || 'File uploaded and parsed successfully.',
+                        icon: 'success',
+                    });
+                },
+                error: function (xhr) {
+                    $('#upload-error').removeClass('d-none').text(xhr.responseJSON?.message || 'Upload failed');
+                    $('#uploadProgress').addClass('d-none');
+                    $('#uploadProgressBar').removeClass('bg-success').css('width', '0%').text('0%');
                 }
-                const blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
+            });
+        });
+
+        // Import valid rows into main table
+        $('#submitBtn').on('click', function () {
+            const validRows = window.lastParsedImport?.valid || [];
+            const tbody = $('#item_header');
+            tbody.empty();
+
+            validRows.forEach((row, i) => {
+                const index = tbody.find('tr').length + i;
+                const itemValue = (row.rate * row.physical_qty).toFixed(2);
+
+                const rowHtml = `
+                <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');">
+                    <input type="hidden" id="psv_item_id_${index}" name="psv_item_id[]" value="">
+                    <td class="customernewsection-form">
+                        <div class="form-check form-check-primary custom-checkbox">
+                            <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_${index}" del-index="${index}">
+                            <label class="form-check-label" for="item_checkbox_${index}"></label>
+                        </div>
+                    </td>
+                    <td class="poprod-decpt">
+                        <input type="text" id="items_dropdown_${index}" name="item_code[${index}]" value="${row.item_code ?? ''}" readonly class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input">
+                        <input type="hidden" name="item_id[]" id="items_dropdown_${index}_value" value="${row.item_id ?? ''}">
+                    </td>
+                    <td><input type="text" id="items_name_${index}" value="${row.item_name ?? ''}" name="item_name[${index}]" class="form-control mw-100" readonly></td>
+                    <td>
+                        <button id="attribute_button_${index}" type="button" class="btn p-25 btn-sm btn-outline-secondary" onclick="setItemAttributes('items_dropdown_${index}', '${index}', false);" data-bs-toggle="modal" data-bs-target="#attribute">Attributes</button>
+                        <input type="hidden" name="attribute_value_${index}" value="${row.attribute_value ?? ''}">
+                    </td>
+                    <td>
+                        <select class="form-select" name="uom_id[]" id="uom_dropdown_${index}">
+                            <option value="${row.uom_id ?? ''}" selected>${row.uom_name ?? ''}</option>
+                        </select>
+                    </td>
+                    <td class="numeric-alignment"><input type="text" id="item_physical_qty_${index}" value="${row.physical_qty ?? 0}" name="item_physical_qty[${index}]" class="form-control mw-100 text-end" oninput="setVariance(this, ${index});setValue(${index});"></td>
+                    <td class="numeric-alignment"><input type="text" id="item_confirmed_qty_${index}" value="0.00" name="item_confirmed_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
+                    <td class="numeric-alignment"><input type="text" id="item_unconfirmed_qty_${index}" value="0.00" name="item_unconfirmed_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
+                    <td class="numeric-alignment"><input type="text" id="item_variance_qty_${index}" value="${row.physical_qty ?? 0}" name="item_balance_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
+                    <td class="numeric-alignment"><input type="text" id="item_rate_${index}" value="${row.rate ?? 0}" name="item_rate[${index}]" class="form-control mw-100 text-end" oninput="setValue(${index});"></td>
+                    <td class="numeric-alignment"><input type="text" id="item_value_${index}" value="${itemValue}" name="item_value[${index}]" class="form-control mw-100 text-end" readonly></td>
+                    <td><input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]" value="${row.remarks ?? ''}"></td>
+                </tr>`;
+                tbody.append(rowHtml);
+
+                // Post-append init functions
+                initializeAutocomplete1("items_dropdown_" + index, index);
+                onItemClick(index);
+                setAttributesUI(index);
+            });
+
+            $(".Item_Search_section").hide();
+            $('#importItemModal').modal('hide');
+        });
+
+        // Cancel button
+        $('#cancelBtn').on('click', function () {
+            $('#fileUpload').val('');
+            $('#fileNameDisplay').addClass('d-none');
+            $('#upload-error').hide();
+            $('#proceedBtn').hide();
+        });
+
+        // Download invalid rows by re-parsing the file
+        $('#errorDownloadBtn').on('click', function () {
+            const fileInput = $('#fileUpload')[0];
+            if (!fileInput.files.length) {
+                Swal.fire('Error', 'Please upload a file first to re-parse.', 'error');
+                return;
+            }
+            const file = fileInput.files[0];
+            let formData = new FormData();
+            formData.append('attachment', file);
+            formData.append('alias', 'psv');
+
+            fetch("{{ route('generic.import.invalid.download', ['alias' => 'psv']) }}", {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (!response.ok) throw new Error('Download failed');
+                return response.blob();
+            }).then(blob => {
                 const link = document.createElement('a');
                 link.href = window.URL.createObjectURL(blob);
-                link.download = filename;
+                link.download = "invalid_rows.xlsx";
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            },
-            error: function () {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to download sample file.',
-                    icon: 'error',
-                });
-            }
+            }).catch(err => {
+                Swal.fire('Error', err.message, 'error');
+            });
         });
-    });
 
+        // Sample download
+        $('#sampleBtn').on('click', function () {
+            $.ajax({
+                url: "{{ route('generic.import.sample.download', ['alias' => 'psv']) }}",
+                type: "GET",
+                xhrFields: { responseType: 'blob' },
+                success: function (data, status, xhr) {
+                    let disposition = xhr.getResponseHeader('Content-Disposition');
+                    let filename = "sample_import.xlsx";
+                    if (disposition && disposition.indexOf('filename=') !== -1) {
+                        let matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                        if (matches?.[1]) filename = matches[1].replace(/['"]/g, '');
+                    }
+                    const blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                },
+                error: function () {
+                    Swal.fire('Error', 'Failed to download sample file.', 'error');
+                }
+            });
+        });
     function handleFileSelected(file) {
         const fileName = file.name;
         const fileSize = file.size;

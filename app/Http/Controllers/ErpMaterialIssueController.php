@@ -1011,10 +1011,8 @@ class ErpMaterialIssueController extends Controller
                 );
             }
         }
-        if ($materialIssue -> enforce_uic_scanning == 'yes' && 
-            (($materialIssue -> from_sub_store ?-> is_warehouse_required || $materialIssue -> from_sub_store ?-> uic_scan_for_issue == 'yes')
-             || $materialIssue -> to_sub_store ?-> is_warehouse_required)
-        ) {
+        if ($materialIssue -> enforce_uic_scanning == 'yes')
+        {
             $stockReservation = StockReservation::stockReservation(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $items);
             if ($stockReservation['status'] == 'error') {
                 return $stockReservation['message'];

@@ -28,7 +28,7 @@
                 <div class="card">
                     <div class="card-body customernewsection-form">
                         <!-- Location Info -->
-                        <p>{{$details->store_name}}</p>
+                        <p>{{isset($details->store_name)?$details->store_name:''}}</p>
                         </br>
 
                         <!-- Product & PWO Info Side by Side -->

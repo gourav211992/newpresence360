@@ -55,10 +55,10 @@ use Illuminate\Support\Facades\Storage;
 class EInvoiceHelper
 {
     public function __construct()
-	{
-		// $logFactory = new LoggerFactory();
-		// $this->log = $logFactory->setPath('logs/services')->createLogger('gov-e-invoice');
-	}
+    {
+        // $logFactory = new LoggerFactory();
+        // $this->log = $logFactory->setPath('logs/services')->createLogger('gov-e-invoice');
+    }
 
     const B2B_INVOICE_TYPE = "B2B";
     const B2C_INVOICE_TYPE = "B2CL";
@@ -67,7 +67,7 @@ class EInvoiceHelper
     const TRANPORTER_DOC_NO_MAX_LIMIT = 15;
     const EWAY_BILL_MIN_AMOUNT_LIMIT = 50000;
 
-    public static function getGstInvoiceType($partyId, $partyCountryId, $sellerCountryId, string $partyType = 'customer') : string|null
+    public static function getGstInvoiceType($partyId, $partyCountryId, $sellerCountryId, string $partyType = 'customer'): string|null
     {
         //Retrieve party first
         $party = null;
@@ -82,7 +82,7 @@ class EInvoiceHelper
             return null;
         }
         //Get the GST
-        $gstRegistered = $party -> compliances ?-> gst_applicable;
+        $gstRegistered = $party->compliances?->gst_applicable;
         if ($gstRegistered) {
             if ($partyCountryId === $sellerCountryId) {
                 return self::B2B_INVOICE_TYPE;
@@ -101,7 +101,7 @@ class EInvoiceHelper
     public static function getEInvoicePendingDocumentStatus(Model $documentHeader, string|null $gstInvoiceType)
     {
         if ($gstInvoiceType === self::B2B_INVOICE_TYPE) {
-            if (isset($documentHeader -> irnDetail) && $documentHeader -> irnDetail) {
+            if (isset($documentHeader->irnDetail) && $documentHeader->irnDetail) {
                 return ConstantHelper::GENERATED;
             } else {
                 return ConstantHelper::PENDING;
@@ -116,8 +116,8 @@ class EInvoiceHelper
         $user = Helper::getAuthenticatedUser();
         $postData = self::prepareRequestPayload($documentHeader, $documentDetails);
         $authCredentials = self::getAuthCredentials();
-        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $requestUid = 'GOV-EINVOICE-' . date('dmy') . time();
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         $response = $eInvoiceService->generateInvoice($postData);
         return $response;
     }
@@ -154,7 +154,7 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
             $response = $eInvoiceService->cancelInvoice($cancelData);
             return response()->json($response);
@@ -178,23 +178,23 @@ class EInvoiceHelper
             }
 
             $formatted = [
-                'Gstin'      => $info['gstin'] ?? '',
-                'TradeName'  => $info['tradeNam'] ?? '',
-                'LegalName'  => $info['lgnm'] ?? '',
-                'AddrBnm'    => $addr['bnm'] ?? '',
-                'AddrBno'    => $addr['bno'] ?? '',
-                'AddrFlno'   => $addr['flno'] ?? '',
-                'AddrSt'     => $addr['st'] ?? '',
-                'AddrLoc'    => $addr['loc'] ?? '',
-                'StateCode'  => $stateCode,
-                'AddrPncd'   => $addr['pncd'] ?? '',
-                'TxpType'    => $info['dty'] ?? '',
+                'Gstin' => $info['gstin'] ?? '',
+                'TradeName' => $info['tradeNam'] ?? '',
+                'LegalName' => $info['lgnm'] ?? '',
+                'AddrBnm' => $addr['bnm'] ?? '',
+                'AddrBno' => $addr['bno'] ?? '',
+                'AddrFlno' => $addr['flno'] ?? '',
+                'AddrSt' => $addr['st'] ?? '',
+                'AddrLoc' => $addr['loc'] ?? '',
+                'StateCode' => $stateCode,
+                'AddrPncd' => $addr['pncd'] ?? '',
+                'TxpType' => $info['dty'] ?? '',
                 'Status' => (isset($info['sts']) && $info['sts'] === 'Active') ? 'ACT' : ($info['sts'] ?? ''),
-                'BlkStatus'  => 'U',
+                'BlkStatus' => 'U',
                 'DtReg' => isset($info['rgdt']) && !empty($info['rgdt'])
                     ? \DateTime::createFromFormat('d/m/Y', str_replace('\\/', '/', $info['rgdt']))->format('Y-m-d')
                     : '',
-                'DtDReg'     => null,
+                'DtDReg' => null,
             ];
             $final_response = [
                 'Status' => 1,
@@ -210,12 +210,14 @@ class EInvoiceHelper
         }
     }
 
-    public static function validateGstinName(string $gstNumber){
-        try{
+    public static function validateGstinName(string $gstNumber)
+    {
+        try {
 
             $gstin = $gstNumber;
             // $authCredentials = self::getAuthCredentials();
-            $requestUid = 'GOV-EINVOICE-'.date('dmy').time();;
+            $requestUid = 'GOV-EINVOICE-' . date('dmy') . time();
+            ;
             // $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
             $eInvoiceService = new MasterIndiaService($requestUid);
 
@@ -225,13 +227,13 @@ class EInvoiceHelper
             $gstinUrl = $baseUrl . 'commonapis/searchgstin?gstin=' . urlencode($gstin);
             $clientId = config('app.masterindia.gstin_client_id');
             $requestHeader = array(
-                'client_id:'.$clientId,
-                'Authorization:Bearer '.$authToken,
+                'client_id:' . $clientId,
+                'Authorization:Bearer ' . $authToken,
                 'Content-Type: application/json'
             );
             $curl = curl_init();
 
-            curl_setopt($curl, CURLOPT_URL,$gstinUrl);
+            curl_setopt($curl, CURLOPT_URL, $gstinUrl);
             curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -258,18 +260,20 @@ class EInvoiceHelper
 
     public function getIrnDetails(Request $request)
     {
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'irn' => [
                 'required'
             ]
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             $response = [
                 'Status' => 0,
                 'ErrorDetails' => [
-                    ["ErrorCode" => 500,
-                    'ErrorMessage' => $validator->errors()->first()]
+                    [
+                        "ErrorCode" => 500,
+                        'ErrorMessage' => $validator->errors()->first()
+                    ]
                 ],
                 'Data' => null,
                 'InfoDtls' => null,
@@ -279,7 +283,7 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
             $response = $eInvoiceService->getInvoiceByIRN($request->irn);
             return response()->json($response);
@@ -290,18 +294,20 @@ class EInvoiceHelper
 
     public function getGstDetails(Request $request)
     {
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'gstin' => [
                 'required'
             ]
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             $response = [
                 'Status' => 0,
                 'ErrorDetails' => [
-                    ["ErrorCode" => 500,
-                    'ErrorMessage' => $validator->errors()->first()]
+                    [
+                        "ErrorCode" => 500,
+                        'ErrorMessage' => $validator->errors()->first()
+                    ]
                 ],
                 'Data' => null,
                 'InfoDtls' => null,
@@ -311,7 +317,7 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
             $response = $eInvoiceService->getGSTINDetails($request->gstin);
             return response()->json($response);
@@ -322,18 +328,20 @@ class EInvoiceHelper
 
     public function syncGstDetails(Request $request)
     {
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'gstin' => [
                 'required'
             ]
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             $response = [
                 'Status' => 0,
                 'ErrorDetails' => [
-                    ["ErrorCode" => 500,
-                    'ErrorMessage' => $validator->errors()->first()]
+                    [
+                        "ErrorCode" => 500,
+                        'ErrorMessage' => $validator->errors()->first()
+                    ]
                 ],
                 'Data' => null,
                 'InfoDtls' => null,
@@ -343,7 +351,7 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
             $response = $eInvoiceService->syncGSTIN($request->gstin);
             return response()->json($response);
@@ -354,7 +362,7 @@ class EInvoiceHelper
 
     public function irnByDocDetails(Request $request)
     {
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'doctype' => [
                 'required'
             ],
@@ -366,12 +374,14 @@ class EInvoiceHelper
             ],
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             $response = [
                 'Status' => 0,
                 'ErrorDetails' => [
-                    ["ErrorCode" => 500,
-                    'ErrorMessage' => $validator->errors()->first()]
+                    [
+                        "ErrorCode" => 500,
+                        'ErrorMessage' => $validator->errors()->first()
+                    ]
                 ],
                 'Data' => null,
                 'InfoDtls' => null,
@@ -381,9 +391,9 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
-            $response = $eInvoiceService->getIRNByDocDetails($request->doctype,$request->docnum,$request->docdate);
+            $response = $eInvoiceService->getIRNByDocDetails($request->doctype, $request->docnum, $request->docdate);
             return response()->json($response);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -392,18 +402,20 @@ class EInvoiceHelper
 
     public function rejectedIrn(Request $request)
     {
-        $validator = Validator::make($request->all(),[
+        $validator = Validator::make($request->all(), [
             'date' => [
                 'required'
             ]
         ]);
 
-        if($validator->fails()){
+        if ($validator->fails()) {
             $response = [
                 'Status' => 0,
                 'ErrorDetails' => [
-                    ["ErrorCode" => 500,
-                    'ErrorMessage' => $validator->errors()->first()]
+                    [
+                        "ErrorCode" => 500,
+                        'ErrorMessage' => $validator->errors()->first()
+                    ]
                 ],
                 'Data' => null,
                 'InfoDtls' => null,
@@ -413,7 +425,7 @@ class EInvoiceHelper
 
         $authCredentials = self::getAuthCredentials();
         $requestUid = '1';
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         try {
             $response = $eInvoiceService->getRejectedIRNsDetails($request->date);
             return response()->json($response);
@@ -429,21 +441,21 @@ class EInvoiceHelper
         $organization = Organization::find($user->organization_id);
         // Get configuration values in a key-value pair
         $configurations = Configuration::where('type', 'organization')
-        ->where('type_id', $user->organization_id)
-        ->whereIn('config_key', [
-            ConstantHelper::CLIENT_ID,
-            ConstantHelper::CLIENT_SECRET,
-            ConstantHelper::CLIENT_USERNAME,
-            ConstantHelper::CLIENT_PASSWORD
-        ])
-        ->pluck('config_value', 'config_key');
+            ->where('type_id', $user->organization_id)
+            ->whereIn('config_key', [
+                ConstantHelper::CLIENT_ID,
+                ConstantHelper::CLIENT_SECRET,
+                ConstantHelper::CLIENT_USERNAME,
+                ConstantHelper::CLIENT_PASSWORD
+            ])
+            ->pluck('config_value', 'config_key');
 
         $authCredentials = [
-            'client_id'    => $configurations['e_invoice_client_id'] ?? env('EINVOICE_CLIENT_ID', ''),
+            'client_id' => $configurations['e_invoice_client_id'] ?? env('EINVOICE_CLIENT_ID', ''),
             'client_secret' => $configurations['e_invoice_client_secret'] ?? env('EINVOICE_CLIENT_SECRET', ''),
-            'user_name'    => $configurations['e_invoice_client_username'] ?? env('EINVOICE_USER_NAME', ''),
-            'password'     => $configurations['e_invoice_client_password'] ?? env('EINVOICE_PASSWORD', ''),
-            'gstin'        => $organization->gst_number ?? env('EINVOICE_GSTIN', ''),
+            'user_name' => $configurations['e_invoice_client_username'] ?? env('EINVOICE_USER_NAME', ''),
+            'password' => $configurations['e_invoice_client_password'] ?? env('EINVOICE_PASSWORD', ''),
+            'gstin' => $organization->gst_number ?? env('EINVOICE_GSTIN', ''),
         ];
 
         return $authCredentials;
@@ -466,7 +478,7 @@ class EInvoiceHelper
         $totalCGSTValue = 0.00;
         $totalSGSTValue = 0.00;
         $totalIGSTValue = 0.00;
-        $documentNumber = $documentHeader->book_code .'/'. $documentHeader->document_number;
+        $documentNumber = $documentHeader->book_code . '/' . $documentHeader->document_number;
 
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -483,84 +495,84 @@ class EInvoiceHelper
         $shipStateCode = self::getStateCode($sellerBillingAddress->state_id);
 
         $tranDetails = (object) [
-            "TaxSch"      =>   "GST",
-            "SupTyp"      =>   "B2B",
-            "RegRev"      =>   "Y",
-            "EcmGstin"    =>   null,
-            "IgstOnIntra" =>   "N"
+            "TaxSch" => "GST",
+            "SupTyp" => "B2B",
+            "RegRev" => "Y",
+            "EcmGstin" => null,
+            "IgstOnIntra" => "N"
         ];
 
         $docDetails = (object) [
-            "Typ" =>  'INV',
-            "No"  =>  $documentNumber,
-            "Dt"  =>  date('d/m/Y', strtotime($documentHeader->document_date)),
+            "Typ" => 'INV',
+            "No" => $documentNumber,
+            "Dt" => date('d/m/Y', strtotime($documentHeader->document_date)),
         ];
 
         $sellerDetails = (object) [
-            "Gstin" =>  $organization?->gst_number,
-            "LglNm" =>  $organization->name,
-            "TrdNm" =>  null,
-            "Addr1" =>  $organizationAddress->line_1,
-            "Addr2" =>  $organizationAddress->line_2,
-            "Loc"   =>  $organizationAddress?->city?->name,
-            "Pin"   =>  $organizationAddress->postal_code,
+            "Gstin" => $organization?->gst_number,
+            "LglNm" => $organization->name,
+            "TrdNm" => null,
+            "Addr1" => $organizationAddress->line_1,
+            "Addr2" => $organizationAddress->line_2,
+            "Loc" => $organizationAddress?->city?->name,
+            "Pin" => $organizationAddress->postal_code,
             // "Stcd"  =>  $sellerStateCode,
-            "Stcd"  =>  '7',
-            "Ph"    =>  $organizationAddress->phone,
-            "Em"    =>  $organization?->email
+            "Stcd" => '7',
+            "Ph" => $organizationAddress->phone,
+            "Em" => $organization?->email
         ];
 
         $buyerDetails = (object) [
-            "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
+            "Gstin" => $documentHeader?->vendor->compliances->gstin_no,
             // "Gstin" =>  '11AAACT5131A2Z9',
-            "LglNm" =>  $documentHeader?->vendor?->company_name,
-            "TrdNm" =>  null,
-            "Pos"   =>  '11',
-            "Addr1" =>  $sellerBillingAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $sellerBillingAddress?->city?->name,
-            "Pin"   =>  @$sellerBillingAddress->pincode,
+            "LglNm" => $documentHeader?->vendor?->company_name,
+            "TrdNm" => null,
+            "Pos" => '11',
+            "Addr1" => $sellerBillingAddress?->address,
+            "Addr2" => null,
+            "Loc" => $sellerBillingAddress?->city?->name,
+            "Pin" => @$sellerBillingAddress->pincode,
             // "Pin"   =>  '737132',
-            "Stcd"  =>  '11',
+            "Stcd" => '11',
             // "Stcd"  =>  $buyerStateCode,
-            "Ph"    =>  $sellerBillingAddress->phone,
-            "Em"    =>  $documentHeader?->vendor?->email
+            "Ph" => $sellerBillingAddress->phone,
+            "Em" => $documentHeader?->vendor?->email
         ];
 
         $dispatchDetails = (object) [
-            "Nm" =>  $documentHeader?->erpStore?->store_name,
-            "Addr1" =>  $buyerAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $buyerAddress?->city?->name,
-            "Pin"   =>  @$buyerAddress->pincode,
+            "Nm" => $documentHeader?->erpStore?->store_name,
+            "Addr1" => $buyerAddress?->address,
+            "Addr2" => null,
+            "Loc" => $buyerAddress?->city?->name,
+            "Pin" => @$buyerAddress->pincode,
             // "Pin"   =>  '737132',
-            "Stcd"  =>  '7',
+            "Stcd" => '7',
             // "Stcd" => $buyerStateCode,
         ];
 
         $shipDetails = (object) [
             // "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
-            "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
-            "LglNm" =>  $documentHeader?->vendor?->company_name,
-            "TrdNm" =>  null,
-            "Pos"   =>  '11',
-            "Addr1" =>  $sellerBillingAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $sellerBillingAddress?->city?->name,
-            "Pin"   =>  @$sellerBillingAddress->pincode,
+            "Gstin" => $documentHeader?->vendor->compliances->gstin_no,
+            "LglNm" => $documentHeader?->vendor?->company_name,
+            "TrdNm" => null,
+            "Pos" => '11',
+            "Addr1" => $sellerBillingAddress?->address,
+            "Addr2" => null,
+            "Loc" => $sellerBillingAddress?->city?->name,
+            "Pin" => @$sellerBillingAddress->pincode,
             // "Pin"   =>  '737132',
-            "Stcd"  =>  '11',
+            "Stcd" => '11',
             // "Stcd"  =>  $shipStateCode,
-            "Ph"    =>  $sellerBillingAddress->phone,
-            "Em"    =>  $documentHeader?->vendor?->email
+            "Ph" => $sellerBillingAddress->phone,
+            "Em" => $documentHeader?->vendor?->email
         ];
 
-        foreach($documentDetails as $key => $val){
+        foreach ($documentDetails as $key => $val) {
             $uom = Unit::find($val?->uom_id);
             $orderQty = (isset($val?->accepted_qty) && ($val?->accepted_qty)) ? ($val?->accepted_qty) : ($val?->order_qty);
             $itemDiscount = (isset($val?->discount_amount) && ($val?->discount_amount)) ? ($val?->discount_amount) : ($val?->item_discount_amount);
             $headerDiscount = (isset($val?->header_discount_amount) && ($val?->header_discount_amount)) ? ($val?->header_discount_amount) : ($val?->header_discount_amount);
-            $totalAmt = ($orderQty*$val?->rate) - ($itemDiscount + $headerDiscount);
+            $totalAmt = ($orderQty * $val?->rate) - ($itemDiscount + $headerDiscount);
             $totalItemValue = $totalAmt + ($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value']);
             if (count($val->taxes)) {
                 foreach ($val->taxes as $taxs) {
@@ -589,7 +601,7 @@ class EInvoiceHelper
                 "FreeQty" => round($orderQty),
                 "Unit" => (string) $uom?->name,
                 "UnitPrice" => round($val?->rate),
-                "TotAmt" => round($orderQty*$val?->rate),
+                "TotAmt" => round($orderQty * $val?->rate),
                 "Discount" => round($itemDiscount + $headerDiscount),
                 "PreTaxVal" => round($val?->tax_value),
                 "AssAmt" => round($totalAmt),
@@ -618,32 +630,32 @@ class EInvoiceHelper
         }
 
         $valDtls = (object) [
-            "AssVal"       =>  round($documentHeader->taxable_amount,2),
-            "CgstVal"      =>  round($totalCGSTValue, 2),
-            "SgstVal"      =>  round($totalSGSTValue, 2),
-            "IgstVal"      =>  round($totalIGSTValue, 2),
-            "CesVal"       =>  0,
-            "StCesVal"     =>  0,
-            "Discount"     =>  0,
-            "OthChrg"      =>  round($documentHeader->expense_amount, 2),
-            "RndOffAmt"    =>  0,
-            "TotInvVal"    =>  round(($documentHeader->total_amount),2),
-            "TotInvValFc"  =>  0
+            "AssVal" => round($documentHeader->taxable_amount, 2),
+            "CgstVal" => round($totalCGSTValue, 2),
+            "SgstVal" => round($totalSGSTValue, 2),
+            "IgstVal" => round($totalIGSTValue, 2),
+            "CesVal" => 0,
+            "StCesVal" => 0,
+            "Discount" => 0,
+            "OthChrg" => round($documentHeader->expense_amount, 2),
+            "RndOffAmt" => 0,
+            "TotInvVal" => round(($documentHeader->total_amount), 2),
+            "TotInvValFc" => 0
         ];
 
         $payDtls = (object) [
-            "Nm"            =>   null,
-            "AccDet"        =>   null,
-            "Mode"          =>   null,
-            "FinInsBr"      =>   null,
-            "PayTerm"       =>   null,
-            "PayInstr"      =>   null,
-            "CrTrn"         =>   null,
-            "DirDr"         =>   null,
-            "CrDay"         =>   0,
-            "PaidAmt"       =>   0,
-            "PaymtDue"      =>   0,
-            "TotInvValFc"   =>   0
+            "Nm" => null,
+            "AccDet" => null,
+            "Mode" => null,
+            "FinInsBr" => null,
+            "PayTerm" => null,
+            "PayInstr" => null,
+            "CrTrn" => null,
+            "DirDr" => null,
+            "CrDay" => 0,
+            "PaidAmt" => 0,
+            "PaymtDue" => 0,
+            "TotInvValFc" => 0
         ];
 
         // $refDtls = (object) [
@@ -662,47 +674,47 @@ class EInvoiceHelper
         //     "ContrDtls" => (object) []
         // ];
 
-        $addlDocDtls =  [
-            (object)  array(
-                "Url"   => "https://einv-apisandbox.nic.in",
-                "Docs"  => "Test Doc",
-                "Info"  => "Document Test"
-           )
+        $addlDocDtls = [
+            (object) array(
+                "Url" => "https://einv-apisandbox.nic.in",
+                "Docs" => "Test Doc",
+                "Info" => "Document Test"
+            )
         ];
 
         $expDtls = (object) [
-            "ShipBNo"   => null,
-            "ShipBDt"   => null,
-            "Port"      => null,
-            "RefClm"    => null,
-            "ForCur"    => null,
-            "CntCode"   => null,
-            "ExpDuty"   => null,
+            "ShipBNo" => null,
+            "ShipBDt" => null,
+            "Port" => null,
+            "RefClm" => null,
+            "ForCur" => null,
+            "CntCode" => null,
+            "ExpDuty" => null,
         ];
 
         $ewbDtls = (object) [
-            "TransId"       => 'null',
-            "TransName"     => 'null',
-            "Distance"      => 100,
-            "TransDocNo"    => '12345',
-            "TransDocDt"    => '01/03/2025',
-            "VehNo"         => null,
-            "VehType"       => 'R',
-            "TransMode"     => '1',
+            "TransId" => 'null',
+            "TransName" => 'null',
+            "Distance" => 100,
+            "TransDocNo" => '12345',
+            "TransDocDt" => '01/03/2025',
+            "VehNo" => null,
+            "VehType" => 'R',
+            "TransMode" => '1',
         ];
 
         $result = [
             'tranDetails' => $tranDetails,
-            'docDetails'  =>  $docDetails,
-            'sellerDetails'  =>  $sellerDetails,
-            'buyerDetails'  =>  $buyerDetails,
-            'dispatchDetails'  =>  $dispatchDetails,
-            'shipDetails'  =>  $shipDetails,
-            'itemList'  =>  $itemList,
-            'valDtls'  =>  $valDtls,
+            'docDetails' => $docDetails,
+            'sellerDetails' => $sellerDetails,
+            'buyerDetails' => $buyerDetails,
+            'dispatchDetails' => $dispatchDetails,
+            'shipDetails' => $shipDetails,
+            'itemList' => $itemList,
+            'valDtls' => $valDtls,
             'payDtls' => $payDtls,
-            'addlDocDtls'  =>  $addlDocDtls,
-            'expDtls'  =>  $expDtls,
+            'addlDocDtls' => $addlDocDtls,
+            'expDtls' => $expDtls,
             // 'ewbDtls' => $ewbDtls,
         ];
 
@@ -713,7 +725,7 @@ class EInvoiceHelper
     public static function generateQRCodeBase64($signedQRCode)
     {
         $qrCode = QrCode::create($signedQRCode)
-        ->setMargin(0); // Remove padding
+            ->setMargin(0); // Remove padding
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
 
@@ -782,27 +794,30 @@ class EInvoiceHelper
         ]);
     }
 
-    public static function getGstDetail($gstNumber){
+    public static function getGstDetail($gstNumber)
+    {
         $authCredentials = self::getAuthCredentials();
-        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $requestUid = 'GOV-EINVOICE-' . date('dmy') . time();
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         $response = $eInvoiceService->getGSTINDetails($gstNumber);
         return $response;
     }
 
-    private static function getStateCode($stateId){
+    private static function getStateCode($stateId)
+    {
         $stateCode = State::find($stateId);
         return $stateCode ? $stateCode->state_code : null;
     }
 
-    private  static function generateIrn($docId, $document, $documentType) {
+    private static function generateIrn($docId, $document, $documentType)
+    {
         $condition = self::checkIfGstInShouldGenerate($document, $documentType);
-        if($condition){
+        if ($condition) {
             $documentHeader = $document;
-            $documentDetails = $document -> items;
+            $documentDetails = $document->items;
             // dd($document->itemstoArray());
             $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
-            if(isset($generateInvoice['ErrorDetails']) && !empty($generateInvoice['ErrorDetails'])){
+            if (isset($generateInvoice['ErrorDetails']) && !empty($generateInvoice['ErrorDetails'])) {
                 return $generateInvoice;
             }
             $documentHeader->irnDetail()->create([
@@ -823,12 +838,13 @@ class EInvoiceHelper
     }
 
     // On Submit check gst number
-    private  static function validateGstIn($docId, $document, $documentType) {
+    private static function validateGstIn($docId, $document, $documentType)
+    {
         $user = Helper::getAuthenticatedUser();
         $condition = self::checkIfGstInShouldGenerate($document, $documentType);
-        if($condition){
+        if ($condition) {
             $documentHeader = $document;
-            $documentDetails = $document ?-> items ?? [];
+            $documentDetails = $document?->items ?? [];
             $eInvoice = $document?->irnDetail()->first();
 
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -848,17 +864,18 @@ class EInvoiceHelper
 
 
     // Common check gst number
-    public  static function validateGstNumber($gstNumber) {
+    public static function validateGstNumber($gstNumber)
+    {
         $user = Helper::getAuthenticatedUser();
 
         $checkGstIn = EInvoiceHelper::getGstDetail($gstNumber);
-        if(!(is_string($checkGstIn))){
-            if(!$checkGstIn['Status']){
+        if (!(is_string($checkGstIn))) {
+            if (!$checkGstIn['Status']) {
                 $errorMsg = "";
-                if($checkGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';
-                } else{
-                    $errorMsg = "Error: ". @$checkGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkGstIn['ErrorDetails'][0]['ErrorMessage'];
+                if ($checkGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available") {
+                    $errorMsg = "Error: " . @$checkGstIn['ErrorDetails'][0]['ErrorCode'] . ' - Invalid GST Number';
+                } else {
+                    $errorMsg = "Error: " . @$checkGstIn['ErrorDetails'][0]['ErrorCode'] . ' -' . $checkGstIn['ErrorDetails'][0]['ErrorMessage'];
                 }
                 return [
                     'checkGstIn' => $checkGstIn,
@@ -867,7 +884,7 @@ class EInvoiceHelper
                     'Status' => 0
                 ];
             }
-        }else {
+        } else {
             return [
                 'checkGstIn' => $checkGstIn,
                 'successMsg' => '',
@@ -879,10 +896,12 @@ class EInvoiceHelper
 
     public static function checkIfGstInShouldGenerate(Model $document, $documentType = null)
     {
-        $serviceAlias = $document ?-> book ?-> service ?-> alias;
-        if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
-        ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
-        ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS)) {
+        $serviceAlias = $document?->book?->service?->alias;
+        if (
+            $serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
+            ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
+            ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS)
+        ) {
             return true;
         } else {
             return false;
@@ -904,13 +923,13 @@ class EInvoiceHelper
             // }
 
             // Generate Invoice
-            $generateInvoice = self::generateIrn($document -> id, $document, null);
-            if(isset($generateInvoice) && !$generateInvoice['Status']){
+            $generateInvoice = self::generateIrn($document->id, $document, null);
+            if (isset($generateInvoice) && !$generateInvoice['Status']) {
                 return [
                     'status' => 'error',
-                    'message' => "Error: ". @$generateInvoice['ErrorDetails'][0]['ErrorCode'].' -'.$generateInvoice['ErrorDetails'][0]['ErrorMessage'],
+                    'message' => "Error: " . @$generateInvoice['ErrorDetails'][0]['ErrorCode'] . ' -' . $generateInvoice['ErrorDetails'][0]['ErrorMessage'],
                 ];
-            } else{
+            } else {
                 return $generateInvoice;
             }
         }
@@ -918,13 +937,14 @@ class EInvoiceHelper
     }
 
     // Generate Eway Bill
-    private  static function generateEwayBillData($document) {
+    private static function generateEwayBillData($document)
+    {
         $user = Helper::getAuthenticatedUser();
 
         $documentHeader = $document;
         $eInvoice = $documentHeader->irnDetail()->first();
         $irnNumber = $eInvoice?->irn_number;
-        $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
+        $documentNumber = $documentHeader->book_code . '-' . $documentHeader->document_number;
 
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -933,15 +953,15 @@ class EInvoiceHelper
             ->first();
 
         $ewbDetails = [
-            "Irn"           => $irnNumber,
-            "TransId"       => $organization?->gst_number,
-            "TransName"     => $organization?->name,
-            "Distance"      => 1521,
-            "TransDocNo"    => $documentNumber,
-            "TransDocDt"    => date('d/m/Y', strtotime($documentHeader->document_date)),
-            "VehNo"         => $documentHeader->vehicle_no,
-            "VehType"       => 'R',
-            "TransMode"     => $documentHeader->transportationMode?->code,
+            "Irn" => $irnNumber,
+            "TransId" => $organization?->gst_number,
+            "TransName" => $organization?->name,
+            "Distance" => 1521,
+            "TransDocNo" => $documentNumber,
+            "TransDocDt" => date('d/m/Y', strtotime($documentHeader->document_date)),
+            "VehNo" => $documentHeader->vehicle_no,
+            "VehType" => 'R',
+            "TransMode" => $documentHeader->transportationMode?->code,
         ];
 
         return $ewbDetails;
@@ -953,16 +973,16 @@ class EInvoiceHelper
         $user = Helper::getAuthenticatedUser();
         $postData = self::generateEwayBillData($documentHeader);
         $authCredentials = self::getAuthCredentials();
-        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $requestUid = 'GOV-EINVOICE-' . date('dmy') . time();
+        $eInvoiceService = new EInvoiceService($authCredentials, $requestUid);
         $response = $eInvoiceService->generateEwaybillByIRN($postData);
         // dd($response);
-        if(isset($response['ErrorDetails']) && !empty($response['ErrorDetails'])){
+        if (isset($response['ErrorDetails']) && !empty($response['ErrorDetails'])) {
             return [
                 'status' => 'error',
-                'message' => "Error: ". @$response['ErrorDetails'][0]['ErrorCode'].' -'.$response['ErrorDetails'][0]['ErrorMessage'],
+                'message' => "Error: " . @$response['ErrorDetails'][0]['ErrorCode'] . ' -' . $response['ErrorDetails'][0]['ErrorMessage'],
             ];
-        } else{
+        } else {
             return $response;
         }
     }

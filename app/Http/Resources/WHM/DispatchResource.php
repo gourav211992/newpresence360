@@ -16,7 +16,8 @@ class DispatchResource extends JsonResource
     public function toArray(Request $request): array
     {
         $morphable = $this->whenLoaded('morphable'); // ensure it's loaded safely
-        $itemUniqueCodes = $this->whenLoaded('itemUniqueCodes');
+        $items = $morphable && isset($morphable->items) ? $morphable->items : collect();
+        // $itemUniqueCodes = $this->whenLoaded('itemUniqueCodes');
 
         return [
             'id' => $this->id,
@@ -33,8 +34,8 @@ class DispatchResource extends JsonResource
             'doc_date' => optional($morphable)->document_date,
             'book_id' => optional($morphable)->book_id,
             'series' => optional(optional($morphable)->book)->book_code,
-            'total_item' => $itemUniqueCodes ? $itemUniqueCodes->unique('item_id')->count() : 0,
-            'total_packets' => $itemUniqueCodes ? $itemUniqueCodes->count() : 0,
+            'total_item' => $items ? $items->count() : 0,
+            'total_packets' => $items ? $items->sum('inventory_uom_qty') : 0,
         ];
     }
 }

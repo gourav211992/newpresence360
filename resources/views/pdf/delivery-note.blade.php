@@ -23,9 +23,12 @@
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
                     @if (isset($orgLogo) && $orgLogo)
-                        <img src="{!! $orgLogo !!}" alt="" height="20px" />
-                    @else
-                        <img src="{{$imagePath}}" height="20px" alt="">
+                        @php
+                            $data = isset($orgLogo) && $orgLogo ? file_get_contents($orgLogo) : '';
+                            $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
+                            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                        @endphp
+                        <img src="{!! $base64 !!}" alt="" height="50px" />
                     @endif
                 </td>
 
@@ -53,7 +56,7 @@
                         <tr>
                             <td colspan="2" style="padding-top: 3px;">
                                 <span style="font-weight: 700; font-size: 13px;">
-                                    <b>{{ Str::ucfirst(@$order->customer->customer_code) }}</b>
+                                    <b>{{ Str::ucfirst(@$order->customer->company_name) }}</b>
                                 </span>
                             </td>
                         </tr>

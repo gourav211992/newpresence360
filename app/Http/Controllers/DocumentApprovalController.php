@@ -976,11 +976,8 @@ class DocumentApprovalController extends Controller
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->first();
             // Create job
-            if ($doc -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $doc -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                if(in_array($doc->document_status, [ConstantHelper::APPROVED]) && $config && strtolower($config->config_value) === 'yes'){
-                    (new WhmJob)->createJob($doc->id,'App\Models\ErpSaleInvoice');
-                }
-            }
+            $miService = new MaterialIssue();
+            $miService -> createWhmJob($doc, $authUser);
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",

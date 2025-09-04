@@ -389,7 +389,7 @@ class WhmJob
         return $attributeJsonArray;
     }
 
-    private function generateUniqueUid($length = 15)
+    public function generateUniqueUid($length = 15)
     {
         $raw = str_replace('-', '', Str::uuid()); // 15-character hex
         $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase

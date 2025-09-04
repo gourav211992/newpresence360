@@ -57,6 +57,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/putaway/save-as-draft', 'saveAsDraft')->name('whm.putaway.save-as-draft');
         Route::post('/putaway/update-status', 'updateStatus')->name('whm.putaway.update-status');
         Route::post('/putaway/close-job', 'closeJob')->name('whm.putaway.close-job');
+        Route::get('/putaway/scanned-packets', 'scannedItemQrs')->name('whm.putaway.scanned-packets');
 
     });
 
@@ -69,15 +70,17 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/picklist/update-status', 'updateStatus')->name('whm.picklist.update-status');
         Route::post('/picklist/close-job', 'closeJob')->name('whm.picklist.close-job');
         Route::post('/picklist/san-storage', 'scanStorage')->name('whm.picklist.san-storage');
+        Route::get('/picklist/scanned-packets', 'scannedItemQrs')->name('whm.picklist.scanned-packets');
     });
 
     Route::controller(DispatchController::class)->group(function () {
         Route::get('/dispatch/tasks', 'index')->name('whm.dispatch.unloading-tasks');
+        Route::get('/dispatch/items', 'items')->name('whm.dispatch.items');
         Route::get('/dispatch/pending-tasks', 'pendingTasks')->name('whm.dispatch.pending-tasks');
         Route::post('/dispatch/save-as-draft', 'saveAsDraft')->name('whm.dispatch.save-as-draft');
         Route::get('/dispatch/scanned-packets', 'scannedPackets')->name('whm.dispatch.scanned-packets');
         Route::post('/dispatch/close-job', 'closeJob')->name('whm.dispatch.close-job');
-        Route::post('/dispatch/update-status/packet', 'updateStatus')->name('whm.dispatch.update-status');
+        Route::post('/dispatch/remove-packet', 'removePacket')->name('whm.dispatch.remove-packet');
     });
 
     Route::controller(BinTransferController::class)->group(function () {

@@ -729,7 +729,8 @@ class InspectionController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
-        $serviceAlias = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
+        $serviceAlias = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+        $mrnServiceAlias = ConstantHelper::MRN_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $user = Helper::getAuthenticatedUser();
         $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
@@ -802,6 +803,7 @@ class InspectionController extends Controller
             'subStoreCount' => $subStoreCount,
             'totalItemValue' => $totalItemValue,
             'docStatusClass' => $docStatusClass,
+            'mrnServiceAlias'=>$mrnServiceAlias,
             'deliveryAddress'=> $deliveryAddress,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,

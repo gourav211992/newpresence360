@@ -27,12 +27,15 @@
             <tr><td colspan="3" style="width:100%; text-align:center; font-size:18px; font-weight: 900;">Tax Invoice</td></tr>
             <tr>
                 <td style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 30%; vertical-align: top;">
-                    @php
-                        $data = file_get_contents(isset($orgLogo) && $orgLogo ? $orgLogo : $imagePath);
-                        $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
-                        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                    @endphp
-                    <img src="{!! $base64 !!}" alt="" height="50px" />
+                    @if (isset($orgLogo) && $orgLogo)
+                        @php
+                            $data = isset($orgLogo) && $orgLogo ? file_get_contents($orgLogo) : '';
+                            $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
+                            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                        @endphp
+                        <img src="{!! $base64 !!}" alt="" height="50px" />
+                    @endif
+                    
                 </td>
                 <td style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 40%; vertical-align: top; font-size: 10px;">
                     @php

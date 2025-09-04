@@ -51,7 +51,7 @@ class PickingJob
         return $uid;
     }
 
-    public function scanQRCodes($detail, $header, $jobId, $packetIds, $storagePointId, $userId, $jobType, $trnstype)
+    public function scanQRCodes($detail, $header, $job, $packetIds, $storagePointId, $userId, $jobType, $trnstype)
     {
         $attributes = $detail->attributes;
 
@@ -64,10 +64,10 @@ class PickingJob
             ->whereIn('trns_type', $trnstype)
             ->where('status', CommonHelper::SCANNED)
             ->get();
-
+        $jobId = $job -> id;
         $namespace = get_class($detail);
-        $storeId = $header->store_id;
-        $subStoreId = $header->main_sub_store_id;
+        $storeId = $job->store_id;
+        $subStoreId = $job->sub_store_id;
         
         foreach ($packets as $packet) {
             $newRecord = ErpItemUniqueCode::create([
@@ -79,7 +79,7 @@ class PickingJob
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
                 'job_type' => $jobType,
-                'trns_type' => ConstantHelper::PL_SERVICE_ALIAS,
+                'trns_type' => $job->trns_type,
                 'doc_type' => CommonHelper::ISSUE,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
@@ -91,7 +91,12 @@ class PickingJob
                 'item_id' => $detail->item_id,
                 'item_name' => $detail->item->item_name,
                 'item_code' => $detail->item_code,
-                'vendor_id' => $header->vendor_id,
+                'vendor_id' => $packet->vendor_id,
+                'batch_id' => $packet->batch_id,
+                'batch_number' => $packet->batch_number,
+                'manufacturing_year' => $packet->manufacturing_year,
+                'expiry_date' => $packet->expiry_date,
+                'serial_no' => $packet->serial_no,
                 'item_uid' => $packet->item_uid, 
                 'storage_point_id' => Null, 
                 'type' => 'qr',
@@ -108,7 +113,7 @@ class PickingJob
         }
     }
 
-    public function generateQRCodes($subStoreId,$job)
+    public function generateQRCodes($subStoreId,$job,$storeId = null)
     {
         $packets = $job->itemUniqueCodes()
             ->where('status', CommonHelper::SCANNED)
@@ -132,7 +137,7 @@ class PickingJob
                     'doc_no' => $packet->doc_no ?? null,
                     'doc_date' => $packet->doc_date ?? null,
                     'book_id' => $packet->book_id ?? null,
-                    'store_id' => $packet->store_id ?? null,
+                    'store_id' => $storeId ? $storeId : ($packet->store_id ?? null),
                     'sub_store_id' => $subStoreId ?? null,
                     'book_code' => $packet->book_code ?? null,
                     'item_attributes' => json_encode($packet->item_attributes),
@@ -140,6 +145,11 @@ class PickingJob
                     'item_name' => $packet->item_name,
                     'item_code' => $packet->item_code,
                     'vendor_id' => $packet->vendor_id,
+                    'batch_id' => $packet->batch_id,
+                    'batch_number' => $packet->batch_number,
+                    'manufacturing_year' => $packet->manufacturing_year,
+                    'expiry_date' => $packet->expiry_date,
+                    'serial_no' => $packet->serial_no,
                     'item_uid' => $packet->item_uid, 
                     'storage_point_id' => Null, 
                     'type' => 'qr',

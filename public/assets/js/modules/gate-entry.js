@@ -1927,9 +1927,20 @@ $(document).on("input", ".asn_number", function () {
 
 // Handle the click of "Process" button
 $(document).on("click", ".asn_process", function () {
-    const container = $(this).closest(".asn-container");
-    const asnInput = container.find(".asn_number");
+    const asnInput = $(".process_number");
     const asnNumber = asnInput.val().trim();
+    let headerBookId = $("#book_id").val() || '';
+    let locationId = $("[name='header_store_id']").val();
+
+    if (!asnNumber) {
+        Swal.fire({
+            title: "Validation Error",
+            text: "Please enter a process code.",
+            icon: "warning",
+        });
+        return;
+    }
+    const button = $(this);
 
     $.ajax({
         url: "/gate-entries/validate-asn", // 🔁 Update to actual route
@@ -1938,24 +1949,25 @@ $(document).on("click", ".asn_process", function () {
             _token: $('meta[name="csrf-token"]').attr("content"),
             asn_number: asnNumber,
             module_type: "suppl-inv",
+            header_book_id : headerBookId,
+            location_id: locationId,
         },
         beforeSend: function () {
-            container
-                .find(".asn_process")
-                .prop("disabled", true)
-                .text("Processing...");
+            button.prop("disabled", true).text("Processing...");
         },
         success: function (response) {
             if (response.status === 200) {
                 let asnData = response.data;
+                currentProcessType = asnData.type;
+                $("#reference_type_input").val(currentProcessType);
                 asnProcess(asnData, "asn-process");
+                $("#scanQrModal").modal("hide");
             } else {
                 Swal.fire({
                     title: "Error!",
                     text: response.message,
                     icon: "error",
                 });
-                return false;
             }
         },
         error: function () {
@@ -1964,13 +1976,9 @@ $(document).on("click", ".asn_process", function () {
                 text: "Server error. Please try again.",
                 icon: "error",
             });
-            return false;
         },
         complete: function () {
-            container
-                .find(".asn_process")
-                .prop("disabled", false)
-                .text("Process");
+            button.prop("disabled", false).text("Process");
         },
     });
 });

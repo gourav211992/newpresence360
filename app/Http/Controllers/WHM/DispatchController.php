@@ -9,12 +9,15 @@ use App\Helpers\Inventory\StockReservation;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\DispatchResource;
 use App\Http\Resources\WHM\UnloadingResource;
+use App\Lib\Services\WHM\DispatchJob;
+use App\Models\ErpInvoiceItem;
 use App\Models\ErpSaleInvoice;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use DB;
 
 class DispatchController extends Controller
 {
@@ -69,6 +72,55 @@ class DispatchController extends Controller
         ];
     }
 
+    public function items(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'store_id' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required',
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $job = ErpWhmJob::find($request->job_id);
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $morphableId = $job->morphable_id;
+        $storeId = $request->store_id;
+
+        $items = ErpInvoiceItem::where('sale_invoice_id', $morphableId)
+                        ->where('store_id',$storeId)
+                        ->with('attributes')
+                        ->select(
+                            'id as sale_invoice_item_id',
+                            'sale_invoice_id',
+                            'item_id',
+                            'item_name',
+                            'item_code',
+                            DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                            DB::raw("(
+                                SELECT COUNT(*)
+                                FROM erp_item_unique_codes
+                                WHERE morphable_id = erp_invoice_items.id
+                                AND morphable_type = '" . addslashes(ErpInvoiceItem::class) . "'
+                                AND status = '" . CommonHelper::SCANNED . "'
+                            ) as scanned_count")
+                        )
+                        ->paginate(CommonHelper::PAGE_LENGTH_10);
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => $items,
+        ];
+
+    }
+
     public function pendingTasks(Request $request){
         $validator = Validator::make($request->all(),[
             'job_id' => ['required'],
@@ -82,11 +134,32 @@ class DispatchController extends Controller
         }
 
         $status = $request->status;
-        $pendingTasks = ErpItemUniqueCode::where('job_id',$request->job_id)
-        ->when($status, function ($query) use ($status) {
-            $query->where('status', $status);
-        })
-        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status')
+        $job = ErpWhmJob::find($request->job_id);
+        $plitemIds = ErpInvoiceItem::where('sale_invoice_id',$job->morphable_id)->pluck('pl_item_detail_id')->toArray();
+
+        $scannedPacketsUids = ErpItemUniqueCode::where('job_id', $request->job_id)
+                ->where('job_type',CommonHelper::DISPATCH)
+                ->where('status',CommonHelper::SCANNED)
+                ->get()
+                ->pluck('uid')
+                ->toArray();
+        
+        $pendingTasksQuery = ErpItemUniqueCode::whereIn('morphable_id',$plitemIds)
+        ->where('job_type',CommonHelper::PICKING)
+        ->where('doc_type',CommonHelper::RECEIPT);
+
+        if($status == CommonHelper::PENDING){
+            $pendingTasksQuery->whereNull('utilized_id');
+        }elseif($status == CommonHelper::SCANNED){
+            $pendingTasksQuery->whereIn('utilized_id',$scannedPacketsUids);
+        }else{
+            $pendingTasksQuery->where(function($q) use($scannedPacketsUids){
+                $q->whereNull('utilized_id')
+                ->orWhereIn('utilized_id',$scannedPacketsUids);
+            });
+        }
+
+        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status')
         ->get();
 
         return [
@@ -145,9 +218,12 @@ class DispatchController extends Controller
             ]);
         }
 
-        $packets = ErpItemUniqueCode::where('job_id', $request->job_id)
+        $plitemIds = ErpInvoiceItem::where('sale_invoice_id',$job->morphable_id)->pluck('pl_item_detail_id')->toArray();
+
+        $packets = ErpItemUniqueCode::whereIn('morphable_id',$plitemIds)
             ->whereIn('item_uid', $request->packet_ids)
-            ->where('job_type', CommonHelper::DISPATCH)
+            ->where('job_type', CommonHelper::PICKING)
+            ->whereNull('utilized_id')
             ->get();
 
         // Check invalid packets
@@ -161,7 +237,10 @@ class DispatchController extends Controller
         }
 
         // Filter already scanned packets from the result set
-        $alreadyScanned = $packets->where('status', CommonHelper::SCANNED)
+        $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->job_id)
+            ->whereIn('item_uid', $request->packet_ids)
+            ->where('status', CommonHelper::SCANNED)
+            ->where('job_type', CommonHelper::DISPATCH)
             ->pluck('item_uid')
             ->toArray();
 
@@ -182,15 +261,12 @@ class DispatchController extends Controller
                 $job->save();
             }
 
-            // Update Task Status
-            ErpItemUniqueCode::where('job_id',$request->job_id)
-            ->whereIn('item_uid',$request->packet_ids)
-            ->where('job_type', CommonHelper::DISPATCH)
-            ->update([
-                'status' => CommonHelper::SCANNED,
-                'action_by' => $user->id,
-                'action_at' => now()
-            ]);
+            $header = $job->morphable;
+            $invoiceItemIds = ErpInvoiceItem::where('sale_invoice_id', $job->morphable_id)
+                ->pluck('id', 'pl_item_detail_id')
+                ->toArray();
+
+            (new DispatchJob())->scanQRCodes($header, $job->id, $packets, $user->id, $invoiceItemIds, 'App\Models\ErpInvoiceItem');
 
             \DB::commit();
             return [
@@ -278,7 +354,7 @@ class DispatchController extends Controller
         }
     }
 
-    public function updateStatus(Request $request){
+    public function removePacket(Request $request){
         $validator = Validator::make($request->all(),[
             'packet_id' => ['required'],
             'job_id' => ['required'],
@@ -315,8 +391,18 @@ class DispatchController extends Controller
 
         \DB::beginTransaction();
         try {
-            $uniqueCode->status = CommonHelper::PENDING;
-            $uniqueCode->save();
+
+            $plDetail = ErpItemUniqueCode::where('item_uid', $request->packet_id)
+                ->where('job_type', CommonHelper::PICKING)
+                ->where('status',CommonHelper::SCANNED)
+                ->where('utilized_id',$uniqueCode->uid)
+                ->first();
+
+            if($plDetail){
+                $plDetail->utilized_id = NULL;
+                $plDetail->save();
+                $uniqueCode->delete();
+            }
 
             \DB::commit();
             return [

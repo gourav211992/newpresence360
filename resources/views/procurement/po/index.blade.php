@@ -22,6 +22,7 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
+                        <a href="{{ route('purchaseOrder.import.index') }}" class="btn btn-primary btn-sm " ><i data-feather='plus'></i> Import</a>
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         @if(count($servicesBooks['services']))
                             <a class="btn btn-info btn-sm mb-50 mb-sm-0" href="{{ url(request()->type) }}/bulk-create"><i data-feather="plus-circle"></i> Create Bulk PO</a>

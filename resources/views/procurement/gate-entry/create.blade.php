@@ -82,6 +82,9 @@
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
                                 <input type="hidden" name="document_status" value="draft" id="document_status">
+                                <button type="button" class="btn btn-info btn-sm mb-50 mb-sm-0 scanQR d-none" data-bs-toggle="modal" data-bs-target="#scanQrModal">
+                                    <i data-feather="camera"></i> Scan QR
+                                </button>
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
@@ -172,7 +175,7 @@
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1 asn-container">
+                                                {{-- <div class="row align-items-center mb-1 asn-container">
                                                     <div class="col-md-3">
                                                         <label class="form-label">ASN Code</label>
                                                     </div>
@@ -184,7 +187,7 @@
                                                             Process
                                                         </button>
                                                     </div>
-                                                </div>
+                                                </div> --}}
                                                 <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
                                                     {{-- <div class="col-md-3">
                                                         <label class="form-label">Reference Type <span class="text-danger">*</span></label>
@@ -557,6 +560,36 @@
                 </div>
             </div>
         </div>
+        {{-- Scan QR Modal --}}
+        <div class="modal fade" id="scanQrModal" tabindex="-1" aria-labelledby="scanQrModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header bg-transparent border-0">
+                        <h1 class="text-center mb-1" id="scanQrModalLabel">Scan QR Code</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-body px-4 pb-3">
+                        <!-- Input Field for ASN -->
+                        <div class="row align-items-center mb-3 asn-container">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold mb-0">Process Code</label>
+                            </div>
+                            <div class="col-md-8">
+                                <input type="text" name="process_number" class="form-control process_number" placeholder="Enter Number">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Modal Footer -->
+                    <div class="modal-footer justify-content-center border-0">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Close</button>
+                        <button type="button" class="btn btn-primary asn_process">Process</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         {{-- Discount summary modal --}}
         @include('procurement.gate-entry.partials.summary-disc-modal')
         {{-- Add expenses modal--}}
@@ -717,6 +750,7 @@
             localStorage.removeItem('selectedPoIds');
             localStorage.removeItem('selectedJoIds');
             localStorage.removeItem('selectedSoIds');
+            $(".scanQR").removeClass('d-none');
             currentProcessType = null;
             $("#addNewItemBtn").remove();
             $("#add_new_item_dis").remove();
@@ -1139,6 +1173,7 @@
                         $(".joSelect").addClass('d-none');
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
+                        $(".scanQR").removeClass('d-none');
                         $(".module_type").val('direct');
                     } else if(data.status == 422) {
                         Swal.fire({
@@ -1192,8 +1227,9 @@
             if(!$("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                 $(".joSelect").removeClass('d-none');
                 $(".poSelect").removeClass('d-none');
-                $(".asn-container").removeClass('d-none');
+                // $(".asn-container").removeClass('d-none');
                 $("#referenceNoDiv").hide();
+                $(".scanQR").removeClass('d-none');
                 // $("#reference_number_input").val('');
                 $("#addNewItemBtn").show();
                 $("#itemTable > thead .form-check-input").prop('checked',false);
@@ -1802,6 +1838,7 @@
 
             $("[name='po_item_ids']").val(ids);
             $(".joSelect").removeClass('d-none')
+            $(".scanQR").removeClass('d-none');
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -2172,6 +2209,7 @@
 
             $("[name='jo_item_ids']").val(ids);
             $(".poSelect").hide();
+            $(".scanQR").removeClass('d-none');
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -2527,20 +2565,23 @@
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');
-                            $(".asn-container").removeClass('d-none');
+                            // $(".asn-container").removeClass('d-none');
+                            $(".scanQR").removeClass('d-none');
                             // $('.asn_process').prop('disabled', true);
                             break;
 
                         case 'po-process':
                             $(".joSelect").addClass('d-none');
                             $(".poSelect").removeClass('d-none');
-                            $(".asn-container").addClass('d-none');
+                            // $(".asn-container").addClass('d-none');
+                            $(".scanQR").addClass('d-none');
                             break;
 
                         default:
                             $(".poSelect").addClass('d-none');
                             $(".joSelect").removeClass('d-none');
-                            $(".asn-container").addClass('d-none');
+                            // $(".asn-container").addClass('d-none');
+                            $(".scanQR").addClass('d-none');
                             break;
                     }
 

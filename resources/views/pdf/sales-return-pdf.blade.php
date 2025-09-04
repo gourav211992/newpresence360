@@ -26,12 +26,14 @@
     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="vertical-align: top;">
-                    @php
-                        $data = file_get_contents(isset($orgLogo) && $orgLogo ? $orgLogo : $imagePath);
-                        $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
-                        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                    @endphp
-                    <img src="{!! $base64 !!}" alt="" height="50px" />
+                    @if (isset($orgLogo) && $orgLogo)
+                        @php
+                            $data = isset($orgLogo) && $orgLogo ? file_get_contents($orgLogo) : '';
+                            $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
+                            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                        @endphp
+                        <img src="{!! $base64 !!}" alt="" height="50px" />
+                    @endif
                 </td>
                 <td style="text-align: center; vertical-align: bottom; font-weight: bold; font-size: 18px;">
                     Credit Note

@@ -25,7 +25,7 @@
                     @if (isset($orgLogo) && $orgLogo)
                         <img src="{!! $orgLogo !!}" alt="" height="50px" />
                     @else
-                        <img src="{{$imagePath}}" height="50px" alt="">
+                        <img src="{{ $imagePath }}" height="50px" alt="">
                     @endif
                 </td>
 
@@ -59,12 +59,15 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;">
-                                {{@$organizationAddress->line_1}}, {{@$organizationAddress->line_2}}, {{@$organizationAddress->line_3}}
+                                {{ @$organizationAddress->line_1 }}, {{ @$organizationAddress->line_2 }},
+                                {{ @$organizationAddress->line_3 }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress?->city?->name }}, {{ @$organizationAddress?->state?->name }}, {{ @$organizationAddress?->country?->name }}, Pin Code: {{ @$organizationAddress->pincode }}
+                                {{ @$organizationAddress?->city?->name }}, {{ @$organizationAddress?->state?->name }},
+                                {{ @$organizationAddress?->country?->name }}, Pin Code:
+                                {{ @$organizationAddress->pincode }}
                             </td>
                         </tr>
                         {{-- <tr>
@@ -73,7 +76,11 @@
                         </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$organizationAddress->phone)Phone: {{ @$organizationAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if (@$organizationAddress->phone)
+                                    Phone: {{ @$organizationAddress->phone }},
+                                    @endif @if (@$organization?->email)
+                                        Email: {{ @$organization?->email }}
+                                    @endif
                             </td>
                         </tr>
                     </table>
@@ -125,7 +132,7 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">GSTIN No:</td>
-                            <td style="padding-top: 3px;">{{@$mrn?->vendor->compliances->gstin_no}}</td>
+                            <td style="padding-top: 3px;">{{ @$mrn?->vendor->compliances->gstin_no }}</td>
                         </tr>
 
                         <tr>
@@ -153,7 +160,7 @@
                             </td>
                         </tr>
                         <tr>
-                            @if($mrn->document_date)
+                            @if ($mrn->document_date)
                                 <td>
                                     <b>Gate Entry Date:</b>
                                 </td>
@@ -167,8 +174,9 @@
                                 <b>ASN No:</b>
                             </td>
                             <td style="font-weight: 900;">
-                                @if(isset($mrn->items[0]->vendorAsn))
-                                    {{ $mrn->items[0]->vendorAsn->book->book_code ?? '' }} - {{ $mrn->items[0]->vendorAsn->document_number ?? '' }}
+                                @if (isset($mrn->items[0]->vendorAsn))
+                                    {{ $mrn->items[0]->vendorAsn->book->book_code ?? '' }} -
+                                    {{ $mrn->items[0]->vendorAsn->document_number ?? '' }}
                                 @endif
                             </td>
                         </tr>
@@ -185,7 +193,7 @@
                                 <b style="font-weight: 900;">Status :</b>
                             </td>
                             <td>
-                                @if($mrn->document_status == 'submitted')
+                                @if ($mrn->document_status == 'submitted')
                                     <span class="status" style="color: #17a2b8 ">
                                         {{ $mrn->display_status }}
                                     </span>
@@ -193,7 +201,7 @@
                                     <span style="color: #6c757d">
                                         {{ $mrn->display_status }}
                                     </span>
-                                @elseif($mrn->document_status == 'approved' || $mrn->document_status == "approval_not_required")
+                                @elseif($mrn->document_status == 'approved' || $mrn->document_status == 'approval_not_required')
                                     <span style="color: #28a745">
                                         Approved
                                     </span>
@@ -208,7 +216,7 @@
                                 @endif
                             </td>
                         </tr>
-                        @if($mrn->reference_number)
+                        @if ($mrn->reference_number)
                             <tr>
                                 <td>
                                     <b>Reference No:</b>
@@ -218,9 +226,14 @@
                                 </td>
                             </tr>
                         @endif
-                        @if($qrCodeBase64)
-                        <img src="{{ $qrCodeBase64 }}" style = "margin-top:10px" width="100%" alt="QR Code">
-                        @endif
+                        <tr>
+                            <td style="text-align: center;">
+                                @if ($qrCodeBase64)
+                                    <img src="{{ $qrCodeBase64 }}" class="qr-image" style = "margin-top:10px"
+                                        width="70px" height="70px" alt="QR Code">
+                                @endif
+                            </td>
+                        </tr>
                     </table>
                 </td>
             </tr>
@@ -241,12 +254,13 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{@$buyerAddress->address}}
+                                {{ @$buyerAddress->address }}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }}, {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
+                                {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }},
+                                {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
                             </td>
                         </tr>
                         {{-- <tr>
@@ -255,7 +269,11 @@
                         </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$buyerAddress->phone)Phone: {{ @$buyerAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if (@$buyerAddress->phone)
+                                    Phone: {{ @$buyerAddress->phone }},
+                                    @endif @if (@$organization?->email)
+                                        Email: {{ @$organization?->email }}
+                                    @endif
                             </td>
                         </tr>
                     </table>
@@ -365,140 +383,140 @@
             </tr>
             @php
                 $taxBracket = [];
-                $totalCGSTValue = 0.00;
-                $totalSGSTValue = 0.00;
-                $totalIGSTValue = 0.00;
-                $totalTaxValue = 0.00;
+                $totalCGSTValue = 0.0;
+                $totalSGSTValue = 0.0;
+                $totalIGSTValue = 0.0;
+                $totalTaxValue = 0.0;
             @endphp
-            @foreach($mrn->items as $key => $val)
-                        <tr>
-                            <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                                {{ $key + 1 }}
-                            </td>
-                            <td
-                                style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                                <div style="max-width:180px;word-wrap:break-word;">
-                                    <b> {{ @$val->item->item_name }}</b>
-                                    @if(isset($val->attributes))
-                                        <br>
-                                        @php
-                                            $arrr = $val->attributes ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
-                                            $first = true;
-                                        @endphp
-                                        @foreach($val->item->itemAttributes as $itemAttribute)
-                                            @if(count($arrr))
-
-                                                @foreach ($itemAttribute->attributes() as $value)
-                                                    @if (in_array($value->id, $arrr))
-                                                        @if (!$first)
-                                                            {{','}}
-                                                        @endif
-                                                        {{$value->attributeGroup->name}}:{{ucfirst($value->value)}}
-                                                        @php
-                                                            $first = false;
-                                                        @endphp
-                                                    @endif
-                                                @endforeach
-
-                                            @endif
-                                        @endforeach
-                                        <br>
-                                    @endif
-                                    @if(isset($val->specifications))
-                                        @foreach($val->specifications as $data)
-                                            @if(isset($data->value))
-                                                {{$data->specification_name}}:{{$data->value}}<br>
-                                            @endif
-                                        @endforeach
-                                    @endif
-                                    {{ @$val->item_code }}<br />
-                                    {{@$val->remark}}<br >
-                                    @if (isset($val->po))
-                                        {{ $val->po->book->book_code }}-{{ $val->po->document_number }}<br>
-                                        {{ date('d-M-y', strtotime($val->po->document_date)) }}<br>
-                                    @elseif (isset($val->jo))
-                                        {{ $val->jo->book->book_code }}-{{ $val->jo->document_number }}<br>
-                                        {{ date('d-M-y', strtotime($val->jo->document_date)) }}<br>
-                                    @endif
-                                </div>
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                                {{ @$val->hsn_code }}
-                            </td>
-                            @php
-                                $poQty = match (optional($val->header)->reference_type) {
-                                    'po' => optional($val->poItem)->order_qty,
-                                    'jo' => optional($val->joItem)->order_qty,
-                                    'so' => optional($val->soItem)->qty,
-                                    default => $val->accepted_qty ?? 0,
-                                };
-                            @endphp
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                                {{number_format(@$poQty, 2)}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                                {{number_format(@$val->accepted_qty, 2)}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->uom->name}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{number_format(@$val->rate, 2)}}
-                            </td>
-                            @php
-                                $total = $val->accepted_qty * $val->rate;
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{number_format($total, 2) }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($val->discount_amount + $val->header_discount_amount, 2)}}
-                            </td>
-                            @php
-                                $total = $val->accepted_qty * $val->rate;
-                                $netValue = $total - ($val->discount_amount + $val->header_discount_amount);
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($netValue, 2)}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+            @foreach ($mrn->items as $key => $val)
+                <tr>
+                    <td
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                        {{ $key + 1 }}
+                    </td>
+                    <td
+                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        <div style="max-width:180px;word-wrap:break-word;">
+                            <b> {{ @$val->item->item_name }}</b>
+                            @if (isset($val->attributes))
+                                <br>
                                 @php
-                                    if (count($val->taxes)) {
-                                        foreach ($val->taxes as $taxs) {
-                                            $taxName = $taxs->ted_name . " " . number_format($taxs->ted_percentage, 2) . " %";
-                                            if (isset($taxBracket[$taxName])) {
-                                                $taxBracket[$taxName][0] += $taxs->ted_amount;
-                                                $taxBracket[$taxName][1] += $taxs->assesment_amount;
-                                            } else {
-                                                $taxBracket[$taxName][0] = $taxs->ted_amount;
-                                                $taxBracket[$taxName][1] = $taxs->assesment_amount;
-                                            }
-
-                                        }
-                                    }
-                                    $totalCGSTValue += $val->cgst_value['value'];
-                                    $totalSGSTValue += $val->sgst_value['value'];
-                                    $totalIGSTValue += $val->igst_value['value'];
-                                    $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
-
+                                    $arrr = $val->attributes
+                                        ? $val->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all()
+                                        : [];
+                                    $first = true;
                                 @endphp
-                                {{-- {{isset($val?->taxes?->first()->ted_amount) ? $val->taxes->first()->ted_amount : "NA"}} --}}
-                                {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
-                                {{ $val?->ted_tax?->taxDetail?->erpTax?->tax_group ?? 'NA' }}
-                            </td>
-                        </tr>
+                                @foreach ($val->item->itemAttributes as $itemAttribute)
+                                    @if (count($arrr))
+                                        @foreach ($itemAttribute->attributes() as $value)
+                                            @if (in_array($value->id, $arrr))
+                                                @if (!$first)
+                                                    {{ ',' }}
+                                                @endif
+                                                {{ $value->attributeGroup->name }}:{{ ucfirst($value->value) }}
+                                                @php
+                                                    $first = false;
+                                                @endphp
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                @endforeach
+                                <br>
+                            @endif
+                            @if (isset($val->specifications))
+                                @foreach ($val->specifications as $data)
+                                    @if (isset($data->value))
+                                        {{ $data->specification_name }}:{{ $data->value }}<br>
+                                    @endif
+                                @endforeach
+                            @endif
+                            {{ @$val->item_code }}<br />
+                            {{ @$val->remark }}<br>
+                            @if (isset($val->po))
+                                {{ $val->po->book->book_code }}-{{ $val->po->document_number }}<br>
+                                {{ date('d-M-y', strtotime($val->po->document_date)) }}<br>
+                            @elseif (isset($val->jo))
+                                {{ $val->jo->book->book_code }}-{{ $val->jo->document_number }}<br>
+                                {{ date('d-M-y', strtotime($val->jo->document_date)) }}<br>
+                            @endif
+                        </div>
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ @$val->hsn_code }}
+                    </td>
+                    @php
+                        $poQty = match (optional($val->header)->reference_type) {
+                            'po' => optional($val->poItem)->order_qty,
+                            'jo' => optional($val->joItem)->order_qty,
+                            'so' => optional($val->soItem)->qty,
+                            default => $val->accepted_qty ?? 0,
+                        };
+                    @endphp
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        {{ number_format(@$poQty, 2) }}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        {{ number_format(@$val->accepted_qty, 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ @$val->uom->name }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ number_format(@$val->rate, 2) }}
+                    </td>
+                    @php
+                        $total = $val->accepted_qty * $val->rate;
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ number_format($total, 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{ number_format($val->discount_amount + $val->header_discount_amount, 2) }}
+                    </td>
+                    @php
+                        $total = $val->accepted_qty * $val->rate;
+                        $netValue = $total - ($val->discount_amount + $val->header_discount_amount);
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{ number_format($netValue, 2) }}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        @php
+                            if (count($val->taxes)) {
+                                foreach ($val->taxes as $taxs) {
+                                    $taxName = $taxs->ted_name . ' ' . number_format($taxs->ted_percentage, 2) . ' %';
+                                    if (isset($taxBracket[$taxName])) {
+                                        $taxBracket[$taxName][0] += $taxs->ted_amount;
+                                        $taxBracket[$taxName][1] += $taxs->assesment_amount;
+                                    } else {
+                                        $taxBracket[$taxName][0] = $taxs->ted_amount;
+                                        $taxBracket[$taxName][1] = $taxs->assesment_amount;
+                                    }
+                                }
+                            }
+                            $totalCGSTValue += $val->cgst_value['value'];
+                            $totalSGSTValue += $val->sgst_value['value'];
+                            $totalIGSTValue += $val->igst_value['value'];
+                            $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
+
+                        @endphp
+                        {{-- {{isset($val?->taxes?->first()->ted_amount) ? $val->taxes->first()->ted_amount : "NA"}} --}}
+                        {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
+                        {{ $val?->ted_tax?->taxDetail?->erpTax?->tax_group ?? 'NA' }}
+                    </td>
+                </tr>
             @endforeach
         </table>
 
@@ -512,11 +530,11 @@
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 15px;"><b>Currency:</b> {{@$mrn->currency->name}} </td>
+                            <td style="padding-top: 15px;"><b>Currency:</b> {{ @$mrn->currency->name }} </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;"><b>Payment Terms :</b>
-                                {{@$mrn->paymentTerm->name}}
+                                {{ @$mrn->paymentTerm->name }}
                             </td>
                         </tr>
                         <tr>
@@ -527,7 +545,8 @@
                 </td>
                 <td
                     style="padding: 3px; border: 1px solid #000; border-top: none; border-left: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px; margin-top: 10px;" cellspacing="0" cellpadding="0">
+                    <table style="width: 100%; margin-bottom: 0px; margin-top: 10px;" cellspacing="0"
+                        cellpadding="0">
                         <tr>
                             <td style="text-align: right;">
                                 <b>Item Total :</b>
@@ -552,29 +571,29 @@
                                 {{ number_format($totalTaxableValue, 2) }}
                             </td>
                         </tr>
-                        @foreach($taxBracket as $tax => $value)
+                        @foreach ($taxBracket as $tax => $value)
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    <b>{{$tax}} @ {{number_format($value[1], 2)}}:</b>
+                                    <b>{{ $tax }} @ {{ number_format($value[1], 2) }}:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
                                     {{ number_format($value[0], 2) }}
                                 </td>
                             </tr>
                         @endforeach
-                        @if(isset($mrn?->expenses) && count($mrn?->expenses))
+                        @if (isset($mrn?->expenses) && count($mrn?->expenses))
                             <tr>
                                 <td style="text-align: right; padding-top: 3px;">
                                     <b>Total After Tax:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    {{ number_format($totalAfterTax, 2)}}
+                                    {{ number_format($totalAfterTax, 2) }}
                                 </td>
                             </tr>
-                            @foreach($mrn->expenses as $key => $mrnense)
+                            @foreach ($mrn->expenses as $key => $mrnense)
                                 <tr>
                                     <td style="text-align: right; padding-top: 3px;">
-                                        <b>{{ucFirst($mrnense->ted_name)}} :</b>
+                                        <b>{{ ucFirst($mrnense->ted_name) }} :</b>
                                     </td>
                                     <td style="text-align: right; padding-top: 3px;">
                                         {{ number_format(@$mrnense->ted_amount, 2) }}
@@ -604,7 +623,7 @@
                         <tr>
                             <td>
                                 <div style="min-height: 80px;">
-                                    {{$mrn->remarks}}
+                                    {{ $mrn->remarks }}
                                 </div>
                             </td>
                         </tr>
@@ -623,11 +642,11 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
 
                         <tr>
-                            <td style="padding-top: 5px;">Created By : {{@$mrn->createdBy->name}}</td>
+                            <td style="padding-top: 5px;">Created By : {{ @$mrn->createdBy->name }}</td>
                         </tr>
 
                         <tr>
-                            <td style="padding-top: 5px;">Printed By : {{@$user->name}}
+                            <td style="padding-top: 5px;">Printed By : {{ @$user->name }}
                             </td>
                         </tr>
                     </table>
@@ -651,7 +670,12 @@
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
-                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
+                    Regd. Office: {{ @$organizationAddress->getFullAddressAttribute() }} @if (@$organization?->gst_number)
+                        , GSTIN NO - {{ @$organization?->gst_number }}
+                        @endif @if (@$organization?->pan_number)
+                            , PAN NO - {{ @$organization?->pan_number }}
+                        @endif
+                        <br>
                 </td>
                 <!-- Principal Office to be added later -->
             </tr>

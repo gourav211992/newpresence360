@@ -11,6 +11,9 @@ use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
+use App\Lib\Services\WHM\WhmJob;
+use App\Models\ErpMaterialIssueHeader;
+use App\Models\ErpMiItem;
 use App\Lib\Services\WHM\PickingJob;
 use App\Models\ErpPlHeader;
 use App\Models\ErpPlItem;
@@ -33,11 +36,11 @@ class PicklistTaskController extends Controller
                     },'subStore' => function($q){
                         $q->select('id','name','is_warehouse_required');
                     }, 'morphable.items' => function($q){
-                        $q->select('id','pl_header_id','picked_qty');
+                        $q->select('id','inventory_uom_qty');
                     }])
-                    ->where('morphable_type', 'App\Models\ErpPlHeader')
+                    ->where('type', CommonHelper::PICKING)
                     ->when($search, function ($query) use ($search) {
-                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader'], function ($q) use ($search) {
+                        $query->whereHasMorph('morphable', ['App\Models\ErpPlHeader', 'App\Models\ErpMaterialIssueHeader'], function ($q) use ($search) {
                              $q->where(function($q2) use ($search) {
                                 $q2->where('document_number', 'like', "%{$search}%")
                                     ->orWhere('book_code', 'like', "%{$search}%");
@@ -85,7 +88,7 @@ class PicklistTaskController extends Controller
             throw new ValidationException($validator);
         }
 
-        $job = ErpWhmJob::where('morphable_type','App\Models\ErpPlHeader')->where('id',$request->job_id)->first();
+        $job = ErpWhmJob::where('type', CommonHelper::PICKING)->where('id',$request->job_id)->first();
         if (!$job) {
             throw ValidationException::withMessages([
                 'job_id' => ['Job not found.'],
@@ -94,28 +97,8 @@ class PicklistTaskController extends Controller
 
         $morphableId = $job->morphable_id;
         $storeId = $request->store_id;
-
-        $items = ErpPlItem::where('pl_header_id', $morphableId)
-                        ->whereHas('header', function($q) use($storeId){
-                            $q->where('store_id',$storeId);
-                        })
-                        ->select(
-                            'id as pl_item_id',
-                            'pl_header_id',
-                            'item_id',
-                            'item_name',
-                            'item_code',
-                            DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
-                            'attributes',
-                            DB::raw("(
-                                SELECT COUNT(*)
-                                FROM erp_item_unique_codes
-                                WHERE morphable_id = erp_pl_items.id
-                                AND morphable_type = '" . addslashes(ErpPlItem::class) . "'
-                                AND status = '" . CommonHelper::SCANNED . "'
-                            ) as scanned_count")
-                        )
-                        ->paginate(CommonHelper::PAGE_LENGTH_10);
+        
+        $items = $this -> getItemDetailsData($job, $storeId);
         return [
             'message' => 'Records fetched successfully',
             "data" => $items,
@@ -131,7 +114,7 @@ class PicklistTaskController extends Controller
         ],[
             'store_id.required' => 'Store id is required',
             'pl_item_id.required' => 'Pl item id is required',
-            'job_id.required' => 'Pl item id is required',
+            'job_id.required' => 'Job id is required',
         ]);
 
         if ($validator->fails()) {
@@ -139,21 +122,42 @@ class PicklistTaskController extends Controller
         }
 
         $storeId = $request->store_id;
-        $plItem = ErpPlItem::whereHas('header', function($q) use($storeId){
-                            $q->where('store_id',$storeId);
-                        })
-                        ->where('id', $request->pl_item_id)
-                        ->select('id','pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),'attributes')
-                        ->first();
+        $job = ErpWhmJob::find($request -> job_id);
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+        if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $plItem = ErpMiItem::whereHas('header', function($q) use($storeId){
+                    $q->where('from_store_id',$storeId);
+                })
+                ->where('id', $request->pl_item_id)
+                ->with('attributes')
+                ->select('id','material_issue_id AS pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'))
+                ->first();
+        } else if ($job -> trns_type === ConstantHelper::PL_SERVICE_ALIAS) {
+            $plItem = ErpPlItem::whereHas('header', function($q) use($storeId){
+                    $q->where('store_id',$storeId);
+                })
+                ->where('id', $request->pl_item_id)
+                ->select('id','pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),'attributes')
+                ->first();
+        }
+
+        if (!$plItem) {
+            throw ValidationException::withMessages([
+                'pl_item_id' => ['Item not found.'],
+            ]);
+        }
 
         $plScannedItemUids = ErpItemUniqueCode::where('job_id',$request->job_id)->pluck('uid')->toArray(); 
-        // dd($plScannedItemUids);
         
         $plItemId = $plItem->id;
  
         if($plItem){
             $reservedStock = $plItem->stockReservation()
-                ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+                ->where('issue_book_type',$job -> trns_type)
                 ->where('issue_header_id',$plItem->pl_header_id);
 
             $transType = $reservedStock->pluck('receipt_book_type')
@@ -263,7 +267,12 @@ class PicklistTaskController extends Controller
             }
         }
 
-        $detail = ErpPlItem::find($request->pl_item_id);
+        if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $detail = ErpMiItem::find($request->pl_item_id);
+        } else if ($job -> trns_type === ConstantHelper::PL_SERVICE_ALIAS) {        
+            $detail = ErpPlItem::find($request->pl_item_id);
+        }
+
         if(!$detail){
             throw ValidationException::withMessages([
                 'pl_item_id' => ['Item not found.'],
@@ -272,7 +281,7 @@ class PicklistTaskController extends Controller
 
         $plHeaderId = $job->morphable_id;
         $reservedStock = $detail->stockReservation()
-            ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+            ->where('issue_book_type',$job->trns_type)
             ->where('issue_header_id',$plHeaderId)
             ->where('issue_detail_id',$request->pl_item_id);
 
@@ -318,7 +327,7 @@ class PicklistTaskController extends Controller
         }
 
         $count = count($request->packet_ids);
-        $stockRes = StockReservation::validateReservedStock(ConstantHelper::PL_SERVICE_ALIAS,$job->morphable_id,$request->pl_item_id,$count);
+        $stockRes = StockReservation::validateReservedStock($job->trns_type,$job->morphable_id,$request->pl_item_id,$count);
         if($stockRes['status'] == 'error'){
             throw ValidationException::withMessages([
                 'pl_item_id' => [$stockRes['message']],
@@ -338,7 +347,7 @@ class PicklistTaskController extends Controller
             }
 
             $header = $job->morphable;
-            (new PickingJob())->scanQRCodes($detail, $header, $job->id, $request->packet_ids, $storagePointId, $user, CommonHelper::PICKING, $transType);
+            (new PickingJob())->scanQRCodes($detail, $header, $job, $request->packet_ids, $storagePointId, $user, CommonHelper::PICKING, $transType);
 
 
             \DB::commit();
@@ -355,7 +364,7 @@ class PicklistTaskController extends Controller
         $validator = Validator::make($request->all(),[
             'packet_id' => ['required'],
             'job_id' => ['required'],
-            'storage_point_id' => ['required'],
+            'storage_point_id' => ['nullable']
         ],[
             'packet_id.required' => 'Packet id is required',
             'job_id.required' => 'Job id is required',
@@ -367,7 +376,7 @@ class PicklistTaskController extends Controller
         }
 
         // custom validation after
-        $job = ErpWhmJob::where('id',$request->job_id)->where('morphable_type','App\Models\ErpPlHeader')->first();
+        $job = ErpWhmJob::where('id',$request->job_id)->where('type',CommonHelper::PICKING)->first();
 
         if (!$job) {
             throw ValidationException::withMessages([
@@ -375,10 +384,26 @@ class PicklistTaskController extends Controller
             ]);
         }
 
+        $subStore = $job->subStore;
+        if ($subStore && $subStore->is_warehouse_required) {
+            if (!$request->filled('storage_point_id')) {
+                throw ValidationException::withMessages([
+                    'storage_point_id' => ['Storage point is required.'],
+                ]);
+            }
+        }
+
+        $morphableType = "";
+        if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $morphableType = "App\Models\ErpMiItem";
+        } else if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            $morphableType = "App\Models\ErpPlItem";
+        }
+
         $uniqueCode = ErpItemUniqueCode::where('item_uid', $request->packet_id)
                         ->where('job_id',$request->job_id)
                         // ->where('storage_point_id',$request->storage_point_id)
-                        ->where('morphable_type', 'App\Models\ErpPlItem')
+                        ->where('morphable_type', $morphableType)
                         ->where('status',CommonHelper::SCANNED)
                         ->first();
         if (!$uniqueCode) {
@@ -395,10 +420,13 @@ class PicklistTaskController extends Controller
 
         \DB::beginTransaction();
         try {
-
+            $storagePointId = $request->storage_point_id ?? NULL;
             $mrnDetail = ErpItemUniqueCode::where('item_uid', $request->packet_id)
-                ->where('storage_point_id',$request->storage_point_id)
-                ->where('morphable_type', 'App\Models\MrnDetail')
+                // ->where('storage_point_id',$request->storage_point_id)
+                ->when($storagePointId, function ($query) use ($storagePointId) {
+                    $query->where('storage_point_id', $storagePointId);
+                })
+                ->where('job_type', CommonHelper::PUTAWAY)
                 ->where('status',CommonHelper::SCANNED)
                 ->where('utilized_id',$uniqueCode->uid)
                 ->first();
@@ -477,18 +505,45 @@ class PicklistTaskController extends Controller
             $remarks = NULL;
             CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
-            $pickList = ErpPlHeader::find($job->morphable_id);
-            if($pickList && $job -> status == CommonHelper::CLOSED){
-                foreach ($pickList->inv_items as $plItem) {
-                    $status = StockReservation::settlementOfReservedStocks(ConstantHelper::PL_SERVICE_ALIAS, $pickList->id, $plItem->id, $plItem->inventory_uom_qty, true);
-                    if ($status['status'] == 'error') {
-                        throw new ApiGenericException($status['message']);
+            if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+                $mi = ErpMaterialIssueHeader::find($job -> morphable_id);
+                if ($mi && $job -> status === CommonHelper::CLOSED) {
+                    //Check Recieve job
+                    if ($mi -> to_sub_store ?-> is_warehouse_required) {
+                        //Only Issue and Recieve Job
+                        (new WhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
+                        foreach ($mi->items as $miItem) {
+                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $mi->id, $miItem->id, $miItem->inventory_uom_qty, false);
+                            if ($status['status'] == 'error') {
+                                throw new ApiGenericException($status['message']);
+                            }
+                        }
+                    } else {
+                        //Direct Issue and Recieve
+                        foreach ($mi->items as $miItem) {
+                            $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $mi->id, $miItem->id, $miItem->inventory_uom_qty, true);
+                            if ($status['status'] == 'error') {
+                                throw new ApiGenericException($status['message']);
+                            }
+                        }
+                        $subStoreId = $header->to_sub_store_id ?? NULL;
+                        $storeId = $header->to_store_id ?? NULL;
+                        (new PickingJob())->generateQRCodes($subStoreId,$job,$storeId);
                     }
                 }
+            } else if ($job -> trns_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                $pickList = ErpPlHeader::find($job->morphable_id);
+                if($pickList && $job -> status == CommonHelper::CLOSED){
+                    foreach ($pickList->inv_items as $plItem) {
+                        $status = StockReservation::settlementOfReservedStocks(ConstantHelper::PL_SERVICE_ALIAS, $pickList->id, $plItem->id, $plItem->inventory_uom_qty, true);
+                        if ($status['status'] == 'error') {
+                            throw new ApiGenericException($status['message']);
+                        }
+                    }
+                }
+                $subStoreId = $header->staging_sub_store_id ?? NULL;
+                (new PickingJob())->generateQRCodes($subStoreId,$job,$header->store_id);
             }
-
-            $subStoreId = $header->staging_sub_store_id ?? NULL;
-            (new PickingJob())->generateQRCodes($subStoreId,$job);
 
             \DB::commit();
             return [
@@ -525,7 +580,7 @@ class PicklistTaskController extends Controller
         $plHeaderId = $job->morphable_id;
         $storagePointId = $request->storage_point_id;
 
-        $reservedStock = StockLedgerReservation::where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+        $reservedStock = StockLedgerReservation::where('issue_book_type', $job->trns_type)
             ->where('issue_header_id',$plHeaderId)
             ->where('issue_detail_id',$request->pl_item_id);
 
@@ -599,8 +654,11 @@ class PicklistTaskController extends Controller
                 'job_id' => ['Job not found.'],
             ]);
         }
-
-        $detail = ErpPlItem::find($request->pl_item_id);
+        if ($job->trns_type === ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME) {
+            $detail = ErpMiItem::find($request->pl_item_id);
+        } else if ($job->trns_type === ConstantHelper::PL_SERVICE_ALIAS) {
+            $detail = ErpPlItem::find($request->pl_item_id);
+        }
         if(!$detail){
             throw ValidationException::withMessages([
                 'pl_item_id' => ['Item not found.'],
@@ -627,7 +685,7 @@ class PicklistTaskController extends Controller
 
         $plHeaderId = $job->morphable_id;
         $reservedStock = $detail->stockReservation()
-            ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+            ->where('issue_book_type',$job->trns_type)
             ->where('issue_header_id',$plHeaderId)
             ->where('issue_detail_id',$request->pl_item_id);
 
@@ -656,5 +714,89 @@ class PicklistTaskController extends Controller
             'message' => $response['message'],
         ];
 
+    }
+
+    private function getItemDetailsData(ErpWhmJob $job, int $storeId)
+    {
+        $morphableId = $job -> morphable_id;
+        $trnsType = $job -> trns_type;
+        if ($trnsType === ConstantHelper::PL_SERVICE_ALIAS) {
+            return ErpPlItem::where('pl_header_id', $morphableId)
+                ->whereHas('header', function($q) use($storeId){
+                    $q->where('store_id',$storeId);
+                })
+                ->select(
+                    'id as pl_item_id',
+                    'pl_header_id',
+                    'item_id',
+                    'item_name',
+                    'item_code',
+                    DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    'attributes',
+                    DB::raw("(
+                        SELECT COUNT(*)
+                        FROM erp_item_unique_codes
+                        WHERE morphable_id = erp_pl_items.id
+                        AND morphable_type = '" . addslashes(ErpPlItem::class) . "'
+                        AND status = '" . CommonHelper::SCANNED . "'
+                    ) as scanned_count")
+                )->paginate(CommonHelper::PAGE_LENGTH_10);
+        } else if ($trnsType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+            return ErpMiItem::where('material_issue_id', $morphableId)
+                ->whereHas('header', function($q) use($storeId){
+                    $q->where('from_store_id',$storeId);
+                })
+                ->with('attributes')
+                ->select(
+                    'id as pl_item_id',
+                    'material_issue_id AS pl_header_id',
+                    'item_id',
+                    'item_name',
+                    'item_code',
+                    DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    DB::raw("(
+                        SELECT COUNT(*)
+                        FROM erp_item_unique_codes
+                        WHERE morphable_id = erp_mi_items.id
+                        AND morphable_type = '" . addslashes(ErpMiItem::class) . "'
+                        AND status = '" . CommonHelper::SCANNED . "'
+                    ) as scanned_count")
+                )->paginate(CommonHelper::PAGE_LENGTH_10);
+        } else {
+            return [];
+        }
+    }
+
+    public function scannedItemQrs(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'pl_item_id' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required',
+            'pl_item_id.required' => 'Pl item id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $scannedPackets = ErpItemUniqueCode::where('job_type', CommonHelper::PICKING)
+                ->where('morphable_id', $request->pl_item_id)
+                ->where('doc_type', CommonHelper::RECEIPT)
+                ->where('status',CommonHelper::SCANNED)
+                ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
+                ->get();
+
+
+        \DB::commit();
+            return [
+                'data' => $scannedPackets
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
     }
 }

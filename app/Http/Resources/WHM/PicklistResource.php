@@ -35,7 +35,7 @@ class PicklistResource extends JsonResource
             'book_id' => optional($morphable)->book_id,
             'series' => optional($morphable)->book_code,
             'total_item' => $items ? $items->count() : 0,
-            'total_packets' => $items ? $items->sum('picked_qty') : 0,
+            'total_packets' => $items ? $items->sum('inventory_uom_qty') : 0,
         ];
     }
 }
