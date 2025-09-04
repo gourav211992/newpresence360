@@ -19,6 +19,7 @@ use App\Models\ErpMaintenanceType;
 use App\Models\ErpDefectType;
 use App\Models\ErpItem;
 use Carbon\Carbon;
+use App\Models\StockLedger;
 use App\Models\ErpEquipMaintenanceChecklist;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -255,14 +256,30 @@ class MaintWoController extends Controller
             $item->attributes = collect($processedData);
         }
 
-        $items = $items->map(fn($item) => [
-            'id' => $item->id,
-            'item_code' => $item->item_code,
-            'item_name' => $item->item_name,
-            'uom_name' => optional($item->uom)->name,
-            'uom_id' => optional($item->uom)->id,
-            'item_attributes' => $item->attributes,
-        ]);
+        $items = $items->map(function ($item) {
+            $confirmedStock = StockLedger::query()
+                ->selectRaw("
+                    SUM(
+                        CASE 
+                            WHEN document_status IN ('approved', 'approval_not_required', 'posted') 
+                            THEN receipt_qty - reserved_qty
+                            ELSE 0
+                        END
+                    ) as confirmed_stock
+                ")
+                ->where('item_code', $item->item_code) // yaha fix kiya
+                ->value('confirmed_stock');
+        
+            return [
+                'id'              => $item->id,
+                'item_code'       => $item->item_code,
+                'item_name'       => $item->item_name,
+                'uom_name'        => optional($item->uom)->name,
+                'uom_id'          => optional($item->uom)->id,
+                'item_attributes' => $item->attributes,
+                'available_stock' => $confirmedStock ?? 0, // agar null ho to 0
+            ];
+        });
 
         
 
@@ -678,7 +695,7 @@ class MaintWoController extends Controller
 
     public function update(Request $request, string $id)
     {
-        // dd($request->all());
+     
         $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
@@ -742,9 +759,14 @@ class MaintWoController extends Controller
                 ]);
             }
 
-            // Update work order excluding checklist data (handle separately)
-            $updateData = $request->except(['checklist', 'checklist_data']);
-          
+            // Prepare update data
+            $updateData = $request->all();
+            
+            // Only update checklist_data if it's not empty
+            if (empty($request->checklist_data) || $request->checklist_data === 'null' || $request->checklist_data === '[]') {
+                unset($updateData['checklist_data']);
+            }
+            
             $workOrder->update($updateData);
             
 
@@ -847,6 +869,15 @@ class MaintWoController extends Controller
         $type = $r->type;
         $data = [];
 
+        $usedEquipmentIds = PlantMaintWo::pluck('equipment_details')
+        ->map(function ($details) {
+            $decoded = json_decode($details, true);
+            return $decoded['equipment_id'] ?? null;
+        })
+        ->filter() 
+        ->toArray();
+
+       
 
 
         if ($type == 'defect') {
@@ -860,19 +891,17 @@ class MaintWoController extends Controller
               ->orderBy('created_at', 'desc');
 
             $totalDefects = DefectNotification::where('document_status', '!=', 'draft')->count();
-            \Log::info('Total defects (no book filter):', ['count' => $totalDefects]);
+           
 
             if ($r->book_code && is_array($r->book_code) && count($r->book_code) > 0) {
                 $query->whereHas('book', function ($q) use ($r) {
                     $q->whereIn('book_code', $r->book_code);
                 });
-                \Log::info('Applied book filter:', ['book_codes' => $r->book_code]);
-            } else {
-                \Log::info('No book filter applied - book_code empty or not provided');
-            }
+               
+            } 
 
             $results = $query->get();
-            \Log::info('Query results count:', ['count' => $results->count()]);
+           
 
             $data = $results->map(function ($defectNotification) {
                 $maintenanceTypes = [];
@@ -904,8 +933,9 @@ class MaintWoController extends Controller
                 'equipment.spareParts'
             ])
             ->whereHas('bom')
+            ->whereNotIn('erp_equipment_id', $usedEquipmentIds)
             ->whereHas('equipment', function ($q) use ($r) {
-                $q->where('document_status', '!=', 'draft')
+                $q->where('document_status', '!=', 'draft') 
                     ->whereHas('book', function ($qu) use ($r) {
                         $qu->whereIn('book_code', $r->book_code);
                     });
@@ -1623,5 +1653,41 @@ class MaintWoController extends Controller
         }
 
         return implode(' | ', $formatted);
+    }
+
+
+    //Close modal
+    public function closeWorkOrder(Request $request){
+        try{
+            $remarks = $request->remarks??"";
+            $workOrder =PlantMaintWo::find($request->workorder_id);
+            $workOrder->document_status='closed';
+            $workOrder->save();
+           
+            Helper::approveDocument(
+                $workOrder->book_id,
+                $workOrder->id,
+                $workOrder->revision_number,
+                $request->remarks,
+                $request->file('closed_attachment'),
+                $workOrder->approval_level,
+                'closed',
+                0,
+                get_class($workOrder)
+            );
+           
+            return response()->json([
+                'message' => 'Maintenance Work Order Closed Successfully.',
+                'title' =>'Success !',
+                'type' => 'success'
+            ], 200);
+        }
+        catch(Exception $ex){
+            return response()->json([
+                'message' => 'Some Error Occured.',
+                'title' =>'Error !',
+                'type' => 'error'
+            ], 500);
+        }
     }
 }

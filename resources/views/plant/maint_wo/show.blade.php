@@ -43,12 +43,16 @@
                         data-bs-toggle="modal" data-bs-target="#approveModal" onclick="setRejection()">
                     <i data-feather="x-circle"></i> Reject
                 </button>
-              @endif
-
-               
+             
+              
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                         class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-               
+              @endif
+
+                <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light" data-bs-toggle="modal" data-bs-target="#closeModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Close
+                </button>
+            
                             
 						</div>
 					</div>
@@ -123,7 +127,7 @@
                                   class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$data->document_status] ?? ''}} forminnerstatus">
                                   <span class="text-dark">Status</span>
                                   : <span
-                                      class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                      class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS['CLOSED'] ?? ''}}">
                                       @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
                                           Approved
                                       @else
@@ -481,6 +485,7 @@
                                   <th>Attributes</th>
                                   <th>UOM</th>
                                   <th>Qty</th>
+                                  <th>Available Stock</th>
                                 </tr>
                               </thead>
                               <tbody class="mrntableselectexcel">
@@ -543,18 +548,23 @@
                                                value="{{ $part['qty'] ?? ($part->qty ?? '') }}" 
                                                disabled readonly required />
                                       </td>
+                                      <td>
+                                        <input type="number" class="available_stock form-control mw-100" name="available_stock[]" 
+                                               value="{{ $part['available_stock'] ?? 100 }}" 
+                                               disabled readonly />
+                                      </td>
                                     </tr>
                                   @endforeach
                                 @else
                                   <tr>
-                                    <td colspan="6" class="text-center text-muted">No spare parts data available</td>
+                                    <td colspan="7" class="text-center text-muted">No spare parts data available</td>
                                   </tr>
                                 @endif
                               </tbody>
 
                               <tfoot>
                                 <tr valign="top">
-                                  <td colspan="6" rowspan="10">
+                                  <td colspan="7" rowspan="10">
                                     <table class="table border">
                                       <tr>
                                         <td class="p-0">
@@ -596,6 +606,9 @@
                                           </span> 
                                           <span class="badge rounded-pill badge-light-primary">
                                             <strong>Qty.</strong>: <span id="qty">@if(!empty($sparePartsData) && count($sparePartsData) > 0){{ $sparePartsData[0]['qty'] ?? ($sparePartsData[0]->qty ?? 'N/A') }}@endif</span>
+                                          </span>
+                                          <span class="badge rounded-pill badge-light-success">
+                                            <strong>Available Stock</strong>: <span id="available_stock">@if(!empty($sparePartsData) && count($sparePartsData) > 0){{ $sparePartsData[0]['available_stock'] ?? 100 }}@else 100 @endif</span>
                                           </span>
                                         </td>
                                       </tr>
@@ -1003,6 +1016,36 @@
     </div>
 </div>
 
+<!-- Close Maintenance Modal -->
+<div class="modal fade" id="closeModal" tabindex="-1" aria-labelledby="closeModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+          <input type="hidden" value="{{ $workOrder->id }}" name="workorder_id" id="workorder_id">
+					<h5 class="modal-title" id="closeModalLabel">Close Maintenance</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="close_remarks" class="form-label">Close Remarks <span class="text-danger">*</span></label>
+						<textarea class="form-control" id="close_remarks" name="close_remarks" rows="4" placeholder="Please provide detailed remarks for this close..." required></textarea>
+					</div>
+					<div class="mb-3">
+						<label for="close_attachment" class="form-label">Supporting Document (Optional)</label>
+						<input type="file" class="form-control" id="close_attachment" name="close_attachment" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+						<small class="text-muted">Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max: 10MB)</small>
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="confirmCloseSubmit">
+						<i data-feather="check-circle"></i> Submit Close
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 @endsection
 
 
@@ -1146,16 +1189,16 @@
 			let $checked = $rows.find('.row-check:checked');
 
 			// Prevent deletion if only one row exists
-			if ($rows.length <= 1) {
-				showToast('error', 'At least one row is required.');
-				return;
-			}
+			// if ($rows.length <= 1) {
+			// 	showToast('error', 'At least one row is required.');
+			// 	return;
+			// }
 
-			// Prevent deletion if checked rows would remove all
-			if ($rows.length - $checked.length < 1) {
-				showToast('error', 'You must keep at least one row.');
-				return;
-			}
+			// // Prevent deletion if checked rows would remove all
+			// if ($rows.length - $checked.length < 1) {
+			// 	showToast('error', 'You must keep at least one row.');
+			// 	return;
+			// }
 
 			// Remove only the checked rows
 			$checked.closest('tr').remove();
@@ -1274,8 +1317,12 @@
 			// Validate reference type selection
 			let referenceType = $('#reference_type').val();
 			if (!referenceType) {
-				showToast('error', 'Please select a reference type (Equipment or Defect Notification)');
-				$('#reference_type_error').show();
+				Swal.fire({
+					icon: 'error',
+					title: 'Validation Error',
+					text: 'Please select a reference type (Equipment or Defect Notification)',
+					confirmButtonText: 'OK'
+				});
 				return false;
 			}
 			
@@ -1597,7 +1644,12 @@
 			
 			if (selectedEquipment.length === 0) {
 				// Show toaster notification
-				showToast('error', 'Please select at least one equipment');
+				Swal.fire({
+					icon: 'error',
+					title: 'Validation Error',
+					text: 'Please select at least one equipment',
+					confirmButtonText: 'OK'
+				});
 				return false; // Don't close modal
 			}
 			
@@ -1635,7 +1687,12 @@
       let onlyNumber = selectedDefect.replace("defect_row_", "");
   
 			if (onlyNumber === "") {
-				showToast('error', 'Please select a defect notification');
+				Swal.fire({
+					icon: 'error',
+					title: 'Validation Error',
+					text: 'Please select a defect notification',
+					confirmButtonText: 'OK'
+				});
 				return false;
 			}
 
@@ -1889,7 +1946,11 @@
 					},
 					error: function(xhr) {
 						console.error(xhr);
-						showToast('error', 'Failed to fetch filtered defects.');
+						Swal.fire({
+							icon: 'error',
+							title: 'Error',
+							text: 'Failed to fetch filtered defects.'
+						});
 					},
 					complete: function() {
 					}
@@ -1960,5 +2021,73 @@ $(document).on('submit', '.ajax-submit-2', function(e) {
         }
     });
 });
-	</script>
+
+// Close form submit handler - simple form submission
+$('#closeForm').on('submit', function(e) {
+    $('.preloader').show();
+});
+</script>
+<script>
+$(document).ready(function () {
+    $('#confirmCloseSubmit').on('click', function (e) {
+        e.preventDefault();
+
+        let remarks = $('#close_remarks').val().trim();
+        let attachment = $('#close_attachment')[0].files[0];
+        let workOrderId = $('#workorder_id').val(); // set dynamically when opening modal
+
+        if (!remarks) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Remarks required',
+                text: 'Please provide remarks before submitting.'
+            });
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('close_remarks', remarks);
+        if (attachment) {
+            formData.append('close_attachment', attachment);
+        }
+        formData.append('workorder_id', workOrderId);
+        formData.append('_token', '{{ csrf_token() }}');
+
+        $.ajax({
+            url: "{{ route('maint-wo.close-work-order') }}",
+            type: "POST",
+            data: formData,
+            processData: false, // important for file upload
+            contentType: false, // important for file upload
+            beforeSend: function () {
+                $('#confirmCloseSubmit').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+            },
+            success: function (response) {
+                $('#confirmCloseSubmit').prop('disabled', false).html('<i data-feather="check-circle"></i> Submit Close');
+                $('#closeModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message || 'Work order closed successfully.'
+                }).then(() => {
+                  window.location.href = "{{ route('maint-wo.index') }}"; // reload page to reflect changes
+                });
+            },
+            error: function (xhr) {
+                $('#confirmCloseSubmit').prop('disabled', false).html('<i data-feather="check-circle"></i> Submit Close');
+                let errorMsg = 'Something went wrong!';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMsg
+                });
+            }
+        });
+    });
+});
+</script>
+
 @endsection

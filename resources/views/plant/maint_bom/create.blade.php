@@ -150,7 +150,6 @@
 								</div>
 								<div class="card">
 									<div class="card-body customernewsection-form">
-
 										<div class="border-bottom mb-2 pb-25">
 											<div class="row">
 												<div class="col-md-6">
@@ -167,8 +166,6 @@
 												</div>
 											</div>
 										</div>
-
-
 										<div class="table-responsive pomrnheadtffotsticky">
 											<table id="itemTable"
 												class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
@@ -186,6 +183,7 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
+														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -209,9 +207,9 @@
 
 														<td class="poprod-decpt">
 															<input type="hidden" class="attribute">
-															<button data-bs-toggle="modal" data-bs-target="#attribute"
-																class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																style="font-size: 10px">Attributes</button>
+															<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																<!-- Attribute badges will be displayed here -->
+															</div>
 														</td>
 														<td>
 															<select class="uom form-select mw-100" name="uom[]" required>
@@ -220,13 +218,15 @@
 														</td>
 														<td><input type="number" class="qty form-control mw-100"
 																name="qty[]" required /></td>
+														<td><input type="number" class="available_stock form-control mw-100"
+																name="available_stock[]" required /></td>
 													</tr>
 												</tbody>
 												<tfoot>
 
 
 													<tr valign="top">
-														<td colspan="6" rowspan="10">
+														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
 																	<td class="p-0">
@@ -256,6 +256,9 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
+																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -297,7 +300,6 @@
 
 									</div>
 								</div>
-
 							</div>
 						</div>
 						<!-- Modal to add new record -->
@@ -477,7 +479,7 @@
 				<div class="modal-footer justify-content-center">
 					<button type="button" class="btn btn-outline-secondary me-1"
 						onclick="closeModal('attribute');">Cancel</button>
-					<button type="button" class="btn btn-primary" onclick="closeModal('attribute');">Select</button>
+					<button type="button" class="btn btn-primary submitAttributeBtn">Select</button>
 				</div>
 			</div>
 		</div>
@@ -558,63 +560,95 @@
 			} else if (e.which == 40) {
 				$('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
 			}
-			$('html, body').scrollTop($('.trselected').offset().top - 200);
+			// Remove automatic scrolling - only scroll for attribute-related actions
 			updateFooterFromSelected();
 		});
+		
 		$(document).on('click', 'tbody tr', function () {
 			$(this).addClass('trselected').siblings().removeClass('trselected');
-			$('html, body').scrollTop($(this).offset().top - 200);
+			// Remove automatic scrolling - only scroll for attribute-related actions
 			updateFooterFromSelected();
 		});
 		function updateFooterFromSelected() {
 			let $selected = $('.trselected');
-			if ($selected.length) {
-				console.log("qty " + $selected.find('.qty').val());
-				$('#part_name').text($selected.find('.item_name').val());
-				$('#uom').text($selected.find('.uom option:selected').text());
-				$('#qty').text($selected.find('.qty').val());
+			
+			if ($selected.length) {	
+				
+				// Get basic part details
+				let partName = $selected.find('.item_name').val() || 'N/A';
+				let uomText = $selected.find('.uom option:selected').text() || $selected.find('.uom').val() || 'N/A';
+				let qty = $selected.find('.qty').val() || '0';
+				
+				
+				// Update part details display
+				$('#part_name').text(partName);
+				$('#uom').text(uomText);
+				$('#qty').text(qty);
+				
 				let $selectElement = $selected.find('.item_code');
 				let $badgesContainer = $('#attributes_badges'); // container for badges
 
-				if ($selectElement.val() !== "") {
+				// Handle attributes - check for both static and AJAX loaded data
+				let attributesData = [];
+				
+				// First try to get from AJAX loaded data (attribute-enriched hidden field)
+				let $enrichedInput = $selected.find('.attribute-enriched');
+				if ($enrichedInput.length && $enrichedInput.val()) {
+					try {
+						attributesData = JSON.parse($enrichedInput.val());
+					} catch (e) {
+						console.log('Error parsing enriched attributes:', e);
+					}
+				}
+				
+				// If no AJAX data, try static data approach
+				if (!attributesData.length && $selectElement.val() !== "") {
 					let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
 					let $hiddenInput = $selected.find('.attribute');
 					let existingAttributes = $hiddenInput.length && $hiddenInput.val()
 						? JSON.parse($hiddenInput.val())
 						: [];
 
-					if (!attributesJSON.length) {
-						$badgesContainer.html('<span>No attributes available</span>');
-						return;
+					if (attributesJSON.length) {
+						attributesData = attributesJSON.map(function(element) {
+							// Find selected value from existingAttributes
+							let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
+							let selectedVal = selectedValObj ? selectedValObj.value_id : '';
+
+							// Find text for selected value
+							let selectedText = '';
+							if (selectedVal) {
+								let valuesData = element.values_data || element.values || [];
+								let valObj = valuesData.find(v => v.id === selectedVal);
+								selectedText = valObj ? valObj.value : '';
+							}
+							
+							return {
+								group_name: element.group_name,
+								selected_value_name: selectedText,
+								value: selectedText
+							};
+						}).filter(attr => attr.selected_value_name || attr.value);
 					}
-
-					let badgesHtml = '';
-
-					$.each(attributesJSON, function (index, element) {
-						// Find selected value from existingAttributes
-						let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
-						let selectedVal = selectedValObj ? selectedValObj.value_id : '';
-
-						// Find text for selected value
-						let selectedText = '';
-						if (selectedVal) {
-							let valObj = element.values_data.find(v => v.id === selectedVal);
-							selectedText = valObj ? valObj.value : '';
-						}
-
-						badgesHtml += `
-					<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
-						<strong>${element.group_name}</strong>: <span>${selectedText}</span>
-					</span>
-				`;
-					});
-
-					$badgesContainer.html(badgesHtml);
-
-				} else {
-					$badgesContainer.html('');
 				}
 
+				// Display attributes
+				if (attributesData.length) {
+					let badgesHtml = '';
+					attributesData.forEach(function(attr) {
+						let displayValue = attr.selected_value_name || attr.value || 'N/A';
+						let groupName = attr.group_name || attr.group_short_name || 'Attribute';
+						
+						badgesHtml += `
+							<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+								<strong>${groupName}</strong>: <span>${displayValue}</span>
+							</span>
+						`;
+					});
+					$badgesContainer.html(badgesHtml);
+				} else {
+					$badgesContainer.html('<span class="text-muted">No attributes selected</span>');
+				}
 			}
 		}
 		$('#addNewRowBtn').on('click', function () {
@@ -639,9 +673,9 @@
 
 															<td class="poprod-decpt">
 																<input type="hidden" class="attribute">
-																<button data-bs-toggle="modal" data-bs-target="#attribute"
-																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</button>
+																<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																	<!-- Attribute badges will be displayed here -->
+																</div>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -649,6 +683,8 @@
 																</select>
 															</td>
 															<td><input type="number" class="qty form-control mw-100"  name="qty[]"
+																	required /></td>
+															<td><input type="number" class="available_stock form-control mw-100"  name="available_stock[]"
 																	required /></td>
 														</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
@@ -684,7 +720,6 @@
 			let futureDateAllowed = false;
 
 			if (data != null) {
-				console.log(data.parameters.back_date_allowed);
 				if (Array.isArray(data?.parameters?.back_date_allowed)) {
 					for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
 						if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
@@ -791,11 +826,11 @@
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
 						uom_name: row.find('.uom option:selected').text() || '',
+						available_stock: row.find('.available_stock').val() || 0,
 					};
 					allRows.push(rowData);
 				}
 			});
-
 			$('#spare_parts').val(JSON.stringify(allRows));
 		}
 
@@ -857,6 +892,12 @@
 		});
 
 		$(document).on('click', '.submitAttributeBtn', (e) => {
+			let $currentRow = $('#attribute_table').data('currentRow');
+			if ($currentRow) {
+				changeAttributeVal($currentRow);
+				updateAttributeBadges($currentRow);
+				updateFooterFromSelected();
+			}
 			$("#attribute").modal('hide');
 		});
 		function initAutoForItem(selector, type) {
@@ -886,6 +927,7 @@
 						return (item.item_code.toLowerCase().includes(term) || item.item_name.toLowerCase().includes(term)) &&
 							(!isSelectedElsewhere || item.id.toString() === currentItemId);
 					});
+					
 
 					let results = filtered.map(item => ({
 						id: item.id,
@@ -896,6 +938,7 @@
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
 						attr: item.item_attributes,
+						available_stock: item.available_stock,
 					}));
 
 					response(results);
@@ -908,6 +951,7 @@
 					let itemId = ui.item.item_id;
 					let uomId = ui.item.uom_id;
 					let uomName = ui.item.uom_name;
+					let availableStock = ui.item.available_stock;
 
 					$input.attr('data-name', itemName);
 					$input.attr('data-code', itemCode);
@@ -915,19 +959,92 @@
 					$input.attr('data-id', itemId);
 					$input.closest('tr').find('.item_id').val(itemId);
 					$input.closest('tr').find('.item_name').val(itemName);
+					$input.closest('tr').find('.available_stock').val(availableStock);
 					$input.val(itemCode);
 
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
+					let availableStockOption = availableStock;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
+					$input.closest('tr').find('.available_stock').empty().append(availableStockOption);
 
-					setTimeout(() => {
-						if (ui.item.is_attr) {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
-						} else {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
+					// Update part details section
+					$('#part_name').text(itemName);
+					$('#uom').text(uomName);
+					$('#qty').text('0'); // Default quantity
+					$('#available_stock').text(availableStock);
+
+					// Display attribute badges if item has attributes
+					if (attr && attr.length > 0) {
+						let badgesHtml = '';
+						attr.forEach(function(attribute) {
+							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+							</span>`;
+						});
+						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
+						
+						// Automatically open attribute modal if item has attributes
+						setTimeout(() => {
+							let $tr = $input.closest('tr');
+							let $attributesTable = $('#attribute_table');
+							$attributesTable.data('currentRow', $tr);
+							
+							// Populate modal with attributes
+							let attributesJSON = attr;
+							let $hiddenInput = $tr.find('.attribute');
+							let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+								? JSON.parse($hiddenInput.val())
+								: [];
+
+							if (attributesJSON.length > 0) {
+								let innerHtml = ``;
+								$.each(attributesJSON, function (index, element) {
+									let optionsHtml = ``;
+									
+									// Check if element has values_data or use different structure
+									let valuesData = element.values_data || element.values || [];
+									
+									$.each(valuesData, function (i, value) {
+										let isSelected = existingAttributes.some(attr =>
+											attr.item_attribute_id === element.id && attr.value_id === value.id
+										);
+										optionsHtml += `<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>`;
+									});
+
+									innerHtml += `
+										<tr>
+											<td>
+												${element.group_name}
+												<input type="hidden" name="id" value="${element.id}">
+											</td>
+											<td>
+												<select class="form-select select2" style="max-width:100% !important;">
+													<option value="">Select</option>
+													${optionsHtml}
+												</select>
+											</td>
+										</tr>
+									`;
+								});
+								$attributesTable.html(innerHtml);
+								$attributesTable.find('select').off('change').on('change', function () {
+									changeAttributeVal($tr);
+								});
+								$attributesTable.find('select').select2();
+								
+								// Open the modal
+								$('#attribute').modal('show');
+							} else {
+								
+							}
+						}, 100);
+					} else {
+						
+						$input.closest('tr').find('#attribute-badges').html('');
+						setTimeout(() => {
 							$input.closest('tr').find('.qty').val('').focus();
-						}
-					}, 100);
+						}, 100);
+					}
 
 					return false;
 				},
@@ -940,6 +1057,7 @@
 						$(this).closest('tr').find('.item_id').val('');
 						$(this).closest('tr').find('.item_name').val('');
 						$(this).closest('tr').find('.uom').empty();
+						$(this).closest('tr').find('.available_stock').empty();
 					}
 				}
 			}).focus(function () {
@@ -953,6 +1071,7 @@
 					$(this).closest('tr').find(".attribute").val('');
 					$(this).closest('tr').find(".item_id").val('');
 					$(this).closest('tr').find(".item_code").val('');
+					$(this).closest('tr').find(".available_stock").val('');
 				}
 			});
 
@@ -965,20 +1084,17 @@
 
 		function changeAttributeVal($row) {
 			let hiddenInput = $row.find('.attribute');
-
-
 			if (!hiddenInput) return;
 
-			// Find the attributes table and tbody
-			const attributesTable = document.getElementById("attributes_table_modal");
-			const tbody = attributesTable.querySelector("tbody");
+			// Find the attributes table - it's the tbody with id="attribute_table"
+			const tbody = document.getElementById("attribute_table");
 
 			let selectedAttributes = [];
 
 			Array.from(tbody.rows).forEach(row => {
 				const hiddenInputAttr = row.querySelector('input[type="hidden"][name="id"]');
 				const selectElement = row.querySelector("select");
-
+				
 				if (hiddenInputAttr && selectElement) {
 					const attributeId = parseInt(hiddenInputAttr.value, 10);
 					const selectedVal = parseInt(selectElement.value, 10);
@@ -994,7 +1110,6 @@
 
 			// Update hidden input with JSON
 			hiddenInput.val(JSON.stringify(selectedAttributes));
-			console.log(selectedAttributes);
 		}
 
 
@@ -1061,11 +1176,13 @@
 				});
 				$attributesTable.find('select').select2();
 
+				// Open the attribute modal
+				$('#attribute').modal('show');
 
 			} else {
 				$attributesTable.html(`
 						<tr>
-							<td colspan="2" class="text-center">No attributes available</td>
+							<td colspan="2" class="text-center">Please select an item first</td>
 						</tr>
 					`);
 			}
@@ -1074,13 +1191,68 @@
 			$('#' + id).modal('hide');
 		}
 
+		// Function to update attribute badges display
+		function updateAttributeBadges($row) {
+			if (!$row) return;
 
+			let $selectElement = $row.find('.item_code');
+			let $badgesContainer = $row.find('#attribute-badges');
+			
+			if ($selectElement.val() !== "") {
+				let $hiddenInput = $row.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
 
+				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+				
+				let badgesHtml = '';
 
+				if (attr && attr.length > 0) {
+					attr.forEach(function(attribute) {
+						
+						// Check if this attribute has been selected
+						let selectedAttr = existingAttributes.find(selected => 
+							selected.item_attribute_id === attribute.id
+						);
 
+						
+						if (selectedAttr) {
+							// Find the selected value from the attribute's values
+							let valuesData = attribute.values_data || attribute.values || [];
+							
+							let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
+							
+							if (selectedValue) {
+								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+									<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+								</span>`;
+								
+							} else {
+								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+									<strong>${attribute.group_name}</strong>: Not Selected
+								</span>`;
+								
+							}
+						} else {
+							// Not selected yet
+							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+								<strong>${attribute.group_name}</strong>: Not Selected
+							</span>`;
+							
+						}
+					});
+				}
 
+				$badgesContainer.html(badgesHtml);
+				
+				// Update part details attributes section
+				$('#attributes_badges').html(badgesHtml);
 
-
+			} else {
+				$badgesContainer.html('');
+			}
+		}
 
 	</script>
 @endsection

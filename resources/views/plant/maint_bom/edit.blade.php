@@ -31,9 +31,11 @@
 								<button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
 									<i data-feather="save"></i> Save as Draft
 								</button>
+							
 								<button type="submit" form="maint-bom-form" class="btn btn-primary btn-sm" id="submit-btn">
 									<i data-feather="check-circle"></i> Submit
 								</button>
+							
 							@endif
 
 
@@ -186,6 +188,7 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
+														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -238,9 +241,34 @@
 															<td>
 																<input type="hidden" class="attribute"
 																	value="{{ $part->attribute}}">
-																<a data-bs-toggle="modal" data-bs-target="#attribute"
-																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</a>
+																<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																	@if($part->attribute)
+																		@php
+																			$selectedAttributes = json_decode($part->attribute, true);
+																		@endphp
+																		@if($selectedAttributes && count($selectedAttributes) > 0)
+																			@foreach($selectedAttributes as $selectedAttr)
+																				@php
+																					// Find the attribute group name and value
+																					$attrGroup = $processedData->firstWhere('id', $selectedAttr['item_attribute_id']);
+																					$attrValue = null;
+																					if($attrGroup) {
+																						$attrValue = collect($attrGroup['values_data'])->firstWhere('id', $selectedAttr['value_id']);
+																					}
+																				@endphp
+																				@if($attrGroup && $attrValue)
+																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+																						<strong>{{ $attrGroup['group_name'] }}</strong>: {{ $attrValue['value'] }}
+																					</span>
+																				@endif
+																			@endforeach
+																		@else
+																			<span class="text-muted" style="font-size:10px;">No attributes selected</span>
+																		@endif
+																	@else
+																		<span class="text-muted" style="font-size:10px;">No attributes available</span>
+																	@endif
+																</div>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -252,6 +280,9 @@
 																<input type="number" class="qty form-control mw-100"
 																	name="qty[]" value="{{ $part->qty }}" required />
 															</td>
+															<td class="available_stock">
+																@if(isset($part->available_stock)){{ $part->available_stock }}@else N/A @endif
+															</td>
 														</tr>
 													@endforeach
 												</tbody>
@@ -259,7 +290,7 @@
 
 
 													<tr valign="top">
-														<td colspan="6" rowspan="10">
+														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
 																	<td class="p-0">
@@ -289,6 +320,9 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
+																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -504,7 +538,7 @@
 				<div class="modal-footer justify-content-center">
 					<button type="button" class="btn btn-outline-secondary me-1"
 						onclick="closeModal('attribute');">Cancel</button>
-					<button type="button" class="btn btn-primary" onclick="closeModal('attribute');">Select</button>
+					<button type="button" class="btn btn-primary submitAttributeBtn">Select</button>
 				</div>
 			</div>
 		</div>
@@ -574,10 +608,10 @@
 		function updateFooterFromSelected() {
 			let $selected = $('.trselected');
 			if ($selected.length) {
-				console.log("qty " + $selected.find('.qty').val());
 				$('#part_name').text($selected.find('.item_name').val());
 				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
+				$('#available_stock').text($selected.find('.available_stock').text());
 				let $selectElement = $selected.find('.item_code');
 				let $badgesContainer = $('#attributes_badges'); // container for badges
 
@@ -645,9 +679,9 @@
 
 																			<td class="poprod-decpt">
 																				<input type="hidden" class="attribute">
-																				<a data-bs-toggle="modal" data-bs-target="#attribute"
-																					class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																					style="font-size: 10px">Attributes</a>
+																				<div class="d-flex flex-wrap gap-1" id="attribute-badges">
+																					<span class="text-muted" style="font-size:10px;">No attributes available</span>
+																				</div>
 																			</td>
 																			<td>
 																				<select class="uom form-select mw-100" name="uom[]" required>
@@ -656,6 +690,9 @@
 																			</td>
 																			<td><input type="number" class="qty form-control mw-100"  name="qty[]"
 																					required /></td>
+																			<td class="available_stock">
+																				0
+																			</td>
 																		</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
@@ -690,7 +727,6 @@
 			let futureDateAllowed = false;
 
 			if (data != null) {
-				console.log(data.parameters.back_date_allowed);
 				if (Array.isArray(data?.parameters?.back_date_allowed)) {
 					for (let i = 0; i < data.parameters.back_date_allowed.length; i++) {
 						if (data.parameters.back_date_allowed[i].trim().toLowerCase() === "yes") {
@@ -797,6 +833,7 @@
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
 						uom_name: row.find('.uom option:selected').text() || '',
+						available_stock: row.find('.available_stock').text() || 0,
 					};
 					allRows.push(rowData);
 				}
@@ -806,33 +843,39 @@
 		}
 
 
-		document.getElementById('save-draft-btn').addEventListener('click', function () {
-			document.getElementById('document_status').value = 'draft';
-			updateJsonData();
-			if ($('#action_type').val() === "amendment") {
-				$("#amendmentModal").modal('show');
-			}
-			else {
-				$('.preloader').show();
-				document.getElementById('maint-bom-form').submit();
-			}
-
-		});
-
-
-		document.getElementById('submit-btn').addEventListener('click', function (e) {
-			document.getElementById('document_status').value = 'submitted';
-			e.preventDefault(); // Always prevent default first
-			updateJsonData();
-			if ($('#action_type').val() === "amendment")
-				{
-					$("#amendmentModal").modal('show');
-				}
-			else {
-				$('.preloader').show();
-				this.submit();
+		// Wrap DOM-dependent code in DOMContentLoaded to ensure elements exist
+		document.addEventListener('DOMContentLoaded', function() {
+			const saveDraftBtn = document.getElementById('save-draft-btn');
+			if (saveDraftBtn) {
+				saveDraftBtn.addEventListener('click', function () {
+					document.getElementById('document_status').value = 'draft';
+					updateJsonData();
+					if ($('#action_type').val() === "amendment") {
+						$("#amendmentModal").modal('show');
+					}
+					else {
+						$('.preloader').show();
+						document.getElementById('maint-bom-form').submit();
+					}
+				});
 			}
 
+			const submitBtn = document.getElementById('submit-btn');
+			if (submitBtn) {
+				submitBtn.addEventListener('click', function (e) {
+					document.getElementById('document_status').value = 'submitted';
+					e.preventDefault(); // Always prevent default first
+					updateJsonData();
+					if ($('#action_type').val() === "amendment")
+						{
+							$("#amendmentModal").modal('show');
+						}
+					else {
+						$('.preloader').show();
+						document.getElementById('maint-bom-form').submit();
+					}
+				});
+			}
 		});
 
 		function showToast(icon, title) {
@@ -874,6 +917,13 @@
 		});
 
 		$(document).on('click', '.submitAttributeBtn', (e) => {
+			let $currentRow = $('#attribute_table').data('currentRow');
+			if ($currentRow) {
+				changeAttributeVal($currentRow);
+				updateAttributeBadges($currentRow);
+			} else {
+				console.log('ERROR: No current row found!');
+			}
 			$("#attribute").modal('hide');
 		});
 		initAutoForItem('.item_code');
@@ -881,19 +931,26 @@
 		function changeAttributeVal($row) {
 			let hiddenInput = $row.find('.attribute');
 
-
-			if (!hiddenInput) return;
+			if (!hiddenInput) {
+				return;
+			}
 
 			// Find the attributes table and tbody
-			const attributesTable = document.getElementById("attributes_table_modal");
-			const tbody = attributesTable.querySelector("tbody");
+			const attributesTable = document.getElementById("attribute_table");
+			
+			if (!attributesTable) {
+				return;
+			}
+			
+			// The tbody is the attributesTable itself since it has id="attribute_table"
+			const tbody = attributesTable;
 
 			let selectedAttributes = [];
 
-			Array.from(tbody.rows).forEach(row => {
+			Array.from(tbody.rows).forEach((row, index) => {
 				const hiddenInputAttr = row.querySelector('input[type="hidden"][name="id"]');
 				const selectElement = row.querySelector("select");
-
+				
 				if (hiddenInputAttr && selectElement) {
 					const attributeId = parseInt(hiddenInputAttr.value, 10);
 					const selectedVal = parseInt(selectElement.value, 10);
@@ -906,10 +963,66 @@
 					}
 				}
 			});
-
+			
 			// Update hidden input with JSON
 			hiddenInput.val(JSON.stringify(selectedAttributes));
-			console.log(selectedAttributes);
+		}
+
+		function updateAttributeBadges($row) {
+			if (!$row) return;
+
+			let $selectElement = $row.find('.item_code');
+			let $badgesContainer = $row.find('#attribute-badges');
+			
+			if ($selectElement.val() !== "") {
+				let $hiddenInput = $row.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
+
+				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+				
+				let badgesHtml = '';
+
+				if (attr && attr.length > 0) {
+					attr.forEach(function(attribute) {
+						
+						// Check if this attribute has been selected
+						let selectedAttr = existingAttributes.find(selected => 
+							selected.item_attribute_id === attribute.id
+						);
+
+						if (selectedAttr) {
+							// Find the selected value from the attribute's values
+							let valuesData = attribute.values_data || attribute.values || [];
+							
+							let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
+							
+							if (selectedValue) {
+								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+									<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+								</span>`;
+							} else {
+								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+									<strong>${attribute.group_name}</strong>: Not Selected
+								</span>`;
+							}
+						} else {
+							// Not selected yet
+							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+								<strong>${attribute.group_name}</strong>: Not Selected
+							</span>`;
+						}
+					});
+				}
+				$badgesContainer.html(badgesHtml);
+				
+				// Update part details attributes section
+				$('#attributes_badges').html(badgesHtml);
+				
+				// Update footer details
+				updateFooterFromSelected();
+			}
 		}
 
 
@@ -976,11 +1089,13 @@
 				});
 				$attributesTable.find('select').select2();
 
+				// Open the attribute modal
+				$('#attribute').modal('show');
 
 			} else {
 				$attributesTable.html(`
 						<tr>
-							<td colspan="2" class="text-center">No attributes available</td>
+							<td colspan="2" class="text-center">Please select an item first</td>
 						</tr>
 					`);
 			}
@@ -1025,6 +1140,7 @@
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
 						attr: item.item_attributes,
+						available_stock: item.available_stock,
 					}));
 
 					response(results);
@@ -1048,15 +1164,76 @@
 
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
+					
+					// Update available stock
+					let availableStock = ui.item.available_stock || 0;
+					$input.closest('tr').find('.available_stock').text(availableStock);
 
-					setTimeout(() => {
-						if (ui.item.is_attr) {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
-						} else {
-							$input.closest('tr').find('.attributeBtn').trigger('click');
+					// Display attribute badges if item has attributes
+					if (attr && attr.length > 0) {
+						let badgesHtml = '';
+						attr.forEach(function(attribute) {
+							badgesHtml += `<span class="badge rounded-pill badge-light-primary">
+								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+							</span>`;
+						});
+						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
+						
+						// Automatically open attribute modal if item has attributes
+						setTimeout(() => {
+							let $tr = $input.closest('tr');
+							let $attributesTable = $('#attribute_table');
+							$attributesTable.data('currentRow', $tr);
+							
+							// Populate modal with attributes
+							let attributesJSON = attr;
+							let $hiddenInput = $tr.find('.attribute');
+							let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+								? JSON.parse($hiddenInput.val())
+								: [];
+							
+							if (attributesJSON.length > 0) {
+								let innerHtml = ``;
+								$.each(attributesJSON, function (index, element) {
+									let optionsHtml = ``;
+									let valuesData = element.values_data || element.values || [];
+									$.each(valuesData, function (i, value) {
+										let isSelected = existingAttributes.some(attr =>
+											attr.item_attribute_id === element.id && attr.value_id === value.id
+										);
+										optionsHtml += `<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>`;
+									});
+									innerHtml += `
+										<tr>
+											<td>
+												${element.group_name}
+												<input type="hidden" name="id" value="${element.id}">
+											</td>
+											<td>
+												<select class="form-select select2" style="max-width:100% !important;">
+													<option value="">Select</option>
+													${optionsHtml}
+												</select>
+											</td>
+										</tr>
+									`;
+								});
+								$attributesTable.html(innerHtml);
+								$attributesTable.find('select').off('change').on('change', function () {
+									changeAttributeVal($tr);
+								});
+								$attributesTable.find('select').select2();
+								
+								// Open the modal
+								$('#attribute').modal('show');
+							}
+						}, 100);
+					} else {
+						$input.closest('tr').find('#attribute-badges').html('');
+						setTimeout(() => {
 							$input.closest('tr').find('.qty').val('').focus();
-						}
-					}, 100);
+						}, 100);
+					}
 
 					return false;
 				},

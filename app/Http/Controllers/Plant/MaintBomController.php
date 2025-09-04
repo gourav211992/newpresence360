@@ -11,6 +11,7 @@ use App\Models\ErpAttribute;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\PlantMaintBom;
+use App\Models\StockLedger;
 use App\Models\PlantMaintBomHistory;
 use Exception;
 
@@ -71,17 +72,33 @@ class MaintBomController extends Controller
 
             $item->attributes = $processedData;
         }
+       
         $items = $items->map(function ($item) {
+            $confirmedStock = StockLedger::query()
+                ->selectRaw("
+                    SUM(
+                        CASE 
+                            WHEN document_status IN ('approved', 'approval_not_required', 'posted') 
+                            THEN receipt_qty - reserved_qty
+                            ELSE 0
+                        END
+                    ) as confirmed_stock
+                ")
+                ->where('item_code', $item->item_code) // yaha fix kiya
+                ->value('confirmed_stock');
+        
             return [
-                'id' => $item->id,
-                'item_code' => $item->item_code,
-                'item_name' => $item->item_name,
-                'uom_name' => optional($item->uom)->name,
-                'uom_id' => optional($item->uom)->id,
+                'id'              => $item->id,
+                'item_code'       => $item->item_code,
+                'item_name'       => $item->item_name,
+                'uom_name'        => optional($item->uom)->name,
+                'uom_id'          => optional($item->uom)->id,
                 'item_attributes' => $item->attributes,
+                'available_stock' => $confirmedStock ?? 0, // agar null ho to 0
             ];
         });
-
+        
+        
         return view('plant.maint_bom.create', compact('series', 'items'));
     }
 

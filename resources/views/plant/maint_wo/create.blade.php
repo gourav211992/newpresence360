@@ -128,7 +128,6 @@
                         </div>
                         <div class="col-md-5">
                           <select class="form-select" name="location_id" id="location_id" required>
-                            <option value="">Select Location</option>
                             @foreach($locations ?? [] as $location)
                               <option value="{{ $location->id }}">{{ $location->store_name }}</option>
                             @endforeach
@@ -388,6 +387,7 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
+														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -422,13 +422,15 @@
 														</td>
 														<td><input type="number" class="qty form-control mw-100"
 																name="qty[]" required /></td>
+														<td><input type="number" class="available_stock form-control mw-100"
+																name="available_stock[]"  readonly /></td>
 													</tr>
 												</tbody>
 												<tfoot>
 
 
 													<tr valign="top">
-														<td colspan="6" rowspan="10">
+														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
 																	<td class="p-0">
@@ -458,6 +460,9 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
+																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -916,17 +921,20 @@
 				let partName = $selected.find('.item_name').val() || 'N/A';
 				let uomText = $selected.find('.uom option:selected').text() || $selected.find('.uom').val() || 'N/A';
 				let qty = $selected.find('.qty').val() || '0';
+				let availableStock = $selected.find('.available_stock').val() || '0';
 				
 				console.log('Part details extracted:', {
 					partName: partName,
 					uomText: uomText,
-					qty: qty
+					qty: qty,
+					availableStock: availableStock
 				});
 				
 				// Update part details display
 				$('#part_name').text(partName);
 				$('#uom').text(uomText);
 				$('#qty').text(qty);
+				$('#available_stock').text(availableStock);
 				
 				console.log('Part details updated in DOM');
 				
@@ -1029,6 +1037,8 @@
 															</td>
 															<td><input type="number" class="qty form-control mw-100"  name="qty[]"
 																	required /></td>
+															<td><input type="number" class="available_stock form-control mw-100"
+																	name="available_stock[]"  readonly /></td>
 														</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
@@ -1077,6 +1087,7 @@
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
 						uom_name: row.find('.uom option:selected').text() || '',
+						available_stock: row.find('.available_stock').val() || 0,
 					};
 					allRows.push(rowData);
 				}
@@ -1196,7 +1207,8 @@
 						item_name: item.item_name,
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
-						attr: item.item_attributes || []
+						attr: item.item_attributes || [],
+						available_stock: item.available_stock || 0
 					}));
 
 					console.log("check the results",results);
@@ -1211,6 +1223,7 @@
 					let itemId = ui.item.item_id;
 					let uomId = ui.item.uom_id;
 					let uomName = ui.item.uom_name;
+					let availableStock = ui.item.available_stock || 0;
 
 					$input.attr('data-name', itemName);
 					$input.attr('data-code', itemCode);
@@ -1222,6 +1235,7 @@
 
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
+					$input.closest('tr').find('.available_stock').val(availableStock);
 
 					// Display attribute badges if item has attributes
 					if (attr && attr.length > 0) {
@@ -1302,6 +1316,7 @@
 						$(this).closest('tr').find('.item_id').val('');
 						$(this).closest('tr').find('.item_name').val('');
 						$(this).closest('tr').find('.uom').empty();
+						$(this).closest('tr').find('.available_stock').val(0);
 					}
 				}
 			}).focus(function () {
@@ -1315,6 +1330,7 @@
 					$(this).closest('tr').find(".attribute").val('');
 					$(this).closest('tr').find(".item_id").val('');
 					$(this).closest('tr').find(".item_code").val('');
+					$(this).closest('tr').find(".available_stock").val(0);
 				}
 			});
 
