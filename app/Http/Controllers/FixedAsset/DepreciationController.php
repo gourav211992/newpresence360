@@ -79,12 +79,13 @@ class DepreciationController extends Controller
         $fy = date('Y', strtotime($financialYear['start_date'])) . "-" . date('Y', strtotime($financialYear['end_date']));
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        $fy_months = Helper::getCurrentFinancialYearMonths();
 
 
         $locations = InventoryHelper::getAccessibleLocations();
 
         
-        return view('fixed-asset.depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'series', 'periods', 'fy', 'dep_type'));
+        return view('fixed-asset.depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'series', 'periods', 'fy', 'dep_type', 'fy_months'));
     }
 
     /**

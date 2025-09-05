@@ -110,7 +110,7 @@ class RegistrationController extends Controller
         $organization = Helper::getAuthenticatedUser()->organization;
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-
+        $fy_months = Helper::getCurrentFinancialYearMonths();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -171,7 +171,7 @@ class RegistrationController extends Controller
         $locations = InventoryHelper::getAccessibleLocations();
 
 
-        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
+        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate','fy_months'));
     }
 
     /**

@@ -115,9 +115,10 @@ class RevImpController extends Controller
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
         $locations = InventoryHelper::getAccessibleLocations();
+        $fy_months = Helper::getCurrentFinancialYearMonths();
 
 
-        return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.revaluation-impairement.create', compact('locations', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method', 'fy_months'));
     }
 
     /**

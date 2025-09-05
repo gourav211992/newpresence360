@@ -114,8 +114,9 @@ class MergerController extends Controller
                     $subQuery->where('act_type', 'income_tax');
                 });
             })->get();
+        $fy_months = Helper::getCurrentFinancialYearMonths();
 
-        return view('fixed-asset.merger.create', compact('locations', 'new_categories','assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.merger.create', compact('locations', 'new_categories','assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method', 'fy_months'));
     }
 
     /**

@@ -40,7 +40,17 @@
 @endsection
 
 @section('content')
-
+    @php
+        $unauthorizedMonths = [];
+        foreach ($fy_months as $month) {
+            if (!$month['authorized']) {
+                $unauthorizedMonths[] = $month['fy_month'];
+            }
+        }
+    @endphp
+    <script>
+        const unauthorizedMonths = @json($unauthorizedMonths);
+    </script>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -1270,6 +1280,43 @@
 
     @section('scripts')
         <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
+    <script>
+            document.getElementById('document_date').addEventListener('input', function() {
+                if (!isDateAuthorized(this.value)) {
+                    this.value = '';
+                    this.focus();
+                }
+            });
+
+            function getMonthName(ym) {
+                // ym = '2024-07'
+                const [year, month] = ym.split('-');
+                const d = new Date(year, parseInt(month) - 1);
+                return d.toLocaleString('default', {
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+
+            function isDateAuthorized(dateValue) {
+                if (!dateValue) return true; // allow empty, you can tweak this logic if needed
+                var selectedMonth = dateValue.substring(0, 7);
+                if (unauthorizedMonths.includes(selectedMonth)) {
+                    var monthLabel = getMonthName(selectedMonth);
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unauthorized Month',
+                        text: 'You are not authorized to select dates from ' + monthLabel +
+                            '. Please select another month.',
+                        confirmButtonText: 'OK'
+                    });
+
+                    return false;
+                }
+                return true;
+            }
+    </script>
         <script>
 
 
