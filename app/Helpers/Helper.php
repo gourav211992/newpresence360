@@ -4340,7 +4340,7 @@ class Helper
                     }
                     else
                     {
-                        $currentValue = $mrn_detail->basic_value;
+                        $currentValue = $mrn_detail->basic_value + $mrn_detail->header_exp_amount;
                     }
                     
                     $depreciationPercentage = $setup->salvage_percentage ?? $organization->dep_percentage ?? null;
