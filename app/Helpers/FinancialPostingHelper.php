@@ -192,6 +192,7 @@ class FinancialPostingHelper
 
     public static function financeVoucherPosting(int $bookId, int $documentId, string $type, bool $onApproval = false)
     {
+       
         $contra_entries = [];
         //Check Book
         $book = Book::find($bookId);
@@ -3425,13 +3426,23 @@ class FinancialPostingHelper
             $BankLedgerGroup = Group::find($BankLedgerGroupId);
         }
 
-        if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
+       
+       
+        if(!isset($BankLedger)){
             return array(
                 'status' => false,
                 'message' => 'Bank Ledger not setup',
                 'data' => []
             );
         }
+        if(!isset($BankLedgerGroup)){
+            return array(
+                'status' => false,
+                'message' => 'Bank Ledger Group not found',
+                'data' => []
+            );
+        }
+       
 
         array_push($postingArray[self::Bank_ACCOUNT], [
             'ledger_id' => $loandata->bank->ledger_id,
@@ -7105,13 +7116,22 @@ class FinancialPostingHelper
             $BankLedgerGroup = Group::find($BankLedgerGroupId);
         }
 
-        if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
+        if(!isset($BankLedger)){
             return array(
                 'status' => false,
                 'message' => 'Bank Ledger not setup',
                 'data' => []
             );
         }
+
+        if(!isset($BankLedgerGroup)){
+            return array(
+                'status' => false,
+                'message' => 'Bank Ledger Group not found',
+                'data' => []
+            );
+        }
+      
         $cost = CostCenter::find($document?->cost_center_id);
         $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
         $exists = in_array($cost?->id, $ids);
@@ -7385,13 +7405,22 @@ class FinancialPostingHelper
                 $BankLedgerId = $BankLedger->id;
                 $BankLedgerGroupId = $BankLedgerGroup->id;
             }
-
+           
             if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
-                return array(
-                    'status' => false,
-                    'message' => 'Bank Ledger not setup',
-                    'data' => []
-                );
+                if(!isset($BankLedger)){
+                    return array(
+                        'status' => false,
+                        'message' => 'Bank Ledger not setup',
+                        'data' => []
+                    );
+                }
+                if(!isset($BankLedgerGroup)){
+                    return array(
+                        'status' => false,
+                        'message' => 'Bank Ledger Group not found',
+                        'data' => []
+                    );
+                }
             }
             $debAmount = 0;
             $credAmount = 0;
@@ -7685,21 +7714,32 @@ class FinancialPostingHelper
         $totalDebitAmount = 0;
 
         $ledgerErrorStatus = null;
+        // dd($vocuherdata);
 
         if (!empty($vocuherdata)) {
             $BankLedgerId = $vocuherdata->ledger_id;
             $BankLedgerGroupId = $vocuherdata->ledger_group_id;
+            // dd($BankLedgerGroupId);
             $BankLedger = Ledger::find($BankLedgerId);
             $BankLedgerGroup = Group::find($BankLedgerGroupId);
         }
 
-        if (!isset($BankLedger) || !isset($BankLedgerGroup)) {
+        if(!isset($BankLedger)){
+                return array(
+                    'status' => false,
+                    'message' => 'Bank Ledger not setup',
+                    'data' => []
+                );
+        }
+
+        if(!isset($BankLedgerGroup)){
             return array(
                 'status' => false,
-                'message' => 'Bank Ledger not setup',
+                'message' => 'Bank Ledger Group not found',
                 'data' => []
             );
         }
+        
         $cost = CostCenter::find($document?->cost_center_id);
         $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
         $exists = in_array($cost?->id, $ids);

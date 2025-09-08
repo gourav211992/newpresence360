@@ -1449,25 +1449,25 @@
       
 
         $(document).on('click', '#amendmentSubmit', (e) => {
-            // let actionUrl = "{{ route('paymentVouchers.amendment', $data->id) }}";
-            // fetch(actionUrl).then(response => {
-            //     return response.json().then(data => {
-            //         if (data.status == 200) {
-            //             Swal.fire({
-            //                 title: 'Success!',
-            //                 text: data.message,
-            //                 icon: 'success'
-            //             });
-            //         } else {
-            //             Swal.fire({
-            //                 title: 'Error!',
-            //                 text: data.message,
-            //                 icon: 'error'
-            //             });
-            //         }
-            //         location.reload();
-            //     });
-            // });
+            let actionUrl = "{{ route('paymentVouchers.amendment', $data->id) }}";
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 200) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: data.message,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error'
+                        });
+                    }
+                    location.reload();
+                });
+            });
             e.preventDefault();
             $('#amendmentconfirm').modal('hide');
             $('.preloader').show();
