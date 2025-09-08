@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('erp_finance_fixed_asset_sub', function (Blueprint $table) {
             $table->string('sales_date')->nullable();
-            $table->string('status')->default('active')->after('sales_date');
+            $table->string('status',50)->default('active')->after('sales_date');
             $table->bigInteger('sales_value')->nullable()->after('status');
             $table->bigInteger('profit_loss_value')->nullable()->after('sales_value');
         });
