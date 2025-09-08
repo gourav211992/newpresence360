@@ -1184,11 +1184,21 @@
 
 					// Filter itemsData by search term AND exclude already selected items
 					let filtered = itemsData.filter(item => {
-						let isSelectedElsewhere = selectedItemIds.includes(item.id.toString());
-
-						// Allow the current input's item (so it doesn't exclude itself)
 						// Get current input's item_id value:
 						let currentItemId = $(selector).closest('tr').find('.item_id').val();
+						
+						// Check if this item is selected in other rows (excluding current row)
+						let isSelectedElsewhere = false;
+						$('.item_id').each(function() {
+							let val = $(this).val();
+							let $currentRow = $(selector).closest('tr');
+							let $thisRow = $(this).closest('tr');
+							
+							// Only consider it selected elsewhere if it's in a different row
+							if (val && val === item.id.toString() && !$thisRow.is($currentRow)) {
+								isSelectedElsewhere = true;
+							}
+						});
 
 						// Include item if:
 						// - it matches the search term
@@ -1237,17 +1247,12 @@
 					$input.closest('tr').find('.uom').empty().append(uomOption);
 					$input.closest('tr').find('.available_stock').val(availableStock);
 
-					// Display attribute badges if item has attributes
+					// Update attribute badges using BOM-style function
+					let $currentRow = $input.closest('tr');
+					updateAttributeBadges($currentRow);
+					
+					// Automatically open attribute modal if item has attributes
 					if (attr && attr.length > 0) {
-						let badgesHtml = '';
-						attr.forEach(function(attribute) {
-							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
-							</span>`;
-						});
-						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
-						
-						// Automatically open attribute modal if item has attributes
 						setTimeout(() => {
 							// Trigger attribute modal by simulating click on attribute button logic
 							let $tr = $input.closest('tr');
@@ -2010,6 +2015,175 @@
 					feather.replace(); // Re-initialize feather icons
 				}
 			});
+		});
+
+		// Function to update attribute badges display (same as BOM)
+		function updateAttributeBadges($row) {
+			if (!$row) return;
+
+			let $selectElement = $row.find('.item_code');
+			let $badgesContainer = $row.find('#attribute-badges');
+
+			if ($selectElement.val() !== "") {
+				let $hiddenInput = $row.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val() ?
+					JSON.parse($hiddenInput.val()) :
+					[];
+
+				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+
+				let badgesHtml = '';
+				let selectedCount = 0;
+				let displayedCount = 0;
+
+				if (attr && attr.length > 0) {
+					// First, count total selected attributes
+					attr.forEach(function(attribute) {
+						let selectedAttr = existingAttributes.find(selected =>
+							selected.item_attribute_id === attribute.id
+						);
+						if (selectedAttr) {
+							selectedCount++;
+						}
+					});
+
+					// Then display badges (max 2)
+					attr.forEach(function(attribute) {
+						// Check if this attribute has been selected
+						let selectedAttr = existingAttributes.find(selected =>
+							selected.item_attribute_id === attribute.id
+						);
+
+						// Only show selected attributes
+						if (selectedAttr && displayedCount < 2) {
+							displayedCount++;
+							// Find the selected value from the attribute's values
+							let valuesData = attribute.values_data || attribute.values || [];
+
+							let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
+
+							if (selectedValue) {
+								badgesHtml +=
+									`<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+						<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+					</span>`;
+							} 
+						}
+					});
+
+					// Only show "..." if there are more than 2 SELECTED attributes
+					if (selectedCount > 2) {
+						badgesHtml +=
+							'<span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+					}
+
+					$badgesContainer.html(badgesHtml);
+
+				} else {
+					$badgesContainer.html('');
+				}
+			} else {
+				$badgesContainer.html('');
+			}
+		}
+
+		// Add click event for the entire attribute cell (4th column)
+		$('.mrntableselectexcel').on('click', 'td:nth-child(4)', function() {
+			var $this = $(this);
+			var $tr = $this.closest('tr');
+			var $selectElement = $tr.find('.item_code');
+			var $attributesTable = $('#attributes_table_modal'); // correct modal table ID
+			$attributesTable.data('currentRow', $tr);
+
+			if ($selectElement.val() !== "") {
+				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+				let $hiddenInput = $tr.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
+
+				if (attributesJSON.length > 0) {
+					// Open attribute modal using correct modal ID
+					$('#attribute').modal('show');
+					
+					// Populate attribute modal with data
+					populateAttributeModal(attributesJSON, existingAttributes, $tr);
+				} else {
+					showToast('info', 'No attributes available for this item.');
+				}
+			} else {
+				showToast('warning', 'Please select an item first.');
+			}
+		});
+
+		// Function to populate attribute modal with actual implementation
+		function populateAttributeModal(attributesJSON, existingAttributes, $row) {
+			let $modalTable = $('#attributes_table_modal tbody');
+			$modalTable.empty();
+
+			let innerHtml = '';
+			$.each(attributesJSON, function (index, element) {
+				let optionsHtml = '';
+				$.each(element.values_data, function (i, value) {
+					let isSelected = existingAttributes.some(attr =>
+						attr.item_attribute_id === element.id && attr.value_id === value.id
+					);
+					optionsHtml += `<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>`;
+				});
+
+				innerHtml += `
+					<tr>
+						<td>
+							${element.group_name}
+							<input type="hidden" name="id" value="${element.id}">
+						</td>
+						<td>
+							<select class="form-select select2" style="max-width:100% !important;">
+								<option value="">Select</option>
+								${optionsHtml}
+							</select>
+						</td>
+					</tr>
+				`;
+			});
+
+			$modalTable.html(innerHtml);
+			
+			// Initialize select2 for the modal dropdowns
+			$modalTable.find('.select2').select2({
+				dropdownParent: $('#attribute')
+			});
+		}
+
+		// Add click handler for the Submit Attribute button to save selections
+		$(document).on('click', '.submitAttributeBtn', function() {
+			let $currentRow = $('#attributes_table_modal').data('currentRow');
+			if (!$currentRow) return;
+
+			let selectedAttributes = [];
+			
+			// Collect selected attribute values from modal
+			$('#attributes_table_modal tbody tr').each(function() {
+				let $tr = $(this);
+				let attributeId = $tr.find('input[name="id"]').val();
+				let selectedValueId = $tr.find('select').val();
+				
+				if (selectedValueId && selectedValueId !== '') {
+					selectedAttributes.push({
+						item_attribute_id: parseInt(attributeId),
+						value_id: parseInt(selectedValueId)
+					});
+				}
+			});
+
+			// Save selected attributes to hidden input
+			$currentRow.find('.attribute').val(JSON.stringify(selectedAttributes));
+			
+			// Update attribute badges display
+			updateAttributeBadges($currentRow);
+			
+			// Close modal
+			$('#attribute').modal('hide');
 		});
 
 		});

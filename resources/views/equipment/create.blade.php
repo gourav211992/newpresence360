@@ -823,6 +823,41 @@
         // Track selected checklist IDs across all sections
         let selectedChecklistIds = [];
 
+        // Handle dropdown change to track selected checklist IDs
+        $(document).on('change', '#checkListPortion select', function() {
+            const $dropdown = $(this);
+            const selectedValue = $dropdown.val();
+            const previousValue = $dropdown.data('previous-value') || '';
+            
+            // Remove previous value from selectedChecklistIds if it exists
+            if (previousValue && previousValue !== 'Select') {
+                const prevIndex = selectedChecklistIds.indexOf(previousValue);
+                if (prevIndex > -1) {
+                    selectedChecklistIds.splice(prevIndex, 1);
+                }
+            }
+            
+            // Add new value to selectedChecklistIds if it's not 'Select'
+            if (selectedValue && selectedValue !== 'Select') {
+                // Check if this checklist is already selected in another section
+                if (selectedChecklistIds.includes(selectedValue)) {
+                    alert('This checklist is already selected in another section. Please choose a different checklist.');
+                    // Reset to previous value or 'Select'
+                    $dropdown.val(previousValue || 'Select');
+                    return;
+                }
+                selectedChecklistIds.push(selectedValue);
+            }
+            
+            // Store current value as previous value for next change
+            $dropdown.data('previous-value', selectedValue);
+            
+            // Update all dropdowns to exclude selected checklists
+            updateAllDropdowns();
+            
+            console.log('Updated selectedChecklistIds:', selectedChecklistIds);
+        });
+
         // Handle search button click for checklist details
         $(document).on('click', '.btn-warning', function(e) {
             e.preventDefault();
@@ -831,16 +866,8 @@
             const dropdown = $(this).closest('.row').find('select');
             const checklistId = dropdown.val();
             
-            if (!checklistId) {
+            if (!checklistId || checklistId === 'Select') {
                 alert('Please select a checklist first');
-                return;
-            }
-            
-            // Check if this checklist is already selected in another section
-            if (selectedChecklistIds.includes(checklistId)) {
-                alert('This checklist is already selected in another section. Please choose a different checklist.');
-                // Clear the dropdown value
-                dropdown.val('');
                 return;
             }
             
@@ -855,54 +882,45 @@
                     _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
-                    console.log('AJAX Success Response:', response);
-                    
                     if (response.success) {
-                        console.log('Checklist Data:', response.data);
-                        
-                        // Find the table tbody in the same row
                         const tbody = $(this).closest('.row').find('tbody');
-                        
-                        // Clear existing data
                         tbody.empty();
-                        
-                        if (response.data && response.data.checklist) {
-                            const checklist = response.data.checklist;
-                            
-                            // Add to selected list
-                            selectedChecklistIds.push(checklistId);
-                            
-                            // Create table row with checklist data
-                            const tableRow = `
-                                <tr>
-                                    <td class="customernewsection-form">
-                                        <div class="form-check form-check-primary custom-checkbox">
-                                            <input type="checkbox" class="form-check-input" value="${checklist.id}">
-                                            <label class="form-check-label"></label>
-                                        </div>
-                                    </td>
-                                    <td>${checklist.name || ''}</td>
-                                    <td>${checklist.description || ''}</td>
-                                    <td>
-                                        <span class="badge rounded-pill badge-light-info">${checklist.data_type || ''}</span>
-                                    </td>
-                                </tr>
-                            `;
-                            
-                            tbody.append(tableRow);
-                            console.log('Table populated with checklist data');
-                            
-                            // Update all dropdowns to exclude selected checklists
+
+                        const checklists = response.data.checklist || [];
+                        const details = response.data.details || [];
+
+                        if (checklists.length > 0) {
+                            checklists.forEach(checklist => {
+                                // Match detail for this checklist
+                                const detail = details.find(d => d.checklist_id === checklist.id);
+
+                                const tableRow = `
+                                    <tr>
+                                        <td class="customernewsection-form">
+                                            <div class="form-check form-check-primary custom-checkbox">
+                                                <input type="checkbox" class="form-check-input" value="${checklist.id}">
+                                                <label class="form-check-label"></label>
+                                            </div>
+                                        </td>
+                                        <td>${checklist.name || ''}</td>
+                                        <td>${checklist.description || ''}</td>
+                                        <td>
+                                            <span class="badge rounded-pill badge-light-info">
+                                                ${checklist.data_type || ''}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+                                tbody.append(tableRow);
+                            });
+
                             updateAllDropdowns();
                         } else {
-                            tbody.html('<tr><td colspan="4" class="text-center text-muted">No checklist data found</td></tr>');
+                            tbody.html('<tr><td colspan="5" class="text-center text-muted">No checklist data found</td></tr>');
                         }
                     } else {
-                        console.log('Error Message:', response.message);
-                        
-                        // Show error in table
                         const tbody = $(this).closest('.row').find('tbody');
-                        tbody.html(`<tr><td colspan="4" class="text-center text-danger">${response.message}</td></tr>`);
+                        tbody.html(`<tr><td colspan="5" class="text-center text-danger">${response.message}</td></tr>`);
                     }
                 }.bind(this),
                 error: function(xhr, status, error) {
@@ -915,6 +933,20 @@
 
         // Update all dropdowns to exclude selected checklists
         function updateAllDropdowns() {
+            // Get all currently selected checklist IDs from all portions
+            let allSelectedIds = [];
+            
+            // Collect selected values from all dropdowns
+            $('#checkListPortion select').each(function() {
+                const val = $(this).val();
+                if (val && val !== 'Select') {
+                    allSelectedIds.push(val);
+                }
+            });
+            
+            console.log('Currently selected in all portions:', allSelectedIds);
+            
+            // Update each dropdown
             $('#checkListPortion select').each(function() {
                 const currentDropdown = $(this);
                 const currentValue = currentDropdown.val();
@@ -923,13 +955,15 @@
                 currentDropdown.find('option').show();
                 
                 // Hide selected options (except current selection)
-                selectedChecklistIds.forEach(function(selectedId) {
+                allSelectedIds.forEach(function(selectedId) {
                     if (selectedId !== currentValue) {
-                        console.log(selectedId);
                         currentDropdown.find(`option[value="${selectedId}"]`).hide();
                     }
                 });
             });
+            
+            // Update the global selectedChecklistIds array to stay in sync
+            selectedChecklistIds = [...allSelectedIds];
         }
 
         // Add new checklist portion function

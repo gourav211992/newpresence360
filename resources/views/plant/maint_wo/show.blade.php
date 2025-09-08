@@ -34,7 +34,7 @@
 								</button>
 							</a>
              
-							@if($buttons['approve'])
+						@if($buttons['approve'])
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" 
                         data-bs-target="#approveModal" onclick="setApproval()">
                     <i data-feather="check-circle"></i> Approve
@@ -47,7 +47,7 @@
               
                     <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
                         class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-              @endif
+                @endif
 
                 <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light" data-bs-toggle="modal" data-bs-target="#closeModal">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Close
@@ -504,6 +504,7 @@
                                                data-id="{{ $part['item_id'] ?? ($part->item_id ?? '') }}"
                                                data-code="{{ $part['item_code'] ?? ($part->item_code ?? '') }}"
                                                data-name="{{ $part['item_name'] ?? ($part->item_name ?? '') }}"
+                                               data-attr='{{ json_encode($part['item_attributes'] ?? ($part->item_attributes ?? [])) }}'
                                                class="item_code form-control mw-100 ledgerselecct mb-25" 
                                                disabled readonly required />
                                       </td>
@@ -515,25 +516,8 @@
                                       </td>
                                       <td>
                                         <input type="hidden" class="attribute" value='{{ $part['attribute'] ?? ($part->attribute ?? "[]") }}'>
-                                        <div class="d-flex flex-wrap gap-1">
-                                          @php
-                                            $attributes = $part['attribute'] ?? ($part->attribute ?? '[]');
-                                            if (is_string($attributes)) {
-                                              $attributesArray = json_decode($attributes, true) ?: [];
-                                            } else {
-                                              $attributesArray = $attributes ?: [];
-                                            }
-                                          @endphp
-                                          @if(!empty($attributesArray))
-                                            @foreach($attributesArray as $attr)
-                                              <span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
-                                                <strong>{{ $attr['group_name'] ?? ($attr['name'] ?? 'Type') }}</strong>: 
-                                                {{ $attr['selected_value_name'] ?? ($attr['value'] ?? 'N/A') }}
-                                              </span>
-                                            @endforeach
-                                          @else
-                                            <span class="text-muted" style="font-size:10px;">No attributes</span>
-                                          @endif
+                                        <div class="d-flex flex-wrap gap-1" id="attribute-badges-{{ $index }}">
+                                           <!-- Attribute badges will be displayed here via JavaScript -->
                                         </div>
                                       </td>
                                       <td>
@@ -2087,6 +2071,104 @@ $(document).ready(function () {
             }
         });
     });
+
+    // Function to update attribute badges display (same as BOM)
+    function updateAttributeBadges($row) {
+        if (!$row) return;
+
+        let $selectElement = $row.find('.item_code');
+        let rowIndex = $row.index();
+        let $badgesContainer = $row.find(`#attribute-badges-${rowIndex}`);
+
+        if ($selectElement.val() !== "") {
+            let $hiddenInput = $row.find('.attribute');
+            let existingAttributes = $hiddenInput.length && $hiddenInput.val() ?
+                JSON.parse($hiddenInput.val()) :
+                [];
+
+            let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+
+            let badgesHtml = '';
+            let selectedCount = 0;
+
+            // Display badges directly from existingAttributes data
+            if (existingAttributes && existingAttributes.length > 0) {
+                existingAttributes.forEach(function(attr) {
+                    if ((attr.name || attr.attribute_name) && (attr.value || attr.attribute_value)) {
+                        selectedCount++;
+                        if (selectedCount <= 2) {
+                            let attributeName = attr.name || attr.attribute_name;
+                            let attributeValue = attr.value || attr.attribute_value;
+                            
+                            badgesHtml +=
+                                `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+                    <strong>${attributeName}</strong>: ${attributeValue}
+                </span>`;
+                        }
+                    }
+                });
+
+                if (selectedCount > 2) {
+                    badgesHtml +=
+                        '<span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+                }
+
+                $badgesContainer.html(badgesHtml);
+
+            } else {
+                $badgesContainer.html('');
+            }
+        } else {
+            $badgesContainer.html('');
+        }
+    }
+
+    // Add click event for the entire attribute cell (4th column)
+    $('.mrntableselectexcel').on('click', 'td:nth-child(4)', function() {
+        var $this = $(this);
+        var $tr = $this.closest('tr');
+        var $selectElement = $tr.find('.item_code');
+        var $attributesTable = $('#attribute_table'); // modal table
+        $attributesTable.data('currentRow', $tr);
+
+        if ($selectElement.val() !== "") {
+            let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+            let $hiddenInput = $tr.find('.attribute');
+            let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+                ? JSON.parse($hiddenInput.val())
+                : [];
+
+            if (attributesJSON.length > 0) {
+                // Open attribute modal
+                $('#attributeModal').modal('show');
+                
+                // Populate attribute modal with data
+                populateAttributeModal(attributesJSON, existingAttributes, $tr);
+            } else {
+                showToast('info', 'No attributes available for this item.');
+            }
+        } else {
+            showToast('warning', 'Please select an item first.');
+        }
+    });
+
+    // Function to populate attribute modal (placeholder - needs actual modal implementation)
+    function populateAttributeModal(attributesJSON, existingAttributes, $row) {
+        // This function would populate the attribute modal
+        // For now, just show a message that modal functionality needs to be implemented
+        console.log('Attribute modal functionality needs to be implemented');
+        console.log('Attributes:', attributesJSON);
+        console.log('Existing selections:', existingAttributes);
+    }
+
+    // Initialize attribute badges for existing rows on page load
+    $(document).ready(function() {
+        $('.mrntableselectexcel tr').each(function() {
+            let $row = $(this);
+            updateAttributeBadges($row);
+        });
+    });
+
 });
 </script>
 

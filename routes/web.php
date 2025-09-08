@@ -2832,6 +2832,12 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('fixed-asset/it-dep', ITDepreciationController::class)->names([
         'index' => 'finance.fixed-asset.it.dep.index',
     ]);
+    Route::post('fixed-asset-rdv-val', [ITDepreciationController::class, 'getFixedAssetRDV'])
+    ->name('fixed-asset-rdv');
+    Route::post('get-fixed-asset-rdv-response', [ITDepreciationController::class, 'getFixedAssetRDVResponse'])
+    ->name('get-fixed-asset-rdv-response');
+    
+
     Route::resource('fixed-asset/split', SplitController::class)->names([
         'index' => 'finance.fixed-asset.split.index',
         'create' => 'finance.fixed-asset.split.create',
@@ -3196,6 +3202,8 @@ Route::middleware(['user.auth'])->group(function () {
 
     // generate IRN
     Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
+
+   
 
 
     //For testing purpose -> Stock reservation case , please ignore, will remove

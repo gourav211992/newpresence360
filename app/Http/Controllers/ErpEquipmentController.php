@@ -62,6 +62,7 @@ class ErpEquipmentController extends Controller
 
     public function store(ErpEquipmentRequest $request)
     {
+        // dd($request->all());
         DB::beginTransaction();
         try {
             $user = Helper::getAuthenticatedUser();
@@ -134,6 +135,8 @@ class ErpEquipmentController extends Controller
                                 continue;
                             }
 
+                           
+
                             $checkListName = InspectionChecklist::where('id', $check['checklist_id'])->select('id','name','description','type')->first();
 
                             ErpEquipMaintenanceChecklist::create([
@@ -143,6 +146,7 @@ class ErpEquipmentController extends Controller
                                 'description' => $checkListName->description,
                                 'type' => $checkListName->type,
                                 'created_by' => $user->auth_user_id,
+                                'checklist_detail'=>json_encode($check),
                             ]);
                         }
                     }
@@ -258,6 +262,21 @@ class ErpEquipmentController extends Controller
         
 
         $fixedAssetRegistration = FixedAssetRegistration::select('id', 'asset_name','asset_code')->get();
+        $maintenanceDetails = ErpEquipMaintenanceDetail::where('erp_equipment_id', $equipment->id)->value('id');
+       
+        $checkListData = ErpEquipMaintenanceChecklist::where('erp_equip_maintenance_id', $maintenanceDetails)->select('id','checklist_detail')->get();
+        $checkListIds = [];
+
+        foreach($checkListData as $checkListId){
+            $checkListId = json_decode($checkListId->checklist_detail);
+            if(!empty($checkListId->checklist_detail_id)){
+                $checkListIds[] = $checkListId->checklist_detail_id;
+            }
+           
+        }
+        
+      
+       
 
         return view('equipment.edit', compact(
             'equipment',
@@ -272,12 +291,14 @@ class ErpEquipmentController extends Controller
             'docStatusClass',
             'items',
             'checklists',
-            'fixedAssetRegistration'
+            'fixedAssetRegistration',
+            'checkListIds'
         ));
     }
 
     public function update(ErpEquipmentRequest $request, $id)
     {
+        
         DB::beginTransaction();
         try {
             $user = Helper::getAuthenticatedUser();
@@ -337,13 +358,15 @@ class ErpEquipmentController extends Controller
                                 continue;
                             }
 
+                           Log::info('Processing checklist item:', $check);
+
                             ErpEquipMaintenanceChecklist::create([
                                 'erp_equip_maintenance_id' => $maintenance_detail_item->id,
-                                'checklist_id' => $check['id'] ?? null,
                                 'name' => $check['name'],
                                 'description' => $check['description'] ?? null,
                                 'type' => $check['type'] ?? null,
                                 'created_by' => $user->auth_user_id,
+                                'checklist_detail'=>json_encode($check),
                             ]);
                         }
                     }
@@ -550,7 +573,8 @@ class ErpEquipmentController extends Controller
 
             // Get checklist with its details
             $checklist = InspectionChecklistDetail::where('header_id', $checklistId)
-                        ->first();
+                        ->get();
+       
 
             if (!$checklist) {
                 return response()->json([
@@ -565,7 +589,7 @@ class ErpEquipmentController extends Controller
                 'message' => 'Checklist details fetched successfully',
                 'data' => [
                     'checklist' => $checklist,
-                    'details' => $checklist->checklistDetails
+                    'details' => $checklist
                 ]
             ], 200);
 

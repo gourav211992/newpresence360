@@ -10,6 +10,7 @@ use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
 use App\Helpers\InventoryHelper;
 use App\Models\ErpFinancialYear;
+use App\Models\FixedAssetSub;
 
 
 use DateTime;
@@ -145,8 +146,10 @@ class ITDepreciationController extends Controller
 
         return $periods;
     }
+
     public static function getIncomeTaxRDV(string $date, $depPercentage, $value)
     {
+       
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
         $capDate = new DateTime($date);
         $type = null;
@@ -190,6 +193,166 @@ class ITDepreciationController extends Controller
 
         return $rdv_value;
     }
+
+    public function getFixedAssetRDV(Request $request){
+    try {
+            // Validate request parameters
+            $request->validate([
+                'uid' => 'nullable|string',
+                'asset_code' => 'nullable|string',
+                'asset_name' => 'nullable|string',
+                'sub_asset_code' => 'nullable|string',
+            ]);
+
+            $uid = $request->input('uid');
+            $assetCode = $request->input('asset_code');
+            $subAssetCode = $request->input('sub_asset_code');
+            $assetName = $request->input('asset_name');
+
+            // Validate that at least one parameter is provided
+            if (empty($uid) && empty($assetCode) && empty($subAssetCode) && empty($assetName)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Either uid or asset_code,asset_name parameter is required',
+                    'data' => null
+                ], 400);
+            }
+
+            // Call the helper function to get RDV calculation
+            $result = Helper::getFixedAssetRDV($uid, $assetCode, $subAssetCode, $assetName);
+
+            // Return appropriate HTTP status code based on success
+            $statusCode = $result['success'] ? 200 : 404;
+
+            return response()->json($result, $statusCode);
+            
+        } catch (Exception $ex) {
+            throw new ApiGenericException($ex -> getMessage());
+        }
+    }
+
+    public function getFixedAssetRDVResponse(Request $request)
+    {
+        try {
+
+            $data = $request->validate([
+                'sub_asset_code'      => 'nullable|array',
+                'uid'                 => 'nullable|array',
+                'sales_date'          => 'nullable|string',    
+                'status'              => 'nullable|string',
+                'total_sales_value'   => 'required|numeric',   
+                'profit_loss_value'  => 'nullable|integer',
+            ]);
+
+            // Ensure at least one identifier is provided
+            if (empty($data['sub_asset_code']) && empty($data['uid'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Either sub_asset_code array or uid array is required',
+                    'data'    => null
+                ], 400);
+            }
+
+            $assets = [];
+            $totalSalesValue = $data['total_sales_value'];
+            
+            // Collect assets based on provided identifiers
+            if (!empty($data['sub_asset_code'])) {
+                foreach ($data['sub_asset_code'] as $subAssetCode) {
+                    $asset = FixedAssetSub::where('sub_asset_code', $subAssetCode)->first();
+                    if ($asset) {
+                        $assets[] = $asset;
+                    }
+                }
+            }
+
+            if (!empty($data['uid'])) {
+                foreach ($data['uid'] as $uid) {
+                    $asset = FixedAssetSub::where('uid', $uid)->first();
+                    if ($asset) {
+                        $assets[] = $asset;
+                    }
+                }
+            }
+
+            if (empty($assets)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No assets found with provided identifiers',
+                    'data'    => null
+                ], 404);
+            }
+
+            // Calculate individual sales value for each asset
+            $individualSalesValue = $totalSalesValue / count($assets);
+            $updatedAssets = [];
+            $errors = [];
+
+            foreach ($assets as $asset) {
+                try {
+                    // Get RDV for this asset using the helper
+                    $rdvResult = Helper::getFixedAssetRDV($asset->uid, null, $asset->sub_asset_code);
+                    
+                    if (!$rdvResult['success']) {
+                        $errors[] = "Failed to calculate RDV for asset {$asset->sub_asset_code}: " . $rdvResult['message'];
+                        continue;
+                    }
+
+                    $rdvValue = $rdvResult['rdv'] ?? 0;
+                    
+                    // Calculate profit/loss: sales_value - rdv
+                    $profitLossValue = $individualSalesValue - $rdvValue;
+
+                    // Update asset with calculated values
+                    $asset->sales_date = $data['sales_date'] ?? $asset->sales_date;
+                    $asset->status = $data['status'] ?? $asset->status;
+                    $asset->sales_value = $individualSalesValue;
+                    $asset->profit_loss_value = $profitLossValue;
+                    $asset->save();
+
+                    $updatedAssets[] = [
+                        'uid' => $asset->uid,
+                        'sub_asset_code' => $asset->sub_asset_code,
+                        'sales_date' => $asset->sales_date,
+                        'status' => $asset->status,
+                        'sales_value' => $asset->sales_value,
+                        'rdv_value' => $rdvValue,
+                        'profit_loss_value' => $asset->profit_loss_value,
+                    ];
+
+                } catch (\Exception $e) {
+                    $errors[] = "Error processing asset {$asset->sub_asset_code}: " . $e->getMessage();
+                }
+            }
+
+            $response = [
+                'success' => true,
+                'message' => 'Assets processed successfully',
+                'data' => [
+                    'total_sales_value' => $totalSalesValue,
+                    'individual_sales_value' => $individualSalesValue,
+                    'total_assets_processed' => count($updatedAssets),
+                    'updated_assets' => $updatedAssets
+                ]
+            ];
+
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getFixedAssetRDVResponse: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing assets',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
 }

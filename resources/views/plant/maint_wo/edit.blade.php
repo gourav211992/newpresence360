@@ -42,7 +42,7 @@
                 <button type="submit" form="maint-wo-form" class="btn btn-primary btn-sm" id="submit-btn">
                     <i data-feather="check-circle"></i> Submit
                 </button>
-              @endif
+            @endif
 		    
           </div>
         </div>
@@ -519,28 +519,36 @@
                                                 placeholder="Select"  />
                                        </td>
                                        <td class="poprod-decpt">
-                                         <input type="hidden" class="attribute" value='{{ $part['attribute'] ?? ($part->attribute ?? "[]") }}'>
-                                         <div class="d-flex flex-wrap gap-1">
-                                           @php
-                                             $attributes = $part['attribute'] ?? ($part->attribute ?? '[]');
-                                             if (is_string($attributes)) {
-                                               $attributesArray = json_decode($attributes, true) ?: [];
-                                             } else {
-                                               $attributesArray = $attributes ?: [];
-                                             }
-                                           @endphp
-                                           @if(!empty($attributesArray))
-                                             @foreach($attributesArray as $attr)
-                                               <span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
-                                                 <strong>{{ $attr['group_name'] ?? ($attr['name'] ?? 'Type') }}</strong>: 
-                                                 {{ $attr['selected_value_name'] ?? ($attr['value'] ?? 'N/A') }}
-                                               </span>
-                                             @endforeach
-                                           @else
-                                             <span class="text-muted" style="font-size:10px;">No attributes</span>
-                                           @endif
-                                         </div>
-                                       </td>
+                                          <input type="hidden" class="attribute" value='{{ $part['attribute'] ?? ($part->attribute ?? "[]") }}'>
+                                          <div class="d-flex flex-wrap gap-1" id="attribute-badges-{{ $index }}">
+                                            @php
+                                              $attributes = $part['attribute'] ?? ($part->attribute ?? '[]');
+                                              $attributesArray = is_string($attributes) ? json_decode($attributes, true) : $attributes;
+                                              $validAttributes = [];
+                                              if (!empty($attributesArray) && is_array($attributesArray)) {
+                                                $validAttributes = array_filter($attributesArray, function($attr) {
+                                                  return (isset($attr['name']) && isset($attr['value'])) || 
+                                                         (isset($attr['attribute_name']) && isset($attr['attribute_value']));
+                                                });
+                                              }
+                                              $totalCount = count($validAttributes);
+                                              $displayedCount = 0;
+                                            @endphp
+                                            
+                                            @foreach($validAttributes as $attribute)
+                                              @if($displayedCount < 2)
+                                                @php $displayedCount++; @endphp
+                                                <span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+                                                  <strong>{{ $attribute['name'] ?? $attribute['attribute_name'] }}</strong>: {{ $attribute['value'] ?? $attribute['attribute_value'] }}
+                                                </span>
+                                              @endif
+                                            @endforeach
+                                            
+                                            @if($totalCount > 2)
+                                              <span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>
+                                            @endif
+                                           </div>
+                                         </td>
                                        <td>
                                          <select class="uom form-select mw-100" name="uom[]" required>
                                            <option value="{{ $part['uom_id'] ?? ($part->uom_id ?? '') }}">
@@ -1405,7 +1413,7 @@
 					let badgesHtml = '';
 					attr.forEach(function(attribute) {
 						badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-							<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+							
 						</span>`;
 					});
 					$input.closest('tr').find('.d-flex.flex-wrap.gap-1').html(badgesHtml);
@@ -1670,6 +1678,120 @@
 			}
 		}
 	}
+
+	// Function to update attribute badges display (same as BOM)
+	function updateAttributeBadges($row) {
+		if (!$row) return;
+
+		let $selectElement = $row.find('.item_code');
+		let $badgesContainer = $row.find('#attribute-badges');
+
+		if ($selectElement.val() !== "") {
+			let $hiddenInput = $row.find('.attribute');
+			let existingAttributes = $hiddenInput.length && $hiddenInput.val() ?
+				JSON.parse($hiddenInput.val()) :
+				[];
+
+			let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+
+			let badgesHtml = '';
+			let selectedCount = 0;
+
+			if (attr && attr.length > 0) {
+				attr.forEach(function(attribute) {
+
+					// Check if this attribute has been selected
+					let selectedAttr = existingAttributes.find(selected =>
+						selected.item_attribute_id === attribute.id
+					);
+
+					// Only show selected attributes
+					if (selectedAttr) {
+						selectedCount++;
+						if (selectedCount <= 2) {
+							// Find the selected value from the attribute's values
+							let valuesData = attribute.values_data || attribute.values || [];
+
+							let selectedValue = valuesData.find(val => val.id === selectedAttr
+								.value_id);
+
+							if (selectedValue) {
+								badgesHtml +=
+									`<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+						<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+					</span>`;
+
+							} else {
+								// Handle case where selected value isn't found (optional)
+								badgesHtml +=
+									`<span class="badge rounded-pill badge-light-warning" style="font-size:10px; margin-right:5px;cursor:pointer">
+						<strong>${attribute.group_name}</strong>: N/A
+					</span>`;
+							}
+						}
+					}
+				});
+
+				if (selectedCount > 2) {
+					badgesHtml +=
+						'<span class="badge rounded-pill badge-light-secondary" style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+				}
+
+				$badgesContainer.html(badgesHtml);
+
+			} else {
+				$badgesContainer.html('');
+			}
+		} else {
+			$badgesContainer.html('');
+		}
+	}
+
+	// Add click event for the entire attribute cell (4th column)
+	$('.mrntableselectexcel').on('click', 'td:nth-child(4)', function() {
+		var $this = $(this);
+		var $tr = $this.closest('tr');
+		var $selectElement = $tr.find('.item_code');
+		var $attributesTable = $('#attribute_table'); // modal table
+		$attributesTable.data('currentRow', $tr);
+
+		if ($selectElement.val() !== "") {
+			let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+			let $hiddenInput = $tr.find('.attribute');
+			let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+				? JSON.parse($hiddenInput.val())
+				: [];
+
+			if (attributesJSON.length > 0) {
+				// Open attribute modal
+				$('#attributeModal').modal('show');
+				
+				// Populate attribute modal with data
+				populateAttributeModal(attributesJSON, existingAttributes, $tr);
+			} else {
+				showToast('info', 'No attributes available for this item.');
+			}
+		} else {
+			showToast('warning', 'Please select an item first.');
+		}
+	});
+
+	// Function to populate attribute modal (placeholder - needs actual modal implementation)
+	function populateAttributeModal(attributesJSON, existingAttributes, $row) {
+		// This function would populate the attribute modal
+		// For now, just show a message that modal functionality needs to be implemented
+		console.log('Attribute modal functionality needs to be implemented');
+		console.log('Attributes:', attributesJSON);
+		console.log('Existing selections:', existingAttributes);
+	}
+
+	// Initialize attribute badges for existing rows on page load
+	$(document).ready(function() {
+		$('.mrntableselectexcel tr').each(function() {
+			let $row = $(this);
+			updateAttributeBadges($row);
+		});
+	});
 
 </script>
 @endsection

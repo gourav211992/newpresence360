@@ -1284,8 +1284,19 @@ class MaintWoController extends Controller
                 $rawSparePartsData = json_decode($bomData->spare_parts, true);
                 
                 foreach ($rawSparePartsData as $sparePart) {
-                    // $item = ErpItem::find($sparePart['item_id']);
-                    // dd($sparePart);
+                    
+                    $confirmedStock = StockLedger::query()
+                    ->selectRaw("
+                        SUM(
+                            CASE 
+                                WHEN document_status IN ('approved', 'approval_not_required', 'posted') 
+                                THEN receipt_qty - reserved_qty
+                                ELSE 0
+                            END
+                        ) as confirmed_stock
+                    ")
+                    ->where('item_code', $sparePart['item_code']) // yaha fix kiya
+                    ->value('confirmed_stock');
                     
                     $sparePartData = [
                         'item_id' => $sparePart['item_id'],
@@ -1295,7 +1306,8 @@ class MaintWoController extends Controller
                         'uom' => $sparePart['uom_name'] ?? 'N/A',
                         'uom_id' => $sparePart['uom_id'] ?? null,
                         'attribute' => $sparePart['attribute'] ?? '[]',
-                        'attributes' => []
+                        'attributes' => [],
+                        'confirmed_stock' => $confirmedStock ?? 0,
                     ];
 
                     // Process attributes if they exist
