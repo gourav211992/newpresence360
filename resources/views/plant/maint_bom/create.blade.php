@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
 	<!-- BEGIN: Content-->
 	<div class="app-content content ">
@@ -183,7 +182,6 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
-														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -218,14 +216,12 @@
 														</td>
 														<td><input type="number" class="qty form-control mw-100"
 																name="qty[]" required /></td>
-														<td><input type="number" class="available_stock form-control mw-100"
-																name="available_stock[]" required /></td>
 													</tr>
 												</tbody>
 												<tfoot>
 
 
-													<tr valign="top">
+													<tr valign="top" class="part-details-section">
 														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
@@ -256,9 +252,6 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
-																		<span
-																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
-																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -684,8 +677,6 @@
 															</td>
 															<td><input type="number" class="qty form-control mw-100"  name="qty[]"
 																	required /></td>
-															<td><input type="number" class="available_stock form-control mw-100"  name="available_stock[]"
-																	required /></td>
 														</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
@@ -826,7 +817,6 @@
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
 						uom_name: row.find('.uom option:selected').text() || '',
-						available_stock: row.find('.available_stock').val() || 0,
 					};
 					allRows.push(rowData);
 				}
@@ -938,7 +928,6 @@
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
 						attr: item.item_attributes,
-						available_stock: item.available_stock,
 					}));
 
 					response(results);
@@ -951,7 +940,7 @@
 					let itemId = ui.item.item_id;
 					let uomId = ui.item.uom_id;
 					let uomName = ui.item.uom_name;
-					let availableStock = ui.item.available_stock;
+					
 
 					$input.attr('data-name', itemName);
 					$input.attr('data-code', itemCode);
@@ -959,26 +948,24 @@
 					$input.attr('data-id', itemId);
 					$input.closest('tr').find('.item_id').val(itemId);
 					$input.closest('tr').find('.item_name').val(itemName);
-					$input.closest('tr').find('.available_stock').val(availableStock);
+				
 					$input.val(itemCode);
 
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
-					let availableStockOption = availableStock;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
-					$input.closest('tr').find('.available_stock').empty().append(availableStockOption);
-
+					
 					// Update part details section
 					$('#part_name').text(itemName);
 					$('#uom').text(uomName);
 					$('#qty').text('0'); // Default quantity
-					$('#available_stock').text(availableStock);
+					
 
 					// Display attribute badges if item has attributes
 					if (attr && attr.length > 0) {
 						let badgesHtml = '';
 						attr.forEach(function(attribute) {
 							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+								<strong>${attribute.group_name}</strong>
 							</span>`;
 						});
 						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
@@ -1057,7 +1044,7 @@
 						$(this).closest('tr').find('.item_id').val('');
 						$(this).closest('tr').find('.item_name').val('');
 						$(this).closest('tr').find('.uom').empty();
-						$(this).closest('tr').find('.available_stock').empty();
+						
 					}
 				}
 			}).focus(function () {
@@ -1071,7 +1058,6 @@
 					$(this).closest('tr').find(".attribute").val('');
 					$(this).closest('tr').find(".item_id").val('');
 					$(this).closest('tr').find(".item_code").val('');
-					$(this).closest('tr').find(".available_stock").val('');
 				}
 			});
 
@@ -1191,68 +1177,190 @@
 			$('#' + id).modal('hide');
 		}
 
-		// Function to update attribute badges display
-		function updateAttributeBadges($row) {
-			if (!$row) return;
+		            // Function to update attribute badges display
+            function updateAttributeBadges($row) {
+                if (!$row) return;
 
-			let $selectElement = $row.find('.item_code');
-			let $badgesContainer = $row.find('#attribute-badges');
-			
-			if ($selectElement.val() !== "") {
-				let $hiddenInput = $row.find('.attribute');
-				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
-					? JSON.parse($hiddenInput.val())
-					: [];
+                let $selectElement = $row.find('.item_code');
+                let $badgesContainer = $row.find('#attribute-badges');
 
-				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
-				
-				let badgesHtml = '';
+                if ($selectElement.val() !== "") {
+                    let $hiddenInput = $row.find('.attribute');
+                    let existingAttributes = $hiddenInput.length && $hiddenInput.val() ?
+                        JSON.parse($hiddenInput.val()) :
+                        [];
 
-				if (attr && attr.length > 0) {
-					attr.forEach(function(attribute) {
-						
-						// Check if this attribute has been selected
-						let selectedAttr = existingAttributes.find(selected => 
-							selected.item_attribute_id === attribute.id
-						);
+                    let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
 
-						
-						if (selectedAttr) {
-							// Find the selected value from the attribute's values
-							let valuesData = attribute.values_data || attribute.values || [];
-							
-							let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
-							
-							if (selectedValue) {
-								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-									<strong>${attribute.group_name}</strong>: ${selectedValue.value}
-								</span>`;
-								
-							} else {
-								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-									<strong>${attribute.group_name}</strong>: Not Selected
-								</span>`;
-								
-							}
-						} else {
-							// Not selected yet
-							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-								<strong>${attribute.group_name}</strong>: Not Selected
+                    let badgesHtml = '';
+                    let selectedCount = 0;
+
+                    if (attr && attr.length > 0) {
+                        attr.forEach(function(attribute) {
+
+                            // Check if this attribute has been selected
+                            let selectedAttr = existingAttributes.find(selected =>
+                                selected.item_attribute_id === attribute.id
+                            );
+
+                            // Only show selected attributes
+                            if (selectedAttr) {
+                                selectedCount++;
+                                if (selectedCount <= 2) {
+                                    // Find the selected value from the attribute's values
+                                    let valuesData = attribute.values_data || attribute.values || [];
+
+                                    let selectedValue = valuesData.find(val => val.id === selectedAttr
+                                        .value_id);
+
+                                    if (selectedValue) {
+                                        badgesHtml +=
+                                            `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+								<strong>${attribute.group_name}</strong>: ${selectedValue.value}
 							</span>`;
-							
-						}
-					});
-				}
 
-				$badgesContainer.html(badgesHtml);
-				
-				// Update part details attributes section
-				$('#attributes_badges').html(badgesHtml);
+                                    } else {
+                                        // Handle case where selected value isn't found (optional)
+                                        badgesHtml +=
+                                            `<span class="badge rounded-pill badge-light-warning" style="font-size:10px; margin-right:5px;cursor:pointer">
+								<strong>${attribute.group_name}</strong>: N/A
+							</span>`;
+                                    }
+                                }
+                            }
+                        });
 
-			} else {
-				$badgesContainer.html('');
+                        if (selectedCount > 2) {
+                            badgesHtml +=
+                                '<span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+                        }
+
+                        $badgesContainer.html(badgesHtml);
+
+                    } else {
+                        $badgesContainer.html('');
+                    }
+                } else {
+                    $badgesContainer.html('');
+                }
+            }
+
+            // Add click event for the entire attribute cell
+            $('.mrntableselectexcel').on('click', 'td:nth-child(4)', function() {
+                var $this = $(this);
+                var $tr = $this.closest('tr');
+                var $selectElement = $tr.find('.item_code');
+                var $attributesTable = $('#attribute_table'); // modal table
+                $attributesTable.data('currentRow', $tr);
+
+                if ($selectElement.val() !== "") {
+                    let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+                    let $hiddenInput = $tr.find('.attribute');
+                    let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+                        ? JSON.parse($hiddenInput.val())
+                        : [];
+
+                    if (!attributesJSON.length) {
+                        $attributesTable.html(`
+                            <tr>
+                                <td colspan="2" class="text-center">No attributes available</td>
+                            </tr>
+                        `);
+                        return;
+                    }
+
+                    let innerHtml = ``;
+
+                    $.each(attributesJSON, function (index, element) {
+                        let optionsHtml = ``;
+
+                        $.each(element.values_data, function (i, value) {
+                            let isSelected = existingAttributes.some(attr =>
+                                attr.item_attribute_id === element.id && attr.value_id === value.id
+                            );
+
+                            optionsHtml += `
+                                <option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
+                            `;
+                        });
+
+                        innerHtml += `
+                            <tr>
+                                <td>
+                                    ${element.group_name}
+                                    <input type="hidden" name="id" value="${element.id}">
+                                </td>
+                                <td>
+                                    <select class="form-select select2" style="max-width:100% !important;">
+                                        <option value="">Select</option>
+                                        ${optionsHtml}
+                                    </select>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    $attributesTable.html(innerHtml);
+
+                    // Bind change event
+                    $attributesTable.find('select').off('change').on('change', function () {
+                        changeAttributeVal($tr);
+                    });
+                    $attributesTable.find('select').select2();
+
+                    // Open the attribute modal
+                    $('#attribute').modal('show');
+
+                } else {
+                    $attributesTable.html(`
+                        <tr>
+                            <td colspan="2" class="text-center">Please select an item first</td>
+                        </tr>
+                    `);
+                }
+            });
+
+        $('#submitAttributeBtn').on('click', function() {
+            var selectedAttrs = [];
+            $('#attributeModal .attribute-value:checked').each(function() {
+                selectedAttrs.push({
+                    attribute_id: $(this).data('attribute-id'),
+                    attribute_name: $(this).data('attribute-name'),
+                    attribute_value: $(this).val(),
+                });
+            });
+
+            var currentRow = $('#attributeModal').data('currentRow');
+            currentRow.data('selectedAttributes', selectedAttrs);
+            updateAttributeBadges(currentRow);
+
+            $('#attributeModal').modal('hide');
+        });
+
+	
+		document.addEventListener("DOMContentLoaded", function () {
+			const partDetails = document.querySelector('td[colspan="7"][rowspan="10"]');
+			if (partDetails) {
+				partDetails.onselectstart = function () {
+					return false;
+				};
+				partDetails.addEventListener("mousedown", function (e) {
+					e.preventDefault();
+				});
 			}
-		}
+		});
 
+				
+		document.addEventListener("DOMContentLoaded", function () {
+
+			const els = document.querySelectorAll('.part-details-section');
+
+			els.forEach(el => {
+				el.addEventListener("click", function (e) {
+					e.stopPropagation(); 
+					e.preventDefault(); 
+				}, true); 
+			});
+		});
 	</script>
 @endsection

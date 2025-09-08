@@ -35,10 +35,7 @@
 								<button type="submit" form="maint-bom-form" class="btn btn-primary btn-sm" id="submit-btn">
 									<i data-feather="check-circle"></i> Submit
 								</button>
-							
 							@endif
-
-
 						</div>
 					</div>
 				</div>
@@ -188,7 +185,6 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
-														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -247,6 +243,10 @@
 																			$selectedAttributes = json_decode($part->attribute, true);
 																		@endphp
 																		@if($selectedAttributes && count($selectedAttributes) > 0)
+																			@php
+																				$displayedCount = 0;
+																				$totalSelectedCount = count($selectedAttributes);
+																			@endphp
 																			@foreach($selectedAttributes as $selectedAttr)
 																				@php
 																					// Find the attribute group name and value
@@ -256,12 +256,16 @@
 																						$attrValue = collect($attrGroup['values_data'])->firstWhere('id', $selectedAttr['value_id']);
 																					}
 																				@endphp
-																				@if($attrGroup && $attrValue)
-																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+																				@if($attrGroup && $attrValue && $displayedCount < 2)
+																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px; cursor:pointer;">
 																						<strong>{{ $attrGroup['group_name'] }}</strong>: {{ $attrValue['value'] }}
 																					</span>
+																					@php $displayedCount++; @endphp
 																				@endif
 																			@endforeach
+																			@if($totalSelectedCount > 2)
+																				<span style="font-size:10px; margin-right:5px; cursor:pointer; color:black;"><strong>...</strong></span>
+																			@endif
 																		@else
 																			<span class="text-muted" style="font-size:10px;">No attributes selected</span>
 																		@endif
@@ -280,16 +284,13 @@
 																<input type="number" class="qty form-control mw-100"
 																	name="qty[]" value="{{ $part->qty }}" required />
 															</td>
-															<td class="available_stock">
-																@if(isset($part->available_stock)){{ $part->available_stock }}@else N/A @endif
-															</td>
 														</tr>
 													@endforeach
 												</tbody>
 												<tfoot>
 
 
-													<tr valign="top">
+													<tr valign="top" class="pomrnheadtffotsticky part-details-section">
 														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
@@ -320,9 +321,6 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
-																		<span
-																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
-																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -611,7 +609,7 @@
 				$('#part_name').text($selected.find('.item_name').val());
 				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
-				$('#available_stock').text($selected.find('.available_stock').text());
+				
 				let $selectElement = $selected.find('.item_code');
 				let $badgesContainer = $('#attributes_badges'); // container for badges
 
@@ -690,9 +688,6 @@
 																			</td>
 																			<td><input type="number" class="qty form-control mw-100"  name="qty[]"
 																					required /></td>
-																			<td class="available_stock">
-																				0
-																			</td>
 																		</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
@@ -833,7 +828,6 @@
 						qty: row.find('.qty').val() || 0,
 						uom_id: row.find('.uom').val() || '',
 						uom_name: row.find('.uom option:selected').text() || '',
-						available_stock: row.find('.available_stock').text() || 0,
 					};
 					allRows.push(rowData);
 				}
@@ -983,8 +977,20 @@
 				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
 				
 				let badgesHtml = '';
+				let selectedCount = 0;
 
 				if (attr && attr.length > 0) {
+					// First count selected attributes
+					attr.forEach(function(attribute) {
+						let selectedAttr = existingAttributes.find(selected => 
+							selected.item_attribute_id === attribute.id
+						);
+						if (selectedAttr) {
+							selectedCount++;
+						}
+					});
+
+					let displayedCount = 0;
 					attr.forEach(function(attribute) {
 						
 						// Check if this attribute has been selected
@@ -992,28 +998,28 @@
 							selected.item_attribute_id === attribute.id
 						);
 
+						// Only show selected attributes
 						if (selectedAttr) {
-							// Find the selected value from the attribute's values
-							let valuesData = attribute.values_data || attribute.values || [];
-							
-							let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
-							
-							if (selectedValue) {
-								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-									<strong>${attribute.group_name}</strong>: ${selectedValue.value}
-								</span>`;
-							} else {
-								badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-									<strong>${attribute.group_name}</strong>: Not Selected
-								</span>`;
+							if (displayedCount < 2) {
+								// Find the selected value from the attribute's values
+								let valuesData = attribute.values_data || attribute.values || [];
+								
+								let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
+								
+								if (selectedValue) {
+									badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px; cursor:pointer;">
+										<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+									</span>`;
+								}
+								displayedCount++;
 							}
-						} else {
-							// Not selected yet
-							badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-								<strong>${attribute.group_name}</strong>: Not Selected
-							</span>`;
 						}
+						// Removed the else block that was showing unselected attributes
 					});
+
+					if (selectedCount >= 2) {
+						badgesHtml += '<span style="font-size:10px; margin-right:5px; cursor:pointer;color:black;"><strong>...</strong></span>';
+					}
 				}
 				$badgesContainer.html(badgesHtml);
 				
@@ -1025,6 +1031,83 @@
 			}
 		}
 
+
+		// Add click event for the entire attribute cell
+		$('.mrntableselectexcel').on('click', 'td:nth-child(4)', function() {
+			var $this = $(this);
+			var $tr = $this.closest('tr');
+			var $selectElement = $tr.find('.item_code');
+			var $attributesTable = $('#attribute_table'); // modal table
+			$attributesTable.data('currentRow', $tr);
+			
+			if ($selectElement.val() !== "") {
+				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+				let $hiddenInput = $tr.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
+
+				if (!attributesJSON.length) {
+					$attributesTable.html(`
+						<tr>
+							<td colspan="2" class="text-center">No attributes available</td>
+						</tr>
+					`);
+					return;
+				}
+
+				let innerHtml = ``;
+
+				$.each(attributesJSON, function (index, element) {
+					let optionsHtml = ``;
+
+					$.each(element.values_data, function (i, value) {
+						let isSelected = existingAttributes.some(attr =>
+							attr.item_attribute_id === element.id && attr.value_id === value.id
+						);
+
+						optionsHtml += `
+							<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
+						`;
+					});
+
+					innerHtml += `
+						<tr>
+							<td>
+								${element.group_name}
+								<input type="hidden" name="id" value="${element.id}">
+							</td>
+							<td>
+								<select class="form-select select2" style="max-width:100% !important;">
+									<option value="">Select</option>
+									${optionsHtml}
+								</select>
+							</td>
+						</tr>
+					`;
+				});
+
+				$attributesTable.html(innerHtml);
+
+				// Initialize select2
+				$attributesTable.find('select').select2();
+
+				//Bind change event
+				$attributesTable.find('select').off('change').on('change', function () {
+					changeAttributeVal($tr);
+				});
+
+				// Open the attribute modal
+				$('#attribute').modal('show');
+
+			} else {
+				$attributesTable.html(`
+					<tr>
+						<td colspan="2" class="text-center">Please select an item first</td>
+					</tr>
+				`);
+			}
+		});
 
 		$(document).on('click', '.attributeBtn', function (e) {
 			let $tr = $(this).closest('tr');
@@ -1140,7 +1223,6 @@
 						uom_name: item.uom_name,
 						uom_id: item.uom_id,
 						attr: item.item_attributes,
-						available_stock: item.available_stock,
 					}));
 
 					response(results);
@@ -1165,18 +1247,16 @@
 					let uomOption = `<option value="${uomId}">${uomName}</option>`;
 					$input.closest('tr').find('.uom').empty().append(uomOption);
 					
-					// Update available stock
-					let availableStock = ui.item.available_stock || 0;
-					$input.closest('tr').find('.available_stock').text(availableStock);
-
+					
+				
 					// Display attribute badges if item has attributes
 					if (attr && attr.length > 0) {
 						let badgesHtml = '';
-						attr.forEach(function(attribute) {
-							badgesHtml += `<span class="badge rounded-pill badge-light-primary">
-								<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
-							</span>`;
-						});
+						// attr.forEach(function(attribute) {
+						// 	badgesHtml += `<span class="badge rounded-pill badge-light-primary">
+						// 		<strong>${attribute.group_name || 'Attribute'}</strong>: Not Selected
+						// 	</span>`;
+						// });
 						$input.closest('tr').find('#attribute-badges').html(badgesHtml);
 						
 						// Automatically open attribute modal if item has attributes
@@ -1286,14 +1366,16 @@
 			}
 		});
 
+		document.addEventListener("DOMContentLoaded", function () {
 
+		const els = document.querySelectorAll('.part-details-section');
 
-
-
-
-
-
-
-
+		els.forEach(el => {
+			el.addEventListener("click", function (e) {
+				e.stopPropagation(); 
+				e.preventDefault(); 
+			}, true); 
+		});
+		});
 	</script>
 @endsection

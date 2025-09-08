@@ -665,6 +665,19 @@ $(document).on('change', 'input[name="equipment_radio"]', function () {
     };
   }
 });
+// Transform attributes from controller format to data-attr format
+function transformAttributesForDataAttr(attributes) {
+  if (!attributes || !Array.isArray(attributes)) {
+    return [];
+  }
+  
+  return attributes.map(attr => ({
+    id: attr.item_attribute_id,
+    group_name: attr.group_name,
+    values_data: attr.all_values || []
+  }));
+}
+
 function fetchEquipmentSpareParts(equipmentId, maintenanceTypeId) {
   showLoadingIndicator();
   $.ajax({
@@ -689,6 +702,7 @@ function fetchEquipmentSpareParts(equipmentId, maintenanceTypeId) {
   });
 }
 function populateSparePartsTable(sparePartsData) {
+
   console.log("check the spare parts", sparePartsData);
   const tableBody = $('.mrntableselectexcel');
   tableBody.empty();
@@ -707,7 +721,7 @@ function populateSparePartsTable(sparePartsData) {
         </td>
         <td class="poprod-decpt">
           <input type="hidden" class="item_id" value="${part.item_id || ''}">
-          <input required type="text" placeholder="Select" name="item[]" class="item_code form-control mw-100 ledgerselecct mb-25" value="${part.item_code || ''}" />
+          <input required type="text" placeholder="Select" name="item[]" class="item_code form-control mw-100 ledgerselecct mb-25" value="${part.item_code || ''}" data-attr='${JSON.stringify(transformAttributesForDataAttr(part.attributes || []))}' />
         </td>
         <td class="poprod-decpt">
           <input type="text" placeholder="Select" class="item_name form-control mw-100 ledgerselecct mb-25" value="${part.item_name || ''}" />
@@ -717,11 +731,36 @@ function populateSparePartsTable(sparePartsData) {
           <input type="hidden" class="attribute-enriched" value='${JSON.stringify(part.attributes || [])}'>
           <div class="d-flex flex-wrap gap-1" id="attribute-badges-${index}">
             ${
-              (part.attributes || []).map(attr => {
-                return `<span class="badge rounded-pill badge-light-primary" style="font-size:10px;">
-                          <strong>${attr.group_name || attr.type || 'Type'}</strong>: ${attr.selected_value_name || attr.value || ''}
-                        </span>`;
-              }).join('')
+              (() => {
+                const attributes = part.attributes || [];
+                const validAttributes = attributes.filter(attr => 
+                  (attr.group_name || attr.type) && (attr.selected_value_name || attr.value)
+                );
+                
+                if (validAttributes.length === 0) {
+                  return '';
+                }
+                
+                let badgesHtml = '';
+                let displayedCount = 0;
+                
+                // Show up to 2 badges
+                validAttributes.forEach(attr => {
+                  if (displayedCount < 2) {
+                    displayedCount++;
+                    badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+                                    <strong>${attr.group_name || attr.type || 'Type'}</strong>: ${attr.selected_value_name || attr.value || ''}
+                                  </span>`;
+                  }
+                });
+                
+                // Add "..." if there are more than 2 attributes
+                if (validAttributes.length > 2) {
+                  badgesHtml += '<span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+                }
+                
+                return badgesHtml;
+              })()
             }
           </div>
         </td>
@@ -738,6 +777,14 @@ function populateSparePartsTable(sparePartsData) {
         </td>
       </tr>`;
     tableBody.append(row);
+  });
+
+  // Initialize autocomplete for fetched spare parts
+  $('.mrntableselectexcel .item_code').each(function() {
+    if (typeof initAutoForItem === 'function') {
+      initAutoForItem(this, 'item');
+      console.log('Initialized autocomplete for fetched spare part');
+    }
   });
 
   // Use event delegation for AJAX loaded spare parts to work with create.blade.php click handler
@@ -1239,17 +1286,36 @@ function updateAttributeBadges($row) {
     }
 
     let badgesHtml = '';
+    let totalSelectedCount = 0;
 
-    // Display badges for each selected attribute
+    // Count total selected attributes
     $.each(existingAttributes, function (index, attr) {
       if (attr.attribute_name && attr.attribute_value) {
+        totalSelectedCount++;
+      }
+    });
+    console.log('Total selected attributes:', totalSelectedCount);
+    
+
+    // Badge display logic based on count
+    let displayedCount = 0;
+    
+    // Show up to 2 badges
+    $.each(existingAttributes, function (index, attr) {
+      if (attr.attribute_name && attr.attribute_value && displayedCount < 2) {
+        displayedCount++;
         badgesHtml += `
-          <span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
-            <strong>${attr.attribute_name}</strong> : ${attr.attribute_value}
+          <span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;cursor:pointer">
+            <strong>${attr.attribute_name}</strong>: ${attr.attribute_value}
           </span>
         `;
       }
     });
+    
+    // Add "..." if there are more than 2 attributes
+    if (totalSelectedCount > 2) {
+      badgesHtml += '<span style="font-size:10px; color:black; margin-right:5px;cursor:pointer"><strong>...</strong></span>';
+    }
 
     $badgesContainer.html(badgesHtml);
 

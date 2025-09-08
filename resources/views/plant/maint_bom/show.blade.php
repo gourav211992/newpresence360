@@ -208,7 +208,6 @@
 														<th>Attributes</th>
 														<th>UOM</th>
 														<th>Qty</th>
-														<th>Available Stock</th>
 													</tr>
 												</thead>
 												<tbody class="mrntableselectexcel">
@@ -266,6 +265,10 @@
 																			$selectedAttributes = json_decode($part->attribute, true);
 																		@endphp
 																		@if($selectedAttributes && count($selectedAttributes) > 0)
+																			@php
+																				$displayedCount = 0;
+																				$totalSelectedCount = count($selectedAttributes);
+																			@endphp
 																			@foreach($selectedAttributes as $selectedAttr)
 																				@php
 																					// Find the attribute group name and value
@@ -275,12 +278,16 @@
 																						$attrValue = collect($attrGroup['values_data'])->firstWhere('id', $selectedAttr['value_id']);
 																					}
 																				@endphp
-																				@if($attrGroup && $attrValue)
-																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+																				@if($attrGroup && $attrValue && $displayedCount < 2)
+																					<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px; cursor:pointer;">
 																						<strong>{{ $attrGroup['group_name'] }}</strong>: {{ $attrValue['value'] }}
 																					</span>
+																					@php $displayedCount++; @endphp
 																				@endif
 																			@endforeach
+																			@if($totalSelectedCount > 2)
+																				<span style="font-size:10px; margin-right:5px; cursor:pointer; color:black;"><strong>...</strong></span>
+																			@endif
 																		@else
 																			<span class="text-muted" style="font-size:10px;">No attributes selected</span>
 																		@endif
@@ -299,16 +306,14 @@
 																<input type="number" class="qty form-control mw-100"
 																	name="qty[]" value="{{ $part->qty }}" required />
 															</td>
-															<td class="available_stock">
-																@if(isset($part->available_stock)){{ $part->available_stock }}@else N/A @endif
-															</td>
+														
 														</tr>
 													@endforeach
 												</tbody>
 													<tfoot>
 
 
-													<tr valign="top">
+													<tr valign="top" class="part-details-section">
 														<td colspan="7" rowspan="10">
 															<table class="table border">
 																<tr>
@@ -339,9 +344,6 @@
 																		<span
 																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
 																			<span id="qty"></span></span>
-																		<span
-																			class="badge rounded-pill badge-light-primary"><strong>Available Stock</strong>:
-																			<span id="available_stock"></span></span>
 																	</td>
 																</tr>
 																<tr>
@@ -1002,83 +1004,77 @@
 			// Update hidden input with JSON
 			hiddenInput.val(JSON.stringify(selectedAttributes));
 			console.log(selectedAttributes);
+			updateAttributeBadges($row);
 		}
 
+		function updateAttributeBadges($row) {
+			if (!$row) return;
 
-		$(document).on('click', '.attributeBtn', function (e) {
-			let $tr = $(this).closest('tr');
-			let $selectElement = $tr.find('.item_code');
-			let $attributesTable = $('#attribute_table'); // modal table
-			$attributesTable.data('currentRow', $tr);
-
+			let $selectElement = $row.find('.item_code');
+			let $badgesContainer = $row.find('#attribute-badges');
+		
 			if ($selectElement.val() !== "") {
-				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
-				let $hiddenInput = $tr.find('.attribute');
+				let $hiddenInput = $row.find('.attribute');
 				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
 					? JSON.parse($hiddenInput.val())
 					: [];
 
-				if (!attributesJSON.length) {
-					$attributesTable.html(`
-						<tr>
-							<td colspan="2" class="text-center">No attributes available</td>
-						</tr>
-					`);
-					return;
-				}
+				let attr = JSON.parse($selectElement.attr('data-attr') || '[]');
+			
+				let badgesHtml = '';
+				let selectedCount = 0;
 
-				let innerHtml = ``;
-
-				$.each(attributesJSON, function (index, element) {
-					let optionsHtml = ``;
-
-					$.each(element.values_data, function (i, value) {
-						let isSelected = existingAttributes.some(attr =>
-							attr.item_attribute_id === element.id && attr.value_id === value.id
+				if (attr && attr.length > 0) {
+					// First count selected attributes
+					attr.forEach(function(attribute) {
+						let selectedAttr = existingAttributes.find(selected => 
+							selected.item_attribute_id === attribute.id
 						);
-
-						optionsHtml += `
-							<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
-						`;
+						if (selectedAttr) {
+							selectedCount++;
+						}
 					});
 
-					innerHtml += `
-						<tr>
-							<td>
-								${element.group_name}
-								<input type="hidden" name="id" value="${element.id}">
-							</td>
-							<td>
-								<select class="form-select select2" style="max-width:100% !important;" disabled>
-									<option value="">Select</option>
-									${optionsHtml}
-								</select>
-							</td>
-						</tr>
-					`;
-				});
+					let displayedCount = 0;
+					attr.forEach(function(attribute) {
+					
+						// Check if this attribute has been selected
+						let selectedAttr = existingAttributes.find(selected => 
+							selected.item_attribute_id === attribute.id
+						);
 
-				$attributesTable.html(innerHtml);
+						// Only show selected attributes
+						if (selectedAttr) {
+							if (displayedCount < 2) {
+								// Find the selected value from the attribute's values
+								let valuesData = attribute.values_data || attribute.values || [];
+							
+								let selectedValue = valuesData.find(val => val.id === selectedAttr.value_id);
+							
+								if (selectedValue) {
+									badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+										<strong>${attribute.group_name}</strong>: ${selectedValue.value}
+									</span>`;
+								} else {
+									badgesHtml += `<span class="badge rounded-pill badge-light-primary" style="font-size:10px; margin-right:5px;">
+										<strong>${attribute.group_name}</strong>: Not Selected
+									</span>`;
+								}
+								displayedCount++;
+							}
+						}
+					});
 
-				// Initialize select2
-
-				//Bind change event
-				$attributesTable.find('select').off('change').on('change', function () {
-					changeAttributeVal($tr);
-				});
-				$attributesTable.find('select').select2();
-
-				// Open the attribute modal
-				$('#attribute').modal('show');
-
-			} else {
-				$attributesTable.html(`
-					<tr>
-						<td colspan="2" class="text-center">Please select an item first</td>
-					</tr>
-				`);
+					if (selectedCount > 2) {
+						badgesHtml += '<span class="badge rounded-pill badge-light-info" style="font-size:10px; margin-right:5px;">...</span>';
+					}
+				}
+				$badgesContainer.html(badgesHtml);
+			
+				// Update part details attributes section
+				$('#attributes_badges').html(badgesHtml);
 			}
-		});
+		}
 		function closeModal(id) {
 			$('#' + id).modal('hide');
 		}
@@ -1216,16 +1212,18 @@
                     window.open(actionUrl, '_blank');
                 }
             });
+
+			document.addEventListener("DOMContentLoaded", function () {
+
+			const els = document.querySelectorAll('.part-details-section');
+
+				els.forEach(el => {
+					el.addEventListener("click", function (e) {
+						e.stopPropagation(); 
+						e.preventDefault(); 
+					}, true); 
+				});
+			});
             
-
-
-
-
-
-
-
-
-
-
 	</script>
 @endsection

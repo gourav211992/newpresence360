@@ -146,7 +146,13 @@
                                                             };
                                                         @endphp
                                                           <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                            Status : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">{{ucfirst($data->document_status)}}</span>
+                                                            Status : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? ''}}">
+                                                                 @if ($data->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($data->document_status) }}
+                                                                    @endif
+                                                            </span>
                                                                 </span>
                                                                </div>
                                                 </div>
@@ -581,7 +587,6 @@
                                                                             class="form-control mw-100 mb-25 organization"
                                                                             id="organization{{$no}}"
                                                                             value="{{ $item?->organization?->name ?? $item?->party?->organization?->name ?? $item?->ledger?->organization?->name }}" />
-                                                                     />
                                                                     </td>
                                                                     <td>
                                                                         <div class="position-relative d-flex align-items-center">
