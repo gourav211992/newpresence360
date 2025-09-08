@@ -1,59 +1,28 @@
 @extends('layouts.app')
-@section('styles')
-    <style>
-        #psModal .table-responsive {
-            overflow-y: auto;
-            max-height: 300px;
-            /* Set the height of the scrollable body */
-            position: relative;
-        }
-
-        #psModal .ps-order-detail {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        #psModal .ps-order-detail thead {
-            position: sticky;
-            top: 0;
-            /* Stick the header to the top of the table container */
-            background-color: white;
-            /* Optional: Make sure header has a background */
-            z-index: 1;
-            /* Ensure the header stays above the body content */
-        }
-
-        #psModal .ps-order-detail th {
-            background-color: #f8f9fa;
-            /* Optional: Background for the header */
-            text-align: left;
-            padding: 8px;
-        }
-
-        #psModal .ps-order-detail td {
-            padding: 8px;
-        }
-    </style>
-@endsection
 @section('content')
-    <form class="ajax-input-form scrap_module_form" data-module="scrap" method="POST" action="{{ isset($scrap->id) ? route('scrap.edit', ['id' => $scrap->id]) : route('scrap.store') }}" data-redirect="{{ route('scrap.index') }}" enctype="multipart/form-data">
+    <form class="ajax-input-form scrap_module_form" data-module="scrap" method="POST" action="{{ isset($scrap->id) ? route('scrap.update', $scrap->id) : route('scrap.store') }}" data-redirect="{{ route('scrap.index') }}" enctype="multipart/form-data">
+        @php
+            if (isset($scrap->reference_type) && $scrap->reference_type) {
+                $scrap->applyReference($scrap->reference_type);
+            }
+        @endphp
+        <input type="hidden" name="id" value="{{ $scrap->id ?? '' }}">
+        <input type="hidden" name="pslip_ids" id="pslip_ids" value="{{ $scrap->pslip_ids ?? '' }}">
+        <input type="hidden" name="ps_item_ids" id="ps_item_ids" value="{{ $scrap->pslip_item_ids ?? '' }}">
+        <input type="hidden" name="ps_pull_item_ids" id="ps_pull_item_ids" value="">
 
-        @csrf
-        @if (isset($scrap->id))
-            @method('PUT')
-            <input type="hidden" name="id" value="{{ $scrap->id }}">
-        @endif
-        @if (isset($scrap))
-            <input type="hidden" name="id" value="{{ $scrap->id ?? '' }}">
-        @endif
+        <input type="hidden" name="ro_ids" id="ro_ids" value="{{ $scrap->ro_ids ?? '' }}">
+        <input type="hidden" name="ro_item_ids" id="ro_item_ids" value="{{ $scrap->ro_item_ids ?? '' }}">
+        <input type="hidden" name="ro_item_pull_ids" id="ro_item_pull_ids" value="">
 
-        <input type="hidden" name="pslip_id" id="pslip_id">
-        <input type="hidden" name="ps_item_ids" id="ps_item_ids">
-        <input type="hidden" name="pull_item_type" id="pull_item_type">
-        <input type="hidden" name="ro_id" id="ro_id">
-        <input type="hidden" name="ro_item_ids" id="ro_item_ids">
-        <input type="hidden" name="item_ids" id="item_ids">
-        <input type="hidden" name="document_status" id="document_status">
+        <input type="hidden" name="item_ids" id="item_ids" value="{{ $scrap->item_ids ?? '' }}">
+        <input type="hidden" name="reference_type" id="reference_type" value="{{ $scrap->reference_type ?? '' }}">
+        <input type="hidden" name="document_status" id="document_status" value="{{ $scrap->document_status ?? '' }}">
+
+        <input type="hidden" name="deleted_ro_item_ids" id="deleted_ro_item_ids" value="">
+        <input type="hidden" name="deleted_ps_item_ids" id="deleted_ps_item_ids" value="">
+        <input type="hidden" name="deleted_attachment_ids" id="deleted_attachment_ids" value="">
+        <input type="hidden" name="deleted_scrap_item_ids" id="deleted_scrap_item_ids" value="">
 
         <div class="app-content content">
             <div class="content-overlay"></div>
@@ -80,8 +49,8 @@
                             <div class="form-group breadcrumb-right" id = "buttonsDiv">
                                 @if (!isset(request()->revisionNumber))
                                     <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                                    @if (isset($slip))
-                                        <a href="{{ route('production.slip.generate-pdf', $slip->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                    @if (isset($scrap->id))
+                                        <a href="{{ route('scrap.generate-pdf', $scrap->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
@@ -91,13 +60,17 @@
                                         </a>
                                         @if ($buttons['draft'])
                                             <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                            <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn" data-url="{{ route('scrap.destroy', ['id' => $scrap->id, 'isAmedment' => $buttons['amend'] ? $buttons['amend'] : 0]) }}"
+                                                    data-redirect="{{ route('scrap.index') }}" data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                            </button>
                                         @endif
                                         @if ($buttons['submit'])
                                             <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                                         @endif
                                         @if ($buttons['approve'])
-                                            <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="reject"><svg xmlns="http://www.w3.org/2000/svg" width="14"
-                                                     height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                                            <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="reject"><svg xmlns="http://www.w3.org/2000/svg"
+                                                     width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <line x1="15" y1="9" x2="9" y2="15">
                                                     </line>
@@ -194,12 +167,12 @@
                                                         <select class="form-select disable_on_edit_view select2 sub_store" id="sub_store_id" name="sub_store_id"></select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1 {{ isset($scrap->id) ? '' : 'd-none' }}" id="reference_type">
+                                                <div class="row align-items-center mb-1 {{ isset($scrap->id) ? '' : 'd-none' }}" id="reference_type_div">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference from</label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        @if (isset($scrap->reference_type))
+                                                        @if (isset($scrap->reference_type) && $scrap->reference_type)
                                                             @if ($scrap->reference_type == 'pslip')
                                                                 <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
                                                                     <i data-feather="plus-square"></i>
@@ -213,10 +186,80 @@
                                                             @endif
                                                         @else
                                                             <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect"> <i data-feather="plus-square"></i>Production Slip </button>
-                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect"><i data-feather="plus-square"></i> Repair Order</button>
+                                                            {{-- <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect"><i data-feather="plus-square"></i> Repair Order</button> --}}
                                                         @endif
                                                     </div>
                                                 </div>
+                                                @if (isset($scrap) && $scrap->document_status !== 'draft')
+                                                    @if ((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
+                                                        <div class="col-md-4">
+                                                            <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                                <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                                    <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                                    @if (!isset(request()->revisionNumber) && $scrap->document_status !== 'draft')
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
+                                                                            <select class="form-select" id="revisionNumber">
+                                                                                @for ($i = $revision_number; $i >= 0; $i--)
+                                                                                    <option value="{{ $i }}" {{ request('revisionNumber', $scrap->revision_number) == $i ? 'selected' : '' }}>{{ $i }}</option>
+                                                                                @endfor
+                                                                            </select>
+                                                                        </strong>
+                                                                    @else
+                                                                        @if ($scrap->document_status !== 'draft')
+                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                                Rev. No.{{ request()->revisionNumber }}
+                                                                            </strong>
+                                                                        @endif
+                                                                    @endif
+                                                                </h5>
+                                                                <ul class="timeline ms-50 newdashtimline ">
+                                                                    @foreach ($approvalHistory as $approvalHist)
+                                                                        <li class="timeline-item">
+                                                                            <span class="timeline-point timeline-point-indicator"></span>
+                                                                            <div class="timeline-event">
+                                                                                <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                                    <h6>{{ ucfirst($approvalHist->name ?? ($approvalHist?->user?->name ?? 'NA')) }}</h6>
+                                                                                    @if ($approvalHist->approval_type == 'approve')
+                                                                                        <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'submit')
+                                                                                        <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'reject')
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @else
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @if ($approvalHist->created_at)
+                                                                                    <h6>
+                                                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->timezone('Asia/Kolkata')->format('d/m/Y | h.iA') }}
+                                                                                    </h6>
+                                                                                @endif
+                                                                                @if ($approvalHist->remarks)
+                                                                                    <p>{!! $approvalHist->remarks !!}</p>
+                                                                                @endif
+                                                                                @if ($approvalHist->media && count($approvalHist->media) > 0)
+                                                                                    @foreach ($approvalHist->media as $mediaFile)
+                                                                                        <p>
+                                                                                            <a href="{{ $mediaFile->file_url }}" target = "_blank">
+                                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                                                                     class="feather feather-download">
+                                                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                                                                </svg>
+                                                                                            </a>
+                                                                                        </p>
+                                                                                    @endforeach
+                                                                                @endif
+                                                                            </div>
+                                                                        </li>
+                                                                    @endforeach
+
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -241,11 +284,37 @@
                                                         Scrap Items
                                                     </a>
                                                 </li>
-                                                <li class="nav-item">
-                                                    <a class="nav-link" data-bs-toggle="tab" href="#productionSlip">
-                                                        Production Slips
-                                                    </a>
-                                                </li>
+                                                @if (isset($scrap->reference_type) && $scrap->reference_type)
+                                                    @if ($scrap->reference_type == 'pslip')
+                                                        @if (isset($scrap->pslip_ids) && $scrap->pslip_ids)
+                                                            <li class="nav-item">
+                                                                <a class="nav-link" data-bs-toggle="tab" href="#productionSlip">
+                                                                    Production Slips
+                                                                </a>
+                                                            </li>
+                                                        @endif
+                                                    @endif
+                                                    @if ($scrap->reference_type == 'repairOrder')
+                                                        @if (isset($scrap->ro_ids) && $scrap->ro_ids)
+                                                            <li class="nav-item">
+                                                                <a class="nav-link" data-bs-toggle="tab" href="#repairOrder">
+                                                                    Repair Orders
+                                                                </a>
+                                                            </li>
+                                                        @endif
+                                                    @endif
+                                                @else
+                                                    <li class="nav-item psLink d-none">
+                                                        <a class="nav-link" data-bs-toggle="tab" href="#productionSlip">
+                                                            Production Slips
+                                                        </a>
+                                                    </li>
+                                                    <li class="nav-item roLink d-none">
+                                                        <a class="nav-link" data-bs-toggle="tab" href="#repairOrder">
+                                                            Repair Orders
+                                                        </a>
+                                                    </li>
+                                                @endif
                                             </ul>
                                         </div>
 
@@ -278,6 +347,8 @@
                                                                         <th>Attributes</th>
                                                                         <th>UOM</th>
                                                                         <th>Qty</th>
+                                                                        <th>Rate</th>
+                                                                        <th>Total Cost</th>
                                                                         <th>Cost Center</th>
                                                                         <th>Remark</th>
                                                                     </tr>
@@ -293,27 +364,6 @@
                                                                     @endif
                                                                 </tbody>
                                                                 <tfoot id="scavengingItemsTfoot">
-                                                                    <tr valign="top">
-                                                                        <td colspan="8" rowspan="10">
-                                                                            <table class="table border">
-                                                                                <tr>
-                                                                                    <td class="p-0">
-                                                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
-                                                                                            <strong>Item Details</strong>
-                                                                                        </h6>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                </tr>
-                                                                            </table>
-                                                                        </td>
-                                                                    </tr>
                                                                 </tfoot>
                                                             </table>
                                                         </div>
@@ -325,14 +375,17 @@
                                                 <div class="text-end mb-50">
                                                     <a href="javascript:;" id="deleteBtnPullItem" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtnPullItem" class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i> Add Item</a>
                                                 </div>
                                                 <div class="table-responsive pomrnheadtffotsticky">
                                                     <table id="productionSlipsTable" class="ItemsTable table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                         <thead>
                                                             <tr>
-                                                                <th>#</th>
+                                                                <th width="62" class="customernewsection-form">
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="Email" />
+                                                                        <label class="form-check-label" for="Email"></label>
+                                                                    </div>
+                                                                </th>
                                                                 <th>Slip Date</th>
                                                                 <th>Slip No.</th>
                                                                 <th>Item Code</th>
@@ -340,19 +393,24 @@
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
                                                                 <th>Qty</th>
-                                                                <th id="uidTh">UID</th>
+                                                                {{-- <th id="uidTh">UID</th> --}}
                                                                 <th>Remark</th>
                                                             </tr>
                                                         </thead>
+                                                        @php
+                                                            $reference_type = isset($scrap) ? $scrap->reference_type : null;
+                                                            $roItems = isset($scrap) && isset($reference_type) && $reference_type == 'repairOrder' && isset($scrap->roItems) ? $scrap->roItems : [];
+                                                            $pslipItems = isset($scrap) && isset($reference_type) && $reference_type == 'pslip' && isset($scrap->pslipItems) ? $scrap->pslipItems : [];
+                                                        @endphp
                                                         <tbody class="mrntableselectexcel">
-                                                            @if (isset($pullItemType) && $pullItemType == 'pslip' && isset($psItems))
-                                                                @foreach ($psItems as $key => $item)
-                                                                    @include('remanufacturing.scrap.partials.ps-item-row', ['rowCount' => $key, 'item' => $item])
+                                                            @if ($reference_type == 'pslip' && !empty($pslipItems))
+                                                                @foreach ($pslipItems ?? [] as $key => $item)
+                                                                    @include('remanufacturing.scrap.partials.pull-items', ['rowCount' => $key, 'item' => $item, 'type' => 'pslip'])
                                                                 @endforeach
                                                             @endif
-                                                            @if (isset($pullItemType) && $pullItemType == 'repairOrder' && isset($roItems))
+                                                            @if ($reference_type == 'repairOrder' && !empty($roItems))
                                                                 @foreach ($roItems as $key => $item)
-                                                                    {{-- @include('remanufacturing.scrap.partials.ro-item-row',['rowCount' => $key,'item' => $item]) --}}
+                                                                    @include('remanufacturing.scrap.partials.ro-items', ['rowCount' => $key, 'item' => $item])
                                                                 @endforeach
                                                             @endif
                                                         </tbody>
@@ -376,7 +434,7 @@
                                             <div class="col-md-12">
                                                 <div class="mb-1">
                                                     <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" id="document_remarks" value="{{ $scrap->document_remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
+                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" id="document_remarks" value="{{ $scrap->remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -415,8 +473,44 @@
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary cancelAttributeBtn me-1">Cancel</button>
                     <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Delete component modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="deleteConfirm" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Amendment Modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Scrap</strong>? After Amendment this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
@@ -479,14 +573,17 @@
             getSubStores(scrap.store_id, scrap.sub_store_id);
         @endif
 
-        $(document).on('change', '#sub_store_id', (e) => {
-            let value = $(e.target).val();
-            if (value === '' || value === null || value === '0') {
-                $("#reference_type").addClass("d-none");
-                return false;
+        $(document).on("change", "#sub_store_id", function(e) {
+            const value = $(this).val();
+            console.log("Selected:", value);
+
+            if (!value || value === "0") {
+                $("#reference_type_div").addClass("d-none");
+            } else {
+                $("#reference_type_div").removeClass("d-none");
             }
-            $("#reference_type").removeClass("d-none");
         });
+
 
         $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
@@ -507,6 +604,7 @@
         });
 
         $(document).on("click", ".psSelect", function() {
+            logger();
             const selector = "#psModal .ps-order-detail";
             $("#psModal").modal("show");
 
@@ -526,7 +624,76 @@
             });
         });
 
-        $("#psModal").on("shown.bs.modal", function() {
+        $(document).on("click", ".psProcess", function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            $("#psModal th .form-check-input").prop("checked", false);
+
+            const ids = getSelectedItemIDs();
+
+            if (!ids.length) {
+                updateHiddenInput("ps_item_ids", []);
+                updateHiddenInput("ps_pull_item_ids", []);
+                updateHiddenInput("item_ids", []);
+                $("#psModal").modal("hide");
+                Swal.fire("Error!", "Please select at least one SO item.", "error");
+                return false;
+            }
+
+            updateHiddenInput("ps_item_ids", ids, true);
+            updateHiddenInput("ps_pull_item_ids", ids, true);
+
+            const itemIds = [];
+            const selectedItems = [];
+            $("#psModal .ps_item_checkbox:checked").each(function() {
+                const itemId = Number($(this).data("item-id"));
+                itemIds.push(itemId);
+                selectedItems.push({
+                    item_id: itemId
+                });
+            });
+
+            updateHiddenInput("item_ids", itemIds, true);
+            $('#reference_type').val("pslip");
+
+            const params = {
+                type: "pslip",
+                ids: JSON.stringify(ids),
+                selected_items: JSON.stringify(selectedItems),
+                store_id: $("#store_id").val() || "",
+                sub_store_id: $("#sub_store_id").val() || "",
+                current_row_count: $("#productionSlipsTable .mrntableselectexcel tr").length,
+            };
+
+            const query = new URLSearchParams(params).toString();
+            const actionUrl = `{{ route('scrap.process.item') }}?${query}`;
+
+            fetch(actionUrl)
+                .then((r) => r.json())
+                .then((data) => {
+                    if (data.status === 200) {
+                        $("#uidTh").hide();
+                        $(".psLink").removeClass("d-none");
+                        $("#psModal").modal("hide");
+                        $("#productionSlipsTable .mrntableselectexcel").append(data.data.pos);
+                        reInitAttributes("#productionSlipsTable > tbody");
+
+                        $('a[href="#productionSlip"]').tab("show");
+
+                        $("#productionSlipsTable .mrntableselectexcel tr").last().attr("tabindex", "-1").focus();
+                    } else {
+                        clearPsInputs();
+                        Swal.fire("Error!", data.message, "error");
+                    }
+                })
+                .catch(() => {
+                    clearPsInputs();
+                    Swal.fire("Error!", "Something went wrong while processing the request.", "error");
+                });
+        });
+
+        $("#psModal").on("shown.bs.modal", () => {
             $.fn.dataTable.tables({
                 visible: true,
                 api: true
@@ -548,49 +715,40 @@
             getPslipItems();
         });
 
-        /*searchPiBtn*/
-        $(document).on('click', '.searchPiBtn', (e) => {
+        $(document).on("click", ".clearPiFilter", () => {
+            $("#item_name_search, #item_name_input_qt, #item_id_qt_val, #department_po, #department_id_po, #customer_code_input_qt, #customer_id_qt_val, #book_code_input_qt, #book_id_qt_val, #document_no_input_qt, #document_id_qt_val").val("");
             getPslipItems();
         });
 
-        $(document).on('keyup', '#item_name_search', (e) => {
-            getPslipItems();
+        $(document).on("keyup", "#item_name_search", getPslipItems);
+
+        $(document).on("change", "#psModal .ps-order-detail > thead .form-check-input", function() {
+            $("#psModal .ps-order-detail > tbody .form-check-input").prop("checked", this.checked);
         });
 
-        $(document).on('change', '#attributeCheck', (e) => {
-            if (e.target.checked) {
-                $("#show_attribute").val(1);
-            } else {
-                $("#show_attribute").val(0);
-            }
-            getPslipItems();
+        $(document).on("change", "#psModal .ps-order-detail > tbody .form-check-input", () => {
+            const allChecked = !$("#psModal .ps-order-detail > tbody .form-check-input:not(:checked)").length;
+            $("#psModal .ps-order-detail > thead .form-check-input").prop("checked", allChecked);
         });
 
-        /*Checkbox for pi item list*/
-        $(document).on('change', '#psModal .ps-order-detail > thead .form-check-input', (e) => {
-            if (e.target.checked) {
-                $("#psModal .ps-order-detail > tbody .form-check-input").each(function() {
-                    $(this).prop('checked', true);
-                });
-            } else {
-                $("#psModal .ps-order-detail > tbody .form-check-input").each(function() {
-                    $(this).prop('checked', false);
-                });
-            }
-        });
+        initializeAutocomplete2(".comp_item_code");
+        initializeAutocompleteQt(
+            ".comp_item_code_cost_centers",
+            "cost_center_id",
+            "cost_center",
+            "name",
+            "code"
+        );
 
-        $(document).on('change', '#psModal .ps-order-detail > tbody .form-check-input', (e) => {
-            if (!$("#psModal .ps-order-detail > tbody .form-check-input:not(:checked)").length) {
-                $('#psModal .ps-order-detail > thead .form-check-input').prop('checked', true);
-            } else {
-                $('#psModal .ps-order-detail > thead .form-check-input').prop('checked', false);
-            }
-        });
+        reInitAttributes("#scavengingItemsTable > tbody");
+        reInitAttributes("#productionSlipsTable > tbody");
 
-        setTimeout(() => {
-            $("#scavengingItemsTable .mrntableselectexcel tr").each(function(index, item) {
-                setAttributesUIHelper(index, "#scavengingItemsTable");
-            });
-        }, 100);
+        function logger() {
+            console.log("ps_item_ids ==========>>   ", $("#ps_item_ids").val());
+            console.log("ps_pull_item_ids ==========>>   ", $("#ps_pull_item_ids").val());
+            console.log("deleted_ps_item_ids ==========>>   ", $("#deleted_ps_item_ids").val());
+            console.log('item attr', $(`[name^="components[${0}][attr_group_id]"][name$="[attr_name]"]`).val());
+
+        }
     </script>
 @endsection

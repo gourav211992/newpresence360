@@ -174,8 +174,9 @@
                                 <b>ASN No:</b>
                             </td>
                             <td style="font-weight: 900;">
-                                @if(isset($mrn->items[0]->vendorAsn))
-                                    {{ $mrn->items[0]->vendorAsn->book->book_code ?? '' }} - {{ $mrn->items[0]->vendorAsn->document_number ?? '' }}
+                                @if (isset($mrn->items[0]->vendorAsn))
+                                    {{ $mrn->items[0]->vendorAsn->book->book_code ?? '' }} -
+                                    {{ $mrn->items[0]->vendorAsn->document_number ?? '' }}
                                 @endif
                             </td>
                         </tr>
@@ -192,8 +193,9 @@
                                 <b>GE No:</b>
                             </td>
                             <td style="font-weight: 900;">
-                                @if(isset($mrn->items[0]->ge))
-                                    {{ $mrn->items[0]->ge->book->book_code ?? '' }} - {{ $mrn->items[0]->ge->document_number ?? '' }}
+                                @if (isset($mrn->items[0]->ge))
+                                    {{ $mrn->items[0]->ge->book->book_code ?? '' }} -
+                                    {{ $mrn->items[0]->ge->document_number ?? '' }}
                                 @endif
                             </td>
                         </tr>
@@ -487,7 +489,7 @@
                     @endphp
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{ number_format(@$grnQty, 2) }}
+                        {{ number_format(@$grnQty - @$val->order_qty, 2) }}
                     </td>
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
@@ -706,7 +708,12 @@
             <tr>
                 <td colspan="2"
                     style=" border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px; border-top: none; text-align: center;">
-                    Regd. Office: {{@$organizationAddress->getFullAddressAttribute()}} @if(@$organization?->gst_number), GSTIN NO - {{@$organization?->gst_number}} @endif @if(@$organization?->pan_number), PAN NO - {{@$organization?->pan_number}} @endif<br>
+                    Regd. Office: {{ @$organizationAddress->getFullAddressAttribute() }} @if (@$organization?->gst_number)
+                        , GSTIN NO - {{ @$organization?->gst_number }}
+                        @endif @if (@$organization?->pan_number)
+                            , PAN NO - {{ @$organization?->pan_number }}
+                        @endif
+                        <br>
                 </td>
                 <!-- Principal Office to be added later -->
             </tr>

@@ -29,6 +29,8 @@ class ErpScrapItem extends Model
         'uom_id',
         'uom_code',
         'qty',
+        'rate',
+        'total_cost',
         'cost_center_id',
         'cost_center_name',
         'inventory_uom_id',

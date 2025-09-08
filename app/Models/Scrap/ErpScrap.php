@@ -2,13 +2,14 @@
 
 namespace App\Models\Scrap;
 
+use App\Models\Book;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Traits\UserStampTrait;
 use App\Helpers\ConstantHelper;
-use App\Models\Book;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
+use App\Models\ErpPslipItem;
 use App\Traits\DynamicFieldsTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,9 @@ class ErpScrap extends Model
         'document_date',
         'document_status',
         'approval_level',
+
+        'total_cost',
+        'total_qty',
 
         'revision_number',
         'revision_date',
@@ -108,18 +112,18 @@ class ErpScrap extends Model
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
 
-    public function productionSlips()
+    public function pslipItems()
     {
-        return $this->hasMany(ErpScrapProductionSlip::class, 'scrap_id');
+        return $this->hasMany(ErpPslipItem::class, 'erp_scrap_id');
     }
 
-    public function repairOrders()
+    public function roItems()
     {
-        return [];
+        return $this->hasMany(ErpPslipItem::class, 'erp_scrap_id');
         // return $this->hasMany(RepairOrder::class, 'scrap_id');
     }
 
-    public function dynamic_fields()
+    public function dynamicFields()
     {
         return $this->hasMany(ErpScrapDynamicField::class, 'header_id');
     }
@@ -138,5 +142,19 @@ class ErpScrap extends Model
     public function createdBy()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
+    }
+    public function applyReference(string $type): void
+    {
+        $items = match ($type) {
+            'pslip' => $this->pslipItems ?? $this->pslipItems()->get(['id', 'pslip_id']),
+            'ro'    => $this->roItems ?? $this->roItems()->get(['id', 'pslip_id']),
+            default => collect(),
+        };
+
+        $ids      = $items->pluck('pslip_id')->unique()->values()->toArray();
+        $itemIds  = $items->pluck('id')->values()->toArray();
+
+        $this->{$type . '_ids'}      = json_encode($ids, JSON_THROW_ON_ERROR);
+        $this->{$type . '_item_ids'} = json_encode($itemIds, JSON_THROW_ON_ERROR);
     }
 }

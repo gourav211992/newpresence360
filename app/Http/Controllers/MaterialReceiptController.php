@@ -1163,7 +1163,7 @@ class MaterialReceiptController extends Controller
             'saleOrder'
         ])
             ->findOrFail($id);
-        
+
 
         $items = $mrn['items'] ?? [];
         $referenceType = $mrn['reference_type'] ?? null;
@@ -4684,11 +4684,11 @@ class MaterialReceiptController extends Controller
 
     public function postMrn(Request $request)
     {
-       
+
         try {
             DB::beginTransaction();
             // Asset Registration
-            $assetData = Helper::mrnAssetRegister($request->document_id ?? 0);
+            $assetData = Helper::mrnAssetRegister($request->document_id ?? 0, ConstantHelper::MRN_SERVICE_ALIAS);
             if ($assetData['status'] === false) {
                 DB::rollBack();
                 return response()->json([
@@ -6144,11 +6144,11 @@ class MaterialReceiptController extends Controller
 
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         if (!$applicableBookIds) {
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'No Book Mapped with this Series.'
-                ]);
-            }
+            return response()->json([
+                'status' => 404,
+                'message' => 'No Book Mapped with this Series.'
+            ]);
+        }
         if ($moduleType == 'suppl-inv') {
             $asnData = VendorAsn::where('id', $processNumber)->first();
             if (!$asnData) {
@@ -6166,6 +6166,7 @@ class MaterialReceiptController extends Controller
                 'jo_item.jo',
             ])
                 ->where('vendor_asn_id', $asnData->id)
+                ->whereNull('ge_qty')
                 ->whereRaw('(supplied_qty > grn_qty)');
 
 
@@ -6186,7 +6187,7 @@ class MaterialReceiptController extends Controller
             $asnItems = $asnItems->get();
 
             if ($asnItems->isEmpty()) {
-                return response()->json(['status' => 422, 'message' => 'No pending items for this ASN for this series..']);
+                return response()->json(['status' => 422, 'message' => 'No pending items for this ASN for this series.']);
             }
 
             $asnItemIds = $asnItems->pluck('id')->unique()->values()->toArray();
@@ -6207,7 +6208,7 @@ class MaterialReceiptController extends Controller
             ])
                 ->where('header_id', $geData->id)
                 ->whereRaw('(accepted_qty > mrn_qty)');
-                // ->get();
+            // ->get();
 
             if ($geData->reference_type == 'po') {
                 $geItems = $geItems->whereHas('po', function ($query) use ($applicableBookIds, $locationId) {

@@ -1,10 +1,14 @@
 @foreach($mrn->items as $key => $item)
    @php
-      $rowCount = $key + 1;
-   @endphp
+        $poQty = $item?->order_qty;
+        $rowCount = $key + 1;
+        $readOnly = '';
+        $acceptedReadOnly = 'readonly';
+        $readOnly = '';
+    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][header_id]" value="{{$item->header_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][detail_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][pr_dtl_id]" value="{{$item->id}}">
       <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->mrn_detail_id}}">
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
@@ -50,13 +54,13 @@
          </select>
       </td>
       <td>
-         <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{number_format(@$item->accepted_qty,2)}}" step="any" @readonly(true) />
+         <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{number_format(@$poQty,2)}}" step="any" @readonly(true) />
       </td>
       <td>
          <input type="number" name="components[{{$rowCount}}][rate]" value="{{number_format(@$item->rate,2)}}" class="form-control mw-100 text-end rate checkNegativeVal" step="any"/>
       </td>
       <td>
-         <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{number_format(($item->accepted_qty*$item->rate),2)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
+         <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{number_format((@$poQty*$item->rate),2)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
       </td>
       <td>
          <div class="position-relative d-flex align-items-center">

@@ -1,84 +1,86 @@
 <?php
 namespace App\Helpers;
 
-use App\Helpers\Common\MathHelper;
 use DB;
 use Auth;
 use stdClass;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use App\Models\PslipBomConsumption;
-use App\Models\Scopes\DefaultGroupCompanyOrgScope;
-
-use App\Models\ErpPlItem;
-use App\Models\MrnJoItem;
-use App\Models\ErpPsvItem;
-use App\Models\ErpPlHeader;
-use App\Models\ErpPsvHeader;
-
-use App\Models\ErpMrItem;
-use App\Models\ErpSubStore;
-use App\Models\ErpSubStoreParent;
-use App\Models\ErpMrItemLocation;
-use App\Models\ErpMaterialReturnHeader;
-
-use App\Models\ErpStore;
-use App\Models\ErpPslipItem;
-use App\Models\ErpProductionSlip;
-use App\Models\ErpPslipItemLocation;
-
-use App\Models\ErpSaleInvoice;
-use App\Models\ErpInvoiceItem;
-use App\Models\ErpInvoiceItemLocation;
-use App\Models\ErpInvoiceItemAttribute;
-
 use App\Models\Item;
 use App\Models\Unit;
-use App\Models\ErpAttribute;
-use App\Models\ItemAttribute;
-
-use App\Models\MrnHeader;
-use App\Models\MrnDetail;
-use App\Models\MrnAttribute;
-use App\Models\MrnBatchDetail;
-use App\Models\MrnItemLocation;
-
-use App\Models\ErpSaleReturn;
-use App\Models\ErpSaleReturnItem;
-use App\Models\ErpSrItemLotDetail;
-use App\Models\ErpSaleReturnItemLocation;
-use App\Models\ErpSaleReturnItemAttribute;
-
-use App\Models\PRHeader;
-use App\Models\PRDetail;
-use App\Models\PRItemLocation;
-use App\Models\PRItemAttribute;
-
-use App\Models\ErpMiItem;
-use App\Models\ErpMrItemLot;
-use App\Models\ErpMiItemLocation;
-use App\Models\ErpMiItemAttribute;
-use App\Models\ErpMaterialIssueHeader;
-
 use App\Models\MoItem;
-use App\Models\MfgOrder;
-use App\Models\Attribute;
-use App\Models\MoItemLocation;
-use App\Models\MoItemAttribute;
-
-use App\Models\StockLedger;
-use App\Models\StockLedgerReservation;
-use App\Models\StockLedgerItemAttribute;
-
-use App\Helpers\ItemHelper;
-use App\Helpers\ConstantHelper;
-use App\Models\MoProductionItem;
-use App\Models\MoProductionItemLocation;
-
 use App\Models\PoItem;
 use App\Models\AuthUser;
+
+use App\Models\ErpStore;
+use App\Models\MfgOrder;
+use App\Models\PRDetail;
+use App\Models\PRHeader;
+use App\Models\Attribute;
+
+use App\Models\ErpMiItem;
+use App\Models\ErpMrItem;
+use App\Models\ErpPlItem;
 use App\Models\ErpSoItem;
+use App\Models\MrnDetail;
+
+use App\Models\MrnHeader;
+use App\Models\MrnJoItem;
+use App\Models\ErpPsvItem;
+use App\Helpers\ItemHelper;
+
+use App\Models\ErpPlHeader;
+use App\Models\ErpSubStore;
+use App\Models\StockLedger;
+use App\Models\ErpAttribute;
+
+use App\Models\ErpMrItemLot;
+use App\Models\ErpPslipItem;
+use App\Models\ErpPsvHeader;
+use App\Models\MrnAttribute;
+
+use App\Models\ErpSaleReturn;
+use App\Models\ItemAttribute;
+use App\Models\ErpInvoiceItem;
+use App\Models\ErpSaleInvoice;
+use App\Models\MoItemLocation;
+
+use App\Models\MrnBatchDetail;
+use App\Models\PRItemLocation;
+use App\Models\Scrap\ErpScrap;
+use App\Helpers\ConstantHelper;
+use App\Models\MoItemAttribute;
+
+use App\Models\MrnItemLocation;
+use App\Models\PRItemAttribute;
+use App\Models\MoProductionItem;
+use App\Models\ErpMiItemLocation;
+
+use App\Models\ErpMrItemLocation;
+use App\Models\ErpProductionSlip;
+use App\Models\ErpSaleReturnItem;
+use App\Models\ErpSubStoreParent;
+use App\Helpers\Common\MathHelper;
+
+use App\Models\ErpMiItemAttribute;
+use App\Models\ErpSrItemLotDetail;
+use App\Models\Scrap\ErpScrapItem;
+use Illuminate\Support\Collection;
+use App\Models\PslipBomConsumption;
+
+use Illuminate\Support\Facades\Log;
+use App\Models\ErpPslipItemLocation;
+use App\Models\ErpInvoiceItemLocation;
+
+use App\Models\ErpMaterialIssueHeader;
+use App\Models\StockLedgerReservation;
+use App\Models\ErpInvoiceItemAttribute;
+use App\Models\ErpMaterialReturnHeader;
+
+use App\Models\MoProductionItemLocation;
+use App\Models\StockLedgerItemAttribute;
+use App\Models\ErpSaleReturnItemLocation;
+use App\Models\ErpSaleReturnItemAttribute;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 
 class InventoryHelper
 {
@@ -127,6 +129,9 @@ class InventoryHelper
             else if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS && $transactionType == 'receipt'){
                 $documentDetail = self::settlementForPslipReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
             }
+            else if($bookType == ConstantHelper::SCRAP_SERVICE_ALIAS && $transactionType == 'receipt'){
+                $documentDetail = self::settlementForScrapReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
+            }
             else if($bookType == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $bookType == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS){
                 // $stockReservation = 'yes';
                 $documentDetail = self::settlementForSaleInvoice($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
@@ -141,6 +146,8 @@ class InventoryHelper
                 $documentDetail = self::settlementForMRForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
             } else if($bookType == ConstantHelper::PL_SERVICE_ALIAS && $transactionType === 'issue'){
                 $documentDetail = self::settlementForPlForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
+            } else if($bookType == ConstantHelper::PL_SERVICE_ALIAS && $transactionType === 'receipt'){
+                $documentDetail = self::settlementForPlForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
             } else if($bookType == ConstantHelper::PL_SERVICE_ALIAS && $transactionType === 'receipt'){
                 $documentDetail = self::settlementForPlForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
             }
@@ -658,8 +665,6 @@ class InventoryHelper
                     $stockLedger->hold_qty            = 0.00;
                     $stockLedger->cost_per_unit       = $costPerUnit;           // optional if you set elsewhere
                     $stockLedger->total_cost          = round($totalItemCost, 2); // optional
-
-                    $stockLedger->book_id     = $documentHeader->book_id ?? null;
                     $stockLedger->vendor_id   = $documentHeader->vendor_id ?? null;
                     $stockLedger->vendor_code = $documentHeader->vendor_code ?? null;
 
@@ -769,6 +774,37 @@ class InventoryHelper
                 $stockLedger->store_id = $documentItemLocation->store_id ?? null;
                 $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
                 $stockLedger->store = @$documentItemLocation->erpStore->store_code;
+            }
+
+            // Scrap
+            if($bookType == ConstantHelper::SCRAP_SERVICE_ALIAS) {
+                if($transactionType == 'receipt') {
+                    $documentHeader = ErpScrap::find($documentItemLocation->erp_scrap_id);
+                    $documentDetail = ErpScrapItem::with(['scrap', 'attributes'])->find($documentItemLocation->id);
+                    $stockLedger->book_id = @$documentHeader->book_id;
+
+                    $qty = (float)($documentItemLocation->inventory_uom_qty ?? 0);
+                    $totalItemCost = (float) round($documentDetail->total_item_cost ?? 0.0);
+
+                    try {
+                        $costPerUnit = (float) (round($totalItemCost / $qty, 6) ?? 0);
+                    } catch (\DivisionByZeroError $e) {
+                        $costPerUnit = (float) 0;
+                    }
+
+                    $stockLedger->receipt_qty = $qty;
+                    $stockLedger->cost_per_unit = $costPerUnit;
+                    $stockLedger->total_cost = round($totalItemCost, 2);
+
+                    $stockLedger->store_id = $documentHeader->store_id ?? null;
+                    $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
+                    $stockLedger->store = @$documentHeader->store->store_code;
+                    $stockLedger->sub_store = @$documentHeader->subStore->code;
+                    $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
+
+                    $lotNumber = InventoryHelper::generateLotNumber( $documentHeader->document_date, $documentHeader->book_code, $documentHeader->document_number );
+                    $stockLedger->lot_number = $lotNumber;
+                }
             }
 
             // Issue
@@ -2743,6 +2779,52 @@ class InventoryHelper
         return $invoiceLedger;
     }
 
+    // Settlement For Pslip (Receive)
+    private static function settlementForScrapReceipt($documentHeaderId, $documentDetailId, $bookType, $documentStatus)
+    {
+        $invoiceLedger = [];
+        $transactionType = 'receipt';
+        $documentItemLocations = ErpScrapItem::where('erp_scrap_id', $documentHeaderId)
+            ->whereIn('id', $documentDetailId)
+            ->get();
+
+        $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+            ->where('document_header_id', $documentHeaderId)
+            ->whereIn('document_detail_id', $documentDetailId)
+            ->where('book_type', '=', $bookType)
+            ->where('transaction_type', '=', $transactionType)
+            // ->where('document_status','draft')
+            ->whereNull('utilized_id')
+            ->get();
+
+        foreach ($stockLedger as $val) {
+            StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
+            $val->delete();
+        }
+
+        foreach ($documentItemLocations as $documentItemLocation) {
+            $utilizedQty = 0;
+            if ($documentItemLocation->qty > 0) {
+                $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where('document_header_id', $documentHeaderId)
+                    ->where('document_detail_id', $documentDetailId)
+                    ->where('book_type', '=', $bookType)
+                    ->where('transaction_type', '=', $transactionType)
+                    ->where('stock_type', 'R')
+                    ->where('document_status', ConstantHelper::DRAFT)
+                    ->whereNotNull('utilized_id')
+                    ->sum('receipt_qty');
+
+                if ($documentItemLocation->qty > $utilizedQty) {
+                    $stockType = 'R';
+                    $stockLedger = new StockLedger();
+                    $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, null, $stockType);
+                }
+            }
+        }
+        return $invoiceLedger;
+    }
+
     // Settlement For Material Issue For Issue
     public static function settlementForMIForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
@@ -3024,6 +3106,7 @@ class InventoryHelper
         $message = 'success';
         return $invoiceLedger;
     }
+
     private static function settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();

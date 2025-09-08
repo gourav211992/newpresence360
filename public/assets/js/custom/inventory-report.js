@@ -224,7 +224,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
                 subLocationId ? subLocationId : ""
             }'/>
             <input type="hidden" name="station_id" value='${
-                storeId ? storeId : ""
+                stationId ? stationId : ""
             }'/>
             <input type="hidden" name="shelf_id" value='${
                 shelfId ? shelfId : ""

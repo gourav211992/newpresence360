@@ -2515,7 +2515,7 @@ class PurchaseReturnController extends Controller
             'item_id'            => $component['item_id'] ?? null,
             'mrn_header_id'      => $mrnHeaderId,
             'mrn_detail_id'      => $component['mrn_detail_id'] ?? null,
-            'detail_id'          => $component['detail_id'] ?? null,
+            'detail_id'          => $component['pr_dtl_id'] ?? null,
             'qty'                => $component['accepted_qty'],
             'type'               => $refType,
             'return_type'        => $returnType,
@@ -2531,7 +2531,6 @@ class PurchaseReturnController extends Controller
     {
         $inputData = [
             'item_id'            => $request->item_id,
-            'mrn_header_id'      => $request->mrn_header_id,
             'mrn_detail_id'      => $request->mrn_detail_id,
             'pr_item_id'         => $request->pr_item_id,
             'qty'                => $request->qty,
@@ -2820,6 +2819,7 @@ class PurchaseReturnController extends Controller
         $qtyTypeRequired = $request->return_type ?? null;
         $storeId = $request->store_id ?? null;
         $subStoreId = $request->sub_store_id ?? null;
+        $tableRowCount = $request->tableRowCount ?: 0;
 
         // MRN detail query with stock_ledger join
         $mrnItems = MrnDetail::query()
@@ -2903,6 +2903,7 @@ class PurchaseReturnController extends Controller
         $html = view('procurement.purchase-return.partials.mrn-item-row', [
             'mrnItems' => $mrnItems,
             'qtyTypeRequired' => $qtyTypeRequired,
+            'tableRowCount' => $tableRowCount
         ])->render();
 
         return response()->json([

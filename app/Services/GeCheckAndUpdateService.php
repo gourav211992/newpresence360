@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Services;
 
 use Illuminate\Http\Request;
@@ -34,7 +34,7 @@ class GeCheckAndUpdateService
         $item = Item::find($inputData['item_id']);
         $type = $inputData['type'];
         $inputQty = (float) $inputData['qty'] ?? 0.00;
-        
+
         if (!$item) {
             return self::errorResponse("Item not found.", [
                 'order_qty' => $inputQty
@@ -65,14 +65,13 @@ class GeCheckAndUpdateService
 
             if ($poDetail) {
                 $availableQty = floatval($poDetail->order_qty - $poDetail->ge_qty);
-                $inputDiff = $inputQty - floatval($geDetail->order_qty);
+                $inputDiff = $inputQty - floatval($geDetail->accepted_qty);
 
                 if ($inputQty > $poDetail->order_qty) {
                     return self::errorResponse("Order qty cannot be greater than PO quantity.", [
                         'order_qty' => $geOrderQty
                     ]);
                 }
-
                 if ($availableQty < $inputDiff) {
                     return self::errorResponse("Only {$availableQty} qty can be added. {$poDetail->ge_qty} already used; PO qty is {$poDetail->order_qty}.", [
                         'order_qty' => $geOrderQty
@@ -146,7 +145,7 @@ class GeCheckAndUpdateService
                 //             'order_qty' => number_format($orderQty, 2)
                 //         ]);
                 //     }
-                // } 
+                // }
                 if ($totalQty > $orderQty) {
                     return self::errorResponse("Order qty cannot be greater than po qty.", [
                         'order_qty' => number_format($orderQty, 2)
@@ -162,7 +161,7 @@ class GeCheckAndUpdateService
     }
 
     # Handle GE calculation update from mrn
-    public static function updateCalculation($ge) 
+    public static function updateCalculation($ge)
     {
         $mrn = GateEntryHeader::with(['items.itemDiscount', 'expenses', 'shippingAddress'])->find($ge->header_id);
         if (!$mrn) return;
@@ -175,7 +174,7 @@ class GeCheckAndUpdateService
         $companyStateId = $companyAddress->state_id;
         $vendorCountryId = $mrn->billingAddress->country_id ?? null;
         $vendorStateId = $mrn->billingAddress->state_id ?? null;
-        
+
         $totalItemAmount = 0;
         $totalTaxAmount = 0;
 
@@ -268,8 +267,8 @@ class GeCheckAndUpdateService
         $headerExpenses = $mrn->expenses->sum('ted_amount');
 
         foreach ($mrn->items as $item) {
-            $baseAmount = ($item->rate * $item->accepted_qty) 
-                        - ($item->discount_amount + $item->header_discount_amount) 
+            $baseAmount = ($item->rate * $item->accepted_qty)
+                        - ($item->discount_amount + $item->header_discount_amount)
                         + ($item->tax_value ?? 0);
 
             $expenseValue = ($headerExpenses && $totalAfterTaxBeforeExp)

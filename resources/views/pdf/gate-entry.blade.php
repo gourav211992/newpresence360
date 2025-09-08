@@ -290,43 +290,59 @@
                     style="border: 1px solid #000; padding: 3px; border-left: none; vertical-align: top; width: 35%; border-top: none;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td><b>Supplier Invoice No:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->supplier_invoice_no }}
+                            <td>
+                                <b>Supplier Invoice No:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->supplier_invoice_no }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>Supplier Invoice Date:</b></td>
-                            <td style="font-weight: 900;">{{ date('d-M-y', strtotime($mrn->supplier_invoice_date)) }}
+                            <td>
+                                <b>Supplier Invoice Date:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ date('d-M-y', strtotime($mrn->supplier_invoice_date)) }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>Gate Entry No:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->gate_entry_no }}
+                            <td>
+                                <b>Manual Entry No:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->manual_entry_no }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>Gate Entry Date:</b></td>
-                            <td style="font-weight: 900;">{{ date('d-M-y', strtotime($mrn->gate_entry_date)) }}
+                            <td>
+                                <b>E-Way Bill No:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->eway_bill_no }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>E-Way Bill No:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->eway_bill_no }}
+                            <td>
+                                <b>Consignment No:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->consignment_no }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>Consignment No:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->consignment_no }}
+                            <td>
+                                <b>Transporter Name:</b>
+                            </td>
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->transporter_name }}
                             </td>
                         </tr>
                         <tr>
-                            <td><b>Transporter Name:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->transporter_name }}
+                            <td>
+                                <b>Vehicle No:</b>
                             </td>
-                        </tr>
-                        <tr>
-                            <td><b>Vehicle No:</b></td>
-                            <td style="font-weight: 900;">{{ @$mrn->vehicle_no }}
+                            <td style="font-weight: 900;">
+                                {{ @$mrn->vehicle_no }}
                             </td>
                         </tr>
                     </table>

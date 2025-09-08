@@ -77,34 +77,52 @@ function setAttributesUIHelper(
 /**
  * Sync selected attributes into attribute-array and re-render
  * @param {number} rowIndex
- */
-function setSelectedAttribute(
+ */ function setSelectedAttribute(
     rowCount,
     selectorTablePrefix = "#scavengingItemsTable tbody"
 ) {
+    const currentTr = $(`#scavengingItemsTr_${rowCount}`);
     let selectedAttr = [];
-    let currentTr = $(`#scavengingItemsTr_${rowCount}`);
+    console.log(currentTr.find("[name*='attr_name']"));
 
     currentTr.find("[name*='attr_name']").each(function () {
-        const val = $(this).val();
-        if (val) {
-            selectedAttr.push(String(val));
+        const v = $(this).val();
+        if (v != null && v !== "") selectedAttr.push(String(v).trim());
+    });
+    selectedAttr = [...new Set(selectedAttr)];
+
+    console.log(selectedAttr);
+
+    const $cell = currentTr.find(`td#itemAttribute_${rowCount}`);
+    let attributesArray = $cell.attr("attribute-array");
+
+    console.log(attributesArray);
+
+    try {
+        attributesArray = attributesArray ? JSON.parse(attributesArray) : [];
+    } catch (e) {
+        try {
+            attributesArray = JSON.parse(
+                attributesArray.replace(/&quot;/g, '"')
+            );
+        } catch (_) {
+            attributesArray = [];
         }
+    }
+
+    if (!Array.isArray(attributesArray) || !attributesArray.length) return;
+
+    attributesArray.forEach((group) => {
+        const list = group.values_data || group.values || [];
+        list.forEach((attr) => {
+            const idStr = String(attr.id);
+            attr.selected = selectedAttr.includes(idStr);
+        });
     });
 
-    let attributesArray = currentTr
-        .find(`td[id="itemAttribute_${rowCount}"]`)
-        .attr("attribute-array");
-    attributesArray = attributesArray ? JSON.parse(attributesArray) : [];
-    if (attributesArray.length) {
-        attributesArray.forEach((group) => {
-            group.values_data.forEach((attr) => {
-                attr.selected = selectedAttr.includes(String(attr.id));
-            });
-        });
-        currentTr
-            .find(`td[id="itemAttribute_${rowCount}"]`)
-            .attr("attribute-array", JSON.stringify(attributesArray));
-        setAttributesUIHelper(rowCount, selectorTablePrefix);
-    }
+    const json = JSON.stringify(attributesArray);
+    $cell.attr("attribute-array", json);
+    $cell.data("attribute-array", attributesArray);
+
+    setAttributesUIHelper(rowCount, selectorTablePrefix);
 }

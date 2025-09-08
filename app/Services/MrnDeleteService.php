@@ -28,13 +28,13 @@ class MrnDeleteService
             foreach ($mrnItems as $mrnItem) {
                 $itemName = $mrnItem->item->item_name;
                 if ($mrnItem->purchase_bill_qty > 0 || $mrnItem->pr_qty > 0) {
-                    $errorMessage = $itemName. " has been used in purchase bill so cannot be deleted from this MRN.";
+                    $errorMessage = $itemName . " has been used in purchase bill so cannot be deleted from this MRN.";
                     $data = self::errorResponse($errorMessage);
                     return $data;
                 }
 
                 if ($mrnItem->inspection_qty > 0) {
-                    $errorMessage = $itemName. " can not be deleted because of inspection required.";
+                    $errorMessage = $itemName . " can not be deleted because of inspection required.";
                     $data = self::errorResponse($errorMessage);
                     return $data;
                 }
@@ -42,6 +42,7 @@ class MrnDeleteService
                 // Check Stock and delete
                 $documentHeaderId = $mrnItem->mrn_header_id;
                 $documentDetailId = $mrnItem->id;
+                $qty = $mrnItem->inventory_uom_qty;
                 $itemId = $mrnItem->item_id;
                 $storeId = $mrn->store_id;
                 $subStoreId = $mrn->sub_store_id;
@@ -67,8 +68,7 @@ class MrnDeleteService
                     }
                 }
                 $mrnData = [
-                    'document_header_id' => $documentHeaderId,
-                    'document_detail_id' => $documentDetailId,
+                    'qty' => $qty,
                     'item_id' => $itemId,
                     'store_id' => $storeId,
                     'document_type' => 'mrn',
@@ -76,6 +76,8 @@ class MrnDeleteService
                     'sub_store_id' => $subStoreId,
                     'transaction_type' => 'receipt',
                     'document_status' => $documentStatus,
+                    'document_header_id' => $documentHeaderId,
+                    'document_detail_id' => $documentDetailId,
                 ];
                 $checkStockAvailable = InventoryHelperV2::checkStockForDelete($mrnData, 'true');
                 if ($checkStockAvailable['status'] === 'error') {

@@ -112,6 +112,10 @@ class ErpMaterialIssueHeader extends Model
     {
         return $this -> hasMany(ErpMiItem::class, 'material_issue_id');
     }
+    public function pickingItems()
+    {
+        return $this->hasMany(ErpMiItem::class, 'material_issue_id') -> select('id', 'material_issue_id', 'inventory_uom_qty');
+    }
     public function store()
     {
         return $this -> belongsTo(ErpStore::class, 'from_store_id');

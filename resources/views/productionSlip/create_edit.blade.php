@@ -1245,11 +1245,7 @@
             <div class="modal-body px-sm-2 mx-50 pb-2">
                 <h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>
 
-                <a href="#" class="text-primary add-contactpeontxt mt-50 text-end" onclick = "addBundleQty();">
-                        <i data-feather='plus'></i> Add Package
-                    </a>
-
-                <div class="table-responsive-md customernewsection-form">
+                <div class="table-responsive-md customernewsection-form"  style="max-height: 250px; overflow-y: auto;">
                             <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                                 <thead>
                                         <tr>
@@ -1266,13 +1262,16 @@
 
 
                             </table>
-                        </div>
+                </div>
 
             </div>
 
             <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('bundleInfo');">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="closeModal('bundleInfo');">Submit</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="closeModal('bundleInfo');">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="closeModal('bundleInfo');">Submit</button>
+                <a href="#" class="text-primary add-contactpeontxt mt-50 text-end" onclick = "addBundleQty();">
+                        <i data-feather='plus'></i> Add Package
+                </a>
             </div>
         </div>
     </div>

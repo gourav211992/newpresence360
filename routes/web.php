@@ -450,8 +450,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/states/{country_id}', 'getStates')->name('vendor.get.states');
     });
 
-      
-
     // Route::prefix('vendor-new')->controller(VendorController::class)->group(function () {
     //     Route::get('/', 'index')->name('vendor.index');
     // });
@@ -683,6 +681,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf')->middleware('check.service.access');
             Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
             Route::post('/update-approve/{id}', 'updateApprove')->name('update.approve');
+            Route::delete('/{id}/{isAmedment}', 'destroy')->name('destroy');
 
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
             Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
@@ -1908,7 +1907,7 @@ Route::middleware(['user.auth'])->group(function () {
             // Route::post('location-listing', 'locationListing')->name('get.locations');
             // Route::post('sub-location-listing', 'subLocationListing')->name('get.sub-locations');
             // Route::post('mrn-listing', 'mrnListing')->name('get.mrn-listing');
-    
+
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
             Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
@@ -2578,7 +2577,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('store-mappings.create');
         Route::get('/{id}/edit', 'edit')->name('store-mappings.edit');
         Route::put('/{id}', 'update')->name('store-mappings.update');
-        Route::delete('/destroy', 'destroy')->name('store-mappings.destroy'); 
+        Route::delete('/destroy', 'destroy')->name('store-mappings.destroy');
         Route::get('/autocomplete/categories', 'categories')->name('autocomplete.categories');
         Route::get('/autocomplete/stores', 'stores')->name('autocomplete.stores');
         Route::get('/autocomplete/substores', 'substores')->name('autocomplete.substores');
@@ -2705,7 +2704,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
             // Route::post('/assessment-proceed', 'assessmentProceed')->name('assessment-proceed');
-    
+
         });
 
     Route::prefix('admin')->name('admin.')->group(function () {

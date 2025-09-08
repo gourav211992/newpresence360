@@ -245,4 +245,37 @@ class BinTransferController extends Controller
         }
 
     }
+
+    public function validateQr(Request $request){
+        $validator = Validator::make($request->all(),[
+            'packet_id' => ['required'],
+            'storage_point_id' => ['required'],
+        ],[
+            'packet_id.required' => 'Packet ID are required',
+            'storage_point_id.required' => 'Storage point id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $item = ErpItemUniqueCode::where('storage_point_id',$request->storage_point_id)
+            ->where('item_uid',$request->packet_id)
+            ->where('doc_type',CommonHelper::RECEIPT)
+            ->whereNull('utilized_id')
+            ->whereNotNull('storage_point_id')
+            ->select('uid','job_id','morphable_id as putaway_item_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id','batch_number','manufacturing_year','expiry_date','serial_no')
+            ->first();
+
+        if (!$item) {
+            throw ValidationException::withMessages([
+                'packet_id' => 'Invalid packet ID for the given storage point.',
+            ]);
+        }
+
+        return [
+            'message' => 'Packet validated successfully.',
+            'data' => $item
+        ];
+    }
 }

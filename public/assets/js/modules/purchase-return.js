@@ -208,7 +208,7 @@ $(document).on("change", "[name*='accepted_qty']", async function (e) {
 
     safeSet("item_id", itemId);
     safeSet("mrn_detail_id", getVal("[name*='[mrn_detail_id]']"));
-    safeSet("pr_item_id", getVal("[name*='[pr_item_id]']"));
+    safeSet("pr_item_id", getVal("[name*='[pr_dtl_id]']"));
     safeSet("return_type", return_type);
     safeSet("qty", orderQty.toFixed(6));
     safeSet("type", currentProcessType);

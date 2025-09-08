@@ -405,9 +405,7 @@ class ExpenseAdviseController extends Controller
                     $inputQty = floatval($component['accepted_qty'] ?? $component['order_qty'] ?? 0);
                     $item = Item::find($component['item_id'] ?? null);
                     if (!$item) {
-
                         \DB::rollBack();
-
                         return response()->json(['message' => 'Item not found.'], 422);
                     }
                     $refType = $request->reference_type ?? null;

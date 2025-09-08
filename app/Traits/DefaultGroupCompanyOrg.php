@@ -15,10 +15,10 @@ trait DefaultGroupCompanyOrg
     /* Use carefully -> Only use for model containing following columns ->
         group_id INT
         organization_id INT
-        company_id INT 
+        company_id INT
     */
 
-    public function getCompanyIdAttribute() 
+    public function getCompanyIdAttribute()
     {
         if (isset($this -> attributes['company_id'])) {
             return $this -> attributes['company_id'];
@@ -29,7 +29,7 @@ trait DefaultGroupCompanyOrg
         }
     }
 
-    public function getOrganizationIdAttribute() 
+    public function getOrganizationIdAttribute()
     {
         if (isset($this -> attributes['organization_id'])) {
             return $this -> attributes['organization_id'];
@@ -62,7 +62,7 @@ trait DefaultGroupCompanyOrg
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
         $organizationId = $authOrganization ?-> id;
-        $query -> where('group_id', $groupId) // Always compare group ID 
+        $query -> where('group_id', $groupId) // Always compare group ID
         ->where(function ($q) use ($companyId) {
             // Only compare company_id if it is not null in the database
             $q->whereNull('company_id')
@@ -81,7 +81,7 @@ trait DefaultGroupCompanyOrg
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
         $organizationId = $authOrganization ?-> id;
-        $query -> where('group_id', $groupId) // Always compare group ID 
+        $query -> where('group_id', $groupId) // Always compare group ID
         ->where(function ($q) use ($companyId) {
             // Only compare company_id if it is not null in the database
             $q->whereNull('company_id')
@@ -95,7 +95,7 @@ trait DefaultGroupCompanyOrg
             ['alias', $menuAlias]
         ]) -> first(); //Retrieve the corresponding org menu
         $authUser = Helper::getAuthenticatedUser();
-        $employeeBookMapping = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu -> id) 
+        $employeeBookMapping = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu -> id)
         -> where('employee_id', $authUser -> id) -> first();
         //If Book mapping is specified and data is present
         if (isset($employeeBookMapping) && isset($employeeBookMapping -> other_book_ids)) {
@@ -107,9 +107,11 @@ trait DefaultGroupCompanyOrg
         }
     }
 
-    public function scopeWithDraftListingLogic($query) 
+    public function scopeWithDraftListingLogic($query)
     {
-        $currentUser =  request()->user() ?? Helper::getAuthenticatedUser();
+        $currentUser = Helper::getAuthenticatedUser();
+        // $currentUser =  request()->user() ?? Helper::getAuthenticatedUser();
+
         if (strtolower($currentUser?->user_type) === strtolower('IAM-SUPER')) {
             return $query;
         }
@@ -117,7 +119,7 @@ trait DefaultGroupCompanyOrg
             $query->whereNotIn('document_status', [ConstantHelper::DRAFT, ConstantHelper::REJECTED])
                 ->orWhere(function ($query) use ($currentUser) {
                     $query->whereIn('document_status', [ConstantHelper::DRAFT, ConstantHelper::REJECTED])
-                            ->where('created_by', $currentUser->auth_user_id);
+                        ->where('created_by', $currentUser->auth_user_id);
                 });
         });
     }

@@ -48,7 +48,11 @@
       </select>
    </td>
    <td>
-      <input disabled type="number" value="{{$pwoItem->qty - $pwoItem->mo_product_qty}}" step="any" class="form-control mw-100 text-end" id="components_bom_qty_{{$rowCount}}" name="components[{{$rowCount}}][qty]"/>
+      @php
+         $allowedValue = $pwoItem->qty - $pwoItem->mo_product_qty;
+      @endphp
+
+      <input type="number" value="{{ $allowedValue }}" step="any" class="form-control mw-100 text-end" onkeyup="validateQty(this)" onblur="validateQty(this)" id="components_bom_qty_{{ $rowCount }}" name="components[{{ $rowCount }}][qty]" min="1" max="{{ $allowedValue}}"/>
    </td>
    <td>
       <input type="hidden" name="components[{{$rowCount}}][customer_id]" value="{{$pwoItem?->so?->customer_id}}" />

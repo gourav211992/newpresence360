@@ -11,6 +11,7 @@ use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
+use App\Lib\Services\WHM\MaterialIssueWhmJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\ErpMaterialIssueHeader;
 use App\Models\ErpMiItem;
@@ -35,8 +36,8 @@ class PicklistTaskController extends Controller
                         $q->select('id','store_name');
                     },'subStore' => function($q){
                         $q->select('id','name','is_warehouse_required');
-                    }, 'morphable.items' => function($q){
-                        $q->select('id','inventory_uom_qty');
+                    }, 'morphable' => function ($q) {
+                        $q->with('pickingItems');
                     }])
                     ->where('type', CommonHelper::PICKING)
                     ->when($search, function ($query) use ($search) {
@@ -396,7 +397,7 @@ class PicklistTaskController extends Controller
         $morphableType = "";
         if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
             $morphableType = "App\Models\ErpMiItem";
-        } else if ($job -> trns_type === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
+        } else if ($job -> trns_type === ConstantHelper::PL_SERVICE_ALIAS) {
             $morphableType = "App\Models\ErpPlItem";
         }
 
@@ -511,7 +512,7 @@ class PicklistTaskController extends Controller
                     //Check Recieve job
                     if ($mi -> to_sub_store ?-> is_warehouse_required) {
                         //Only Issue and Recieve Job
-                        (new WhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
+                        (new MaterialIssueWhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PUTAWAY);
                         foreach ($mi->items as $miItem) {
                             $status = StockReservation::settlementOfReservedStocks(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $mi->id, $miItem->id, $miItem->inventory_uom_qty, false);
                             if ($status['status'] == 'error') {
@@ -784,8 +785,9 @@ class PicklistTaskController extends Controller
         try {
             $scannedPackets = ErpItemUniqueCode::where('job_type', CommonHelper::PICKING)
                 ->where('morphable_id', $request->pl_item_id)
-                ->where('doc_type', CommonHelper::RECEIPT)
+                ->where('job_id',$request->job_id)
                 ->where('status',CommonHelper::SCANNED)
+                ->where('doc_type',CommonHelper::ISSUE)
                 ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
                 ->get();
 

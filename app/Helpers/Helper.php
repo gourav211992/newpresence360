@@ -2693,6 +2693,7 @@ class Helper
             return request()->user();
         }
     }
+
     public static function getOrgWiseUserAndEmployees($organizationId)
     {
         $employeeIds = Employee::where(function ($query) use ($organizationId) {
@@ -4189,7 +4190,7 @@ class Helper
 
     public static function mrnAssetRegister($mrn_id): array
     {
-       
+
         DB::beginTransaction();
         try {
             $assets = MrnHeader::where('id', $mrn_id)
@@ -4204,7 +4205,7 @@ class Helper
 
             $mrn_assets = MrnAssetDetail::where('header_id', $mrn_id)->get();
 
-           
+
             if ($assets && !$mrn_assets->isEmpty()) {
                 $mrn = MrnHeader::find($mrn_id);
                 if (empty($mrn)) {
@@ -4240,7 +4241,7 @@ class Helper
                 }
 
                 $glPostingBookId = $glPostingBookParam->parameter_value[0];
-                
+
                 foreach ($mrn_assets as $mrn_asset) {
                     $category_id = $mrn_asset->asset_category_id;
                     $asset_name = $mrn_asset->asset_name;
@@ -4333,14 +4334,14 @@ class Helper
                         $depreciationRate = round((1 - pow($salvageValue / $currentValue, 1 / $life)) * 100, 2);
                     }
 
-                    
-                       
+
+
 
                 if(count($mrn_detail->batches) > 0)
                 {
                     $count=count($mrn_detail->batches);
                     $uniqueCodes = $mrn_detail->uniqueCodes->values();
-                   
+
                     foreach($mrn_detail->batches as $batch)
                     {
                          $asset_code = self::generateAssetCode($category_id);
@@ -4411,7 +4412,7 @@ class Helper
                             $mrn_asset->save();
                             $asset->batchupdateUniqueCodes($uniqueCodes,$batch);
                     }
-                   
+
                 }
                 else
                 {
@@ -4471,7 +4472,7 @@ class Helper
                     $asset = FixedAssetRegistration::create($data);
 
                     $batches= $mrn_detail->batches;
-                  
+
                     FixedAssetSub::generateSubAssets(
                         $asset->id,
                         $asset->asset_code,
@@ -4483,13 +4484,13 @@ class Helper
                     $mrn_asset->asset_code = $asset_code;
                     $mrn_asset->asset_id = $asset->id;
                     $mrn_asset->save();
-                  
+
                     $asset->updateUniqueCodes();
                 }
-                    
+
                 }
-                
-               
+
+
                 DB::commit();
 
                 return [
@@ -4506,7 +4507,7 @@ class Helper
                 ];
             }
         } catch (Exception $e) {
-           
+
             DB::rollBack();
             Log::error('MRN Asset Register Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
@@ -4514,7 +4515,7 @@ class Helper
                 'status' => false,
                 'error' => $e->getMessage(),
                 'message' => 'An error occurred during asset registration.',
-                
+
             ];
         }
     }

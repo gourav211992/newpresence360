@@ -83,6 +83,10 @@ class ErpPlHeader extends Model
     {
         return $this->hasMany(ErpPlItemDetail::class, 'pl_header_id');
     }
+    public function pickingItems()
+    {
+        return $this->hasMany(ErpPlItemDetail::class, 'pl_header_id') -> select('id', 'pl_header_id', 'inventory_uom_qty');
+    }
     public function inv_items()
     {
         return $this->hasMany(ErpPlItem::class, 'pl_header_id');

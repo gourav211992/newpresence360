@@ -88,6 +88,7 @@ class InventoryReportController extends Controller
     // Report Filter
     public function getReportFilter(Request $request)
     {
+        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
 
         $period = $request->query('period');
@@ -101,11 +102,13 @@ class InventoryReportController extends Controller
         $store = $request->query('location_id');
         $stockType = $request->query('stock_type');
         $subStore = $request->query('store_id');
+        $station = $request->query('station_id');
         $rack = $request->query('rack_id');
         $shelf = $request->query('shelf_id');
         $bin = $request->query('bin_id');
         $storeCheck = $request->query('store_check');
         $subLocationCheck = $request->query('sub_location_check');
+        $stationCheck = $request->query('station_check');
         $stockTypeCheck = $request->query('stock_type_check');
         $rackCheck = $request->query('rack_check');
         $shelfCheck = $request->query('shelf_check');
@@ -154,17 +157,13 @@ class InventoryReportController extends Controller
         // Add filters for stores, racks, bins, etc.
         if ($storeCheck) { $query->groupBy(['store_id']); }
         if ($subLocationCheck) { $query->groupBy(['sub_store_id']); }
-        if ($rackCheck) { $query->groupBy(['rack_id']); }
-        if ($shelfCheck) { $query->groupBy(['shelf_id']); }
-        if ($binCheck) { $query->groupBy(['bin_id']); }
         if ($stockTypeCheck) { $query->groupBy(['stock_type']); }
+        if ($stationCheck) { $query->groupBy(['station_id']); }
 
         if ($store) { $query->where('store_id', $store)->groupBy(['store_id']); }
         if ($subStore) { $query->where('sub_store_id', $subStore)->groupBy(['sub_store_id']); }
         if ($stockType) { $query->where('stock_type', $stockType)->groupBy(['stock_type']); }
-        if ($rack) { $query->where('rack_id', $rack)->groupBy(['rack_id']); }
-        if ($shelf) { $query->where('shelf_id', $shelf)->groupBy(['shelf_id']); }
-        if ($bin) { $query->where('bin_id', $bin)->groupBy(['bin_id']); }
+        if ($station) { $query->where('stock_type', $station)->groupBy(['station_id']); }
         // Attribute filtering
         if (!empty($attrGroup) && !empty($attrValue)) {
             foreach ($attrGroup as $key => $group) {
@@ -348,6 +347,11 @@ class InventoryReportController extends Controller
             $hasFilters = true;
         }
 
+        if($request->has('station_id') && !empty($request->station_id)) {
+            $query->where('station_id', $request->station_id);
+            $hasFilters = true;
+        }
+
         if($request->has('stock_type') && !empty($request->stock_type)) {
             $query->where('stock_type', $request->stock_type);
             $hasFilters = true;
@@ -491,6 +495,11 @@ class InventoryReportController extends Controller
             $query->where('stock_type', $request->stock_type);
         }
 
+        if($request->has('station_id') && !empty($request->station_id)) {
+            $query->where('station_id', $request->station_id);
+            $hasFilters = true;
+        }
+
         if ($request->has('type_of_stock_id') && !empty($request->type_of_stock_id)) {
             if($request->type_of_stock_id == 'confirmed_stock')
             {
@@ -595,6 +604,11 @@ class InventoryReportController extends Controller
             $query->where('sub_store_id', $request->sub_store_id);
         }
 
+        if($request->has('station_id') && !empty($request->station_id)) {
+            $query->where('station_id', $request->station_id);
+            $hasFilters = true;
+        }
+
         if($request->has('stock_type') && !empty($request->stock_type)) {
             $query->where('stock_type', $request->stock_type);
         }
@@ -675,6 +689,7 @@ class InventoryReportController extends Controller
 
     public function summaryReportFilter(Request $request)
     {
+        dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
@@ -709,6 +724,11 @@ class InventoryReportController extends Controller
 
         if ($request->has('sub_store_id') && !empty($request->sub_store_id)) {
             $query->where('sub_store_id', $request->sub_store_id);
+        }
+
+        if($request->has('station_id') && !empty($request->station_id)) {
+            $query->where('station_id', $request->station_id);
+            $hasFilters = true;
         }
 
         if($request->has('book_type_id') && !empty($request->book_type_id)) {

@@ -85,6 +85,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
 
     Route::controller(BinTransferController::class)->group(function () {
         Route::get('/bin/items', 'index')->name('whm.bin.items');
+        Route::post('/bin/validate-qr', 'validateQr')->name('whm.bin.validate-qr');
         Route::post('/bin/transfer', 'binTransfer')->name('whm.bin.transfer');
         Route::post('/bin/scan-packets', 'scanPackets')->name('whm.bin.scan-packets');
     });

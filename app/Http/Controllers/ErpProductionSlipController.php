@@ -40,8 +40,8 @@ use App\Models\Unit;
 use App\Lib\Services\ErpInspChecklistService;
 
 use App\Services\PslipDeleteService;
-use PDF;
-use DB;
+use Barryvdh\DomPDF\Facade\Pdf; 
+use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -478,7 +478,7 @@ class ErpProductionSlipController extends Controller
                 // Centralised helper to handle service deletion responses
                 $deletion = function ($response) {
                     if ($response['status'] === 'error') {
-                        \DB::rollBack(); // Revert DB changes if error occurs
+                        DB::rollBack(); // Revert DB changes if error occurs
                         return response()->json([
                             'message' => $response['message'],
                             'error'   => ''
@@ -983,8 +983,8 @@ class ErpProductionSlipController extends Controller
                             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
 
                             $totalValue = $productionSlip->grand_total_amount ?? 0;
-                            $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                            $productionSlip->document_status = $document_status;
+                            // $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                            $productionSlip->document_status = $approveDocument['approvalStatus'];
                         } else {
                             $productionSlip->document_status = $request->document_status ?? ConstantHelper::DRAFT;
                         }
@@ -1004,13 +1004,18 @@ class ErpProductionSlipController extends Controller
                         $actionType = 'submit'; // Approve // reject // submit
                         $modelName = get_class($productionSlip);
                         $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+                        $totalValue = $productionSlip->total_amount ?? 0;
+
+                        $productionSlip->document_status = $approveDocument['approvalStatus'];
                     }
 
-                    if ($request->document_status == 'submitted') {
-                        $totalValue = $productionSlip->total_amount ?? 0;
-                        $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                        $productionSlip->document_status = $document_status;
-                    } else {
+                    // if ($request->document_status == 'submitted') {
+                        // $totalValue = $productionSlip->total_amount ?? 0;
+                        // $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                        // $productionSlip->document_status = $document_status;
+                    // } 
+                    else {
+                    
                         $productionSlip->document_status = $request->document_status ?? ConstantHelper::DRAFT;
                     }
                     $productionSlip -> save();

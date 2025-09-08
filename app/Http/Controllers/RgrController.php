@@ -30,6 +30,7 @@ use App\Models\Item;
 use App\Models\ErpStore;
 use Yajra\DataTables\DataTables;
 use App\Helpers\RGR\Constants as RGRConstant;
+use App\Lib\Services\WHM\RGRJob;
 use App\Models\Unit;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Support\Facades\Storage;
@@ -283,7 +284,7 @@ class RgrController extends Controller
                     ConstantHelper::APPROVED,
                     ConstantHelper::APPROVAL_NOT_REQUIRED 
                 ])) {
-                (new WhmJob)->createJob($rgr->id,'App\Models\ErpRgr');
+                (new RGRJob)->createJob($rgr->id,'App\Models\ErpRgr');
             }
             DB::commit();
 

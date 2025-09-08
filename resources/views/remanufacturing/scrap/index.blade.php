@@ -21,15 +21,11 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
-                            data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                        <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
                         @if (count($servicesBooks['services']))
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('scrap.create') }}"><i
-                                    data-feather="plus-circle"></i> Create Scrap</a>
+                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('scrap.create') }}"><i data-feather="plus-circle"></i> Create Scrap</a>
                         @endif
-                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0"
-                            href="{{ route('transactions.report', ['serviceAlias' => 'scrap']) }}"><i
-                                data-feather="bar-chart-2"></i>Report</a>
+                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'scrap']) }}"><i data-feather="bar-chart-2"></i>Report</a>
                     </div>
                 </div>
             </div>
@@ -48,10 +44,11 @@
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
                                                 <th>Sub Store</th>
-                                                {{-- <th>SO No.</th> --}}
-                                                {{-- <th>Revision No</th> --}}
-                                                {{-- <th>Reference No</th> --}}
                                                 <th>Items</th>
+                                                <th>Total Qty</th>
+                                                <th>Total Cost</th>
+                                                <th>Reference From.</th>
+                                                <th>Total Reference Qty.</th>
                                                 <th style="width:100px">Status</th>
                                             </tr>
                                         </thead>
@@ -121,6 +118,38 @@
                     render: renderData
                 },
                 {
+                    data: 'total_qty',
+                    name: 'total_qty',
+                    render: renderData,
+                    createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                    }
+                },
+                {
+                    data: 'total_cost',
+                    name: 'total_cost',
+                    render: renderData,
+                    createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                    }
+                },
+                {
+                    data: 'reference_from',
+                    name: 'reference_from',
+                    render: renderData,
+                    createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                    }
+                },
+                {
+                    data: 'total_reference_qty',
+                    name: 'total_reference_qty',
+                    render: renderData,
+                    createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('no-wrap');
+                    }
+                },
+                {
                     data: 'document_status',
                     name: 'document_status',
                     render: renderData,
@@ -129,7 +158,7 @@
                     }
                 }
             ];
-            // Define your dynamic filters
+
             var filters = {
                 status: '#filter-status', // Status filter (dropdown)
                 category: '#filter-category', // Category filter (dropdown)
@@ -145,8 +174,6 @@
                 // [[1, "desc"]] // default order
 
             );
-            // Apply filter on button click
-            // applyFilter('.apply-filter');
         });
     </script>
 @endsection

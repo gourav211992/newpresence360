@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ItemHelper;
+use App\Models\Scrap\ErpScrap;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -69,24 +70,29 @@ class ErpPslipItem extends Model
         return $this->qty * $this->rate;
     }
 
+    public function scrap()
+    {
+        return $this->belongsTo(ErpScrap::class, 'erp_scrap_id', 'id');
+    }
+
     public function pslip()
     {
-        return $this -> belongsTo(ErpProductionSlip::class, 'pslip_id', 'id');
+        return $this->belongsTo(ErpProductionSlip::class, 'pslip_id', 'id');
     }
 
     public function mo_product()
     {
-        return $this -> belongsTo(MoProduct::class, 'mo_product_id', 'id');
+        return $this->belongsTo(MoProduct::class, 'mo_product_id', 'id');
     }
 
     public function machine()
     {
-        return $this -> belongsTo(ErpMachine::class, 'machine_id', 'id');
+        return $this->belongsTo(ErpMachine::class, 'machine_id', 'id');
     }
 
     public function consumptions()
     {
-        return $this -> hasMany(PslipBomConsumption::class, 'pslip_item_id', 'id');
+        return $this->hasMany(PslipBomConsumption::class, 'pslip_item_id', 'id');
     }
 
     public function getMoAttribute()
@@ -96,34 +102,34 @@ class ErpPslipItem extends Model
 
     public function item()
     {
-        return $this -> belongsTo(Item::class, 'item_id', 'id');
+        return $this->belongsTo(Item::class, 'item_id', 'id');
     }
 
     public function station()
     {
-        return $this -> belongsTo(Station::class, 'station_id');
+        return $this->belongsTo(Station::class, 'station_id');
     }
     public function so()
     {
-        return $this -> belongsTo(ErpSaleOrder::class, 'so_id', 'id');
+        return $this->belongsTo(ErpSaleOrder::class, 'so_id', 'id');
     }
     public function so_item()
     {
-        return $this -> belongsTo(ErpSoItem::class, 'so_item_id', 'id');
+        return $this->belongsTo(ErpSoItem::class, 'so_item_id', 'id');
     }
     public function customer()
     {
-        return $this -> belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function item_attributes()
     {
-        return $this -> belongsTo(ErpPslipItemAttribute::class, 'pslip_item_id');
+        return $this->belongsTo(ErpPslipItemAttribute::class, 'pslip_item_id');
     }
 
     public function attributes()
     {
-        return $this -> hasMany(ErpPslipItemAttribute::class, 'pslip_item_id');
+        return $this->hasMany(ErpPslipItemAttribute::class, 'pslip_item_id');
     }
 
     public function checklists()
@@ -144,67 +150,65 @@ class ErpPslipItem extends Model
 
     public function item_attributes_array()
     {
-        $itemId = $this -> getAttribute('item_id');
+        $itemId = $this->getAttribute('item_id');
         if (isset($itemId)) {
-            $itemAttributes = ItemAttribute::where('item_id', $this -> item_id) -> get();
+            $itemAttributes = ItemAttribute::where('item_id', $this->item_id)->get();
         } else {
             $itemAttributes = [];
         }
         $processedData = [];
         foreach ($itemAttributes as $attribute) {
-            $existingAttribute = ErpPslipItemAttribute::where('pslip_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> first();
+            $existingAttribute = ErpPslipItemAttribute::where('pslip_item_id', $this->getAttribute('id'))->where('item_attribute_id', $attribute->id)->first();
             if (!isset($existingAttribute)) {
                 continue;
             }
             $attributesArray = array();
-            $attribute_ids = $attribute -> attribute_id ? ($attribute -> attribute_id) : [];
-            $attribute -> group_name = $attribute -> group ?-> name;
+            $attribute_ids = $attribute->attribute_id ? ($attribute->attribute_id) : [];
+            $attribute->group_name = $attribute->group?->name;
             foreach ($attribute_ids as $attributeValue) {
-                    $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
-                    if (isset($attributeValueData))
-                    {
-                        $isSelected = ErpPslipItemAttribute::where('pslip_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attribute_value', $attributeValueData -> value) -> first();
-                        $attributeValueData -> selected = $isSelected ? true : false;
-                        array_push($attributesArray, $attributeValueData);
-                    }
-
+                $attributeValueData = ErpAttribute::where('id', $attributeValue)->select('id', 'value')->where('status', 'active')->first();
+                if (isset($attributeValueData)) {
+                    $isSelected = ErpPslipItemAttribute::where('pslip_item_id', $this->getAttribute('id'))->where('item_attribute_id', $attribute->id)->where('attribute_value', $attributeValueData->value)->first();
+                    $attributeValueData->selected = $isSelected ? true : false;
+                    array_push($attributesArray, $attributeValueData);
+                }
             }
-           $attribute -> values_data = $attributesArray;
-           $attribute = $attribute -> only(['id','group_name', 'values_data', 'attribute_group_id']);
-           array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id']]);
+            $attribute->values_data = $attributesArray;
+            $attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
+            array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributesArray, 'attribute_group_id' => $attribute['attribute_group_id']]);
         }
         $processedData = collect($processedData);
         return $processedData;
     }
     public function hsn()
     {
-        return $this -> belongsTo(Hsn::class);
+        return $this->belongsTo(Hsn::class);
     }
     public function to_item_locations()
     {
-        return $this -> hasMany(ErpPslipItemLocation::class, 'pslip_item_id', 'id');
+        return $this->hasMany(ErpPslipItemLocation::class, 'pslip_item_id', 'id');
     }
     public function header()
     {
-        return $this -> belongsTo(ErpProductionSlip::class, 'pslip_id');
+        return $this->belongsTo(ErpProductionSlip::class, 'pslip_id');
     }
     public function store()
     {
-        return $this -> belongsTo(ErpStore::class, 'store_id');
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
     public function sub_store()
     {
-        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
     public function bundles()
     {
-        return $this -> hasMany(ErpPslipItemDetail::class, 'pslip_item_id');
+        return $this->hasMany(ErpPslipItemDetail::class, 'pslip_item_id');
     }
     public function getStockBalanceQty($storeId = null)
     {
-        $itemId = $this -> getAttribute('item_id');
+        $itemId = $this->getAttribute('item_id');
         $selectedAttributeIds = [];
-        $itemAttributes = $this -> item_attributes_array();
+        $itemAttributes = $this->item_attributes_array();
         foreach ($itemAttributes as $itemAttr) {
             foreach ($itemAttr['values_data'] as $valueData) {
                 if ($valueData['selected']) {
@@ -212,14 +216,117 @@ class ErpPslipItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,$storeId,null,null,null);
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds, $storeId, null, null, null);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
         // $stockBalanceQty = $this -> getAttribute('inventory_uom_qty');
-        $stockBalanceQty = ItemHelper::convertToAltUom($this -> getAttribute(('item_id')), $this -> getAttribute('uom_id'), $stockBalanceQty);
+        $stockBalanceQty = ItemHelper::convertToAltUom($this->getAttribute(('item_id')), $this->getAttribute('uom_id'), $stockBalanceQty);
         return $stockBalanceQty;
         // return $this -> getAttribute('order_qty');
+    }
+
+    public function renderItemAttributesUI(int $rowIndex, int $maxCharLimit = 15): string
+    {
+        $itemId = $this->getAttribute('item_id');
+        if (!$itemId) {
+            return $this->defaultAttrBtn($rowIndex);
+        }
+
+        $itemAttributes = ItemAttribute::with('group:id,name')
+            ->where('item_id', $itemId)
+            ->get(['id', 'item_id', 'attribute_id', 'attribute_group_id']);
+
+        if ($itemAttributes->isEmpty()) {
+            return $this->defaultAttrBtn($rowIndex);
+        }
+
+        $pslipAttrs = ErpPslipItemAttribute::where('pslip_item_id', $this->getAttribute('id'))
+            ->get(['item_attribute_id', 'attribute_value'])
+            ->groupBy('item_attribute_id');
+
+        $allAttrIds = $itemAttributes->pluck('attribute_id')->flatten()->unique()->toArray();
+
+        $attrValues = ErpAttribute::whereIn('id', $allAttrIds)
+            ->where('status', 'active')
+            ->get(['id', 'value'])
+            ->keyBy('id');
+
+        $attributeUI   = '<div style="white-space:nowrap; cursor:pointer;">';
+        $charUsed      = 0;
+        $selectedCount = 0;
+        $stopAdding    = false;
+
+        foreach ($itemAttributes as $attribute) {
+            $selectedValues = $pslipAttrs->get($attribute->id)?->pluck('attribute_value')->toArray() ?? [];
+            if (empty($selectedValues)) {
+                continue;
+            }
+
+            $groupName   = $attribute->group?->name ?? '';
+            $selectedVal = '';
+
+            foreach ((array)$attribute->attribute_id as $attrId) {
+                if (isset($attrValues[$attrId]) && in_array($attrValues[$attrId]->value, $selectedValues, true)) {
+                    $selectedVal = $attrValues[$attrId]->value;
+                    break;
+                }
+            }
+
+            if (!empty($selectedVal)) {
+                $selectedCount++;
+            }
+
+            $groupText = $groupName . ': ' . $selectedVal;
+            $length    = strlen($groupText);
+
+            if ($stopAdding) {
+                continue;
+            }
+
+            if ($charUsed + $length <= $maxCharLimit) {
+                $attributeUI .= sprintf(
+                    '<span class="badge rounded-pill badge-light-primary">
+                    <strong>%s</strong>: %s
+                </span>',
+                    e($groupName),
+                    e($selectedVal)
+                );
+                $charUsed += $length;
+            } else {
+                $remain = $maxCharLimit - $charUsed;
+
+                if ($remain >= 3) {
+                    $attributeUI .= sprintf(
+                        '<span class="badge rounded-pill badge-light-primary">
+                        <strong>%s..</strong>
+                    </span>',
+                        e(substr($groupName, 0, $remain - 1))
+                    );
+                } else {
+                    $attributeUI .= '<i class="ml-2 fa-solid fa-ellipsis-vertical"></i>';
+                }
+
+                $stopAdding = true;
+            }
+        }
+
+        $attributeUI .= '</div>';
+
+        return $selectedCount ? $attributeUI : $this->defaultAttrBtn($rowIndex);
+    }
+
+    /**
+     * Default button if no attributes selected
+     */
+    private function defaultAttrBtn(int $rowIndex): string
+    {
+        return <<<HTML
+        <button id="attribute_button_{$rowIndex}" type="button"
+            class="btn p-25 btn-sm btn-outline-secondary"
+            style="font-size: 10px">Attributes</button>
+        <input type="hidden" name="attribute_value_{$rowIndex}" />
+    HTML;
     }
 }

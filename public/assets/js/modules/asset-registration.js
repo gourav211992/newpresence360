@@ -129,7 +129,7 @@ $(document).on("click", ".assetDetailBtn", function () {
           )}" />
         </div>
   
-        <div class="col-md-4">
+        <div class="col-md-4 d-none">
           <label class="form-label">Salvage Value <span class="text-danger">*</span></label>
           <input type="number" step="0.01" name="salvage_value" class="form-control" required value="${escapeHTML(
               model.salvage_value

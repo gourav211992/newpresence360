@@ -27,20 +27,20 @@ class SsoAuthApi
 	public function handle($request, Closure $next)
 	{
 
-		$token = request()->bearerToken();
+        $token = request()->bearerToken();
 		if (!$token) {
-			return response()->json(['error' => 'no token'], 401);
+			return response()->json(['message' => 'Auth token not found.'], 401);
 		}
 
 		$tokenRow = PassportToken::dirtyDecode($token);
 
 		if (empty($tokenRow) || empty($tokenRow['user_id'])) {
-			return response()->json(['error' => 'invalid token'], 401);
+			return response()->json(['message' => 'Invalid auth token.'], 401);
 		}
 
 		$authUser = AuthUser::find($tokenRow['user_id']);
 		if (!$authUser) {
-			return response()->json(['error' => 'invalid token'], 401);
+			return response()->json(['message' => 'Invalid auth user token.'], 401);
 		}
 		$dbName = $authUser->db_name;
 		$authType = $authUser->user_type;
@@ -52,7 +52,7 @@ class SsoAuthApi
 
 		$user = $authUser->authUser();
 		if (!$user) {
-			return response()->json(['error' => 'invalid token'], 401);
+			return response()->json(['message' => 'Invalid user token.'], 401);
 		}
 		$user->auth_user_id = $authUser->id;
 		$user->authenticable_type = $authUser->authenticable_type;

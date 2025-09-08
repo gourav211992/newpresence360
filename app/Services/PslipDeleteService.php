@@ -42,7 +42,7 @@ class PslipDeleteService
 
             // Process Delete Pslip Bom Consumptions
             $result = $this->processDeletePslipBomConsumptions($pslipBomMappings, $productionSlip);
-           
+
             return $result['status'] === 'error'
                 ? self::errorResponse($result['message'])
                 :$result;
@@ -94,7 +94,7 @@ class PslipDeleteService
 
             // 2: Check stock for issue reversal
             $issueCheck = $this->checkIssueStock($pslipBomMapping, $psItem, $productionSlip, $selectedAttr);
-           
+
             if ($issueCheck !== true) return $issueCheck;
 
             // 3: Check stock for receipt reversal
@@ -102,12 +102,12 @@ class PslipDeleteService
 
             if($psItem->subprime_qty > 0) {
                  $receiptCheck = $this->checkReceiptStock($psItem, $productionSlip, $selectedAttr);
-            }  
+            }
             if($productionSlip->rg_sub_store_id && $psItem->rejected_qty > 0) {
                 $receiptCheck = $this->checkReceiptRejectStock($psItem, $productionSlip, $selectedAttr);
             }
-            
-           
+
+
             if ($receiptCheck !== true) return $receiptCheck;
 
             // 4: Update MO product & station consumption
@@ -143,7 +143,7 @@ class PslipDeleteService
                             );
                         }
                     });
-                }, '=', count($moProductAttributes));   
+                }, '=', count($moProductAttributes));
             })
             ->first();
 
@@ -181,8 +181,9 @@ class PslipDeleteService
      * Validate stock for receipt reversal
      */
     private function checkReceiptStock($psItem, $productionSlip, array $selectedAttr)
-    {    
+    {
         $pslipItemData = [
+            'qty' => $productionSlip->accepted_qty,
             'document_header_id' => $productionSlip->id,
             'document_detail_id' => $psItem->id,
             'item_id'            => $psItem->item_id,
@@ -196,7 +197,7 @@ class PslipDeleteService
 
         $check = InventoryHelperV2::checkStockForDelete($pslipItemData, true);
 
-        
+
         return $check['status'] === 'error'
             ? self::errorResponse($check['message'])
             : true;
@@ -204,8 +205,9 @@ class PslipDeleteService
 
 
     private function checkReceiptRejectStock($psItem, $productionSlip, array $selectedAttr)
-    {    
+    {
         $pslipItemData = [
+            'qty' => $productionSlip->accepted_qty,
             'document_header_id' => $productionSlip->id,
             'document_detail_id' => $psItem->id,
             'item_id'            => $psItem->item_id,
@@ -219,7 +221,7 @@ class PslipDeleteService
 
         $check = InventoryHelperV2::checkStockForDelete($pslipItemData, true);
 
-        
+
         return $check['status'] === 'error'
             ? self::errorResponse($check['message'])
             : true;
@@ -271,7 +273,7 @@ class PslipDeleteService
                 $pwoSoMappingItem->save();
             }
         }
-      
+
     }
 
     /**

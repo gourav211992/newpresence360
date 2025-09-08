@@ -538,7 +538,7 @@
             // });
             $('#store_id').on('change', function() {
                 const stationId = $(this).val();
-                filterData.station_id = stationId;
+                filterData.store_id = stationId;
                 if (stationId) {
                     $('#station_id').val(stationId).select2();
                     var data = {
@@ -564,6 +564,12 @@
                     $('#station_id').append('<option value="">Select</option>');
                     $('#station_id').trigger('change');
                 }
+                updateFilterAndFetch();
+            });
+
+            $('#station_id').on('change', function() {
+                const stationId = $(this).val();
+                filterData.station_id = stationId;
                 updateFilterAndFetch();
             });
 

@@ -25,8 +25,8 @@
                     @if (isset($orgLogo) && $orgLogo)
                         @php
                             $data = isset($orgLogo) && $orgLogo ? file_get_contents($orgLogo) : '';
-                            $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
-                            $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                            $imgType = pathinfo($orgLogo, PATHINFO_EXTENSION);
+                            $base64 = 'data:image/' . $imgType . ';base64,' . base64_encode($data);
                         @endphp
                         <img src="{!! $base64 !!}" alt="" height="50px" />
                     @endif
@@ -288,7 +288,7 @@
                 </td>
                 <td
                     style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
-                    Bundles#
+                    Bundles<br>Count
                 </td>
                 @if($type == App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
                     <td

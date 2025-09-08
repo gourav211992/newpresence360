@@ -1,6 +1,6 @@
 @foreach($mrnItems as $key => $item)
     @php
-        $rowCount = $key + 1;
+        $rowCount = $tableRowCount + $key + 1;
         $availableQty =  \App\Helpers\ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $item->available_qty ?? 0);
     @endphp
     <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>

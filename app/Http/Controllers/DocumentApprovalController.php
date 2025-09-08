@@ -54,6 +54,7 @@ use App\Models\PurchaseOrder;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
 use App\Models\JobOrder\JobOrder;
+use App\Models\MrnBatchDetail;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Exception;
@@ -638,63 +639,52 @@ class DocumentApprovalController extends Controller
             // Get login user detail
             $user = Helper::getAuthenticatedUser();
 
-            // Get configuration detail
-            $config = Configuration::where('type','organization')
-                ->where('type_id', $user->organization_id)
-                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                ->first();
-
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                (new PutawayJob)->createJob($mrn->id,'App\Models\MrnHeader');
-            }
-
             if ($request->action_type === 'deviation-closed') {
                 $mrnItemIds = $mrn->items->pluck('id')->toArray();
 
                 if (!empty($mrnItemIds)) {
                     $mrnItems = MrnDetail::whereIn('id', $mrnItemIds)->get();
                     $jobData = ErpWhmJob::find($request->closing_job_id);
-
                     if ($jobData) {
                         foreach ($mrnItems as $item) {
-                            $pendingCodes = $item->uniqueCodes()
-                                ->where('status', 'pending')
-                                ->where('job_id', $jobData->id)
-                                ->get();
-
-                            $pendingQty = $pendingCodes->sum('qty');
-
-                            // If no pending codes for this item, skip to next
-                            if ($pendingCodes->isEmpty()) {
-                                continue;
+                            $pendingQty = 0;
+                            $pendingUomQty = 0;
+                            $batches = $item->batches()->get();
+                            foreach ($batches as $batch) {
+                                $pendingData = $batch->uniqueCodes()
+                                    ->where('status', 'pending')
+                                    ->where('job_id', $jobData->id);
+                                $pendingBatchQty = $pendingData->sum('qty');
+                                $pendingData->delete();
+                                $hasPending = $batch->uniqueCodes()
+                                    ->where('status', 'pending')
+                                    ->where('job_id', $jobData->id)
+                                    ->exists();
+                                if (!$hasPending) {
+                                    $batchQty =  ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $pendingBatchQty ?? 0);
+                                    $batch->decrement('inventory_uom_qty', $pendingBatchQty);
+                                    $batch->decrement('quantity', $batchQty);
+                                }
+                                $pendingQty += $batchQty;
+                                $pendingUomQty += $pendingBatchQty;
                             }
-
-                            // Delete all pending codes for this job
-                            $item->uniqueCodes()
-                                ->where('status', 'pending')
-                                ->where('job_id', $jobData->id)
-                                ->delete();
-
-                            // Check if any pending still exists for this job in this item
-                            $hasPending = $item->uniqueCodes()
-                                ->where('status', 'pending')
-                                ->where('job_id', $jobData->id)
-                                ->exists();
-
-                            if (!$hasPending) {
-                                // Adjust accepted qty only once per item
-                                $orderQty =  ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $pendingQty ?? 0);
-                                $item->decrement('inventory_uom_qty', $pendingQty);
-                                $item->decrement('accepted_qty', $orderQty);
-                                if($mrn->reference_type == 'po'){
-                                    $item->po_item->decrement('ge_qty', $orderQty);
-                                }
-                                if($mrn->reference_type == 'jo'){
-                                    $item->jo_item->decrement('ge_qty', $orderQty);
-                                }
-                                if($mrn->reference_type == 'so'){
-                                    $item->soItem->decrement('ge_qty', $orderQty);
-                                }
+                            // Adjust accepted qty only once per item
+                            $item->decrement('inventory_uom_qty', $pendingUomQty);
+                            $item->decrement('order_qty', $pendingQty);
+                            if ($item->gate_entry_detail_id) {
+                                $item->geItem->decrement('mrn_qty', $pendingQty);
+                            }
+                            if ($mrn->reference_type == 'po') {
+                                $item->poItem->decrement('ge_qty', $pendingQty);
+                                $item->poItem->decrement('grn_qty', $pendingQty);
+                            }
+                            if ($mrn->reference_type == 'jo') {
+                                $item->joItem->decrement('ge_qty', $pendingQty);
+                                $item->joItem->decrement('grn_qty', $pendingQty);
+                            }
+                            if ($mrn->reference_type == 'so') {
+                                $item->soItem->decrement('ge_qty', $pendingQty);
+                                $item->soItem->decrement('grn_qty', $pendingQty);
                             }
                         }
 
@@ -704,8 +694,19 @@ class DocumentApprovalController extends Controller
                             ->exists();
 
                         $jobData->status = $jobHasPending ? 'deviation' : 'closed';
+                        $jobData->decrement('deviation_qty', $pendingQty);
                         $jobData->save();
                     }
+                }
+            } else {
+                // Get configuration detail
+                $config = Configuration::where('type', 'organization')
+                    ->where('type_id', $user->organization_id)
+                    ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                    ->first();
+
+                if (in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes') {
+                    (new PutawayJob)->createJob($mrn->id, 'App\Models\MrnHeader');
                 }
             }
 
@@ -1298,7 +1299,7 @@ class DocumentApprovalController extends Controller
 
             // Get login user detail
             $user = Helper::getAuthenticatedUser();
-            
+
             // Get configuration detail
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
@@ -1576,7 +1577,7 @@ class DocumentApprovalController extends Controller
 
             $modelName = get_class($lr);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
-            if ($approveDocument['message']) 
+            if ($approveDocument['message'])
             {
 
                 DB::rollBack();

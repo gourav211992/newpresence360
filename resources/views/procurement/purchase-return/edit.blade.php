@@ -159,7 +159,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <!-- Return Type Dropdown -->
-                                                        <input type="text" class="form-control" readonly value="{{@$mrn->qty_return_type}}" id="qty_return_type">
+                                                        <input type="text" class="form-control return_type" readonly value="{{@$mrn->qty_return_type}}" id="qty_return_type">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -1534,7 +1534,7 @@
             $('.form-check-input:checked').each(function(index, item) {
                 let tr = $(item).closest('tr');
                 let trIndex = tr.index();
-                let detail_id = Number($(tr).find('[name*="[detail_id]"]').val()) || 0;
+                let detail_id = Number($(tr).find('[name*="[pr_dtl_id]"]').val()) || 0;
                 let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
                 if (detail_id > 0 && mrn_detail_id > 0) {
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });
@@ -1610,7 +1610,7 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let detail_id = $(tr).find("input[name*='[detail_id]']").val() || '';
+            let detail_id = $(tr).find("input[name*='[pr_dtl_id]']").val() || '';
             let actionUrl = '{{route("purchase-return.item.attr")}}'+'?item_id='+itemId+'&detail_id='+detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -1660,7 +1660,7 @@
                 mrn_header_id: getVal("[name*='[mrn_header_id]']"),
                 mrn_detail_id: getVal("[name*='[mrn_detail_id]']"),
                 header_id: getVal("[name*='[header_id]']"),
-                detail_id: getVal("[name*='[detail_id]']"),
+                detail_id: getVal("[name*='[pr_dtl_id]']"),
                 so_detail_id: getVal("[name*='[so_detail_id]']"),
                 header_store_id: store_id,
                 sub_store_id: sub_store_id,
@@ -2268,7 +2268,6 @@
             let actionUrl = '{{ route("purchase-return.generate-einvoice") }}'+ '?id='+'{{$mrn->id}}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    console.log(data);
                     if(data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
@@ -2293,7 +2292,6 @@
             let actionUrl = '{{ route("purchase-return.generate-ewaybill") }}'+ '?id='+'{{$mrn->id}}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    console.log(data);
                     if(data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
@@ -2316,8 +2314,9 @@
         // Cancel EInvoice
         $(document).on('click', '#cancelEinvoice', (e) => {
             let actionUrl = '{{ route("purchase-return.cancel-einvoice") }}';
+            let eInvoiceId = '{{$eInvoice ? $eInvoice->id : null}}'
             let data = {
-                eInvoice_id: '{{$eInvoice->id}}'
+                eInvoice_id: eInvoiceId
             };
 
             fetch(actionUrl, {
@@ -2864,7 +2863,6 @@
                     const modelType = 'mrn';
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
-                    // console.log(vendor?.id, modelType, order.id);
 
                     vendorOnChange(vendor?.id, modelType, order.id);
 
@@ -2999,7 +2997,6 @@
         }
 
         function handleProcessError(message = 'Invalid data') {
-            // console.log('message', message);
             $(".editAddressBtn").removeClass('d-none');
             $("#vendor_name").val('').prop('readonly', false);
             $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');

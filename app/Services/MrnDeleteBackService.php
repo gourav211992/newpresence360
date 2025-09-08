@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use DB;
+
 use App\Models\MrnDetail;
 use App\Models\MrnExtraAmount;
 use App\Models\MrnItemLocation;

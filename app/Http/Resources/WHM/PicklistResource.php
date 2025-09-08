@@ -14,8 +14,8 @@ class PicklistResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $morphable = $this->whenLoaded('morphable'); // ensure it's loaded safely
-        $items = $morphable && isset($morphable->items) ? $morphable->items : collect();
+        $morphable = $this->morphable;
+        $items = $morphable && isset($morphable->pickingItems) ? $morphable->pickingItems : collect();
         
         return [
             'id' => $this->id,

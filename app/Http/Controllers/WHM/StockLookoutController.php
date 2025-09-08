@@ -37,6 +37,7 @@ class StockLookoutController extends Controller
         $search = $request->search;
 
         $selectFields = [
+            'id',
             'group_id',
             'company_id',
             'organization_id',
@@ -52,9 +53,11 @@ class StockLookoutController extends Controller
         
 
         $query = StockLedger::with(['item' => function($q){
-                $q->select('id','item_name','item_code');
+                $q->select('id','item_name','item_code','uom_id');
             }, 'location' =>  function($q){
                 $q->select('id', 'store_name', 'store_code');
+            },'item.uom' => function($q){
+                $q->select('id','name');
             }])
             ->when($request->is_sub_store == 1, function($q) {
                 $q->with(['store' => function($q){
@@ -272,12 +275,17 @@ class StockLookoutController extends Controller
         }
         
         $items = ErpItemUniqueCode::query()
+            ->with(['item.uom' => function($q){
+                $q->select('id','name');
+            },'item' => function($q){
+                $q->select('id','item_name','item_code','uom_id');
+            }])
+            ->select($selectFields)
             ->when($request->is_sub_store == 1, function($q) {
                 $q->with(['subStore' => function($q){
                     $q->select('id','name');
                 }]);
             })
-            ->select($selectFields)
             ->when(!empty($storagePointIds), function($q) use ($storagePointIds) {
                 $q->whereIn('storage_point_id', $storagePointIds);
             })

@@ -7,9 +7,6 @@ use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\UnloadingResource;
-use App\Lib\Services\WHM\WhmJob;
-use App\Models\GateEntryAttribute;
-use App\Models\ItemAttribute;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -88,8 +85,7 @@ class UnloadingTaskController extends Controller
         ->when($status, function ($query) use ($status) {
             $query->where('status', $status);
         })
-        // ->where('status',CommonHelper::PENDING)
-        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
+        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id','packet_no','total_packets')
         ->get();
 
         return [
@@ -120,7 +116,7 @@ class UnloadingTaskController extends Controller
             }])
             ->where('job_id',$request->id)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','item_uid','status','vendor_id','storage_point_id')
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','item_uid','status','vendor_id','storage_point_id','packet_no','total_packets')
             ->get();
 
             \DB::commit();

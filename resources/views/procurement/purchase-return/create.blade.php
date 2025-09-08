@@ -684,7 +684,6 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                        console.log('data', data.data);
                         $("#book_code").val(data.data.book_code);
                         if(!data.data.doc.document_number) {
                             $("#document_number").val('');
@@ -840,7 +839,6 @@
                     return false;
                 },
                 change: function(event, ui) {
-                    console.log("changess!");
                     if (!ui.item) {
                         $(this).val("");
                         $(this).attr('data-name', '');
@@ -2015,7 +2013,6 @@
                     const modelType = 'mrn';
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
-                    // console.log(vendor?.id, modelType, order.id);
 
                     vendorOnChange(vendor?.id, modelType, order.id);
 
@@ -2128,11 +2125,11 @@
                         if(idsLength > 1)
                         {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                let currentIndex = index + 1;
                                 if(tableRowCount>0)
                                 {
                                     currentIndex = tableRowCount + 1;
                                 }
-                                let currentIndex = index + 1;
                                 setAttributesUIHelper(currentIndex,"#itemTable");
                             });
                         }
@@ -2150,7 +2147,6 @@
         }
 
         function handleProcessError(message = 'Invalid data') {
-            // console.log('message', message);
             $(".editAddressBtn").removeClass('d-none');
             $("#vendor_name").val('').prop('readonly', false);
             $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');

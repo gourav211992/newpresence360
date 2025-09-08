@@ -62,6 +62,7 @@ class MrnDetail extends Model
         'rejected_inv_uom_qty',
         'rate',
         'basic_value',
+        'pb_item_value',
         'discount_percentage',
         'discount_amount',
         'header_discount_percentage',
@@ -270,12 +271,12 @@ class MrnDetail extends Model
 
     public function itemDiscount()
     {
-        return $this->hasMany(MrnExtraAmount::class)->where('ted_level', 'D')->where('ted_type','Discount');
+        return $this->hasMany(MrnExtraAmount::class)->where('ted_level', 'D')->where('ted_type', 'Discount');
     }
 
     public function itemDiscountHistory()
     {
-        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_level', 'D')->where('ted_type','Discount');
+        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_level', 'D')->where('ted_type', 'Discount');
     }
 
     public function stockLedger()
@@ -286,22 +287,22 @@ class MrnDetail extends Model
     /*Header Level Discount*/
     public function headerDiscount()
     {
-        return $this->hasMany(MrnExtraAmount::class)->where('ted_level', 'H')->where('ted_type','Discount');
+        return $this->hasMany(MrnExtraAmount::class)->where('ted_level', 'H')->where('ted_type', 'Discount');
     }
 
     public function headerDiscountHistory()
     {
-        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_level', 'H')->where('ted_type','Discount');
+        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_level', 'H')->where('ted_type', 'Discount');
     }
 
     public function taxes()
     {
-        return $this->hasMany(MrnExtraAmount::class)->where('ted_type','Tax');
+        return $this->hasMany(MrnExtraAmount::class)->where('ted_type', 'Tax');
     }
 
     public function taxHistories()
     {
-        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_type','Tax');
+        return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_type', 'Tax');
     }
 
     public function getCgstValueAttribute()
@@ -336,7 +337,7 @@ class MrnDetail extends Model
             ->where('ted_code', '=', 'SGST')
             ->sum('ted_amount');
 
-            $tedRecord = MrnExtraAmount::with(['taxDetail'])
+        $tedRecord = MrnExtraAmount::with(['taxDetail'])
             ->where('mrn_detail_id', $this->id)
             ->where('mrn_header_id', $this->mrn_header_id)
             ->where('ted_type', '=', 'Tax')
@@ -359,7 +360,7 @@ class MrnDetail extends Model
             ->where('ted_code', '=', 'IGST')
             ->sum('ted_amount');
 
-            $tedRecord = MrnExtraAmount::with(['taxDetail'])
+        $tedRecord = MrnExtraAmount::with(['taxDetail'])
             ->where('mrn_detail_id', $this->id)
             ->where('mrn_header_id', $this->mrn_header_id)
             ->where('ted_type', '=', 'Tax')
@@ -376,7 +377,7 @@ class MrnDetail extends Model
 
     public function ted_tax()
     {
-        return $this->hasOne(MrnExtraAmount::class,'mrn_detail_id')->where('ted_type','Tax')->latest();
+        return $this->hasOne(MrnExtraAmount::class, 'mrn_detail_id')->where('ted_type', 'Tax')->latest();
     }
 
     // public function getAvailableStockAttribute()
@@ -395,12 +396,12 @@ class MrnDetail extends Model
     // }
     public function asset()
     {
-        return $this->hasOne(FixedAssetRegistration::class,'mrn_detail_id')->latest();
+        return $this->hasOne(FixedAssetRegistration::class, 'mrn_detail_id')->latest();
     }
 
     public function assetDetail()
     {
-        return $this->hasOne(MrnAssetDetail::class,'detail_id');
+        return $this->hasOne(MrnAssetDetail::class, 'detail_id');
     }
 
     public function item_attributes_array()
@@ -412,9 +413,9 @@ class MrnDetail extends Model
         $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
         $processedData = [];
         $mappingAttributes = MrnAttribute::where('mrn_detail_id', $this->getAttribute('id'))
-        ->select(['item_attribute_id as attribute_id', 'attr_value as attribute_value_id'])
-        ->get()
-        ->toArray();
+            ->select(['item_attribute_id as attribute_id', 'attr_value as attribute_value_id'])
+            ->get()
+            ->toArray();
         foreach ($itemAttributes as $attribute) {
             $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
             $attribute->group_name = $attribute->group?->name;

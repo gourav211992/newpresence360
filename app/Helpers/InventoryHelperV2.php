@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Helpers;
 
 use DB;
@@ -36,7 +37,9 @@ use App\Helpers\InventoryHelper;
 
 class InventoryHelperV2
 {
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     // Update Stock Receipt
     public static function updateReceiptStock($documentHeader, $inspection = null)
@@ -45,7 +48,7 @@ class InventoryHelperV2
             $user = Helper::getAuthenticatedUser();
 
             // --- Check Configuration for UIC scanning
-            $config = Configuration::where('type','organization')
+            $config = Configuration::where('type', 'organization')
                 ->where('type_id', $user->organization_id)
                 ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
                 ->whereNull('deleted_at')
@@ -58,7 +61,8 @@ class InventoryHelperV2
 
             // returns true if sub-store (or its store) requires warehouse/putaway
             $subStoreHasWarehouse = function (?int $subStoreId) use (&$subStoreWarehouseCache, $documentHeader): bool {
-                if (!$subStoreId) return false;
+                if (!$subStoreId)
+                    return false;
                 if (array_key_exists($subStoreId, $subStoreWarehouseCache)) {
                     return $subStoreWarehouseCache[$subStoreId];
                 }
@@ -68,7 +72,7 @@ class InventoryHelperV2
                 // $flag = (int)($sub->is_warehouse_required ?? 0) === 1;
 
                 $sub = $documentHeader->is_enforce_uic_scanning;
-                $flag = (int)($sub ?? 0) === 1;
+                $flag = (int) ($sub ?? 0) === 1;
 
                 return $subStoreWarehouseCache[$subStoreId] = $flag;
             };
@@ -78,7 +82,7 @@ class InventoryHelperV2
                 ->with('batches')        // assumes Detail model has: public function batches() { return $this->hasMany(...); }
                 ->get();
             foreach ($documentDetails as $documentDetail) {
-                if(empty($documentDetail->batches)){
+                if (empty($documentDetail->batches)) {
                     return self::errorResponse("Error in updateReceiptStock: Batch details not found.");
                 }
                 foreach ($documentDetail->batches as $detail) {
@@ -103,12 +107,12 @@ class InventoryHelperV2
                         continue;
                     }
 
-                    foreach($stockLedger as $stockLedger) {
-                        $acceptedQty  = (float) ($detail->accepted_inv_uom_qty ?? 0);
-                        $rejectedQty  = (float) ($detail->rejected_inv_uom_qty ?? 0);
+                    foreach ($stockLedger as $stockLedger) {
+                        $acceptedQty = (float) ($detail->accepted_inv_uom_qty ?? 0);
+                        $rejectedQty = (float) ($detail->rejected_inv_uom_qty ?? 0);
                         $processedQty = $acceptedQty + $rejectedQty;
                         // Proportional costing (prevents double counting when both exist)
-                        $totalItemCost  = (float) (($documentDetail->basic_value ?? 0) - (($documentDetail->discount_amount ?? 0) + ($documentDetail->header_discount_amount ?? 0)));
+                        $totalItemCost = (float) (($documentDetail->basic_value ?? 0) - (($documentDetail->discount_amount ?? 0) + ($documentDetail->header_discount_amount ?? 0)));
                         $totalProcessed = max($processedQty, 0.0);
 
                         $acceptedCost = ($acceptedQty > 0 && $totalProcessed > 0)
@@ -123,12 +127,12 @@ class InventoryHelperV2
                         // 1) ACCEPTED: target store = main store (detail->store_id)
                         // ------------------------------------------------------------
                         if ($acceptedQty > 0) {
-                            $acceptedStoreId  = (int) ($inspection->store_id ?? $documentHeader->store_id);
+                            $acceptedStoreId = (int) ($inspection->store_id ?? $documentHeader->store_id);
                             $acceptedSubStore = (int) ($inspection->sub_store_id ?? $documentHeader->sub_store_id);
 
                             // only use putaway when cfgYes = true AND sub-store requires warehouse
                             $acceptedUsePutaway = $cfgYes && $subStoreHasWarehouse($acceptedSubStore);
-                            $acceptedQtyField   = $acceptedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
+                            $acceptedQtyField = $acceptedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
                             // Try to merge into an existing non-hold ledger in that target column
                             $acceptedLedger = StockLedger::withDefaultGroupCompanyOrg()
                                 ->where('document_header_id', $detail->header_id)
@@ -146,19 +150,19 @@ class InventoryHelperV2
 
                             if (!$acceptedLedger) {
                                 $acceptedLedger = $stockLedger->replicate();
-                                $acceptedLedger->hold_qty     = 0;
-                                $acceptedLedger->utilized_id  = null;
-                                $acceptedLedger->store_id     = $acceptedStoreId;      // ensure correct store
+                                $acceptedLedger->hold_qty = 0;
+                                $acceptedLedger->utilized_id = null;
+                                $acceptedLedger->store_id = $acceptedStoreId;      // ensure correct store
                                 $acceptedLedger->sub_store_id = $acceptedSubStore; // ensure correct sub-store
                             }
 
                             // Reset both qty columns, then set chosen one
-                            $acceptedLedger->receipt_qty         = 0;
+                            $acceptedLedger->receipt_qty = 0;
                             $acceptedLedger->putaway_pending_qty = 0;
                             $acceptedLedger->{$acceptedQtyField} = $acceptedQty;
 
-                            $acceptedLedger->cost_per_unit   = round($acceptedQty > 0 ? ($acceptedCost / $acceptedQty) : 0, 6);
-                            $acceptedLedger->total_cost      = $acceptedCost;
+                            $acceptedLedger->cost_per_unit = round($acceptedQty > 0 ? ($acceptedCost / $acceptedQty) : 0, 6);
+                            $acceptedLedger->total_cost = $acceptedCost;
                             $acceptedLedger->document_status = $documentHeader->document_status;
 
                             self::updateStockCost($acceptedLedger);
@@ -170,11 +174,11 @@ class InventoryHelperV2
                         //              target sub-store = inspection->rejected_sub_store_id
                         // ------------------------------------------------------------
                         if ($inspection && $rejectedQty > 0 && ($inspection->rejected_sub_store_id ?? null)) {
-                            $rejectedStoreId  = (int) ($inspection->store_id ?? $documentHeader->store_id);
+                            $rejectedStoreId = (int) ($inspection->store_id ?? $documentHeader->store_id);
                             $rejectedSubStore = (int) $inspection->rejected_sub_store_id;
 
                             $rejectedUsePutaway = $cfgYes && $subStoreHasWarehouse($rejectedSubStore);
-                            $rejectedQtyField   = $rejectedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
+                            $rejectedQtyField = $rejectedUsePutaway ? 'putaway_pending_qty' : 'receipt_qty';
 
                             $rejectedLedger = StockLedger::withDefaultGroupCompanyOrg()
                                 ->where('document_header_id', $detail->header_id)
@@ -192,19 +196,19 @@ class InventoryHelperV2
 
                             if (!$rejectedLedger) {
                                 $rejectedLedger = $stockLedger->replicate();
-                                $rejectedLedger->hold_qty     = 0;
-                                $rejectedLedger->utilized_id  = null;
-                                $rejectedLedger->store_id     = $rejectedStoreId;  // move to rejected store (can be different)
+                                $rejectedLedger->hold_qty = 0;
+                                $rejectedLedger->utilized_id = null;
+                                $rejectedLedger->store_id = $rejectedStoreId;  // move to rejected store (can be different)
                                 $rejectedLedger->sub_store_id = $rejectedSubStore; // rejected sub-store
                             }
 
                             // Reset both qty columns, then set chosen one
-                            $rejectedLedger->receipt_qty         = 0;
+                            $rejectedLedger->receipt_qty = 0;
                             $rejectedLedger->putaway_pending_qty = 0;
                             $rejectedLedger->{$rejectedQtyField} = $rejectedQty;
 
-                            $rejectedLedger->cost_per_unit   = round($rejectedQty > 0 ? ($rejectedCost / $rejectedQty) : 0, 6);
-                            $rejectedLedger->total_cost      = $rejectedCost;
+                            $rejectedLedger->cost_per_unit = round($rejectedQty > 0 ? ($rejectedCost / $rejectedQty) : 0, 6);
+                            $rejectedLedger->total_cost = $rejectedCost;
                             $rejectedLedger->document_status = $documentHeader->document_status;
 
                             self::updateStockCost($rejectedLedger);
@@ -225,7 +229,6 @@ class InventoryHelperV2
                         }
                     }
                 }
-
             }
 
             return self::successResponse("MRN details updated successfully.", []);
@@ -271,21 +274,38 @@ class InventoryHelperV2
             ->where('sub_store_id', $documentDetail['sub_store_id'])
             ->where('transaction_type', $documentDetail['transaction_type'])
             ->where('book_type', $documentDetail['document_type'])
-            ->whereNull('utilized_id')
-            ->where(function ($q) {
-                $q->whereNull('hold_qty')->orWhere('hold_qty', '<=', 0);
-            });
+            ->whereNull('utilized_id');
+        // ->where(function ($q) {
+        //     $q->whereNull('hold_qty')->orWhere('hold_qty', '<=', 0);
+        // });
+        if($documentDetail['is_delete'])
+        {
+            $baseQuery->where('receipt_qty', $documentDetail['qty']);
+        }
+
 
         // Apply attribute filters
         if ($attributeGroups->isNotEmpty() && !empty($selectedAttr)) {
             foreach ($attributeGroups as $index => $groupId) {
                 if (isset($selectedAttr[$index])) {
                     $baseQuery->whereJsonContains('item_attributes', [
-                        'attr_name' => (string)$groupId,
-                        'attr_value' => (string)$selectedAttr[$index],
+                        'attr_name' => (string) $groupId,
+                        'attr_value' => (string) $selectedAttr[$index],
                     ]);
                 }
             }
+        }
+
+        if (isset($documentDetail['station_id']) && $documentDetail['station_id']) {
+            $baseQuery->where('station_id', $documentDetail['station_id']);
+        }
+
+        if (isset($documentDetail['stock_type']) && $documentDetail['stock_type']) {
+            $baseQuery->where('stock_type', $documentDetail['stock_type']);
+        }
+
+        if (isset($documentDetail['wip_station_id']) && $documentDetail['wip_station_id']) {
+            $baseQuery->where('wip_station_id', $documentDetail['wip_station_id']);
         }
 
         // Clone query to avoid re-execution conflict
@@ -307,19 +327,19 @@ class InventoryHelperV2
     {
         $mrnDetail = MrnDetail::find($documentDetail['document_detail_id']);
         $RawMaterialData = MrnJoItem::where('header_id', $documentDetail['document_detail_id'])
-                ->where('mrn_detail_id', $documentDetail['document_header_id'])->get();
+            ->where('mrn_detail_id', $documentDetail['document_header_id'])->get();
         foreach ($RawMaterialData as $key => $value) {
             $documentDetail = [
-                        'document_header_id' => $value->mrn_header_id,
-                        'document_detail_id' => $value->mrn_detail_id,
-                        'item_id' => $value->mi_item_id,
-                        'store_id' => $value->store_id,
-                        'document_type' => 'mrn',
-                        'attributes' => $value->attributes,
-                        'sub_store_id' => $value->sub_store_id,
-                        'transaction_type' => 'issue',
-                        'document_status' => $value->status,
-                    ];
+                'document_header_id' => $value->mrn_header_id,
+                'document_detail_id' => $value->mrn_detail_id,
+                'item_id' => $value->mi_item_id,
+                'store_id' => $value->store_id,
+                'document_type' => 'mrn',
+                'attributes' => $value->attributes,
+                'sub_store_id' => $value->sub_store_id,
+                'transaction_type' => 'issue',
+                'document_status' => $value->status,
+            ];
             self::deleteIssueStockJobType($documentDetail);
         }
     }
@@ -346,8 +366,8 @@ class InventoryHelperV2
             foreach ($attributeGroups as $index => $groupId) {
                 if (isset($selectedAttr[$index])) {
                     $baseQuery->whereJsonContains('item_attributes', [
-                        'attr_name' => (string)$groupId,
-                        'attr_value' => (string)$selectedAttr[$index],
+                        'attr_name' => (string) $groupId,
+                        'attr_value' => (string) $selectedAttr[$index],
                     ]);
                 }
             }
@@ -373,10 +393,10 @@ class InventoryHelperV2
                     ->where([
                         'document_header_id' => $val->document_header_id,
                         'document_detail_id' => $val->document_detail_id,
-                        'book_type'          => $val->book_type,
-                        'transaction_type'   => $val->transaction_type,
-                        'store_id'           => $val->store_id,
-                        'sub_store_id'       => $val->sub_store_id,
+                        'book_type' => $val->book_type,
+                        'transaction_type' => $val->transaction_type,
+                        'store_id' => $val->store_id,
+                        'sub_store_id' => $val->sub_store_id,
                     ])
                     ->whereNull('utilized_id')
                     ->get();
@@ -392,7 +412,6 @@ class InventoryHelperV2
                     $stockQty += $similarUtilizedRecord->receipt_qty;
                     $similarUtilizedRecord->attributes()->delete();
                     $similarUtilizedRecord->delete();
-
                 }
 
                 $val->receipt_qty = $stockQty;
@@ -408,7 +427,7 @@ class InventoryHelperV2
         }
 
         if ($isIssueStockDelete) {
-            if(count($issueStock->attributes) > 0){
+            if (count($issueStock->attributes) > 0) {
                 $issueStock?->attributes?->delete();
             }
             $issueStock->delete();
@@ -443,34 +462,47 @@ class InventoryHelperV2
 
     public static function checkStockForDelete($documentDetail, $isDelete)
     {
+        if (!$documentDetail['qty']) {
+            return self::errorResponse(
+                "Qty can not be null."
+            );
+        }
+        if (!$documentDetail['item_id']) {
+            return self::errorResponse(
+                "Item can not be null."
+            );
+        }
+        if (!$documentDetail['store_id']) {
+            return self::errorResponse(
+                "Location can not be null."
+            );
+        }
+        $documentDetail['is_delete'] = 1;
         $availStock = self::checkStockAvailable($documentDetail);
         $confirmedStock = $availStock['confirmedStock'] ?? null;
         $unConfirmedStock = $availStock['unConfirmedStock'] ?? null;
 
-        if (!$confirmedStock && $unConfirmedStock) {
+        if ($confirmedStock || $unConfirmedStock) {
             $unConfirmedStock->attributes()->delete();
             $unConfirmedStock->delete();
 
-            return self::successResponse("Pending stock deleted successfully", [
+            return self::successResponse("Stock deleted successfully", [
                 'stockLedger' => $documentDetail,
                 'isDelete' => $isDelete ? 1 : 0,
             ]);
         }
 
         return self::errorResponse(
-            "You cannot delete this {$documentDetail['document_type']} because stock is already available."
+            "You cannot delete this {$documentDetail['document_type']} because stock is utilized."
         );
     }
 
     public static function checkStockForIssueDelete($documentDetail, $isDelete)
     {
         $documentType = $documentDetail['book_type'] ?? $documentDetail['document_type'];
-        if($documentType == ConstantHelper::MRN_SERVICE_ALIAS)
-        {
+        if ($documentType == ConstantHelper::MRN_SERVICE_ALIAS) {
             $issueStock = self::deleteIssueStock($documentDetail);
-        }
-        else
-        {
+        } else {
             $issueStock = self::deleteIssueStockJobType($documentDetail);
         }
 
@@ -489,6 +521,7 @@ class InventoryHelperV2
     // Check/Update Stock For Receipt
     public static function checkStockForUpdate($mrnItem)
     {
+        $mrnItem['is_delete'] = 0;
         $availStock = self::checkStockAvailable($mrnItem);
         $confirmedStock = $availStock['confirmedStock'] ?? null;
         if ($confirmedStock) {
@@ -497,7 +530,7 @@ class InventoryHelperV2
                     'stockLedger' => $confirmedStock
                 ]);
             }
-            $actualQty =  ItemHelper::convertToAltUom($mrnItem['item_id'], $mrnItem['uom_id'], $confirmedStock->receipt_qty ?? 0);
+            $actualQty = ItemHelper::convertToAltUom($mrnItem['item_id'], $mrnItem['uom_id'], $confirmedStock->receipt_qty ?? 0);
             return self::errorResponse(
                 "You cannot update this as available stock is only {$actualQty}."
             );
@@ -532,11 +565,23 @@ class InventoryHelperV2
             foreach ($attributeGroups as $index => $groupId) {
                 if (isset($selectedAttr[$index])) {
                     $baseQuery->whereJsonContains('item_attributes', [
-                        'attr_name' => (string)$groupId,
-                        'attr_value' => (string)$selectedAttr[$index],
+                        'attr_name' => (string) $groupId,
+                        'attr_value' => (string) $selectedAttr[$index],
                     ]);
                 }
             }
+        }
+
+        if (isset($documentDetail['station_id']) && $documentDetail['station_id']) {
+            $baseQuery->where('station_id', $documentDetail['station_id']);
+        }
+
+        if (isset($documentDetail['stock_type']) && $documentDetail['stock_type']) {
+            $baseQuery->where('stock_type', $documentDetail['stock_type']);
+        }
+
+        if (isset($documentDetail['wip_station_id']) && $documentDetail['wip_station_id']) {
+            $baseQuery->where('wip_station_id', $documentDetail['wip_station_id']);
         }
 
         // Clone query to avoid re-execution conflict
@@ -547,11 +592,11 @@ class InventoryHelperV2
             ->where('receipt_qty', '<', $documentDetail['inventory_uom_qty'])
             ->first();
 
-        if($checkIssueStock){
+        if ($checkIssueStock) {
             return self::errorResponse(
                 "You cannot increase the quantity as issue stock is only {$issueStock->receipt_qty}."
             );
-        } else{
+        } else {
             return self::successResponse("Available Issue Stock", [
                 'issueStock' => $issueStock
             ]);
@@ -564,13 +609,13 @@ class InventoryHelperV2
      * else            → set/update receipt_qty (not used in deviation close)
      */
     public static function updateBatchWiseStockFast(
-        int    $headerId,
-        int    $detailId,
-        int    $itemId,
+        int $headerId,
+        int $detailId,
+        int $itemId,
         string $lotNumber,
-        ?int   $storeId,
-        ?int   $subStoreId,
-        float  $deltaInv,
+        ?int $storeId,
+        ?int $subStoreId,
+        float $deltaInv,
         string $mode = 'putaway'
     ): array {
         $q = StockLedger::withDefaultGroupCompanyOrg()
@@ -597,17 +642,17 @@ class InventoryHelperV2
                 return self::errorResponse('No Putaway Stock Found.');
             }
 
-            $dec = max(0.0, (float)$deltaInv);
+            $dec = max(0.0, (float) $deltaInv);
             if ($dec <= 0) {
                 return self::successResponse('Nothing to decrement.', $stock);
             }
 
             // Clamp to avoid negative
-            $dec = min($dec, (float)$stock->putaway_pending_qty);
+            $dec = min($dec, (float) $stock->putaway_pending_qty);
 
             if ($dec > 0) {
-                $stock->putaway_pending_qty = (float)$stock->putaway_pending_qty - $dec;
-                $stock->total_cost = (float)$stock->putaway_pending_qty * (float)$stock->cost_per_unit;
+                $stock->putaway_pending_qty = (float) $stock->putaway_pending_qty - $dec;
+                $stock->total_cost = (float) $stock->putaway_pending_qty * (float) $stock->cost_per_unit;
                 $stock->save();
 
                 self::updateStockCost($stock);
@@ -622,8 +667,8 @@ class InventoryHelperV2
             return self::errorResponse('No Stock Found.');
         }
 
-        $stock->receipt_qty = (float)$deltaInv; // here "deltaInv" is the new target qty
-        $stock->total_cost  = (float)$stock->receipt_qty * (float)$stock->cost_per_unit;
+        $stock->receipt_qty = (float) $deltaInv; // here "deltaInv" is the new target qty
+        $stock->total_cost = (float) $stock->receipt_qty * (float) $stock->cost_per_unit;
         $stock->save();
 
         self::updateStockCost($stock);
@@ -643,7 +688,7 @@ class InventoryHelperV2
     }
 
     // Success Response
-    private static function successResponse($response,$data)
+    private static function successResponse($response, $data)
     {
         return [
             "status" => "success",

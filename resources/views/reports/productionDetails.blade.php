@@ -92,6 +92,8 @@
                                                     <th>Sub Store</th>
                                                     <th>Station</th>
                                                     <th>TYPE</th>
+                                                    <th>ITEM CODE</th>
+                                                    <th>ITEM NAME</th>
                                                     <th>PSLIP No.</th>  
                                                     <th>PSLIP Date</th>
                                                     <th>Produced Qty</th>
@@ -196,6 +198,20 @@
                                     name: 'type',
                                     orderable: false,
                                     searchable: false,
+                                }, 
+                                {
+                                    data: 'item_code',
+                                    name: 'd.item_code',
+                                    render: function (data, type, row) {
+                                        return row.item_code;
+                                    }
+                                }, 
+                                {
+                                    data: 'item_name',
+                                    name: 'd.item_name',
+                                    render: function (data, type, row) {
+                                        return row.item_name;
+                                    }
                                 }, 
                                 {
                                     data: 'pslip_document_number',

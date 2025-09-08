@@ -84,10 +84,11 @@ $(document).on(
 );
 
 /*Attribute on change*/
-$(document).on("change", '[name*="comp_attribute"]', (e) => {
+$(document).on("change", ".comp_attribute", (e) => {
     let rowCount = e.target
         .closest("tr")
         .querySelector('[name*="row_count"]').value;
+
     let attrGroupId = e.target.getAttribute("data-attr-group-id");
     $(
         `[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`
@@ -191,10 +192,6 @@ $(document).on("blur", '[name*="component_item_name"]', (e) => {
     }
 });
 
-$(document).on("keyup", "input[name*='[qty]']", function (e) {
-    validateItems(e.target, false);
-});
-
 function validateItems(inputEle, itemChange = false) {
     let items = [];
     $("tr[id*='scavengingItemsTr_']").each(function (index, item) {
@@ -208,6 +205,7 @@ function validateItems(inputEle, itemChange = false) {
                     const matches = it.name.match(
                         /components\[\d+\]\[attr_group_id\]\[(\d+)\]\[attr_name\]/
                     );
+
                     if (matches) {
                         const attr_id = parseInt(matches[1], 10);
                         const attr_value = parseInt(it.value, 10);
@@ -239,6 +237,26 @@ function validateItems(inputEle, itemChange = false) {
             $(inputEle).closest("tr").find("[name*='[uom_id]']").empty();
         }
     }
+}
+
+function enableDisableFormOnValidation(type, e = null) {
+    if (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+}
+
+function hasDuplicateObjects(arr) {
+    let seen = new Set();
+    return arr.some((obj) => {
+        let key = JSON.stringify(obj);
+
+        if (seen.has(key)) {
+            return true;
+        }
+        seen.add(key);
+        return false;
+    });
 }
 
 function isEmptyValue(val) {
@@ -292,6 +310,7 @@ $(document).on("click", "#addNewItemBtn", (e) => {
     if (!validateStore(e) || !validateSubStore(e)) return false;
 
     let rowsLength = $("#scavengingItemsTable > tbody > tr").length;
+
     let lastRow = $("#scavengingItemsTable .mrntableselectexcel tr:last");
     // Last row validation
     let lastTrObj = {
@@ -370,32 +389,139 @@ $(document).on("click", "#addNewItemBtn", (e) => {
 });
 
 /* ================================
-   Delete Selected Rows
+   Reusable Delete Handler
 ================================ */
-$(document).on("click", "#deleteBtn", (e) => {
-    if (!validateStore(e) || !validateSubStore(e)) return false;
-
+function handleDelete(
+    tableSelector,
+    rowPrefix,
+    deletedInputId,
+    psInputId = "#ps_item_ids",
+    psPullInputId = "#ps_pull_item_ids"
+) {
     let itemIds = [];
-    $("#scavengingItemsTable > tbody .form-check-input:checked").each(
-        function () {
-            itemIds.push($(this).val());
-        }
-    );
+    let editItemIds = [];
 
-    if (itemIds.length) {
-        itemIds.forEach((item) => {
-            $(`#scavengingItemsTr_${item}`).remove();
-        });
-    } else {
+    $(`${tableSelector} > tbody .form-check-input:checked`).each(function () {
+        const $this = $(this);
+        const dataId = $this.attr("data-id");
+        if (dataId) {
+            editItemIds.push(dataId);
+        }
+        itemIds.push($this.val());
+    });
+
+    if (!itemIds.length) {
         alert("Please add & select a row to delete.");
+        return;
     }
 
-    // Reset if no rows left
-    if (!$("tr[id*='scavengingItemsTr_']").length) {
-        $("#scavengingItemsTable > thead .form-check-input").prop(
-            "checked",
-            false
-        );
+    if (editItemIds.length) {
+        $("#deleteComponentModal")
+            .find("#deleteConfirm")
+            .attr("data-ids", JSON.stringify(editItemIds))
+            .attr("data-item-ids", JSON.stringify(itemIds))
+            .attr("data-table", tableSelector)
+            .attr("data-row-prefix", rowPrefix)
+            .attr("data-deleted-input", deletedInputId)
+            .attr("data-ps-pull-input", psPullInputId)
+            .attr("data-ps-input", psInputId);
+
+        $("#deleteComponentModal").modal("show");
+    } else {
+        // only pulled items → delete immediately
+        itemIds.forEach((item) => {
+            $(`${rowPrefix}${item}`).remove();
+        });
+
+        // cleanup check-all
+        if (!$(`${tableSelector} tbody tr`).length) {
+            $(`${tableSelector} > thead .form-check-input`).prop(
+                "checked",
+                false
+            );
+            $("#reference_from").removeClass("d-none");
+        }
+    }
+}
+
+/* ================================
+   Attach Delete Events
+================================ */
+const deleteConfig = {
+    "#deleteBtn": [
+        "#scavengingItemsTable",
+        "#scavengingItemsTr_",
+        "#deleted_scrap_item_ids",
+    ],
+    "#deleteBtnPullItem": [
+        "#productionSlipsTable",
+        "#row_",
+        "#deleted_ps_item_ids",
+    ],
+};
+
+Object.entries(deleteConfig).forEach(([btn, args]) => {
+    $(document).on("click", btn, (e) => {
+        if (!validateStore(e) || !validateSubStore(e)) return false;
+        handleDelete(...args);
+    });
+});
+
+/* ================================
+   Confirm Delete
+================================ */
+$(document).on("click", "#deleteConfirm", (e) => {
+    let ids = JSON.parse(e.target.getAttribute("data-ids") || "[]");
+    let allItemIds = JSON.parse(e.target.getAttribute("data-item-ids") || "[]");
+    let tableSelector = e.target.getAttribute("data-table");
+    let rowPrefix = e.target.getAttribute("data-row-prefix");
+    let deletedInputId = e.target.getAttribute("data-deleted-input");
+    let psInputId = e.target.getAttribute("data-ps-input");
+    let psPullInputId = e.target.getAttribute("data-ps-pull-input");
+
+    logger();
+
+    if (deletedInputId && ids.length) {
+        let existing = $(`${deletedInputId}`).val();
+        let parsed = existing ? JSON.parse(existing) : [];
+        parsed = parsed.concat(ids);
+        $(deletedInputId).val(JSON.stringify([...new Set(parsed)]));
+    }
+
+    if (psInputId && ids.length) {
+        let psExisting = $(`${psInputId}`).val();
+        let psParsed = psExisting ? JSON.parse(psExisting) : [];
+        psParsed = psParsed.filter((x) => !ids.includes(String(x)));
+        $(`${psInputId}`).val(JSON.stringify(psParsed));
+        if (psPullInputId) {
+            $(`${psPullInputId}`).val(JSON.stringify(psParsed));
+        }
+    }
+
+    allItemIds.forEach((id) => {
+        $(`${rowPrefix}${id}`).remove();
+        $(`${tableSelector} tbody .form-check-input[data-id='${id}']`)
+            .closest("tr")
+            .remove();
+    });
+
+    logger();
+    // reset modal attrs
+    $("#deleteComponentModal")
+        .find("#deleteConfirm")
+        .attr("data-ids", "")
+        .attr("data-item-ids", "")
+        .attr("data-table", "")
+        .attr("data-row-prefix", "")
+        .attr("data-deleted-input", "")
+        .attr("data-ps-input", "");
+
+    $("#deleteComponentModal").modal("hide");
+
+    // cleanup check-all
+    if (!$(`${tableSelector} tbody tr`).length) {
+        $(`${tableSelector} thead .form-check-input`).prop("checked", false);
+        $("#reference_from").removeClass("d-none");
     }
 });
 
@@ -405,25 +531,37 @@ $(document).on("click", "#deleteBtn", (e) => {
 $(document).on("click", ".attributeBtn", (e) => {
     if (!validateStore(e) || !validateSubStore(e)) return false;
 
-    let tr = e.target.closest("tr");
-    let item_code = tr.querySelector("[name*=item_code]").value;
-    let item_id = tr.querySelector("[name*='[item_id]']").value;
+    const tr = e.target.closest("tr");
+    const item_code = tr?.querySelector("[name*=item_code]")?.value || "";
+    const item_id = tr?.querySelector("[name*='[item_id]']")?.value || "";
 
     if (!item_code || !item_id) {
-        alert("Please select an item first.");
+        Swal.fire({
+            title: "Error!",
+            text: "Please select an item first.",
+            icon: "error",
+        });
         return;
     }
 
-    let selectedAttr = [];
-    let attrElements = tr.querySelectorAll("[name*=attr_name]");
-    if (attrElements.length > 0) {
-        selectedAttr = Array.from(attrElements)
-            .map((el) => el.value)
-            .filter((v) => v);
-    }
+    const attrElements = tr.querySelectorAll("[name*='attr_name']");
+    const selectedAttr = Array.from(attrElements)
+        .map((el) => el.value)
+        .filter((v) => v);
 
-    let rowCount = tr.getAttribute("data-index");
-    getItemAttribute(item_id, rowCount, JSON.stringify(selectedAttr), tr);
+    const rowCount = tr.getAttribute("data-index");
+    const mode = tr.getAttribute("data-mode") || "edit";
+    const requestHeader =
+        tr.getAttribute("data-request-header") || "components";
+
+    getItemAttribute(
+        item_id,
+        rowCount,
+        JSON.stringify(selectedAttr),
+        tr,
+        mode,
+        requestHeader
+    );
 });
 
 /* ================================
@@ -475,16 +613,10 @@ $(document).on(
             .then((data) => {
                 if (data.status === 200) {
                     $("#itemDetailDisplay").html(data.data.html);
-
                     let avlStock =
                         data.data?.inventoryStock.confirmedStocks || 0;
                     $(`input[name="components[${rowCount}][avl_stock]"]`).val(
                         Number(avlStock).toFixed(2)
-                    );
-
-                    let pendingPo = data.data?.pendingPo || 0;
-                    $(`input[name="components[${rowCount}][pending_po]"]`).val(
-                        Number(pendingPo).toFixed(2)
                     );
                 }
             });
@@ -496,6 +628,9 @@ $(document).on(
 ================================ */
 $(document).on("click", ".submitAttributeBtn", (e) => {
     let rowCount = $("[id*=scavengingItemsTr_].trselected").attr("data-index");
+    validateItems(e.target, false);
+    qtyEnabledDisabled();
+    setSelectedAttribute(rowCount);
     $(`[name="components[${rowCount}][qty]"]`).focus();
     $("#attribute").modal("hide");
 });
@@ -516,6 +651,7 @@ function getSubStores(storeId, subStoreId = "") {
         dataType: "json",
         data: {
             store_id: storeId,
+            sub_type: "Scrap",
         },
         success: function (data) {
             if (
@@ -523,6 +659,7 @@ function getSubStores(storeId, subStoreId = "") {
                 Array.isArray(data.data) &&
                 data.data.length
             ) {
+                enableDisableFormOnValidation("enable");
                 let options = '<option value="">Select Sub Store</option>';
                 data.data.forEach(function (subStore) {
                     options += `<option value="${subStore.id}">${subStore.name}</option>`;
@@ -544,10 +681,11 @@ function getSubStores(storeId, subStoreId = "") {
                     text: "No sub store exists for this location.",
                     icon: "error",
                 });
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
+                enableDisableFormOnValidation("disable");
+                return;
+                // setTimeout(() => {
+                //     window.location.href(scrapIndexRoute);
+                // }, 500);
             }
         },
         error: function (xhr) {
@@ -560,49 +698,104 @@ function getSubStores(storeId, subStoreId = "") {
     });
 }
 
-function hasDuplicateObjects(arr) {
-    let seen = new Set();
-    return arr.some((obj) => {
-        let key = JSON.stringify(obj);
-        if (seen.has(key)) {
-            return true;
-        }
-        seen.add(key);
-        return false;
-    });
-}
+function recalcRate(rowIndex) {
+    const $qtyInput = $(`[name="components[${rowIndex}][qty]"]`);
+    const $costInput = $(`[name="components[${rowIndex}][total_cost]"]`);
+    const $rateInput = $(`[name="components[${rowIndex}][rate]"]`);
+    const attr_name = $(`[name="components[${rowIndex}][attr_name]"]`);
 
-/*For comp attr*/
-function getItemAttribute(itemId, rowCount, selectedAttr, tr) {
-    let isPs = $(tr).find('[name*="ps_item_ids"]').length ? 1 : 0;
-    if (!isPs) {
-        if ($(tr).find('td[id*="itemAttribute_"]').data("disabled")) {
-            isPs = 1;
+    const qty = +$qtyInput.val() || 0;
+    const cost = +$costInput.val() || 0;
+
+    if (cost < 0) {
+        Swal.fire("Error!", "Cost cannot be negative.", "error");
+        $costInput.val("").addClass("is-invalid");
+        if (!$costInput.next(".text-danger").length) {
+            $costInput.after(
+                '<span class="text-danger">Cost cannot be negative.</span>'
+            );
         }
+        $rateInput.val("");
+        return;
     }
 
+    $costInput.removeClass("is-invalid").next(".text-danger").remove();
+
+    if (qty > 0 && cost > 0) {
+        const rate = cost / qty;
+        $rateInput.val(rate.toFixed(6));
+    } else {
+        $rateInput.val("");
+    }
+}
+
+$(document).on(
+    "input change focus",
+    "#scavengingItemsTable [name^='components'][name$='[qty]']",
+    function (e) {
+        const rowIndex = $(this).closest("tr").data("index");
+        recalcRate(rowIndex);
+        validateItems(e.target, false);
+    }
+);
+
+$(document).on(
+    "input change focus",
+    "#scavengingItemsTable [name^='components'][name$='[total_cost]']",
+    function (e) {
+        const rowIndex = $(this).closest("tr").data("index");
+        recalcRate(rowIndex);
+        validateItems(e.target, false);
+    }
+);
+
+/*For comp attr*/
+function getItemAttribute(
+    itemId,
+    rowCount,
+    selectedAttr,
+    tr,
+    mode = "edit",
+    requestHeader = "components"
+) {
     let actionUrl =
         scrapItemAttrRoute +
         "?item_id=" +
         itemId +
-        `&rowCount=${rowCount}&selectedAttr=${selectedAttr}&isPs=${isPs}`;
+        `&rowCount=${rowCount}` +
+        `&selectedAttr=${selectedAttr}` +
+        `&requestHeader=${requestHeader}` +
+        `&mode=${mode}`;
+
     fetch(actionUrl).then((response) => {
         return response.json().then((data) => {
             if (data.status == 200) {
                 $("#attribute tbody").empty();
                 $("#attribute table tbody").append(data.data.html);
+
                 $(tr)
                     .find("td:nth-child(2)")
                     .find("[name*='[attr_name]']")
                     .remove();
                 $(tr).find("td:nth-child(2)").append(data.data.hiddenHtml);
+
                 $(tr)
                     .find("td[id*='itemAttribute_']")
                     .attr(
                         "attribute-array",
                         JSON.stringify(data.data.itemAttributeArray)
                     );
+
                 if (data.data.attr) {
+                    // if readonly mode
+                    if (mode === "view") {
+                        $("#attribute .cancelAttributeBtn").hide();
+                        $("#attribute .submitAttributeBtn").hide();
+                    } else {
+                        $("#attribute .cancelAttributeBtn").show();
+                        $("#attribute .submitAttributeBtn").show();
+                    }
+
                     $("#attribute").modal("show");
                     $(".select2").select2();
                 }
@@ -698,6 +891,7 @@ function setServiceParameters(parameters) {
         docDateInput.removeAttr("min");
         docDateInput.removeAttr("max");
     }
+
     /*Reference from*/
     let reference_from_service = parameters.reference_from_service;
     if ($("#sub_store_id").val() || "") {
@@ -705,9 +899,9 @@ function setServiceParameters(parameters) {
             if (
                 reference_from_service.includes(PRODUCTION_SLIP_SERVICE_ALIAS)
             ) {
-                $("#reference_type").removeClass("d-none");
+                $("#reference_type_div").removeClass("d-none");
             } else {
-                $("#reference_type").addClass("d-none");
+                $("#reference_type_div").addClass("d-none");
             }
 
             if (reference_from_service.includes("d")) {
@@ -850,10 +1044,11 @@ function initializeAutocomplete2(selector, type) {
                     .find("input[name*='component_item_name']")
                     .val("");
                 $(this).closest("tr").find("input[name*='item_name']").val("");
-                $(this)
-                    .closest("tr")
-                    .find("td[id*='itemAttribute_']")
-                    .html(defautAttrBtn);
+                $(this).closest("tr").find("td[id*='itemAttribute_']")
+                    .html(` <button id="attribute_button_1" type="button"
+                        class="btn p-25 btn-sm btn-outline-secondary"
+                        style="font-size: 10px">Attributes</button>
+                    <input type="hidden" name="attribute_value_1" />`);
                 $(this).closest("tr").find("input[name*='item_id']").val("");
                 $(this).closest("tr").find("input[name*='item_code']").val("");
                 $(this).closest("tr").find("input[name*='attr_name']").remove();
@@ -1183,11 +1378,28 @@ function initializeAutocompleteQt(
     });
 }
 
-initializeAutocomplete2(".comp_item_code");
-initializeAutocompleteQt(
-    ".comp_item_code_cost_centers",
-    "cost_center_id",
-    "cost_center",
-    "name",
-    "code"
-);
+function updateHiddenInput(id, values, unique = false) {
+    let current = [];
+    try {
+        current = JSON.parse($(`#${id}`).val() || "[]");
+    } catch {}
+    if (!Array.isArray(values)) values = [values];
+
+    let merged = current.concat(values);
+    if (unique) merged = [...new Set(merged)];
+    $(`#${id}`).val(JSON.stringify(merged));
+}
+
+function clearPsInputs() {
+    updateHiddenInput("ps_item_ids", []);
+    updateHiddenInput("item_ids", []);
+    updateHiddenInput("reference_type", "");
+}
+
+function reInitAttributes(container) {
+    $(container)
+        .find("tr")
+        .each((index, tr) => {
+            setAttributesUIHelper(index, container);
+        });
+}

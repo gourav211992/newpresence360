@@ -853,5 +853,34 @@ $(document).on("blur", "#item_code", function () {
         getPwo();
     }
 });
+
+function validateQty(input) {
+    let min = parseFloat(input.getAttribute("min"));
+    let max = parseFloat(input.getAttribute("max"));
+    let value = parseFloat(input.value);
+
+    if (isNaN(value)) {
+        // input.value = min;
+        input.style.border = "2px solid red";
+        input.style.backgroundColor = "#ffe6e6";
+        return;
+    }
+
+    if (value < min) {
+        // input.value = min; 
+        input.style.border = "2px solid red";
+        input.style.backgroundColor = "#ffe6e6";
+    }
+     else if (value > max) {
+        input.value = max; 
+        input.style.border = "2px solid red";
+        input.style.backgroundColor = "#ffe6e6";
+    } else {
+        // valid value
+        input.style.border = "";
+        input.style.backgroundColor = "";
+    }
+}
+
 </script>
 @endsection

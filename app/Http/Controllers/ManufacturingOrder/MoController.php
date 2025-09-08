@@ -461,6 +461,12 @@ class MoController extends Controller
                 }
                 $mo->save();
             }
+
+            foreach($request->all()['components'] as $component){
+                $pwoMapping=PwoSoMapping::whereId($component['pwo_mapping_id'])->first();
+                $pwoMapping->mo_product_qty+=$component['qty'];
+                $pwoMapping->save();
+            }
             DB::commit();
             return response()->json([
                 'message' => 'Record created successfully',

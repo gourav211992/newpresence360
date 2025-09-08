@@ -256,7 +256,7 @@ class FinancialPostingHelper
             }
         }
         $serviceAlias = $service->alias;
-        
+
         if ($type === "view") {
             if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS || $serviceAlias === ConstantHelper::RECEIPTS_SERVICE_ALIAS)
                 return self::getPaymentDocumentPostedVouchers($documentId, $service->alias);
@@ -265,7 +265,7 @@ class FinancialPostingHelper
 
         }
         //Call helpers according to service
-        
+
         if ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) {
             $entries = self::dnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
@@ -275,8 +275,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        }
-        else if ($serviceAlias === ConstantHelper::TI_SERVICE_ALIAS) {
+        } else if ($serviceAlias === ConstantHelper::TI_SERVICE_ALIAS) {
             $entries = self::transportVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
@@ -285,8 +284,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        }
-        else if ($serviceAlias === ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
+        } else if ($serviceAlias === ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
             $entries = self::invoiceCumDnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
@@ -407,13 +405,12 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        } 
-        else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
-            
+        } else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
+
             $pay = self::paymentInvoiceVoucherDetails($documentId, '');
-           
+
             $entries = self::contraVoucherDetails($documentId, '');
-           
+
             $env = [];
             if (!empty($entries)) {
                 $env[] = $pay;
@@ -601,7 +598,7 @@ class FinancialPostingHelper
 
                 foreach ($entries as $entry) {
                     if (!$entry['status']) {
-                         DB::rollBack();
+                        DB::rollBack();
                         return ['status' => false, 'message' => $entry['message']];
                     }
                     if (!isset($entry['data'])) {
@@ -651,116 +648,116 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Voucher found',
             'data' => array(
-                    'book_code' => $voucher->series?->book_code,
-                    'currency_code' => $voucher->currency_code,
-                    'document_date' => $voucher->document_date,
-                    'document_number' => $voucher->voucher_no,
-                    'ledgers' => $entries,
-                    'total_debit' => $totalDebit,
-                    'total_credit' => $totalCredit
-                )
+                'book_code' => $voucher->series?->book_code,
+                'currency_code' => $voucher->currency_code,
+                'document_date' => $voucher->document_date,
+                'document_number' => $voucher->voucher_no,
+                'ledgers' => $entries,
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit
+            )
         );
     }
     public static function getPaymentDocumentPostedVouchers(int $documentId, string $serviceAlias)
-{
-    $vouchers = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->with(['ledger_items', 'series'])->where('reference_service', $serviceAlias)
-        ->where('reference_doc_id', $documentId)->get();
+    {
+        $vouchers = Voucher::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->with(['ledger_items', 'series'])->where('reference_service', $serviceAlias)
+            ->where('reference_doc_id', $documentId)->get();
 
-    if ($vouchers->isEmpty()) {
-        return [
-            'status' => false,
-            'message' => 'No posted vouchers found',
-            'data' => []
-        ];
-    }
-
-    $responseData = [];
-
-    foreach ($vouchers as $voucher) {
-        $totalDebit = 0;
-        $totalCredit = 0;
-        $voucherDetails = $voucher->items;
-        $ledgersGrouped = [];
-
-        // Calculate totals and prepare voucher details array
-
-
-        // Group ledgers by entry_type for detailed ledger info
-        $grouped = $voucher->items->groupBy('entry_type');
-        foreach ($grouped as $entryType => $items) {
-            $ledgersGrouped[$entryType] = $items->map(function($ledger) {
-                return [
-                    'ledger_id' => $ledger->ledger_id,
-                    'ledger_group_id' => $ledger->ledger_group_id,
-                    'ledger_code' => $ledger->ledger_code,
-                    'ledger_name' => $ledger->ledger_name,
-                    'cost_center_id' => $ledger->cost_center_id,
-                    'cost_name' => $ledger?->costCenter?->name ?? '-',
-                    'ledger_group_code' => $ledger->ledger_group_code,
-                    'debit_amount' => $ledger->debit_amt_org,
-                    'credit_amount' => $ledger->credit_amt_org,
-                ];
-            })->toArray();
+        if ($vouchers->isEmpty()) {
+            return [
+                'status' => false,
+                'message' => 'No posted vouchers found',
+                'data' => []
+            ];
         }
 
-        // Compose voucher header
-        $header = [
-            'voucher_no' => $voucher->voucher_no,
-            'doc_number_type' => $voucher->doc_number_type ?? null,
-            'doc_reset_pattern' => $voucher->doc_reset_pattern ?? null,
-            'doc_prefix' => $voucher->doc_prefix ?? null,
-            'doc_suffix' => $voucher->doc_suffix ?? null,
-            'doc_no' => $voucher->doc_no ?? null,
-            'voucher_name' => $voucher->voucher_name,
-            'document_date' => $voucher->document_date,
-            'book_id' => $voucher->book_id,
-            'date' => $voucher->date,
-            'amount' => $voucher->amount,
-            'location' => $voucher->location,
-            'currency_id' => $voucher->currency_id,
-            'currency_code' => $voucher->currency_code,
-            'org_currency_id' => $voucher->org_currency_id,
-            'org_currency_code' => $voucher->org_currency_code,
-            'org_currency_exg_rate' => $voucher->org_currency_exg_rate,
-            'comp_currency_id' => $voucher->comp_currency_id,
-            'comp_currency_code' => $voucher->comp_currency_code,
-            'comp_currency_exg_rate' => $voucher->comp_currency_exg_rate,
-            'group_currency_id' => $voucher->group_currency_id,
-            'group_currency_code' => $voucher->group_currency_code,
-            'group_currency_exg_rate' => $voucher->group_currency_exg_rate,
-            'reference_service' => $voucher->reference_service,
-            'reference_doc_id' => $voucher->reference_doc_id,
-            'group_id' => $voucher->group_id,
-            'company_id' => $voucher->company_id,
-            'organization_id' => $voucher->organization_id,
-            'voucherable_type' => $voucher->voucherable_type,
-            'voucherable_id' => $voucher->voucherable_id,
-            'approvalStatus' => $voucher->approvalStatus,
-            'document_status' => $voucher->document_status,
-            'approvalLevel' => $voucher->approvalLevel,
-            'remarks' => $voucher->remarks ?? '',
-        ];
+        $responseData = [];
 
-        $responseData[] = [
-            'status' => true,
-            'message' => 'Posting Details found',
-            'data' => [
-                'voucher_header' => $header,
-                'voucher_details' => $voucherDetails,
+        foreach ($vouchers as $voucher) {
+            $totalDebit = 0;
+            $totalCredit = 0;
+            $voucherDetails = $voucher->items;
+            $ledgersGrouped = [];
+
+            // Calculate totals and prepare voucher details array
+
+
+            // Group ledgers by entry_type for detailed ledger info
+            $grouped = $voucher->items->groupBy('entry_type');
+            foreach ($grouped as $entryType => $items) {
+                $ledgersGrouped[$entryType] = $items->map(function ($ledger) {
+                    return [
+                        'ledger_id' => $ledger->ledger_id,
+                        'ledger_group_id' => $ledger->ledger_group_id,
+                        'ledger_code' => $ledger->ledger_code,
+                        'ledger_name' => $ledger->ledger_name,
+                        'cost_center_id' => $ledger->cost_center_id,
+                        'cost_name' => $ledger?->costCenter?->name ?? '-',
+                        'ledger_group_code' => $ledger->ledger_group_code,
+                        'debit_amount' => $ledger->debit_amt_org,
+                        'credit_amount' => $ledger->credit_amt_org,
+                    ];
+                })->toArray();
+            }
+
+            // Compose voucher header
+            $header = [
+                'voucher_no' => $voucher->voucher_no,
+                'doc_number_type' => $voucher->doc_number_type ?? null,
+                'doc_reset_pattern' => $voucher->doc_reset_pattern ?? null,
+                'doc_prefix' => $voucher->doc_prefix ?? null,
+                'doc_suffix' => $voucher->doc_suffix ?? null,
+                'doc_no' => $voucher->doc_no ?? null,
+                'voucher_name' => $voucher->voucher_name,
                 'document_date' => $voucher->document_date,
-                'ledgers' => $ledgersGrouped,
-                'total_debit' => $voucher->items->sum('debit_amt_org'),
-                'total_credit' => $voucher->items->sum('credit_amt_org'),
-                'book_code' => $voucher->series?->book_code,
-                'org' => $voucher->organization?->name ?? 'Organizations Name',
-                'org_id' => $voucher->organization_id,
-                'document_number' => $voucher->voucher_no,
+                'book_id' => $voucher->book_id,
+                'date' => $voucher->date,
+                'amount' => $voucher->amount,
+                'location' => $voucher->location,
+                'currency_id' => $voucher->currency_id,
                 'currency_code' => $voucher->currency_code,
-            ]
-        ];
+                'org_currency_id' => $voucher->org_currency_id,
+                'org_currency_code' => $voucher->org_currency_code,
+                'org_currency_exg_rate' => $voucher->org_currency_exg_rate,
+                'comp_currency_id' => $voucher->comp_currency_id,
+                'comp_currency_code' => $voucher->comp_currency_code,
+                'comp_currency_exg_rate' => $voucher->comp_currency_exg_rate,
+                'group_currency_id' => $voucher->group_currency_id,
+                'group_currency_code' => $voucher->group_currency_code,
+                'group_currency_exg_rate' => $voucher->group_currency_exg_rate,
+                'reference_service' => $voucher->reference_service,
+                'reference_doc_id' => $voucher->reference_doc_id,
+                'group_id' => $voucher->group_id,
+                'company_id' => $voucher->company_id,
+                'organization_id' => $voucher->organization_id,
+                'voucherable_type' => $voucher->voucherable_type,
+                'voucherable_id' => $voucher->voucherable_id,
+                'approvalStatus' => $voucher->approvalStatus,
+                'document_status' => $voucher->document_status,
+                'approvalLevel' => $voucher->approvalLevel,
+                'remarks' => $voucher->remarks ?? '',
+            ];
+
+            $responseData[] = [
+                'status' => true,
+                'message' => 'Posting Details found',
+                'data' => [
+                    'voucher_header' => $header,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $voucher->document_date,
+                    'ledgers' => $ledgersGrouped,
+                    'total_debit' => $voucher->items->sum('debit_amt_org'),
+                    'total_credit' => $voucher->items->sum('credit_amt_org'),
+                    'book_code' => $voucher->series?->book_code,
+                    'org' => $voucher->organization?->name ?? 'Organizations Name',
+                    'org_id' => $voucher->organization_id,
+                    'document_number' => $voucher->voucher_no,
+                    'currency_code' => $voucher->currency_code,
+                ]
+            ];
+        }
+        return $responseData;
     }
-    return $responseData;
-}
 
     public static function loanVoucherPosting(int $bookId, int $documentId, string $type, string $remarks = null, Request $request = null)
     {
@@ -1096,8 +1093,8 @@ class FinancialPostingHelper
                 $docApproval->approval_date = now();
                 $docApproval->revision_number = $referenceDoc->revision_number ?? 0;
                 $docApproval->remarks = null;
-                $docApproval->user_id = $userData -> auth_user_id;
-                $user_type = $userData -> authenticable_type;
+                $docApproval->user_id = $userData->auth_user_id;
+                $user_type = $userData->authenticable_type;
                 $docApproval->user_type = $user_type;
                 $docApproval->save();
             }
@@ -1163,8 +1160,8 @@ class FinancialPostingHelper
                 $docApproval->approval_date = now();
                 $docApproval->revision_number = $referenceDoc->revision_number ?? 0;
                 $docApproval->remarks = null;
-                $docApproval->user_id = $user -> auth_user_id;
-                $user_type = $user -> authenticable_type;
+                $docApproval->user_id = $user->auth_user_id;
+                $user_type = $user->authenticable_type;
                 $docApproval->user_type = $user_type;
                 $docApproval->save();
             }
@@ -1652,7 +1649,7 @@ class FinancialPostingHelper
             //         'debit_amount' => $tax->ted_amount,
             //     ]);
             // }
-            $customerAccountDebit += $tax -> ted_amount;
+            $customerAccountDebit += $tax->ted_amount;
         }
         //EXPENSES
         $expenses = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Expense")->get();
@@ -1701,7 +1698,7 @@ class FinancialPostingHelper
             //         'debit_amount' => $expense->ted_amount,
             //     ]);
             // }
-            $customerAccountDebit += $expense -> ted_amount;
+            $customerAccountDebit += $expense->ted_amount;
 
         }
         //Seperate posting of Discount
@@ -1740,13 +1737,13 @@ class FinancialPostingHelper
         $invoicePaymentTerms = $document->payment_term_schedules()
             ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
         $totalPaymentTermsAmount = 0;
-        if ($invoicePaymentTerms && count($invoicePaymentTerms))  {
+        if ($invoicePaymentTerms && count($invoicePaymentTerms)) {
             foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
-                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm -> total_percentage / 100);
+                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm->total_percentage / 100);
                 $totalPaymentTermsAmount += $currentAmount;
                 //Check for same ledger and group in CUSTOMER ACCOUNT
                 $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId, $invoicePaymentTerm) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm -> due_date;
+                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm->due_date;
                 });
                 //Ledger found
                 if (count($existingcustomerLedger) > 0) {
@@ -1760,7 +1757,7 @@ class FinancialPostingHelper
                         'ledger_group_code' => $customerLedgerGroup?->name,
                         'debit_amount' => $currentAmount,
                         'credit_amount' => 0,
-                        'due_date' => $invoicePaymentTerm -> due_date,
+                        'due_date' => $invoicePaymentTerm->due_date,
                     ]);
                 }
             }
@@ -1835,16 +1832,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function leaseInvoiceVoucherDetails(int $documentId, string $type)
@@ -2145,16 +2142,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -2477,16 +2474,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function srdnVoucherDetails(int $documentId, int $invoiceToFollow)
@@ -2925,16 +2922,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -3145,16 +3142,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->created_at,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $booksdata?->book_code,
-                    'document_number' => $document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->created_at,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $booksdata?->book_code,
+                'document_number' => $document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -3340,16 +3337,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->created_at,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $booksdata?->book_code,
-                    'document_number' => $document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->created_at,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $booksdata?->book_code,
+                'document_number' => $document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -3559,16 +3556,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->created_at,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $booksdata?->book_code,
-                    'document_number' => $document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->created_at,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $booksdata?->book_code,
+                'document_number' => $document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -3752,16 +3749,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->created_at,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $booksdata?->book_code,
-                    'document_number' => $document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->created_at,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $booksdata?->book_code,
+                'document_number' => $document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function depVoucherDetails(int $documentId, string $type)
@@ -3945,16 +3942,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function fixedAssetVoucherDetails(int $documentId, string $type)
@@ -4128,16 +4125,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -4305,16 +4302,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function impVoucherDetails(int $documentId, string $type)
@@ -4481,16 +4478,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function writeOffVoucherDetails(int $documentId, string $type)
@@ -4657,16 +4654,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -4845,16 +4842,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function fixedAssetSplitVoucherDetails(int $documentId, string $type)
@@ -5019,16 +5016,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => Book::find($glPostingBookId)?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => Book::find($glPostingBookId)?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -5065,9 +5062,9 @@ class FinancialPostingHelper
         foreach ($document->items as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $dnDetailId = $docItem ?-> dnote_item_id;
+            $dnDetailId = $docItem?->dnote_item_id;
             $deliveryNote = ErpInvoiceItem::find($dnDetailId);
-            $stockLedger = StockLedger::whereIn('book_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])->where('document_header_id', $deliveryNote ?-> sale_invoice_id)->where('document_detail_id', $docItem->dnote_item_id)->first();
+            $stockLedger = StockLedger::whereIn('book_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])->where('document_header_id', $deliveryNote?->sale_invoice_id)->where('document_detail_id', $docItem->dnote_item_id)->first();
             if (isset($stockLedger)) {
                 $orgCurrencyCost = StockLedger::where('utilized_id', $stockLedger->id)->get()->sum('org_currency_cost');
                 $itemValue = $orgCurrencyCost / $document->org_currency_exg_rate;
@@ -5267,7 +5264,7 @@ class FinancialPostingHelper
                 //         'debit_amount' => $tax->ted_amount,
                 //     ]);
                 // }
-                $customerAccountDebit += $tax -> ted_amount;
+                $customerAccountDebit += $tax->ted_amount;
             }
             //EXPENSES
             $expenses = ErpSaleInvoiceTed::where('sale_invoice_id', $document->id)->where('ted_type', "Expense")->get();
@@ -5316,7 +5313,7 @@ class FinancialPostingHelper
                 //         'debit_amount' => $expense->ted_amount,
                 //     ]);
                 // }
-                $customerAccountDebit += $expense -> ted_amount;
+                $customerAccountDebit += $expense->ted_amount;
             }
             //Seperate posting of Discount
             if ($discountSeperatePosting) {
@@ -5355,13 +5352,13 @@ class FinancialPostingHelper
         $invoicePaymentTerms = $document->payment_term_schedules()
             ->select('due_date', DB::raw('SUM(percent) as total_percentage'))->groupBy('due_date')->get();
         $totalPaymentTermsAmount = 0;
-        if ($invoicePaymentTerms && count($invoicePaymentTerms))  {
+        if ($invoicePaymentTerms && count($invoicePaymentTerms)) {
             foreach ($invoicePaymentTerms as $invoicePaymentTerm) {
-                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm -> total_percentage / 100);
+                $currentAmount = $customerAccountDebit * ($invoicePaymentTerm->total_percentage / 100);
                 $totalPaymentTermsAmount += $currentAmount;
                 //Check for same ledger and group in CUSTOMER ACCOUNT
                 $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId, $invoicePaymentTerm) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm -> due_date;
+                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId && $posting['due_date'] === $invoicePaymentTerm->due_date;
                 });
                 //Ledger found
                 if (count($existingcustomerLedger) > 0) {
@@ -5375,7 +5372,7 @@ class FinancialPostingHelper
                         'ledger_group_code' => $customerLedgerGroup?->name,
                         'debit_amount' => $currentAmount,
                         'credit_amount' => 0,
-                        'due_date' => $invoicePaymentTerm -> due_date,
+                        'due_date' => $invoicePaymentTerm->due_date,
                     ]);
                 }
             }
@@ -5450,23 +5447,23 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
     public static function transportVoucherDetails(int $documentId, string $type)
     {
-        
-         $document = ErpTransportInvoice::find($documentId);
+
+        $document = ErpTransportInvoice::find($documentId);
         if (!isset($document)) {
             return array(
                 'status' => false,
@@ -5492,11 +5489,10 @@ class FinancialPostingHelper
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
-    
+
         $customerAccountDebit = 0;
         //Customer Account initialize
-        if (!$invoiceToFollow) 
-        {
+        if (!$invoiceToFollow) {
 
             $customer = Customer::find($document->customer_id);
             $customerLedgerId = $customer->ledger_id;
@@ -5511,7 +5507,7 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-           
+
             $discountSeperatePosting = false;
             foreach ($document->items as $docItemKey => $docItem) {
                 //Assign Item values
@@ -5548,7 +5544,7 @@ class FinancialPostingHelper
                         'debit_amount' => 0
                     ]);
                 }
-              
+
                 $customerAccountDebit += $itemValueAfterDiscount;
             }
             //TAXES ACCOUNT
@@ -5580,7 +5576,7 @@ class FinancialPostingHelper
                         'debit_amount' => 0,
                     ]);
                 }
-                
+
                 $customerAccountDebit += $tax->ted_amount;
             }
 
@@ -5588,39 +5584,38 @@ class FinancialPostingHelper
 
         $totalPaymentTermsAmount = 0;
         $invoicePaymentTerms = [];
-       
-                //Check for same ledger and group in CUSTOMER ACCOUNT
-                $customer = Customer::find($document->customer_id);
-                $customerLedgerId = $customer->ledger_id;
-                $customerLedgerGroupId = $customer->ledger_group_id;
-                $customerLedger = Ledger::find($customerLedgerId);
-                $customerLedgerGroup = Group::find($customerLedgerGroupId);
-                //Customer Ledger account not found
-                if (!isset($customerLedger) || !isset($customerLedgerGroup)) {
-                    return array(
-                        'status' => false,
-                        'message' => self::ERROR_PREFIX . 'Customer Account not setup',
-                        'data' => []
-                    );
-                }
-                $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
-                    return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
-                });
-                //Ledger found
-                if (count($existingcustomerLedger) > 0) 
-                {
-                    $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $salesCreditAmount;
-                } else { //Assign a new ledger
-                    array_push($postingArray[self::CUSTOMER_ACCOUNT], [
-                        'ledger_id' => $customerLedgerId,
-                        'ledger_group_id' => $customerLedgerGroupId,
-                        'ledger_code' => $customerLedger?->code,
-                        'ledger_name' => $customerLedger?->name,
-                        'ledger_group_code' => $customerLedgerGroup?->name,
-                        'debit_amount' => $customerAccountDebit,
-                        'credit_amount' => 0,
-                    ]);
-                }
+
+        //Check for same ledger and group in CUSTOMER ACCOUNT
+        $customer = Customer::find($document->customer_id);
+        $customerLedgerId = $customer->ledger_id;
+        $customerLedgerGroupId = $customer->ledger_group_id;
+        $customerLedger = Ledger::find($customerLedgerId);
+        $customerLedgerGroup = Group::find($customerLedgerGroupId);
+        //Customer Ledger account not found
+        if (!isset($customerLedger) || !isset($customerLedgerGroup)) {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX . 'Customer Account not setup',
+                'data' => []
+            );
+        }
+        $existingcustomerLedger = array_filter($postingArray[self::CUSTOMER_ACCOUNT], function ($posting) use ($customerLedgerId, $customerLedgerGroupId) {
+            return $posting['ledger_id'] == $customerLedgerId && $posting['ledger_group_id'] === $customerLedgerGroupId;
+        });
+        //Ledger found
+        if (count($existingcustomerLedger) > 0) {
+            $postingArray[self::CUSTOMER_ACCOUNT][0]['debit_amount'] += $salesCreditAmount;
+        } else { //Assign a new ledger
+            array_push($postingArray[self::CUSTOMER_ACCOUNT], [
+                'ledger_id' => $customerLedgerId,
+                'ledger_group_id' => $customerLedgerGroupId,
+                'ledger_code' => $customerLedger?->code,
+                'ledger_name' => $customerLedger?->name,
+                'ledger_group_code' => $customerLedgerGroup?->name,
+                'debit_amount' => $customerAccountDebit,
+                'credit_amount' => 0,
+            ]);
+        }
 
         //Check if All Legders exists and posting is properly set
         if ($ledgerErrorStatus) {
@@ -5678,7 +5673,7 @@ class FinancialPostingHelper
             'approvalLevel' => $document->approval_level,
             'location' => $document?->store_id
         ];
-       
+
         $voucherDetails = self::generateVoucherDetailsArray(
             $postingArray,
             $voucherHeader,
@@ -5701,16 +5696,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -5777,7 +5772,7 @@ class FinancialPostingHelper
 
             // Stock Account
             $stockLedgerDetails = AccountHelper::getStockLedgerGroupAndLedgerId($document->organization_id, $docItem->item_id, $document->book_id);
-           
+
             $stockLedgerId = is_a($stockLedgerDetails, Collection::class) ? @$stockLedgerDetails->first()['ledger_id'] : null;
             $stockLedgerGroupId = is_a($stockLedgerDetails, Collection::class) ? @$stockLedgerDetails->first()['ledger_group'] : null;
             $stockLedger = Ledger::find($stockLedgerId);
@@ -6129,16 +6124,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -6306,16 +6301,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -6718,16 +6713,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -7055,16 +7050,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -7333,16 +7328,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document?->voucher_no,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document?->voucher_no,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
     public static function PsvVoucherDetails(int $documentId, string $remarks)
@@ -7572,16 +7567,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document?->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document?->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -7729,7 +7724,7 @@ class FinancialPostingHelper
             if (!empty($vendor)) {
                 if ($vendor->reference == "Invoice") {
                     $invoices = VoucherReference::where('voucher_details_id', $vendor->id)
-                    ->where('party_id', $vendor->ledger_id)->get();
+                        ->where('party_id', $vendor->ledger_id)->get();
                     $VendorLedgerId = $vendor->ledger_id;
                     $VendorLedgerGroupId = $vendor->ledger_group_id;
                     $VendorLedger = Ledger::find($VendorLedgerId);
@@ -7964,7 +7959,7 @@ class FinancialPostingHelper
                 }
             ])
             ->get();
-        
+
         if ($vendors->isEmpty()) {
             return [];
         }
@@ -7973,15 +7968,14 @@ class FinancialPostingHelper
 
         $ledgerErrorStatus = null;
         $vouchersArray = [];
-       
+
         foreach ($vendors as $key => $vendor) {
-           
+
             $partyOrg = $vendor->voucher->organization;
-            
-            if ($partyOrg->id != $organization->id) 
-            {
+
+            if ($partyOrg->id != $organization->id) {
                 $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
-               
+
                 if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)
                     return array(
                         'status' => false,
@@ -7996,9 +7990,9 @@ class FinancialPostingHelper
                         'message' => $otherOrgPosting['message'],
                         'data' => []
                     );
-                    
-               
-               if (!isset($vouchersArray[$organization->id])) {
+
+
+                if (!isset($vouchersArray[$organization->id])) {
                     $vouchersArray[$organization->id] = []; // initialize blank if not set
                 }
 
@@ -8009,19 +8003,19 @@ class FinancialPostingHelper
                     );
                 }
 
-               $vouchersArray[$partyOrg->id] = array_merge($vouchersArray[$partyOrg->id] ?? [], (array)$otherOrgPosting);
-                
+                $vouchersArray[$partyOrg->id] = array_merge($vouchersArray[$partyOrg->id] ?? [], (array) $otherOrgPosting);
+
                 if ($key == 2) {
 
-                
-            }  
-                
+
+                }
+
             }
-            
+
         }
 
-       
-       
+
+
         //Check if All Legders exists and posting is properly set
         if ($ledgerErrorStatus) {
             return array(
@@ -8032,7 +8026,7 @@ class FinancialPostingHelper
         }
         if (empty($vouchersArray))
             return [];
-       
+
         foreach ($vouchersArray as $orgID => $postingArray) {
             $totalCreditAmount = 0;
             $totalDebitAmount = 0;
@@ -8107,7 +8101,7 @@ class FinancialPostingHelper
                 'approvalLevel' => $document->approval_level,
                 'remarks' => $remarks,
             ];
-           
+
             $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
 
             $vouchers[$orgID][] = array(
@@ -8546,16 +8540,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                    'voucher_header' => $voucherHeader,
-                    'voucher_details' => $voucherDetails,
-                    'document_date' => $document->document_date,
-                    'ledgers' => $postingArray,
-                    'total_debit' => $totalDebitAmount,
-                    'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
-                    'document_number' => $document->document_number,
-                    'currency_code' => $currency?->short_name
-                ]
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document->document_number,
+                'currency_code' => $currency?->short_name
+            ]
         );
     }
 
@@ -8608,7 +8602,7 @@ class FinancialPostingHelper
         }
         return $voucherDetails;
     }
-   public static function generateInvoiceDetailsArray(array $postingArray, array $voucherHeader, mixed $document, string $currencyIdKey = 'currency_id', string $documentDateKey = 'document_date', bool $stockCogDnCheck = false)
+    public static function generateInvoiceDetailsArray(array $postingArray, array $voucherHeader, mixed $document, string $currencyIdKey = 'currency_id', string $documentDateKey = 'document_date', bool $stockCogDnCheck = false)
     {
         $voucherDetails = [];
         foreach ($postingArray as $entryType => $postDetails) {
@@ -8663,7 +8657,7 @@ class FinancialPostingHelper
         );
         $orgVendor = Vendor::where('enter_company_org_id', $partyOrg->id)
             ->where('company_name', $partyOrg->name)->first();
-        
+
 
         if (empty($orgVendor))
             return array(
@@ -8719,16 +8713,17 @@ class FinancialPostingHelper
                 'message' => 'Vendor Ledger Group not setup',
                 'data' => []
             );
-        $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
-        
+        $vendorLedgerGroupId = $vendorLedgerGroupId[0]->id;
+
         $vendorLedger = Ledger::find($vendorLedgerId);
         $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
-        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) {
             return array(
                 'status' => false,
                 'message' => 'Vendor Ledger not setup',
                 'data' => []
-            );}
+            );
+        }
         array_push($postingArray[self::VENDOR_ACCOUNT], [
             'ledger_id' => $vendorLedger->id,
             'ledger_group_id' => $vendorLedgerGroup->id,
@@ -8806,18 +8801,18 @@ class FinancialPostingHelper
                 'message' => 'Vendor Ledger Group not setup',
                 'data' => []
             );
-        $vendorLedgerGroupId= $vendorLedgerGroupId[0]->id;
-        
+        $vendorLedgerGroupId = $vendorLedgerGroupId[0]->id;
+
         $vendorLedger = Ledger::find($vendorLedgerId);
         $vendorLedgerGroup = Group::find($vendorLedgerGroupId);
-        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)){
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) {
             return array(
                 'status' => false,
                 'message' => 'Vendor Ledger not setup',
                 'data' => []
             );
         }
-        
+
         array_push($postingArray[self::VENDOR_ACCOUNT], [
             'ledger_id' => $vendorLedger->id,
             'ledger_group_id' => $vendorLedgerGroup->id,
@@ -8829,5 +8824,5 @@ class FinancialPostingHelper
         ]);
         return $postingArray;
     }
-    
+
 }

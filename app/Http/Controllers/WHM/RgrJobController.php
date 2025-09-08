@@ -44,6 +44,7 @@ class RgrJobController extends Controller
             $job = $rgr->job;
 
             return [
+                'id'          => $rgr?->job?->id,
                 'document_no' => $rgr->document_number ?? "",
                 'trip_no'     => $rgr->trip_no ?? "",
                 'vehicle_no'  => $rgr->vehicle_no ?? "",
@@ -313,7 +314,7 @@ class RgrJobController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
-        $uniqueItem = ErpItemUniqueCode::find($item_id);
+        $uniqueItem = ErpItemUniqueCode::where('uid', $item_id) -> first();
 
         if (!$uniqueItem) {
             return response()->json(['error' => 'Item not found'], 404);

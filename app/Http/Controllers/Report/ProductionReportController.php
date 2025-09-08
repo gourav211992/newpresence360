@@ -444,6 +444,8 @@ class ProductionReportController extends Controller
                         'd.accepted_qty',
                         'd.subprime_qty',
                         'd.rejected_qty',
+                        'd.item_code',
+                        'd.item_name',
                         'e.name as station_name',
                         'f.name as sub_store_name',
                         'f.code as sub_store_code'

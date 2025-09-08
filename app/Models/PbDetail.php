@@ -106,7 +106,7 @@ class PbDetail extends Model
 
     public function costCenter()
     {
-        return $this->belongsTo(CostCenter::class,'cost_center_id');
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
     }
 
     public function getAssessmentAmountTotalAttribute()
@@ -147,18 +147,18 @@ class PbDetail extends Model
 
     public function itemDiscount()
     {
-        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_level', 'D')->where('ted_type','Discount');
+        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_level', 'D')->where('ted_type', 'Discount');
     }
 
     /*Header Level Discount*/
     public function headerDiscount()
     {
-        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_level', 'H')->where('ted_type','Discount');
+        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_level', 'H')->where('ted_type', 'Discount');
     }
 
     public function taxes()
     {
-        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_type','Tax');
+        return $this->hasMany(PbTed::class, 'detail_id')->where('ted_type', 'Tax');
     }
 
     public function getCgstValueAttribute()
@@ -193,7 +193,7 @@ class PbDetail extends Model
             ->where('ted_code', '=', 'SGST')
             ->sum('ted_amount');
 
-            $tedRecord = PbTed::with(['taxDetail'])
+        $tedRecord = PbTed::with(['taxDetail'])
             ->where('detail_id', $this->id)
             ->where('header_id', $this->header_id)
             ->where('ted_type', '=', 'Tax')
@@ -216,7 +216,7 @@ class PbDetail extends Model
             ->where('ted_code', '=', 'IGST')
             ->sum('ted_amount');
 
-            $tedRecord = PbTed::with(['taxDetail'])
+        $tedRecord = PbTed::with(['taxDetail'])
             ->where('detail_id', $this->id)
             ->where('header_id', $this->header_id)
             ->where('ted_type', '=', 'Tax')
@@ -240,9 +240,9 @@ class PbDetail extends Model
         $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
         $processedData = [];
         $mappingAttributes = PbItemAttribute::where('detail_id', $this->getAttribute('id'))
-        ->select(['item_attribute_id as attribute_id', 'attr_value as attribute_value_id'])
-        ->get()
-        ->toArray();
+            ->select(['item_attribute_id as attribute_id', 'attr_value as attribute_value_id'])
+            ->get()
+            ->toArray();
         foreach ($itemAttributes as $attribute) {
             $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
             $attribute->group_name = $attribute->group?->name;
