@@ -4190,11 +4190,21 @@ class Helper
         return $finalItemCode;
     }
 
-    public static function mrnAssetRegister($mrn_id): array
+    public static function mrnAssetRegister($mrn_id,$alias): array
     {
 
         DB::beginTransaction();
         try {
+
+             if(!empty($alias) && ($alias == ConstantHelper::PB_SERVICE_ALIAS))
+            {
+                $mrn_id = PbHeader::where('id', $mrn_id)->pluck('mrn_header_id')->first();
+            }
+            else
+            {
+                $mrn_id = $mrn_id;
+            }
+            
             $assets = MrnHeader::where('id', $mrn_id)
                 ->whereHas('items', function ($q) {
                     $q->where('basic_value', '>', 0) // must have positive basic_value
@@ -4324,7 +4334,15 @@ class Helper
                         ];
                     }
 
-                    $currentValue = $mrn_detail->basic_value;
+                     if(!empty($alias) && ($alias == ConstantHelper::PB_SERVICE_ALIAS))
+                    {
+                        $currentValue = $mrn_detail->pb_item_value; 
+                    }
+                    else
+                    {
+                        $currentValue = $mrn_detail->basic_value;
+                    }
+                    
                     $depreciationPercentage = $setup->salvage_percentage ?? $organization->dep_percentage ?? null;
                     $salvageValue = round($currentValue * ($depreciationPercentage / 100), 2);
                     $method = $organization->dep_method;
