@@ -707,7 +707,7 @@
     });
 
     const lr = parseFloat($('#lr_charges').val()) || 0;
-    const freightCharge = parseFloat($('#freightCharges').val()) || 0;
+    const freightCharge = parseFloat($('#freight_charges').val()) || 0;
 
     const total = subTotal + lr + freightCharge;
 
@@ -1206,6 +1206,7 @@ const vehicleNumbers = [
          console.log(bundleamount);
         $('#freight_charges').val(bundleamount);
     }
+    calculateTotals();
 });
 
 
@@ -1244,7 +1245,7 @@ $('.vehicle-number-autocomplete').each(function () {
 </script>
 <script>
     // Make it globally accessible
-
+let lastFreightChargeMessage = ''; // Track last message
     function fetchFreightCharge(sourceId,destId,vehicleId,custId) {
         sourceId    = sourceId   || $('input[name="source_id"]').val();
         const destinationId      = destId     || $('input[name="destination_id"]').val();
@@ -1265,7 +1266,8 @@ $('.vehicle-number-autocomplete').each(function () {
                 customer_id:customerId
             },
             success: function (response) {
-                if(response.message == 'Get freight charge data'){
+                if(response.message == 'Get freight charge data')
+                {
                 $('#distance').val(response.distance).prop('disabled', true);
                 $('#freight_charges').val(response.freight_charges).prop('disabled', true);
                 $('#distanceInput').val(response.distance);
@@ -1284,42 +1286,60 @@ $('.vehicle-number-autocomplete').each(function () {
                 $('#routeSource').text(response.source_name);
                 $('#routeDestination').text(response.destination_name);
                 calculateTotals();
-                }else if(response.message && response.message.includes('No freight charge found')){
-                    console.log('else wala part');
-                $('#distance').val('').prop('disabled', false);
-                $('#freight_charges').val('').prop('disabled', false);
-                $('#distanceInput').val('');
-                $('#freightCharges').val('');
-                $('#FreightChargeshtml').text('0.00');
+                }else if(response.message && response.message.includes('No freight charge found'))
+                {
+                    if (lastFreightChargeMessage !== response.message) 
+                    {
+                        console.log('Resetting fields because of new "No freight charge found" message');
+                        console.log('else wala part');
+                        $('#distance').val('').prop('disabled', false);
+                        $('#freight_charges').val('').prop('disabled', false);
+                        $('#distanceInput').val('');
+                        $('#freightCharges').val('');
+                        $('#FreightChargeshtml').text('0.00');
+                    
 
-                // ✅ Set text content for display
-                $('#routePoints').html('');
-                $('#routeWeight').html('');
-                $('#routeArticles').html('');
-                $('#routeVehicle').html('');
-                $('#routeCapacity').html('');
-                $('#routeSource').html('');
-                $('#routeDestination').html('');
-                calculateTotals();
+                        // ✅ Set text content for display
+                        $('#routePoints').html('');
+                        $('#routeWeight').html('');
+                        $('#routeArticles').html('');
+                        $('#routeVehicle').html('');
+                        $('#routeCapacity').html('');
+                        $('#routeSource').html('');
+                        $('#routeDestination').html('');
+                    }
+                    lastFreightChargeMessage = response.message;  // Update last message
+                    calculateTotals();
                 }
                 
 
             },
-            error: function () {
-                $('#distance').val('').prop('disabled', false);
-                $('#freight_charges').val('').prop('disabled', false);
-                $('#distanceInput').val('');
-                $('#freightCharges').val('');
-                $('#FreightChargeshtml').text('0.00');
+            error: function (response) {
+                let message = response.responseJSON?.message ?? '';
 
-                // ✅ Set text content for display
-                $('#routePoints').html('');
-                $('#routeWeight').html('');
-                $('#routeArticles').html('');
-                $('#routeVehicle').html('');
-                $('#routeCapacity').html('');
-                $('#routeSource').html('');
-                $('#routeDestination').html('');
+                if (message.includes('No freight charge found')) 
+                {
+                    if (lastFreightChargeMessage !== message) 
+                    {
+                        console.log('Resetting fields due to new "No freight charge found" message.');
+
+                        $('#distance').val('').prop('disabled', false);
+                        $('#freight_charges').val('').prop('disabled', false);
+                        $('#distanceInput').val('');
+                        $('#freightCharges').val('');
+                        $('#FreightChargeshtml').text('0.00');
+                
+                        // ✅ Set text content for display
+                        $('#routePoints').html('');
+                        $('#routeWeight').html('');
+                        $('#routeArticles').html('');
+                        $('#routeVehicle').html('');
+                        $('#routeCapacity').html('');
+                        $('#routeSource').html('');
+                        $('#routeDestination').html('');
+                    }
+                }
+                lastFreightChargeMessage = message;
                 calculateTotals();
             }
         });

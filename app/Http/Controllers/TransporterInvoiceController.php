@@ -2958,14 +2958,27 @@ class TransporterInvoiceController extends Controller
         'document_id'       => '',
     ];
 
-    $url = url('/taxes/calculate-tax/sales/ti');
+    // $url = url('/taxes/calculate-tax/sales/ti');
+    // $organization = Organization::where('id', $order->organization_id)->first();
+
+    // $response = Http::get($url, $params);
+
+    // if ($response->successful()) {
+    //     $order->tax = $response->json();
+    // } else {
+    //     $order->tax = null;
+    // }
+    $itemTax = 0;
     $organization = Organization::where('id', $order->organization_id)->first();
-
-    $response = Http::get($url, $params);
-
-    if ($response->successful()) {
-        $order->tax = $response->json();
-    } else {
+    $item = Item::find($params['item_id']);
+    $taxDetails = TaxHelper::calculateTax($item->hsn_id, $params['price'], $params['party_country_id'], $params['party_state_id'], $params['party_country_id'], $params['party_state_id'], 'transport');
+    
+    if (isset($taxDetails) && count($taxDetails) > 0) 
+    {
+        $order->tax = $taxDetails;
+    }
+    else 
+    {
         $order->tax = null;
     }
 

@@ -8,7 +8,7 @@
 
 <body>
   <div
-    style="border:1px solid #000000; background-color: #ffffff; width: 750px; padding: 10px; margin: 0px auto; font-family:Arial, sans-serif; font-size:14px;">
+    style="border:1px solid #000000; background-color: #ffffff; width: 650px; padding: 10px; margin: 0px auto; font-family:Arial, sans-serif; font-size:14px;">
     <table cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse;">
       <tr>
         <td colspan="6"
@@ -111,30 +111,30 @@
               $currentOrder = $item;
               $discountAmtPrev = $item->item_discount_amount ?? 0;
           @endphp
-      <tr>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          {{ \Carbon\Carbon::parse($order->document_date)->format('d/m/Y') }}</td>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          {{ $item->lorry->document_number ?? '' }}</td>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $item->lorry->source->name ?? '' }}
-        </td>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $item->lorry->destination->name ?? '' }}
-        </td>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $currentOrder->lorry->remarks ?? 'N/A' }}
-        </td>
-        <td
-          style=" text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          {{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total +$item->lorry->lr_charges ?? 0)}}
-        </td>
-      </tr>
-        @php
-        $total += ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev;
-        $totaldiscount += $discountAmtPrev;
-        $ordertaxcount = is_array($order->tax) ? count($order->tax) : 0
-        @endphp
+          <tr>
+            <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+              {{ \Carbon\Carbon::parse($order->document_date)->format('d/m/Y') }}</td>
+            <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+              {{ $item->lorry->document_number ?? '' }}</td>
+            <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $item->lorry->source->name ?? '' }}
+            </td>
+            <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $item->lorry->destination->name ?? '' }}
+            </td>
+            <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">{{ $currentOrder->lorry->remarks ?? 'N/A' }}
+            </td>
+            <td
+              style=" text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+              {{ ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total +$item->lorry->lr_charges ?? 0)}}
+            </td>
+          </tr>
+            @php
+            $total += ($currentOrder->lorry->freight_charges + $currentOrder->lorry->sub_total + $item->lorry->lr_charges ?? 0) - $discountAmtPrev;
+            $totaldiscount += $discountAmtPrev;
+            $ordertaxcount = is_array($order->tax) ? count($order->tax) : 0
+            @endphp
         @endforeach
       <tr>
-        <td colspan="4" rowspan="{{2+$ordertaxcount}}" style="vertical-align: top; border-left: 1px solid #000000; padding: 10px;"><span
+        <td colspan="4" rowspan="{{3+$ordertaxcount}}" style="vertical-align: top; border-left: 1px solid #000000; padding: 10px;"><span
             style="text-decoration: underline; font-size: 14px; font-weight: 600; color: #000000;"> Our Bank
             Account
             Details
@@ -152,82 +152,61 @@
 
       </tr>
       <tr>
-
         <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
           Discount@0.00%</td>
         <td
           style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
           0.00</td>
       </tr>
-      <!-- <tr>
-
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          CGST@6.00%</td>
-        <td
-          style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          619.80</td>
-      </tr> -->
-      <!-- <tr>
-
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          SGST@6.00%</td>
-        <td
-          style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          619.80</td>
-      </tr> -->
-      <!-- <tr>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          IGST@0.00%</td>
-        <td
-          style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          0.00</td>
-      </tr> -->
+      
       @php
       $totaltax = 0;
       
       @endphp
-      @if(!empty($order->tax) && is_array($order->tax))
+        @if(!empty($order->tax) && is_array($order->tax))
        
-    @foreach($order->tax as $tax)
-        <tr>
+          @foreach($order->tax as $tax)
+              <tr>
+                          <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+                              {{ $tax['tax_type'] }}{{'@'}}{{ number_format($tax['tax_percentage'], 2) }}%
+
+                          </td>
+                          <td style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+                              {{ number_format((($total * $tax['tax_percentage']) / 100), 2) }}
+                          </td>
+              </tr>
+                @php
+                $totaltax += ($total * $tax['tax_percentage']) / 100;
+                @endphp
+           @endforeach
+        @endif
+      <tr>
+         
             <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-                {{ $tax['tax_type'] }}{{'@'}}{{ number_format($tax['tax_percentage'], 2) }}%
-
-            </td>
-            <td style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-                {{ number_format((($total * $tax['tax_percentage']) / 100), 2) }}
-            </td>
-        </tr>
-      @php
-      $totaltax += ($total * $tax['tax_percentage']) / 100;
-      @endphp
-    @endforeach
-@endif
-
+              TAX</td>
+            <td
+            
+              style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+              @if(!empty($order->tax) && is_array($order->tax)) {{$totaltax}} @endif</td>
+          
+      </tr>
       <tr>
         @php
         $formatter = new \NumberFormatter("en", \NumberFormatter::SPELLOUT);
 $amountInWords = ucfirst($formatter->format($totaltax + $total));
         @endphp
-        <td colspan="4" rowspan="2"
+        <td colspan="4" rowspan="1"
           style="vertical-align: top; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-top: 1px solid #000000; padding: 10px; font-size: 14px; font-weight: 600; color: #000000;">
           Total Amount(in Words): <span style="font-size: 13px; font-weight: 300;">{{ $amountInWords }}.</span>
         </td>
-      @if(!empty($order->tax) && is_array($order->tax))
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          TAX</td>
-        <td
-          style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
-          {{$totaltax}}</td>
-      </tr>
-      @endif
-      <tr>
-        <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
+         <td style="font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
           Grand Total</td>
         <td
           style="text-align: right; font-size: 14px; font-weight: 300; color: #000000; border: 1px solid #000000; padding: 10px;">
            {{$totaltax+$total}}</td>
+    
       </tr>
+  
       <tr>
         <td colspan="3" style="font-weight:600; font-size: 13px; padding-top: 10px;">Terms & Conditions:</td>
         <td colspan="1" style="font-weight:600; font-size: 13px; padding-top: 10px;">E&OE</td>

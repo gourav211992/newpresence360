@@ -447,7 +447,10 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/{vendorId}/compliance-by-country/{countryId}', 'getComplianceByCountry');
         Route::get('/compliance/{id}', 'getComplianceById');
         Route::post('/get-uoms', 'getUOM')->name('send.uom');
+        Route::get('/states/{country_id}', 'getStates')->name('vendor.get.states');
     });
+
+      
 
     // Route::prefix('vendor-new')->controller(VendorController::class)->group(function () {
     //     Route::get('/', 'index')->name('vendor.index');
