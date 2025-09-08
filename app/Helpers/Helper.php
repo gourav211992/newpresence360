@@ -4242,7 +4242,8 @@ class Helper
 
                 $glPostingBookId = $glPostingBookParam->parameter_value[0];
 
-                foreach ($mrn_assets as $mrn_asset) {
+                foreach ($mrn_assets as $mrn_asset) 
+                {
                     $category_id = $mrn_asset->asset_category_id;
                     $asset_name = $mrn_asset->asset_name;
                     $capitalize_date = $mrn_asset->capitalization_date;
@@ -4341,10 +4342,22 @@ class Helper
                 {
                     $count=count($mrn_detail->batches);
                     $uniqueCodes = $mrn_detail->uniqueCodes->values();
+                    $totalqty = 0;
+                    $taxpercentage = ($mrn_detail->tax_value/($mrn_detail->basic_value-$mrn_detail->discount_amount));
+                    foreach($mrn_detail->batches as $batch)
+                    {
+                        $totalqty += $batch->inventory_uom_qty;
+                        $singlevalue = round($currentValue/$totalqty, 2);
+                         
+                    }
+
+                     $offset = 0;
 
                     foreach($mrn_detail->batches as $batch)
                     {
-                         $asset_code = self::generateAssetCode($category_id);
+                        $salvageValue = round(($singlevalue * $batch->inventory_uom_qty) * ($depreciationPercentage / 100), 2);
+
+                        $asset_code = self::generateAssetCode($category_id);
                         $existingAsset = FixedAssetRegistration::where('asset_code', $asset_code)->first();
                         $data = [
                         'organization_id' => $user->organization_id,
@@ -4362,7 +4375,7 @@ class Helper
                         'brand_name' => $mrn_asset->brand_name,
                         'model_no' => $mrn_asset->model_no,
                         'procurement_type' => $mrn_asset->procurement_type,
-                        'quantity' => $mrn_detail->accepted_inv_uom_qty,
+                        'quantity' => $batch->inventory_uom_qty,
                         'category_id' => $category_id,
                         'reference_doc_id' => $mrn->id,
                         'reference_series' => ConstantHelper::MRN_SERVICE_ALIAS,
@@ -4372,9 +4385,9 @@ class Helper
                         'last_dep_date' => $capitalize_date,
                         'vendor_id' => $mrn->vendor_id,
                         'currency_id' => $mrn->vendor?->currency_id,
-                        'sub_total' => $currentValue,
+                        'sub_total' => $mrn_detail->basic_value ,
                         'tax' => $mrn_detail->tax_value,
-                        'purchase_amount' => $currentValue + $mrn_detail->tax_value,
+                        'purchase_amount' => $mrn_detail->basic_value + $mrn_detail->tax_value,
                         'supplier_invoice_date' => $mrn->supplier_invoice_date,
                         'book_date' => $mrn_detail->created_at ?? null,
                         'supplier_invoice_no' => $mrn->supplier_invoice_no,
@@ -4388,8 +4401,8 @@ class Helper
                         'depreciation_percentage_year' => $depreciationRate,
                         'total_depreciation' => 0,
                         'dep_type' => $organization->dep_type,
-                        'current_value' => $currentValue,
-                        'current_value_after_dep' => $currentValue,
+                        'current_value' => ($singlevalue * $batch->inventory_uom_qty),
+                        'current_value_after_dep' => ($singlevalue * $batch->inventory_uom_qty),
                         'document_status' => 'approved',
                         'approval_level' => 1,
                         'revision_number' => 0,
@@ -4405,12 +4418,14 @@ class Helper
                                 $asset->current_value,
                                 $asset->salvage_value
                             );
+                            
 
                             $mrn_asset->salvage_value = $salvageValue;
                             $mrn_asset->asset_code = $asset_code;
                             $mrn_asset->asset_id = $asset->id;
                             $mrn_asset->save();
-                            $asset->batchupdateUniqueCodes($uniqueCodes,$batch);
+                            $asset->batchupdateUniqueCodes($uniqueCodes,$batch,$offset);
+                            $offset += $batch->inventory_uom_qty;
                     }
 
                 }
@@ -4451,7 +4466,7 @@ class Helper
                         'supplier_invoice_date' => $mrn->supplier_invoice_date,
                         'book_date' => $mrn_detail->created_at ?? null,
                         'supplier_invoice_no' => $mrn->supplier_invoice_no,
-                        'location_id' => $mrn->sub_store_id ?? null,
+                        'location_id' => $mrn->store_id ?? null,
                         'cost_center_id' => $mrn->cost_center_id ?? null,
                         'maintenance_schedule' => $setup->maintenance_schedule ?? null,
                         'depreciation_method' => $method,

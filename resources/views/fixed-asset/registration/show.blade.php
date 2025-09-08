@@ -529,6 +529,15 @@
                                                                 required />
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Manufactering Year <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control" name="manufactering_year"
+                                                                id="manufactering_year" value="{{ $sub_assets[0]?->manufacturing_year }}"
+                                                                required />
+                                                        </div>
+                                                    </div>
 
 
                                                     
@@ -1218,8 +1227,8 @@
                              <th>S.No</th>
                              <th>Asset Code</th>
                              <th>UID</th>
-                             <th>Batch Number</th>
-                             <th>Manufactering Year</th>
+                             <!-- <th>Batch Number</th>
+                             <th>Manufactering Year</th> -->
                              <th>Location</th>
                              <th>Cost Center</th>
                              <th>Current Value</th>
@@ -1232,8 +1241,8 @@
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $sub_asset->sub_asset_code ?? '-' }}</td>
                         <td>{{ $sub_asset?->uid ?? '-' }}</td>
-                        <td>{{ $sub_asset?->batch_number ?? '-' }}</td>
-                        <td>{{ $sub_asset?->manufacturing_year ?? '-' }}</td>
+                        <!-- <td>{{ $sub_asset?->batch_number ?? '-' }}</td>
+                        <td>{{ $sub_asset?->manufacturing_year ?? '-' }}</td> -->
                         <td class="locationstore">{{ $sub_asset?->location?->store_name ?? '-' }}</td>
                         <td>{{ $sub_asset?->costCenter?->name ?? '-' }}</td>
                         <td>{{ $sub_asset->current_value ?? '-' }}</td>
