@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Helpers\Helper;
 use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
+use App\Helpers\FinanceModule;
 use App\Models\FixedAssetRegistration;
 use App\Helpers\InventoryHelper;
 use App\Models\ErpFinancialYear;
@@ -219,7 +220,7 @@ class ITDepreciationController extends Controller
             }
 
             // Call the helper function to get RDV calculation
-            $result = Helper::getFixedAssetRDV($uid, $assetCode, $subAssetCode, $assetName);
+            $result = FinanceModule::getFixedAssetRDV($uid, $assetCode, $subAssetCode, $assetName);
 
             // Return appropriate HTTP status code based on success
             $statusCode = $result['success'] ? 200 : 404;
@@ -291,7 +292,7 @@ class ITDepreciationController extends Controller
             foreach ($assets as $asset) {
                 try {
                     // Get RDV for this asset using the helper
-                    $rdvResult = Helper::getFixedAssetRDV($asset->uid, null, $asset->sub_asset_code);
+                    $rdvResult = FinanceModule::getFixedAssetRDV($asset->uid, null, $asset->sub_asset_code);
                     
                     if (!$rdvResult['success']) {
                         $errors[] = "Failed to calculate RDV for asset {$asset->sub_asset_code}: " . $rdvResult['message'];
