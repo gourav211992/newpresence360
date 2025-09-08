@@ -693,7 +693,7 @@
                                                                                 <tr>
                                                                                     <td class="amend-serial">{{ $loop->iteration }}</td>
                                                                                     <td>
-                                                                                        <select class="form-select mw-100 select2 AmendmentCompanySelect" name="amendment_company_id[]">
+                                                                                        <select class="form-select mw-100 select2 AmendmentCompanySelect" name="amendment_company_id[]" data-id="{{$index}}">
                                                                                             <option disabled value="">Select Company</option>
                                                                                             @foreach($companies as $company)
                                                                                                 <option value="{{ $company->id }}" {{ $company->id == $amendment->company_id ? 'selected' : '' }}>

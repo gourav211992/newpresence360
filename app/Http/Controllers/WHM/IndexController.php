@@ -223,7 +223,7 @@ class IndexController extends Controller
         ->where('storage_point_id', $storagePointId)
         ->where('status',CommonHelper::SCANNED)
         ->whereNull('utilized_id')
-        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','vendor_id','storage_point_id')
+        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','vendor_id','storage_point_id')
         ->get();
 
         $storagePoint->quantity = count($scannedPackets);

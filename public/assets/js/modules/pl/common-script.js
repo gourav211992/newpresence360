@@ -452,13 +452,16 @@ function editScript()
                     itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
                 }
             });
-            document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
+            const el = document.getElementById('uom_dropdown_' + itemIndex);
+            if (el) {
+                el.innerHTML = itemUomsHTML;
+            }
             const taxesHiddenFields = document.getElementsByClassName('item_taxes_input');
 
             if (taxesHiddenFields && taxesHiddenFields.length > 0) {
                 getItemTax(itemIndex);
             }
-            if (itemIndex==0){
+            if (itemIndex==0 && el){
                 onItemClick(itemIndex);
             }
             setAttributesUI(itemIndex);
@@ -491,7 +494,7 @@ function editScript()
         //Disable header fields which cannot be changed
         disableHeader();
         //Set all documents
-        order.media_files.forEach((mediaFile, mediaIndex) => {
+        order?.media_files?.forEach((mediaFile, mediaIndex) => {
             appendFilePreviews(mediaFile.file_url, 'main_order_file_preview', mediaIndex, mediaFile.id, order.document_status == 'draft' ? false : true);
         });
     }

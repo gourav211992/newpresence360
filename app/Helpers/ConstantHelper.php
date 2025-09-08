@@ -511,6 +511,7 @@ class ConstantHelper
         self::PQ_SERVICE_ALIAS => "Purchase Quotation",
         self::PQC_SERVICE_ALIAS => "Purchase Quotation Comparison",
         self::PDS_SERVICE_ALIAS => "Pickup Dropoff Schedule",
+        self::TRIP_SERVICE_ALIAS => "Trip PLanning",
         PackingListConstants::SERVICE_ALIAS => "Packing List",
         RgrConstant::SERVICE_ALIAS => "Return Goods Receipt"];
 
@@ -524,6 +525,7 @@ class ConstantHelper
     const PQ_SERVICE_ALIAS = 'pq';
     const PQC_SERVICE_ALIAS = 'pqc';
     const PDS_SERVICE_ALIAS = 'pds';
+    const TRIP_SERVICE_ALIAS = 'trip';
     const SUPPLIER_INVOICE_SERVICE_ALIAS = 'supplier-invoice';
     const SCRAP_SERVICE_ALIAS = 'scrap';
     const PI_SERVICE_ALIAS = 'purchase-indent';
@@ -842,6 +844,7 @@ class ConstantHelper
         self::PQ_SERVICE_ALIAS => 'ErpPqHeader',
         self::PQC_SERVICE_ALIAS => 'ErpPqcHeader',
         self::PDS_SERVICE_ALIAS => 'ErpPickupSchedule',
+        self::TRIP_SERVICE_ALIAS => 'ErpTripPlanHeader',
         PackingListConstants::SERVICE_ALIAS => 'PackingList',
         ASNConstant::SERVICE_ALIAS => 'VendorAsn',
         RgrConstant::SERVICE_ALIAS => 'ErpRgr',
@@ -1177,5 +1180,12 @@ class ConstantHelper
         ['label' => 'Wrong Product', 'value' => 'wrong_product'],
         ['label' => 'Missing Product', 'value' => 'missing_product'],
         ['label' => 'Extra Asset', 'value' => 'extra_asset'],
+    ];
+
+    const REPAIR_ACTION  = [
+        ['label' => 'Change Defect Severity', 'value' => 'change_defect_severity'],
+        ['label' => 'Send to Vendor', 'value' => 'send_to_vendor'],
+        ['label' => 'Scrap', 'value' => 'scrap'],
+        ['label' => 'Repair', 'value' => 'repair'],
     ];
 }

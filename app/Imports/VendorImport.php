@@ -205,7 +205,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'organization_id' => $validatedData['organization_id'],
                     'remarks' => "Processing vendor upload",
                     'batch_no' => $batchNo,
-                    'user_id' => $user->id,
+                    'user_id' => $user->auth_user_id,
                 ]);
                 DB::commit();
                 $uploadedVendors->push($uploadedVendor);

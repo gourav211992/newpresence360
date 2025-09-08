@@ -57,6 +57,8 @@ class ErpItemUniqueCode extends Model
         'reference_type',
         'reference_detail_id',
         'reference_no',
+        'packet_no',
+        'total_packets',
     ];
 
     // protected  $casts = [

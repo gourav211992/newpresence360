@@ -1,6 +1,6 @@
 @foreach($mrn->items as $key => $item)
    @php
-        $poQty = $item?->order_qty;
+        $poQty = $item?->accepted_qty;
         $rowCount = $key + 1;
         $readOnly = '';
         $acceptedReadOnly = 'readonly';

@@ -20,7 +20,8 @@ class ImprovementController extends Controller
         
         $user = Helper::getAuthenticatedUser();
         $organizationId = $user?->organization_id ?? null;
-        ErpKaizenImprovement::query()->update(['organization_id' => $organizationId]);
+        $groupId = $user->organization ? $user->organization->group_id : null; 
+        ErpKaizenImprovement::query()->update(['group_id' => $groupId]);
 
         if ($request->ajax()) {
             $erpKaizenImprovements = ErpKaizenImprovement::where('organization_id', $organizationId)

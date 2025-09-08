@@ -2,6 +2,7 @@
 
 use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
+use App\Http\Controllers\ErpTripPlanController;
 use App\Http\Controllers\PurchaseOrderImportController;
 use App\Models\DefectNotification;
 use Illuminate\Support\Facades\Log;
@@ -191,7 +192,6 @@ use App\Http\Controllers\LoanManagement\LoanRepaymentReportController;
 use App\Http\Controllers\LoanManagement\LoanDisbursementReportController;
 use App\Http\Controllers\ErpItemBundleController;
 use App\Http\Controllers\RgrController;
-use App\Http\Controllers\WHM\RgrJobController;
 use App\Http\Controllers\PrintBarcodeController;
 
 
@@ -812,20 +812,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('get-pickup-item', 'getPickupScheduleItems')->name('rgr.get.pickup.item');
         Route::post('process-rgr-item', 'processPickupItem')->name('rgr.process.pickup-schdule-list');
         Route::get('revoke-document', 'revokeDocument')->name('rgr.revoke');
-    });
-
-
-    Route::controller(RgrJobController::class)->group(function () {
-        Route::get('get-rgr/{store_id}', 'getRgrDetails')->name('rgr.detail');
-        Route::get('get-rgr-by-job/{job_id}', 'getRgrByJob')->name('rgr.by.job');
-        Route::get('get-defect-severity', 'getDefectSeverity')->name('defect.severity');
-        Route::get('damage-nature-options', 'getDamageNatureOptions')->name('damage.nature.options');
-        Route::get('defect-types/{severity}/{itemId}', 'getDefectTypes')->name('defect.types');
-        Route::get('/get-items', 'getItems')->name('erp.items.list');
-        Route::get('/get-items/{itemId}/attributes', 'getAttributesByItemId')->name('erp.items.attributes');
-        Route::post('/scan-item/{item_id}', 'scanItem')->name('scan.item');
-        Route::post('/segregate-item/{item_id}', 'createSegregation')->name('segregation.create');
-        Route::get('jobs/{jobId}/item-status', 'getJobItemStatus')->name('jobs.item-status');
     });
 
     Route::prefix('erp-document')->controller(DocumentController::class)->group(function () {
@@ -2435,6 +2421,23 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/pick-list/posting/get', [ErpPlController::class, 'getPostingDetails'])->name('PL.posting.get');
     Route::post('/pick-list/post', [ErpPlController::class, 'postPL'])->name('PL.post');
     Route::post('/pick-list/import', [ErpPlController::class, 'import'])->name('PL.import');
+    
+    //Trip Plan
+    Route::get('/trip-plan', [ErpTripPlanController::class, 'index'])->name('trip-plan.index');
+    Route::get('/trip-plan/create', [ErpTripPlanController::class, 'create'])->name('trip-plan.create');
+    Route::get('/trip-plan/filter', [ErpTripPlanController::class, 'filter'])->name('trip-plan.filter');
+    Route::post('/trip-plan/store', [ErpTripPlanController::class, 'store'])->name('trip-plan.store');
+    Route::get('/trip-plan/edit/{id}', [ErpTripPlanController::class, 'edit'])->name('trip-plan.edit');
+    Route::post('/trip-plan/revoke', [ErpTripPlanController::class, 'revokePL'])->name('trip-plan.revoke');
+    Route::get('/trip-plan/vendor/stores', [ErpTripPlanController::class, 'getVendorStores'])->name('trip-plan.vendor.stores');
+    Route::get('/trip-plan/mo/process/mo', [ErpTripPlanController::class, 'processPulledItems'])->name('trip-plan.process.items');
+    Route::get('/trip-plan/so/get/items', [ErpTripPlanController::class, 'getSoItemsForPulling'])->name('trip-plan.pull.items');
+    Route::get('/trip-plan/{id}/pdf/{pattern}', [ErpTripPlanController::class, 'generatePdf'])->name('trip-plan.generate-pdf');
+    Route::get('/trip-plan/multi-stores-location', [ErpTripPlanController::class, 'getLocationsWithMultipleStores'])->name('trip-plan.multi-store-location');
+    Route::get('/trip-plan/report', [ErpTripPlanController::class, 'PLReport'])->name('trip-plan.report');
+    Route::get('/trip-plan/posting/get', [ErpTripPlanController::class, 'getPostingDetails'])->name('trip-plan.posting.get');
+    Route::post('/trip-plan/post', [ErpTripPlanController::class, 'postPL'])->name('trip-plan.post');
+    Route::post('/trip-plan/import', [ErpTripPlanController::class, 'import'])->name('trip-plan.import');
 
 
     //Driver

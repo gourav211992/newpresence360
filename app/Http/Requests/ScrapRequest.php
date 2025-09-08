@@ -37,7 +37,6 @@ class ScrapRequest extends FormRequest
             'book_code'        => 'required|string',
             'document_number'  => 'required|string',
             'document_date'    => 'required|date',
-            'document_status'  => 'required|string|in:draft,approved,rejected',
             'store_id'         => 'required|integer|exists:erp_stores,id',
             'sub_store_id'     => 'required|integer|exists:erp_sub_stores,id',
 

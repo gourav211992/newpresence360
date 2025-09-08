@@ -352,7 +352,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'model_no' => $row['model_no'] ?? null,
                     'remarks' => "Processing item upload",
                     'batch_no' => $batchNo,
-                    'user_id' => $user->id,
+                    'user_id' => $user->auth_user_id,
                     'min_stocking_level' => $row['min_stocking_level'] ?? null,
                     'max_stocking_level' => $row['max_stocking_level'] ?? null,
                     'reorder_level' => $row['reorder_level'] ?? null,

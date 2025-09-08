@@ -98,19 +98,30 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
     });
 
     Route::controller(RgrJobController::class)->group(function () {
-        Route::get('get-rgr/{store_id}', 'getRgrDetails')->name('rgr.detail');
-        Route::get('get-rgr-by-job/{job_id}', 'getRgrByJob')->name('rgr.by.job');
-        Route::get('get-defect-severity', 'getDefectSeverity')->name('defect.severity');
-        Route::get('damage-nature-options', 'getDamageNatureOptions')->name('damage.nature.options');
-        Route::get('defect-types/{severity}/{itemId}', 'getDefectTypes')->name('defect.types');
-        Route::get('/get-items', 'getItems')->name('erp.items.list');
-        Route::get('/get-items/{itemId}/attributes', 'getAttributesByItemId')->name('erp.items.attributes');
-        Route::post('/scan-item/{item_id}', 'scanItem')->name('scan.item');
-        Route::post('/segregate-item/{item_id}', 'createSegregation')->name('segregation.create');
-        Route::get('jobs/{jobId}/item-status','getJobItemStatus')->name('jobs.item-status');
+        Route::get('get-rgr/{store_id}', 'getRgr')->name('rgr.get-by-store');           
+        Route::get('get-rgr-detail/{job_id}', 'getRgrDetails')->name('rgr.get-rgr-detail');      
+        Route::get('get-defect-severity', 'getDefectSeverity')->name('defect.severity.list'); 
+        Route::get('damage-nature-options', 'getDamageNatureOptions')->name('damage.nature.list'); 
+        Route::get('defect-types/{severity}/{itemId}', 'getDefectTypes')->name('defect.types.by-severity'); 
+        Route::get('/get-items', 'getItems')->name('items.goods.list');                   
+        Route::get('/get-items/{itemId}/attributes', 'getAttributesByItemId')->name('items.attributes.get'); 
+        Route::get('/scan-item/{item_uid}', 'scanItem')->name('items.scan');                
+        Route::get('segregation/{uniqueItemId}', 'getSegregationByUniqueItemId')->name('segregation.details');
+        Route::get('jobs/{jobId}/item-status','getJobItemStatus')->name('jobs.item-status');      
+        Route::post('/segregate-item', 'createSegregation')->name('segregation.create-or-update'); 
+        Route::post('/unique-items/store', 'storeUniqueItem')->name('unique-items.create');    
+        Route::delete('scanned-item/{uniqueItemId}', 'deleteScannedItem')->name('unique-items.delete');
     });
-    
-    
+
+    Route::controller(RepairOrderJobController::class)->group(function () {
+        Route::get('get-repair-orders/{store_id}', 'getRepairOrder')->name('repair.get-by-store');
+        Route::get('get-repair-orders-detail/{job_id}', 'getRepairOrderDetails')->name('repair.get-rgr-detail');     
+        Route::get('/get-service-items', 'getServiceItems')->name('service.items.list');
+        Route::get('/get-repair-action','getRepairAction')->name('get.repair.action');
+        Route::get('/get-vendors', 'getVendors')->name('vendors.get');
+        Route::post('/repair-action', 'repairAction')->name('repair.action');
+    });
+     
 });
 
 

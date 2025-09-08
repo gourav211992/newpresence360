@@ -1061,7 +1061,7 @@ class CustomerController extends Controller
                 ], 400);
             }
     
-            UploadCustomerMaster::where('user_id', $user->id)->delete();
+            UploadCustomerMaster::where('user_id', $user->auth_user_id)->delete();
     
             $import = new CustomerImport($this->itemImportExportService); 
             Excel::import($import, $file);

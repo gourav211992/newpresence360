@@ -385,7 +385,7 @@ class WhmJob
     //     return $attributeJsonArray;
     // }
 
-    public function createJob($header, $morphableType, $jobType, $trnstype, $storeId, $subStoreId = NULL){
+    public function createJob($header, $morphableType, $jobType, $trnstype, $storeId, $subStoreId = NULL, $referenceType = NULL, $referenceId = NULL, $referenceNo = NULL){
         $job = ErpWhmJob::firstOrCreate(
             [
                 'morphable_type' => $morphableType,
@@ -398,14 +398,18 @@ class WhmJob
                 'company_id' => $header->company_id,
                 'status' => CommonHelper::PENDING,
                 'trns_type' => $trnstype,
-                'store_id' => $storeId ?? null,
+                'store_id' => $storeId,
+                'sub_store_id' => $subStoreId,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'reference_no' => $referenceNo,
             ]
         );
 
         return $job;
     }
 
-    public function createUniqueCode($header, $job, $morphableType, $detail, $attributes, $jobType, $trnsType, $qty, $docType, $totalPacket, $batch = []){
+    public function createUniqueCode($header, $job, $morphableType, $morphableId, $detail, $attributes, $jobType, $trnsType, $qty, $docType, $storeId, $subStoreId = NULL, $referenceType = NULL, $referenceDetailId = NULL, $referenceNo = NULL, $totalPacket, $batch = NULL){
         $records = [];
 
         for ($packet = 1; $packet <= $totalPacket; $packet++) {
@@ -419,14 +423,15 @@ class WhmJob
                     'group_id' => $job->group_id,
                     'company_id' => $job->company_id,
                     'morphable_type' => $morphableType,
-                    'morphable_id' => $detail->id,
+                    'morphable_id' => $morphableId,
                     'job_type' => $jobType,
                     'trns_type' => $trnsType,
                     'doc_type' => $docType,
                     'doc_no' => $header->document_number ?? null,
                     'doc_date' => $header->document_date ?? null,
                     'book_id' => $header->book_id ?? null,
-                    'store_id' => $header->store_id ?? null,
+                    'store_id' => $storeId ?? null,
+                    'sub_store_id' => $subStoreId ?? null,
                     'book_code' => $header->book_code ?? null,
                     'item_attributes' => json_encode($attributes),
                     'item_id' => $detail->item_id,
@@ -439,6 +444,13 @@ class WhmJob
                     'type' => 'qr',
                     'qty' => 1,
                     'status' => CommonHelper::PENDING,
+                    'batch_id' => $batch ? $batch->id : NULL,
+                    'batch_number' => $batch ? $batch->batch_number : NULL,
+                    'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
+                    'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
+                    'reference_type' => $referenceType,
+                    'reference_detail_id' => $referenceDetailId,
+                    'reference_no' => $referenceNo,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -447,6 +459,53 @@ class WhmJob
 
         foreach (array_chunk($records, 500) as $chunk) {
             ErpItemUniqueCode::insert($chunk);
+        }
+    }
+
+
+    public function copyExistingQrCodes($existingQRCodes, $job, $header, $morphableType, $morphableId, $jobType, $trnstype, $docType, $storeId, $subStoreId, $batch = NULL, $referenceType = NULL, $referenceDetailId = NULL, $referenceNo = NULL){
+        foreach ($existingQRCodes as $code) {
+            $newRecord = ErpItemUniqueCode::create([
+                'uid' => $this->generateUniqueUid(),
+                'job_id' => $job->id,
+                'organization_id' => $job->organization_id,
+                'group_id' => $job->group_id,
+                'company_id' => $job->company_id,
+                'morphable_type' => $morphableType,
+                'morphable_id' => $morphableId,
+                'job_type' => $jobType,
+                'trns_type' => $trnstype,
+                'doc_type' => $docType,
+                'doc_no' => $header->document_number ?? null,
+                'doc_date' => $header->document_date ?? null,
+                'book_id' => $header->book_id ?? null,
+                'store_id' => $storeId,
+                'sub_store_id' => $subStoreId,
+                'book_code' => $header->book_code ?? null,
+                'item_attributes' => json_encode($code->item_attributes),
+                'item_id' => $code->item_id,
+                'item_name' => $code->item_name,
+                'item_code' => $code->item_code,
+                'vendor_id' => $code->vendor_id,
+                'item_uid' => $code->item_uid, 
+                'packet_no' => $code->packet_no,
+                'total_packets' => $code->total_packets,
+                'batch_id' => $batch ? $batch->id : NULL,
+                'batch_number' => $batch ? $batch->batch_number : NULL,
+                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
+                'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
+                'type' => 'qr',
+                'qty' => 1,
+                'status' => CommonHelper::PENDING,
+                'reference_type' => $referenceType,
+                'reference_detail_id' => $referenceDetailId,
+                'reference_no' => $referenceNo,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $code->utilized_id = $newRecord->uid;
+            $code->save();
         }
     }
 

@@ -73,6 +73,13 @@ class RGRJob
 
         $morphableType = $namespace;
         $morphableId = $detail->id;
+        //In case of single packet 
+        $itemUid = $detail->item_uid;
+        if ($qty > 1) {
+            $itemUid = null;
+        }
+        //In case of multiple packets - TODO
+
         $whmJob = new WhmJob();
         for ($i = 0; $i < $qty; $i++) {
             //Preserve the UID if present and qty is 1
@@ -98,7 +105,7 @@ class RGRJob
                 'item_name' => $detail->item->item_name,
                 'item_code' => $detail->item_code,
                 'vendor_id' => $header->vendor_id,
-                'item_uid' => $this->generateUniqueUid(),
+                'item_uid' => $itemUid ? $itemUid : $whmJob -> generateUniqueUid(),
                 'batch_id' => NULL,
                 'batch_number' => NULL,
                 'manufacturing_year' => NULL,

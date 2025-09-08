@@ -79,12 +79,13 @@ class KaizenController extends Controller
 
     public function create(){
         $user = Helper::getAuthenticatedUser();
+        $groupId = $user->organization ? $user->organization->group_id : 0; 
 
         $departments = Department::where('organization_id',$user->organization_id)
             ->where('status',CommonHelper::ACTIVE)
             ->get();
 
-        $improvements = ErpKaizenImprovement::where('organization_id',$user->organization_id)
+        $improvements = ErpKaizenImprovement::where('group_id', $groupId)
             ->where('status',CommonHelper::ACTIVE)
             ->get()
             ->groupBy('type')
@@ -193,6 +194,8 @@ class KaizenController extends Controller
 
     public function edit($id){
         $user = Helper::getAuthenticatedUser();
+        $groupId = $user->organization ? $user->organization->group_id : 0; 
+
         $kaizen = ErpKaizen::with([
                 'kaizenTeam' => function($q){
                     $q->select('employees.id','name', 'email');
@@ -211,7 +214,7 @@ class KaizenController extends Controller
             ->where('status',CommonHelper::ACTIVE)
             ->get();
 
-        $improvements = ErpKaizenImprovement::where('organization_id',$user->organization_id)
+        $improvements = ErpKaizenImprovement::where('group_id', $groupId)
             ->where('status',CommonHelper::ACTIVE)
             ->get()
             ->groupBy('type')
@@ -230,6 +233,9 @@ class KaizenController extends Controller
 
     public function view($id){
         $user = Helper::getAuthenticatedUser();
+        $groupId = $user->organization ? $user->organization->group_id : 0; 
+
+        
         $kaizen = ErpKaizen::with([
                 'kaizenTeam' => function($q){
                     $q->select('employees.id','name', 'email');
@@ -243,7 +249,7 @@ class KaizenController extends Controller
             })
             ->toArray();
 
-        $improvements = ErpKaizenImprovement::where('organization_id',$user->organization_id)
+        $improvements = ErpKaizenImprovement::where('group_id', $groupId)
             ->where('status',CommonHelper::ACTIVE)
             ->get()
             ->groupBy('type')

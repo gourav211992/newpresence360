@@ -26,6 +26,7 @@ class ErpSoItem extends Model
         'invoice_qty',
         'dnote_qty',
         'picked_qty',
+        'planned_qty',
         'inventory_uom_id',
         'inventory_uom_code',
         'inventory_uom_qty',
@@ -50,6 +51,7 @@ class ErpSoItem extends Model
         'quotation_balance_qty',
         'work_order_balance_qty',
         'picked_balance_qty',
+        'planned_balance_qty',
         'cgst_value',
         'sgst_value',
         'igst_value'
@@ -207,6 +209,7 @@ class ErpSoItem extends Model
         $usedQty = $this -> getAttribute('dnote_qty');
         $shortQty = $this -> getAttribute('short_close_qty');
         $pickedQty = $this -> getAttribute('picked_qty');
+        $plannedQty = $this -> getAttribute('planned_qty');
         $plistQty = $this -> getAttribute('plist_qty');
         $balanceQty = min([$totalQty, ($totalQty - ( $usedQty + $shortQty + $pickedQty + $plistQty))]);
         return $balanceQty;
@@ -233,6 +236,11 @@ class ErpSoItem extends Model
     public function getPickedBalanceQtyAttribute()
     {
         $balanceQty = $this->order_qty - ($this->dnote_qty+$this->short_close_qty+$this->picked_qty);
+        return $balanceQty;
+    }
+    public function getPlannedBalanceQtyAttribute()
+    {
+        $balanceQty = $this->order_qty - ($this->dnote_qty+$this->short_close_qty+$this->planned_qty);
         return $balanceQty;
     }
 
@@ -401,6 +409,7 @@ class ErpSoItem extends Model
         $orderQty = $this -> order_qty;
         $shortCloseQty = $this -> short_close_qty;
         $pickedQty = $this -> picked_qty;
+        $plannedQty = $this -> planned_qty;
         $plistQty = $this -> plist_qty;
         $dnoteQty = $this -> dnote_qty;
         $srnQty = $this -> srn_qty;

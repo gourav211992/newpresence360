@@ -2,14 +2,14 @@
     {{-- Checkbox --}}
     <td class="customernewsection-form">
         <div class="form-check form-check-primary custom-checkbox">
-            <input type="checkbox" class="form-check-input" id="Email_{{ $rowCount }}" value="{{ $rowCount }}" data-id="{{ $item->id ?? '' }}">
+            <input type="checkbox" class="form-check-input" id="Email_{{ $rowCount }}" value="{{ $rowCount }}" data-id="{{ $item->id ?? '' }}" {{ $createEditDisabled }}>
             <label class="form-check-label" for="Email_{{ $rowCount }}"></label>
         </div>
     </td>
 
     {{-- Item Code Selector --}}
     <td class="poprod-decpt">
-        <input type="text" name="component_item_name[{{ $rowCount }}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code" value="{{ old("component_item_name.$rowCount", $item->item_code ?? '') }}" />
+        <input type="text" name="component_item_name[{{ $rowCount }}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code" value="{{ old("component_item_name.$rowCount", $item->item_code ?? '') }}" {{ $createEditReadonly }} />
         <input type="hidden" name="components[{{ $rowCount }}][scrap_item_id]" value="{{ $item->id ?? '' }}">
         <input type="hidden" name="components[{{ $rowCount }}][item_id]" value="{{ $item->item_id ?? '' }}">
         <input type="hidden" name="components[{{ $rowCount }}][item_code]" value="{{ $item->item_code ?? '' }}">
@@ -39,7 +39,7 @@
 
     {{-- Attributes --}}
     <td class="poprod-decpt attributeBtn" id="itemAttribute_{{ $rowCount }}" data-count="{{ $rowCount }}" attribute-array='@json($itemAttrArray)'>
-        <button type="button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">
+        <button type="button" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px" {{ $createEditDisabled }}>
             Attributes
         </button>
     </td>
@@ -48,7 +48,7 @@
     <td>
         <input type="hidden" name="components[{{ $rowCount }}][inventoty_uom_id]" value="{{ $item->inventoty_uom_id ?? '' }}">
 
-        <select class="form-select mw-100" name="components[{{ $rowCount }}][uom_id]">
+        <select class="form-select mw-100" name="components[{{ $rowCount }}][uom_id]" {{ $createEditReadonly }}>
             @if (isset($item) && $item?->uom)
                 <option value="{{ $item->uom->id }}">{{ ucfirst($item->uom->name) }}</option>
             @else
@@ -68,7 +68,7 @@
 
     {{-- Qty --}}
     <td>
-        <input type="number" step="any" class="form-control text-end mw-100" name="components[{{ $rowCount }}][qty]" value="{{ $item->qty ?? '' }}">
+        <input type="number" {{ $createEditReadonly }} step="any" class="form-control text-end mw-100" name="components[{{ $rowCount }}][qty]" value="{{ $item->qty ?? '' }}">
     </td>
 
     {{-- Rate --}}
@@ -78,17 +78,17 @@
 
     {{-- Total Cost --}}
     <td>
-        <input type="number" step="any" class="form-control text-end mw-100" name="components[{{ $rowCount }}][total_cost]" value="{{ $item->total_cost ?? '' }}">
+        <input type="number" {{ $createEditReadonly }} step="any" class="form-control text-end mw-100" name="components[{{ $rowCount }}][total_cost]" value="{{ $item->total_cost ?? '' }}">
     </td>
 
     {{-- Cost Center --}}
     <td>
-        <input type="text" name="components[{{ $rowCount }}][cost_center]" placeholder="Select Cost Center" class="form-control mw-100 ledgerselecct ui-autocomplete-input comp_item_code_cost_centers" value="{{ $item->cost_center ?? '' }}">
+        <input type="text" {{ $createEditReadonly }} name="components[{{ $rowCount }}][cost_center]" placeholder="Select Cost Center" class="form-control mw-100 ledgerselecct ui-autocomplete-input comp_item_code_cost_centers" value="{{ $item->cost_center ?? '' }}">
         <input type="hidden" name="components[{{ $rowCount }}][cost_center_id]" value="{{ $item->cost_center_id ?? '' }}">
     </td>
 
     {{-- Remark --}}
     <td>
-        <input type="text" class="form-control mw-100" name="components[{{ $rowCount }}][remark]" value="{{ $item->remarks ?? '' }}">
+        <input type="text" {{ $createEditReadonly }} class="form-control mw-100" name="components[{{ $rowCount }}][remark]" value="{{ $item->remarks ?? '' }}">
     </td>
 </tr>

@@ -672,7 +672,7 @@ class ItemController extends Controller
                     'message' => 'The uploaded file is empty.',
                 ], 400);
             }
-            $deleteQuery = UploadItemMaster::where('user_id', $user->id);
+            $deleteQuery = UploadItemMaster::where('user_id', $user->auth_user_id);
             $deleteQuery->delete();
 
             $import = new ItemImport($this->itemImportExportService, $user);

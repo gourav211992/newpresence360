@@ -5,6 +5,9 @@
             if (isset($scrap->reference_type) && $scrap->reference_type) {
                 $scrap->applyReference($scrap->reference_type);
             }
+            $createEdit = $buttons['draft'] && $buttons['submit'] ? true : false;
+            $createEditReadonly = $createEdit ? '' : 'readonly';
+            $createEditDisabled = $createEdit ? '' : 'disabled';
         @endphp
         <input type="hidden" name="id" value="{{ $scrap->id ?? '' }}">
         <input type="hidden" name="pslip_ids" id="pslip_ids" value="{{ $scrap->pslip_ids ?? '' }}">
@@ -50,14 +53,14 @@
                                 @if (!isset(request()->revisionNumber))
                                     <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                                     @if (isset($scrap->id))
-                                        <a href="{{ route('scrap.generate-pdf', $scrap->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        {{-- <a href="{{ route('scrap.generate-pdf', $scrap->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
                                                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
                                                 </path>
                                                 <rect x="6" y="14" width="12" height="8"></rect>
                                             </svg> Print
-                                        </a>
+                                        </a> --}}
                                         @if ($buttons['draft'])
                                             <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                             <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn" data-url="{{ route('scrap.destroy', ['id' => $scrap->id, 'isAmedment' => $buttons['amend'] ? $buttons['amend'] : 0]) }}"
@@ -115,7 +118,7 @@
                                                         <label class="form-label">Series <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select disable_on_edit_view" id="book_id" name="book_id">
+                                                        <select class="form-select" {{ $createEditDisabled }} id="book_id" name="book_id">
                                                             @foreach ($books as $book)
                                                                 <option value="{{ $book->id }}" {{ isset($scrap->book_id) && $scrap->book_id == $book->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($book->book_code) }}</option>
@@ -129,7 +132,7 @@
                                                         <label class="form-label">Scrap No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="document_number" class="form-control disable_on_edit_view" id="document_number" value="{{ isset($scrap->id) ? $scrap->document_number : '' }}">
+                                                        <input type="text" name="document_number" class="form-control" id="document_number" {{ $createEditReadonly }} value="{{ isset($scrap->id) ? $scrap->document_number : '' }}">
                                                     </div>
                                                 </div>
 
@@ -138,7 +141,7 @@
                                                         <label class="form-label">Scrap Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control disable_on_edit_view" value="{{ isset($scrap->id) ? $scrap->document_date : \Carbon\Carbon::now()->format('Y-m-d') }}" name="document_date" min="{{ $current_financial_year['start_date'] }}"
+                                                        <input type="date" class="form-control" {{ $createEditReadonly }} value="{{ isset($scrap->id) ? $scrap->document_date : \Carbon\Carbon::now()->format('Y-m-d') }}" name="document_date" min="{{ $current_financial_year['start_date'] }}"
                                                                max="{{ $current_financial_year['end_date'] }}">
                                                     </div>
                                                 </div>
@@ -148,7 +151,7 @@
                                                         <label class="form-label">Location <spanp class="text-danger">
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select disable_on_edit_view select2" name="store_id" id="store_id" onchange="getSubStores(this.value)">
+                                                        <select class="form-select select2" {{ $createEditDisabled }} name="store_id" id="store_id" onchange="getSubStores(this.value)">
                                                             <option value="">Select Location</option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}" {{ isset($scrap->store_id) && $scrap->store_id == $location->id ? 'selected' : '' }}>
@@ -164,7 +167,7 @@
                                                         <label class="form-label">Sub Store <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select disable_on_edit_view select2 sub_store" id="sub_store_id" name="sub_store_id"></select>
+                                                        <select class="form-select select2 sub_store" {{ $createEditDisabled }} id="sub_store_id" name="sub_store_id"></select>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1 {{ isset($scrap->id) ? '' : 'd-none' }}" id="reference_type_div">
@@ -174,93 +177,93 @@
                                                     <div class="col-md-5 action-button">
                                                         @if (isset($scrap->reference_type) && $scrap->reference_type)
                                                             @if ($scrap->reference_type == 'pslip')
-                                                                <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
+                                                                <button {{ $createEditDisabled }} type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
                                                                     <i data-feather="plus-square"></i>
                                                                     Production Slip
                                                                 </button>
                                                             @elseif ($scrap->reference_type == 'repairOrder')
-                                                                <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
+                                                                <button {{ $createEditDisabled }} type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
                                                                     <i data-feather="plus-square"></i>
                                                                     Repair Order
                                                                 </button>
                                                             @endif
                                                         @else
-                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect"> <i data-feather="plus-square"></i>Production Slip </button>
-                                                            {{-- <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect"><i data-feather="plus-square"></i> Repair Order</button> --}}
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect d-none" disabled> <i data-feather="plus-square"></i>Production Slip </button>
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 roSelect d-none" disabled><i data-feather="plus-square"></i> Repair Order</button>
                                                         @endif
                                                     </div>
                                                 </div>
-                                                @if (isset($scrap) && $scrap->document_status !== 'draft')
-                                                    @if ((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
-                                                        <div class="col-md-4">
-                                                            <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                                <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                                    <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                                    @if (!isset(request()->revisionNumber) && $scrap->document_status !== 'draft')
-                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                            <select class="form-select" id="revisionNumber">
-                                                                                @for ($i = $revision_number; $i >= 0; $i--)
-                                                                                    <option value="{{ $i }}" {{ request('revisionNumber', $scrap->revision_number) == $i ? 'selected' : '' }}>{{ $i }}</option>
-                                                                                @endfor
-                                                                            </select>
+                                            </div>
+                                            @if (isset($scrap) && $scrap->document_status !== 'draft')
+                                                @if ((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
+                                                    <div class="col-md-4">
+                                                        <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                            <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                                <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                                @if (!isset(request()->revisionNumber) && $scrap->document_status !== 'draft')
+                                                                    <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
+                                                                        <select class="form-select" id="revisionNumber">
+                                                                            @for ($i = $revision_number; $i >= 0; $i--)
+                                                                                <option value="{{ $i }}" {{ request('revisionNumber', $scrap->revision_number) == $i ? 'selected' : '' }}>{{ $i }}</option>
+                                                                            @endfor
+                                                                        </select>
+                                                                    </strong>
+                                                                @else
+                                                                    @if ($scrap->document_status !== 'draft')
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                            Rev. No.{{ request()->revisionNumber }}
                                                                         </strong>
-                                                                    @else
-                                                                        @if ($scrap->document_status !== 'draft')
-                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">
-                                                                                Rev. No.{{ request()->revisionNumber }}
-                                                                            </strong>
-                                                                        @endif
                                                                     @endif
-                                                                </h5>
-                                                                <ul class="timeline ms-50 newdashtimline ">
-                                                                    @foreach ($approvalHistory as $approvalHist)
-                                                                        <li class="timeline-item">
-                                                                            <span class="timeline-point timeline-point-indicator"></span>
-                                                                            <div class="timeline-event">
-                                                                                <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                                    <h6>{{ ucfirst($approvalHist->name ?? ($approvalHist?->user?->name ?? 'NA')) }}</h6>
-                                                                                    @if ($approvalHist->approval_type == 'approve')
-                                                                                        <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                    @elseif($approvalHist->approval_type == 'submit')
-                                                                                        <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                    @elseif($approvalHist->approval_type == 'reject')
-                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                    @else
-                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                    @endif
-                                                                                </div>
-                                                                                @if ($approvalHist->created_at)
-                                                                                    <h6>
-                                                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->timezone('Asia/Kolkata')->format('d/m/Y | h.iA') }}
-                                                                                    </h6>
-                                                                                @endif
-                                                                                @if ($approvalHist->remarks)
-                                                                                    <p>{!! $approvalHist->remarks !!}</p>
-                                                                                @endif
-                                                                                @if ($approvalHist->media && count($approvalHist->media) > 0)
-                                                                                    @foreach ($approvalHist->media as $mediaFile)
-                                                                                        <p>
-                                                                                            <a href="{{ $mediaFile->file_url }}" target = "_blank">
-                                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                                                                     class="feather feather-download">
-                                                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                                                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                                                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                                                                                </svg>
-                                                                                            </a>
-                                                                                        </p>
-                                                                                    @endforeach
+                                                                @endif
+                                                            </h5>
+                                                            <ul class="timeline ms-50 newdashtimline ">
+                                                                @foreach ($approvalHistory as $approvalHist)
+                                                                    <li class="timeline-item">
+                                                                        <span class="timeline-point timeline-point-indicator"></span>
+                                                                        <div class="timeline-event">
+                                                                            <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                                <h6>{{ ucfirst($approvalHist->name ?? ($approvalHist?->user?->name ?? 'NA')) }}</h6>
+                                                                                @if ($approvalHist->approval_type == 'approve')
+                                                                                    <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @elseif($approvalHist->approval_type == 'submit')
+                                                                                    <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @elseif($approvalHist->approval_type == 'reject')
+                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @else
+                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
                                                                                 @endif
                                                                             </div>
-                                                                        </li>
-                                                                    @endforeach
+                                                                            @if ($approvalHist->created_at)
+                                                                                <h6>
+                                                                                    {{ \Carbon\Carbon::parse($approvalHist->created_at)->timezone('Asia/Kolkata')->format('d/m/Y | h.iA') }}
+                                                                                </h6>
+                                                                            @endif
+                                                                            @if ($approvalHist->remarks)
+                                                                                <p>{!! $approvalHist->remarks !!}</p>
+                                                                            @endif
+                                                                            @if ($approvalHist->media && count($approvalHist->media) > 0)
+                                                                                @foreach ($approvalHist->media as $mediaFile)
+                                                                                    <p>
+                                                                                        <a href="{{ $mediaFile->file_url }}" target = "_blank">
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                                                                 class="feather feather-download">
+                                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                                                            </svg>
+                                                                                        </a>
+                                                                                    </p>
+                                                                                @endforeach
+                                                                            @endif
+                                                                        </div>
+                                                                    </li>
+                                                                @endforeach
 
-                                                                </ul>
-                                                            </div>
+                                                            </ul>
                                                         </div>
-                                                    @endif
+                                                    </div>
                                                 @endif
-                                            </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -321,14 +324,16 @@
                                         <div class="tab-content pb-1">
                                             <div class="tab-pane active" id="scavengingItems">
                                                 <div class="text-end mb-50">
-                                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                                        <i data-feather="x-circle"></i>
-                                                        Delete
-                                                    </a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i>
-                                                        Add Item
-                                                    </a>
+                                                    @if ($createEdit)
+                                                        <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                                                            <i data-feather="x-circle"></i>
+                                                            Delete
+                                                        </a>
+                                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                            <i data-feather="plus"></i>
+                                                            Add Item
+                                                        </a>
+                                                    @endif
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -338,7 +343,7 @@
                                                                     <tr>
                                                                         <th width="62" class="customernewsection-form">
                                                                             <div class="form-check form-check-primary custom-checkbox">
-                                                                                <input type="checkbox" class="form-check-input" id="Email" />
+                                                                                <input type="checkbox" class="form-check-input" id="Email"{{ $createEditDisabled }} />
                                                                                 <label class="form-check-label" for="Email"></label>
                                                                             </div>
                                                                         </th>
@@ -359,6 +364,9 @@
                                                                             @include('remanufacturing.scrap.partials.item-row', [
                                                                                 'rowCount' => $key,
                                                                                 'item' => $item,
+                                                                                'createEdit' => $createEdit,
+                                                                                'createEditReadonly' => $createEditReadonly,
+                                                                                'createEditDisabled' => $createEditDisabled,
                                                                             ])
                                                                         @endforeach
                                                                     @endif
@@ -426,7 +434,7 @@
                                                 <div class="col-md-4">
                                                     <div class="mb-1">
                                                         <label class="form-label">Upload Document</label>
-                                                        <input type="file" class="form-control" name="attachment" id="document-upload" />
+                                                        <input type="file" class="form-control" name="attachment" {{ $createEditDisabled }} id="document-upload" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -434,7 +442,7 @@
                                             <div class="col-md-12">
                                                 <div class="mb-1">
                                                     <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" id="document_remarks" value="{{ $scrap->remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
+                                                    <textarea type="text" rows="4" class="form-control" name="document_remarks" {{ $createEditReadonly }} id="document_remarks" value="{{ $scrap->remarks ?? '' }}" placeholder="Enter Remarks here..."></textarea>
                                                 </div>
                                             </div>
                                         </div>

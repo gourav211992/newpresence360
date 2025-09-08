@@ -1161,7 +1161,7 @@ class VendorController extends Controller
                     ], 400);
                 }
             
-                UploadVendorMaster::where('user_id', $user->id)->delete();
+                UploadVendorMaster::where('user_id', $user->auth_user_id)->delete();
             
                 $import = new VendorImport($this->itemImportExportService); 
                 Excel::import($import, $file);

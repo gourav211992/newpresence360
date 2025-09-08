@@ -53,7 +53,7 @@
       <input type="text" name="components[{{$rowCount}}][item_name]" class="form-control mw-100 mb-25" readonly value="{{$bomDetail?->item?->item_name}}" />
   </td>
    <td class="poprod-decpt">
-      <button type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+      <button type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" @if(!$isEdit) disabled @endif data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
    </td>
    <td>
       <select class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
@@ -123,7 +123,7 @@
             <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][ledger_group_id]" value="{{$overhead?->ledger_group_id}}">
             @endforeach
             <div class="ms-50">
-               <button type="button" class="btn p-10 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 8px" data-row-count="{{$rowCount}}"><i data-feather="plus"></i></button>
+               <button type="button" class="btn p-10 btn-sm btn-outline-secondary addOverHeadItemBtn" style="font-size: 8px" data-row-count="{{$rowCount}}"  @if(!$isEdit) disabled @endif ><i data-feather="plus"></i></button>
             </div>
          @else
          <input type="hidden" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />

@@ -18,7 +18,7 @@ class UnloadingJob
         $trnstype = CommonHelper::getJobTransactionType($namespace);
 
         // Step 2: Get or Create Job (prevents duplicate job on edit)
-        $job = (new WhmJob())->createJob($header, $namespace, $type, $trnstype, $header->store_id, NULL);
+        $job = (new WhmJob())->createJob($header, $namespace, $type, $trnstype, $header->store_id, NULL, NULL, NULL, NULL);
 
 
         // Step 3: Fetch Details with attributes
@@ -51,7 +51,7 @@ class UnloadingJob
 
         if ($qty > $existingCount) {
             $diff = $qty - $existingCount;
-            (new WhmJob())->createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $diff, CommonHelper::RECEIPT, $totalPacket);
+            (new WhmJob())->createUniqueCode($header, $job, $namespace, $detail->id, $detail, $attributes, $type, $trnstype, $diff, CommonHelper::RECEIPT, $header->store_id, NULL, NULL, NULL, NULL, $totalPacket, NULL);
         } elseif ($qty < $existingCount) {
             $diff = $existingCount - $qty;
             (new WhmJob())->deleteUniqueCode($job, $detail->id, $totalPacket, $diff);

@@ -20,7 +20,7 @@ class PicklistItemResource extends JsonResource
             'item_id' => $this->item_id,
             'item_name' => $this->item_name,
             'item_code' => $this->item_code,
-            'quantity' => $this->quanity, // or fix spelling to `quantity`
+            'quantity' => $this->quantity,
             'attributes' => $this->attributes,
             'storage_points' => $this->storage_points ?? [],
         ];

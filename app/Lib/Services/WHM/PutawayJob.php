@@ -56,25 +56,7 @@ class PutawayJob
         $trnstype = CommonHelper::getJobTransactionType($namespace);
         
         // Step 2: Get or Create Job (prevents duplicate job on edit)
-        $job = ErpWhmJob::firstOrCreate(
-            [
-                'morphable_type' => $namespace,
-                'morphable_id' => $header->id,
-                'type' => $type,
-            ],
-            [
-                'organization_id' => $header->organization_id,
-                'group_id' => $header->group_id,
-                'company_id' => $header->company_id,
-                'status' => CommonHelper::PENDING,
-                'trns_type' => $trnstype,
-                'store_id' => $this->storeId ?? null,
-                'sub_store_id' => $this->subStoreId ?? null,
-                'reference_type' => $referenceType,
-                'reference_id' => $referenceId,
-                'reference_no' => $this->referenceNo,
-            ]
-        );
+        $job = (new WhmJob())->createJob($header, $namespace, $type, $trnstype, $this->storeId, $this->subStoreId, $referenceType, $referenceId, $this->referenceNo);
 
         // Step 3: Fetch Details with attributes
         if (!method_exists($header, 'items')) {
@@ -105,6 +87,8 @@ class PutawayJob
     {
         $attributes = $this->getAttributes($detail);
         $qty = intval($detail->inventory_uom_qty);
+        $storageUomCount = intval(optional($detail->item)->storage_uom_count);
+        $totalPacket = $storageUomCount > 0 ? $storageUomCount : 1;
 
         $batchData = $detail->batches()
             ->where('header_id',$this->referenceHeader->id)
@@ -138,9 +122,10 @@ class PutawayJob
 
         // Check if this is InspectionDetail and has mrn_header_id
         if ($namespace === \App\Models\InspectionDetail::class && isset($detail->mrn_detail_id) && $detail->mrn_detail_id) {
+            
             $mrnDetail = MrnDetail::find($detail->mrn_detail_id);
             if (isset($mrnDetail->gate_entry_detail_id) && $mrnDetail->gate_entry_detail_id) {
-
+                
                 if ($batchData->count() > 0) {
                     foreach($batchData as $batch){
                         $qty = isset($batch->accepted_inv_uom_qty) & $batch->accepted_inv_uom_qty ? $batch->accepted_inv_uom_qty : intval($batch->inventory_uom_qty);
@@ -194,7 +179,6 @@ class PutawayJob
     }
 
     private function createUniqueCode($header, $job, $namespace, $detail, $attributes, $type, $trnstype, $batch, $qty){
-        $records = [];
         $referenceType = null;
         $referenceDetailId = null;
 
@@ -208,59 +192,36 @@ class PutawayJob
             $referenceDetailId = $detail->id;
         }
 
-        for ($i = 0; $i < $qty; $i++) {
-            $records[] = [
-                'uid' => $this->generateUniqueUid(),
-                'job_id' => $job->id,
-                'organization_id' => $header->organization_id,
-                'group_id' => $header->group_id,
-                'company_id' => $header->company_id,
-                'morphable_type' => $morphableType,
-                'morphable_id' => $morphableId,
-                'job_type' => $type,
-                'trns_type' => $trnstype,
-                'doc_type' => CommonHelper::RECEIPT,
-                'doc_no' => $header->document_number ?? null,
-                'doc_date' => $header->document_date ?? null,
-                'book_id' => $header->book_id ?? null,
-                'store_id' => $this->storeId ?? null,
-                'sub_store_id' => $this->subStoreId ?? null,
-                'book_code' => $header->book_code ?? null,
-                'item_attributes' => json_encode($attributes),
-                'item_id' => $detail->item_id,
-                'item_name' => $detail->item->item_name,
-                'item_code' => $detail->item_code,
-                'vendor_id' => $header->vendor_id,
-                'item_uid' => $this->generateUniqueUid(),
-                'batch_id' => $batch ? $batch->id : NULL,
-                'batch_number' => $batch ? $batch->batch_number : NULL,
-                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
-                'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
-                'type' => 'qr',
-                'qty' => 1,
-                'status' => CommonHelper::PENDING,
-                'reference_type' => $referenceType,
-                'reference_detail_id' => $referenceDetailId,
-                'reference_no' => $this->referenceNo,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        foreach (array_chunk($records, 500) as $chunk) {
-            ErpItemUniqueCode::insert($chunk);
-        }
-
+        $storageUomCount = intval(optional($detail->item)->storage_uom_count);
+        $totalPacket = $storageUomCount > 0 ? $storageUomCount : 1;
+        (new WhmJob())->createUniqueCode($header, $job, $morphableType, $morphableId, $detail, $attributes, $type, $trnstype, $qty, CommonHelper::RECEIPT, $this->storeId, $this->subStoreId, $referenceType, $referenceDetailId, $this->referenceNo, $totalPacket, $batch);
     }
 
     private function getUnloadingQr($geDetail, $qty)
     {
-        $existingGateQRCodes = $geDetail->uniqueCodes()->where('status', CommonHelper::SCANNED)
+        // $existingGateQRCodes = $geDetail->uniqueCodes()->where('status', CommonHelper::SCANNED)
+        //     ->whereNull('utilized_id')
+        //     ->limit($qty)
+        //     ->get();
+
+        // return $existingGateQRCodes;
+
+        // 1. Get all unused scanned QRs for this Gate Entry Detail
+        $availableQRCodes = $geDetail->uniqueCodes()
+            ->where('status', CommonHelper::SCANNED)
             ->whereNull('utilized_id')
-            ->limit($qty)
             ->get();
 
-        return $existingGateQRCodes;
+        // 2. Group by packet_no
+        $groupedByPacket = $availableQRCodes->groupBy('packet_no');
+
+        // 3. Take n (e.g. 2) QRs per packet
+        $selectedQRCodes = $groupedByPacket->flatMap(function ($qrs) use ($qty) {
+            return $qrs->take($qty);
+        });
+
+        // 4. Return as collection
+        return $selectedQRCodes->values();
     }
 
 
@@ -276,48 +237,7 @@ class PutawayJob
             $referenceType = ConstantHelper::INSPECTION_SERVICE_ALIAS;
             $referenceDetailId = $detail->id;
         }
-
-        foreach ($existingQRCodes as $code) {
-            $newRecord = ErpItemUniqueCode::create([
-                'uid' => $this->generateUniqueUid(),
-                'job_id' => $job->id,
-                'organization_id' => $header->organization_id,
-                'group_id' => $header->group_id,
-                'company_id' => $header->company_id,
-                'morphable_type' => $morphableType,
-                'morphable_id' => $morphableId,
-                'job_type' => $type,
-                'trns_type' => $trnstype,
-                'doc_type' => $docType,
-                'doc_no' => $header->document_number ?? null,
-                'doc_date' => $header->document_date ?? null,
-                'book_id' => $header->book_id ?? null,
-                'store_id' => $this->storeId ?? null,
-                'sub_store_id' => $this->subStoreId ?? null,
-                'book_code' => $header->book_code ?? null,
-                'item_attributes' => json_encode($attributes),
-                'item_id' => $detail->item_id,
-                'item_name' => $detail->item->item_name,
-                'item_code' => $detail->item_code,
-                'vendor_id' => isset($header->vendor_id) ? $header->vendor_id : NULL,
-                'item_uid' => $code->item_uid, 
-                'batch_id' => $batch ? $batch->id : NULL,
-                'batch_number' => $batch ? $batch->batch_number : NULL,
-                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
-                'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
-                'type' => 'qr',
-                'qty' => 1,
-                'status' => CommonHelper::PENDING,
-                'reference_type' => $referenceType,
-                'reference_detail_id' => $referenceDetailId,
-                'reference_no' => $this->referenceNo,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $code->utilized_id = $newRecord->uid;
-            $code->save();
-        }
+        (new WhmJob())->copyExistingQrCodes($existingQRCodes, $job, $header, $morphableType, $morphableId, $type, $trnstype, $docType, $this->storeId, $this->subStoreId, $batch, $referenceType, $referenceDetailId, $this->referenceNo);
     }
 
     private function getAttributes($detail){
@@ -334,12 +254,5 @@ class PutawayJob
         }
 
         return $attributeJsonArray;
-    }
-
-    private function generateUniqueUid($length = 15)
-    {
-        $raw = str_replace('-', '', Str::uuid()); // 15-character hex
-        $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase
-        return $uid;
     }
 }

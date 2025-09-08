@@ -33,6 +33,7 @@ use App\Helpers\EInvoiceHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\GstnHelper;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\Helper;
 use Exception;
 
 class ItemImportExportService
@@ -40,13 +41,16 @@ class ItemImportExportService
    public function generateItemCode(array $subTypes, $subCategoryInitials, $itemInitials)
     {
 
+        $authUser = Helper::getAuthenticatedUser();
         $subType = $this->getItemSubTypeCode($subTypes);
         $baseCode = $subType . $subCategoryInitials . $itemInitials;
 
         $lastInUpload = UploadItemMaster::where('item_code', 'like', "{$baseCode}%")
-            ->withDefaultGroupCompanyOrg()
-            ->orderBy('item_code', 'desc')
-            ->first();
+        ->withDefaultGroupCompanyOrg()
+        ->where('status', '!=', 'failed')
+        ->where('user_id', $authUser->auth_user_id) 
+        ->orderBy('id', 'desc')
+        ->first();
 
         if ($lastInUpload) {
             $lastSuffix = intval(substr($lastInUpload->item_code, -3));
@@ -55,7 +59,7 @@ class ItemImportExportService
         else {
             $lastInItem = Item::where('item_code', 'like', "{$baseCode}%")
                 ->withDefaultGroupCompanyOrg()
-                ->orderBy('item_code', 'desc')
+                ->orderBy('id', 'desc')
                 ->first();
 
             $lastSuffix = $lastInItem ? intval(substr($lastInItem->item_code, -3)) : 0;

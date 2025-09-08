@@ -135,14 +135,34 @@ class PicklistTaskController extends Controller
                 })
                 ->where('id', $request->pl_item_id)
                 ->with('attributes')
-                ->select('id','material_issue_id AS pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'))
+                ->select('id','material_issue_id AS pl_header_id','item_id','item_name','item_code',
+                    // DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity')
+                    DB::raw("(
+                        CAST(inventory_uom_qty AS UNSIGNED) * 
+                        (
+                            SELECT IFNULL(storage_uom_count, 1)
+                            FROM erp_items 
+                            WHERE erp_items.id = erp_mi_items.item_id
+                        )
+                    ) as quantity")
+                )
                 ->first();
         } else if ($job -> trns_type === ConstantHelper::PL_SERVICE_ALIAS) {
             $plItem = ErpPlItem::whereHas('header', function($q) use($storeId){
                     $q->where('store_id',$storeId);
                 })
                 ->where('id', $request->pl_item_id)
-                ->select('id','pl_header_id','item_id','item_name','item_code',DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),'attributes')
+                ->select('id','pl_header_id','item_id','item_name','item_code',
+                    DB::raw("(
+                        CAST(inventory_uom_qty AS UNSIGNED) * 
+                        (
+                            SELECT IFNULL(storage_uom_count, 1)
+                            FROM erp_items 
+                            WHERE erp_items.id = erp_pl_items.item_id
+                        )
+                    ) as quantity"),
+                    'attributes'
+                )
                 ->first();
         }
 
@@ -732,7 +752,15 @@ class PicklistTaskController extends Controller
                     'item_id',
                     'item_name',
                     'item_code',
-                    DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    // DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    DB::raw("(
+                        CAST(inventory_uom_qty AS UNSIGNED) * 
+                        (
+                            SELECT IFNULL(storage_uom_count, 1)
+                            FROM erp_items 
+                            WHERE erp_items.id = erp_pl_items.item_id
+                        )
+                    ) as quantity"),
                     'attributes',
                     DB::raw("(
                         SELECT COUNT(*)
@@ -740,7 +768,7 @@ class PicklistTaskController extends Controller
                         WHERE morphable_id = erp_pl_items.id
                         AND morphable_type = '" . addslashes(ErpPlItem::class) . "'
                         AND status = '" . CommonHelper::SCANNED . "'
-                    ) as scanned_count")
+                    ) as scanned_count"),
                 )->paginate(CommonHelper::PAGE_LENGTH_10);
         } else if ($trnsType === ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME) {
             return ErpMiItem::where('material_issue_id', $morphableId)
@@ -754,7 +782,15 @@ class PicklistTaskController extends Controller
                     'item_id',
                     'item_name',
                     'item_code',
-                    DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    // DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                    DB::raw("(
+                        CAST(inventory_uom_qty AS UNSIGNED) * 
+                        (
+                            SELECT IFNULL(storage_uom_count, 1)
+                            FROM erp_items 
+                            WHERE erp_items.id = erp_mi_items.item_id
+                        )
+                    ) as quantity"),
                     DB::raw("(
                         SELECT COUNT(*)
                         FROM erp_item_unique_codes

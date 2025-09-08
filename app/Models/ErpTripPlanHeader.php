@@ -12,9 +12,9 @@ use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ErpPlHeader extends Model
+class ErpTripPlanHeader extends Model
 {
-    use HasFactory, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, DynamicFieldsTrait, UserStampTrait;
+  use HasFactory, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, DynamicFieldsTrait, UserStampTrait;
 
     protected $fillable = [
         'organization_id',
@@ -41,6 +41,10 @@ class ErpPlHeader extends Model
         'revision_date',
         'approval_level',
         'reference_number',
+        'transport_mode',
+        'vehicle_number',
+        'transporter_name',
+        'challan_number',
         'currency_id',
         'currency_code',
         'org_currency_id',
@@ -63,12 +67,11 @@ class ErpPlHeader extends Model
 
     public function media()
     {
-        return $this->morphMany(ErpPlMedia::class, 'model');
+        return $this->morphMany(ErpTripPlanMedia::class, 'model');
     }
-
     public function media_files()
     {
-        return $this->morphMany(ErpPlMedia::class, 'model')->select('id', 'model_type', 'model_id', 'file_name');
+        return $this->morphMany(ErpTripPlanMedia::class, 'model')->select('id', 'model_type', 'model_id', 'file_name');
     }
     public function book()
     {
@@ -78,20 +81,10 @@ class ErpPlHeader extends Model
     {
         return $this->hasOne(ErpCurrency::class, 'id', 'currency_id');
     }
-
     public function items()
     {
-        return $this->hasMany(ErpPlItemDetail::class, 'pl_header_id');
+        return $this->hasMany(ErpTripPlanDetail::class, 'trip_header_id');
     }
-    public function pickingItems()
-    {
-        return $this->hasMany(ErpPlItemDetail::class, 'pl_header_id') -> select('id', 'pl_header_id', 'item_id', 'inventory_uom_qty');
-    }
-    public function inv_items()
-    {
-        return $this->hasMany(ErpPlItem::class, 'pl_header_id');
-    }
-
     public function getDocumentStatusAttribute()
     {
         if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
@@ -99,18 +92,15 @@ class ErpPlHeader extends Model
         }
         return $this->attributes['document_status'];
     }
-
     public function getDisplayStatusAttribute()
     {
         $status = str_replace('_', ' ', $this->document_status);
         return ucwords($status);
     }
-
     public function createdBy()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
-
     public function store()
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
@@ -121,9 +111,8 @@ class ErpPlHeader extends Model
     }
     public function dynamic_fields()
     {
-        return $this -> hasMany(ErpPlDynamicField::class, 'header_id');
+        return $this -> hasMany(ErpTripDynamicField::class, 'header_id');
     }
-
     public function main_sub_store()
     {
         return $this -> belongsTo(ErpSubStore::class, 'main_sub_store_id');
@@ -132,14 +121,4 @@ class ErpPlHeader extends Model
     {
         return $this -> belongsTo(ErpSubStore::class, 'staging_sub_store_id');
     }
-
-    public function getTotalQuantityAttribute()
-    {
-        return $this->pickingItems->sum(function ($item) {
-            $qty = (int) $item->inventory_uom_qty;
-            $count = (int) optional($item->item)->storage_uom_count ?? 1;
-            return $qty * ($count ?: 1);
-        });
-    }
-
 }
