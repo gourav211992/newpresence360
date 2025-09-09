@@ -38,7 +38,7 @@
                                         <i data-feather="check-circle"></i> Generate Eway Bill
                                     </a>
                                 @endif
-                                @if(isset($order) && $order -> document_type == App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && $order -> document_status != App\Helpers\ConstantHelper::DRAFT && $order -> document_status != App\Helpers\ConstantHelper::SUBMITTED)
+                                @if((isset($einvoice) && !$einvoice->ewb_no) || (isset($order) && $order -> document_type == App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && $order -> document_status != App\Helpers\ConstantHelper::DRAFT && $order -> document_status != App\Helpers\ConstantHelper::SUBMITTED) && !isset($einvoice))
                                     <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
                                         <i data-feather="check-circle"></i> Generate Eway Bill
                                     </a>
@@ -4037,6 +4037,8 @@
                                 // getStoresData(currentOrderIndexVal,null,false);
                                 getItemTax(currentOrderIndexVal);
                                 setAttributesUI(currentOrderIndexVal);
+                                //Bundles
+                                getBundles(currentOrderIndexVal, item.id, null, false, false)
                                 currentOrderIndexVal += 1;
 
                                 });
@@ -5046,7 +5048,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
     }
 
 
-    function getBundles(itemIndex, soItemId, dnItemId = null, disabled = false)
+    function getBundles(itemIndex, soItemId, dnItemId = null, disabled = false, openPopup = true)
     {
         const docElement = document.getElementById('item_bundles_' + itemIndex);
         const itemBundleTableId = document.getElementById('bundles_info_table');
@@ -5116,22 +5118,29 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                     if (!docElement.getAttribute('checked-bundle')) {
                         docElement.setAttribute('checked-bundle', encodeURIComponent(JSON.stringify(newBundleCheckedArray)));
                     }
-                    $('#BundleInfo').modal('show');
+                    if (openPopup) {
+                        $('#BundleInfo').modal('show');
+                    }
                 } else {
-                    Swal.fire({
-                    title: 'Not Found',
-                    text: "Bundles not available",
-                    icon: 'info',
-                });
+                    if (openPopup) {
+                        Swal.fire({
+                            title: 'Not Found',
+                            text: "Bundles not available",
+                            icon: 'info',
+                        });
+                    }
                 }
             },
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr.responseText);
-                Swal.fire({
-                    title: 'Error!',
-                    text: "Some internal error occured",
-                    icon: 'error',
-                });
+                if (openPopup) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: "Some internal error occured",
+                        icon: 'error',
+                    });
+                }
+               
             }
         });
     }

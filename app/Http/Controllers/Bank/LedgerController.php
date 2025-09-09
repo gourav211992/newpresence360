@@ -25,21 +25,23 @@ class LedgerController extends Controller
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
         $organizationId = $authOrganization?->id;
-        $mappedOrganizations = $authUser->access_rights_org;
+        // $mappedOrganizations = $authUser->access_rights_org;
+        $mappedOrganizations = $authUser->organizations;
+
 
         $ledgers = Ledger::join('erp_bank_details','erp_bank_details.ledger_id','=','erp_ledgers.id')
                             ->select('erp_ledgers.id','erp_ledgers.name','erp_ledgers.status')->get();
 
         $date = $request->date ? $request->date : null;
         $dateRange = $this->getDateRange($date);
-        
+
         $erpGroup = Group::select('id')->where('name','Bank Accounts')->where('status', 'active')->first();
         $bankAccountGroupId = $erpGroup->id ?? 0;
 
         $openingSubquery = $this->openingSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
         $debitSubquery = $this->debitSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
         $creditSubquery = $this->creditSubquery($bankAccountGroupId, $groupId, $dateRange['startDate'], $dateRange['endDate'], $companyId, $organizationId);
-        
+
         $data = Ledger::join('erp_bank_details','erp_bank_details.ledger_id','=','erp_ledgers.id')
                 ->join('erp_banks','erp_banks.id','=','erp_bank_details.bank_id')
                 ->join('erp_item_details','erp_item_details.ledger_id','=','erp_ledgers.id')
@@ -95,7 +97,7 @@ class LedgerController extends Controller
                     'erp_bank_details.account_number'
                 )
                 ->select(
-                    'erp_ledgers.id as ledger_id', 
+                    'erp_ledgers.id as ledger_id',
                     'erp_ledgers.name',
                     'erp_banks.bank_name',
                     'erp_bank_details.account_number',
@@ -103,13 +105,13 @@ class LedgerController extends Controller
                     'debit_summary.sum_debit_amt as debit_amount',
                     'credit_summary.sum_credit_amt as credit_amount',
                     DB::raw('
-                        (COALESCE(opening_balance.total_opening_debit, 0) - COALESCE(opening_balance.total_opening_credit, 0)) 
+                        (COALESCE(opening_balance.total_opening_debit, 0) - COALESCE(opening_balance.total_opening_credit, 0))
                         as opening
                     '),
                     DB::raw('
                         (
                             (COALESCE(opening_balance.total_opening_debit, 0) - COALESCE(opening_balance.total_opening_credit, 0))
-                            + 
+                            +
                             (COALESCE(debit_summary.sum_debit_amt, 0) - COALESCE(credit_summary.sum_credit_amt, 0))
                         ) as closing
                     ')

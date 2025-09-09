@@ -57,40 +57,34 @@
     <script src="https://js.pusher.com/beams/service-worker.js"></script>
     <script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
 
-    <script defer>
-        @if (session('error'))
-            Swal.fire({
-                title: 'Error!',
-                text: "<?=session('error')?>",
-                icon: 'error',
-            });
-        @endif
+    <script src="{{ asset('app-assets/summernote/summernote-lite.min.js') }}"></script>
 
-        Pusher.logToConsole = true; // For debugging, enable Pusher logs
+
+    {{-- Pusher Notification --}}
+    {{-- <script defer>
+        Pusher.logToConsole = false; // For debugging, enable Pusher logs
 
         window.addEventListener('DOMContentLoaded', () => {
-        // Pass authenticated user ID from backend to JavaScript
-        var userId = @json(\App\Helpers\Helper::getAuthenticatedUser()->id);
-        var type = @json(get_class(\App\Helpers\Helper::getAuthenticatedUser()));
+            Pass authenticated user ID from backend to JavaScript
+            var userId = @json(\App\Helpers\Helper::getAuthenticatedUser()->id);
+            var type = @json(get_class(\App\Helpers\Helper::getAuthenticatedUser()));
 
-        window.Echo = new Echo({
-        broadcaster: 'pusher',
-        key: '10c23c19df9643f9a945',  // Replace with your actual Pusher key
-        cluster: 'mt1',  // Replace with your actual Pusher cluster
-        encrypted: true
-    });
+            window.Echo = new Echo({
+                broadcaster: 'pusher',
+                key: '10c23c19df9643f9a945',  // Replace with your actual Pusher key
+                cluster: 'mt1',  // Replace with your actual Pusher cluster
+                encrypted: true
+            });
 
-    // Log Pusher connection state changes (optional for debugging)
-    window.Echo.connector.pusher.connection.bind('state_change', (state) => {
-        // console.log('Pusher connection state:', state);
-    });
+            // Log Pusher connection state changes (optional for debugging)
+            window.Echo.connector.pusher.connection.bind('state_change', (state) => {
+                // console.log('Pusher connection state:', state);
+            });
 
-     window.Echo.private(`user.${userId}`)
-                .notification((notification) => {
-                    // console.log('Notification received:', notification);
+            window.Echo.private(`user.${userId}`).notification((notification) => {
 
-                    // Prepare the notification HTML
-                    let notificationHtml = `
+                // Prepare the notification HTML
+                let notificationHtml = `
                 <a class="d-flex"
                     href="{{route('notification.read','')}}+${notification.id}">
                     <div
@@ -98,7 +92,7 @@
                         <div class="me-1">
                             <div class="avatar">
                                 <img src="{{ url('app-assets/images/portrait/small/avatar-s-3.jpg') }}"
-                                     alt="avatar" width="32" height="32">
+                                        alt="avatar" width="32" height="32">
                             </div>
                         </div>
                         <div class="list-item-body flex-grow-1">
@@ -110,37 +104,68 @@
                         </div>
                     </div>
                 </a>
-
-
                 `;
-                    if(notification.notifiable_type === type){
+
+                if(notification.notifiable_type === type){
                     $('#list_noti').prepend(notificationHtml); // Prepend it to show at the top
                     $('.count').text(parseFloat($('.count').text())+1);
                     $('.count2').text(parseFloat($('.count').text()));
-                    }
-                });
-      })
-    </script>
-
-    <script src="{{ asset('app-assets/summernote/summernote-lite.min.js') }}"></script>
+                }
+            });
+        })
+    </script> --}}
 
     <script>
+        @if (session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: @json(session('error')),
+                icon: 'error',
+            });
+        @endif
+
         $(window).on('load', function() {
+
             if (feather) {
                 feather.replace({
                     width: 14,
                     height: 14
                 });
             }
+
             const mainLoader = document.getElementById('erp-overlay-loader');
             $(document).ajaxStop(function() {
                 mainLoader.style.display = "none";
             });
-            mainLoader.style.display = "none";            
-        });
-    </script>
+            mainLoader.style.display = "none";
 
-    <script>
+
+            // Call setActiveMenu function to CHighlight active menu
+            setActiveMenu('#main-menu-navigation');
+
+
+            $('.indian-number').each(function () {
+                let $el = $(this);
+                let value = $el.is('input') ? $el.val() : $el.text();
+
+                if ($.isNumeric(value)) {
+                    let formatted = formatIndianNumber(value);
+                    $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+                }
+            });
+
+            // Optional: Format input fields on blur (live formatting)
+            $('.indian-number').on('blur', function () {
+                let $el = $(this);
+                let value = $el.val();
+                if ($.isNumeric(value)) {
+                    $el.val(formatIndianNumber(value));
+                }
+            });
+
+        });
+
+        // Summernote
         $('#summernote').summernote({
             placeholder: 'Type your text here...',
             tabsize: 2,
@@ -164,11 +189,43 @@
                 ['misc', ['undo', 'redo']]
             ]
         });
-    </script>
 
+        /**
+         * Highlight active menu item based on current URL
+         * @param {string} menuSelector - jQuery selector for the menu container
+         */
+        function setActiveMenu(menuSelector) {
+            // Get the current URL path (without query params or domain)
+            let currentPath = window.location.pathname;
 
+            // Track the best matching menu link
+            let $activeLink = null;
+            let maxLength = 0;
 
-    <script>
+            // Loop through all menu links inside the given menu container
+            $(menuSelector).find('a[href]').each(function () {
+                let link = $(this).attr('href');
+
+                // Skip empty or placeholder links
+                if (!link || link === "#") return;
+
+                /**
+                 * We keep the "longest prefix match"
+                 */
+                if (currentPath.startsWith(link) && link.length > maxLength) {
+                    maxLength = link.length;
+                    $activeLink = $(this);
+                }
+            });
+
+            // If a matching link is found, highlight it and expand parents
+            if ($activeLink) {
+                $activeLink.addClass('active');                         // highlight the link
+                $activeLink.parents('li.has-sub').addClass('open');     // expand parent menus
+                $activeLink.parents('li').children('a').addClass('active'); // highlight parent links
+            }
+        }
+
         function formatIndianNumber(number) {
             // Ensure the number is a float and round it to 2 decimal places
             number = parseFloat(number).toFixed(2);
@@ -233,35 +290,16 @@
             // Return the formatted date
             return day + '-' + month + '-' + year;
         }
-           $(document).ready(function () {
-        $('.indian-number').each(function () {
-            let $el = $(this);
-            let value = $el.is('input') ? $el.val() : $el.text();
 
-            if ($.isNumeric(value)) {
-                let formatted = formatIndianNumber(value);
-                $el.is('input') ? $el.val(formatted) : $el.text(formatted);
-            }
+        $('.modal').on('shown.bs.modal', function () {
+            $('.indian-number').each(function () {
+                let $el = $(this);
+                let value = $el.is('input') ? $el.val() : $el.text();
+
+                if ($.isNumeric(value)) {
+                    let formatted = formatIndianNumber(value);
+                    $el.is('input') ? $el.val(formatted) : $el.text(formatted);
+                }
+            });
         });
-
-        // Optional: Format input fields on blur (live formatting)
-        $('.indian-number').on('blur', function () {
-            let $el = $(this);
-            let value = $el.val();
-            if ($.isNumeric(value)) {
-                $el.val(formatIndianNumber(value));
-            }
-        });
-    });
-    $('.modal').on('shown.bs.modal', function () {
-    $('.indian-number').each(function () {
-        let $el = $(this);
-        let value = $el.is('input') ? $el.val() : $el.text();
-
-        if ($.isNumeric(value)) {
-            let formatted = formatIndianNumber(value);
-            $el.is('input') ? $el.val(formatted) : $el.text(formatted);
-        }
-    });
-});
     </script>

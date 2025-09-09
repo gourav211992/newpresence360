@@ -329,4 +329,37 @@ class ErpPslipItem extends Model
         <input type="hidden" name="attribute_value_{$rowIndex}" />
     HTML;
     }
+
+    public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
+    {
+        $selectedAttributeIds = [];
+        $itemAttributes = $this -> item_attributes_array();
+        foreach ($itemAttributes as $itemAttr) {
+            foreach ($itemAttr['values_data'] as $valueData) {
+                if ($valueData['selected']) {
+                    array_push($selectedAttributeIds, $valueData['id']);
+                }
+            }
+        }
+        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId, $subStoreId, null, $stationId);
+        $stockBalanceQty = 0;
+        if (isset($stocks) && isset($stocks['confirmedStocks'])) {
+            $stockBalanceQty = $stocks['confirmedStocks'];
+        }
+        // return min($stockBalanceQty, $this -> qty);
+        return $stockBalanceQty;
+    }
+
+    public function getMiAcceptedBalanceQtyAttribute()
+    {
+        $currentQty = $this -> getAttribute('accepted_qty');
+        $miQty = $this -> getAttribute('mi_accepted_qty');
+        return $currentQty - $miQty;
+    }
+    public function getMiSubPrimeBalanceQtyAttribute()
+    {
+        $currentQty = $this -> getAttribute('subprime_qty');
+        $miQty = $this -> getAttribute('mi_subprime_qty');
+        return $currentQty - $miQty;
+    }
 }

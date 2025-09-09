@@ -17,18 +17,16 @@ use App\Models\Ledger;
 use App\Models\BankInfo;
 use App\Models\PaymentTerm;
 use App\Models\OrganizationType;
-use App\Models\CustomerAddress;
 use App\Models\ErpAddress;
 use App\Models\Employee;
 use Illuminate\Http\Request;
-use App\Http\Requests\CustomerRequest; 
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\CustomerRequest;
 use App\Services\CommonService;
 use App\Helpers\ConstantHelper;
-use App\Helpers\FileUploadHelper; 
+use App\Helpers\FileUploadHelper;
 use App\Helpers\ServiceParametersHelper;
-use App\Helpers\Helper; 
-use App\Helpers\EInvoiceHelper; 
+use App\Helpers\Helper;
+use App\Helpers\EInvoiceHelper;
 use App\Models\Organization;
 use App\Models\CustomerItem;
 use App\Models\Contact;
@@ -45,8 +43,10 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use stdClass;
 use Exception;
-use Auth;
+use Illuminate\Support\Facades\Cache;
 use Log;
+use P360\Core\Interfaces\TagCacheInterface;
+use P360\Core\Services\AuthUserService;
 
 class CustomerController extends Controller
 {
@@ -64,13 +64,13 @@ class CustomerController extends Controller
         public function index(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first(); 
+        $organization = Organization::where('id', $user->organization_id)->first();
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
 
         if ($request->ajax()) {
             $query = Customer::with(['salesPerson', 'erpOrganizationType', 'category', 'subcategory', 'sales_person','auth_user'])
-                ->withDraftListingLogic() 
+                ->withDraftListingLogic()
                 ->orderBy('id', 'desc');
 
             if ($request->filled('customer_type')) {
@@ -121,20 +121,20 @@ class CustomerController extends Controller
                 ->editColumn('created_at', function ($row) {
                     return $row->created_at ? Carbon::parse($row->created_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
-                
+
                 ->addColumn('created_by', function ($row) {
-                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A';
                     return $createdBy;
                 })
-                
+
                 ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
-                
+
                 ->editColumn('status', function ($row) {
-                    $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT); 
+                    $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT);
                     $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$statusKey] ?? 'badge-light-secondary';
-                    
+
                     $statusLabel = ucfirst(str_replace('_', ' ', $row->getRawOriginal('status') ?? 'N/A'));
                     $editRoute = route('customer.edit', ['id' => $row->id]);
 
@@ -171,25 +171,34 @@ class CustomerController extends Controller
 
     public function updateOrganization(Request $request)
     {
-        // $user = Auth::guard('web')->user();
-        $user = Helper::getAuthenticatedUser();
-        $organizationId = $request->input('organization_id');
-        $request->validate([
-            'organization_id' => 'required|exists:organizations,id'
-        ]);
+       try {
+            $authUser = request()->user();
+            $organizationId = $request->input('organization_id');
+            $request->validate([
+                'organization_id' => 'required|exists:organizations,id'
+            ]);
 
-        // $user->organization_id = $organizationId;
-        // $user->save();
+            unset($authUser->auth_user_id);
+            $organization = Organization::select(['id','name','alias'])->find($organizationId);
 
-        if($user->authenticable_type == 'employee'){
-            $user = Employee::find($user->id);
-        }else{
-            $user = User::find($user->id);
-        }
-        
-        $user->organization_id = $organizationId;
-        $user->save();
-        return redirect()->back()->with('success', 'Organization updated successfully!');
+            app(AuthUserService::class)->switchOrganization($authUser, $organization->alias);
+
+            $user = $authUser->authUser();
+
+            $user->organization_id = $organizationId;
+            $user->save();
+
+
+            $ck = "iam:{$authUser->group_id}:{$authUser->id}";
+
+            app(TagCacheInterface::class)->forget( $ck .":get-authenticated-user");
+            app(TagCacheInterface::class)->forget( $ck .":oauth_data");
+
+            return redirect()->back()->with('success', 'Organization updated successfully!');
+       } catch (\Throwable $th) {
+            \Log::error('Error: '.$th->getMessage());
+            return redirect()->back()->with('error', 'Error: '.$th->getMessage());
+       }
     }
     /**
      * Show the form for creating a new resource.
@@ -197,11 +206,11 @@ class CustomerController extends Controller
 
      public function generateCustomerCode(Request $request)
     {
-        $customerName = $request->input('customer_name');  
+        $customerName = $request->input('customer_name');
         $customerId = $request->input('customer_id');
         $customerType = $request->input('customer_type');
         $customerInitials = $request->input('customer_initials');
-        $prefix = $request->input('prefix', ''); 
+        $prefix = $request->input('prefix', '');
         $baseCode = $prefix . $customerType . $customerInitials;
         $authUser = Helper::getAuthenticatedUser();
 
@@ -260,7 +269,7 @@ class CustomerController extends Controller
             if (isset($services['current_book'])) {
                 $book=$services['current_book'];
                 if ($book) {
-                    $parameters = new stdClass(); 
+                    $parameters = new stdClass();
                     foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                         $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                         $parameters->{$paramName} = $param;
@@ -297,7 +306,7 @@ class CustomerController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validatedData = $request->validated();
-        $validatedData['created_by'] = $user->auth_user_id; 
+        $validatedData['created_by'] = $user->auth_user_id;
         $validatedData['related_party'] = isset($validatedData['related_party']) ? 'Yes' : 'No';
         // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
         $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
@@ -317,7 +326,7 @@ class CustomerController extends Controller
                 $validatedData['organization_id'] = null;
             }
              // Insert Book ID (if current_book exists)
-             if (isset($services['current_book'])) { 
+             if (isset($services['current_book'])) {
                 $book = $services['current_book'];
                 if ($book) {
                     $validatedData['book_id'] = $book->id;
@@ -332,7 +341,7 @@ class CustomerController extends Controller
             $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
-        $companyName = $validatedData['company_name'] ?? ''; 
+        $companyName = $validatedData['company_name'] ?? '';
         $validatedData['display_name'] = $companyName;
         if ($request->document_status === 'submitted') {
             $validatedData['status'] =  $validatedData['status'] ?? ConstantHelper::ACTIVE;
@@ -344,14 +353,14 @@ class CustomerController extends Controller
             $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
             if ($gstValidation['Status'] === 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
-                $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
+                $validatedData['deregistration_date'] = $gstData['DtDReg'] ??'';
                 $validatedData['taxpayer_type'] = $gstData['TxpType'] ?? '';
                 $validatedData['gst_status'] = $gstData['Status'] ?? '';
                 $validatedData['block_status'] = $gstData['BlkStatus'] ?? '';
                 $validatedData['legal_name'] = $gstData['LegalName'] ?? '';
                 $addresses = $validatedData['addresses'] ?? [];
                 if (!empty($addresses)) {
-                    $firstAddress = $addresses[0];  
+                    $firstAddress = $addresses[0];
                     if (isset($firstAddress['state_id'])) {
                         $validatedData['gst_state_id'] = $firstAddress['state_id'];
                     }
@@ -371,11 +380,11 @@ class CustomerController extends Controller
             $actionType = 'submit';
             $modelName = get_class($customer);
             $totalValue = 0;
-        
+
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
             $document_status = $approveDocument['approvalStatus'] ?? $customer->document_status;
             $customer->document_status = $document_status;
-        
+
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
 
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
@@ -387,7 +396,7 @@ class CustomerController extends Controller
                     $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
                     $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
                     $ledgerGroupId = $request->input('ledger_group_id');
-              
+
                     if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
                         try {
                             $result = Helper::createPartyLedger(
@@ -396,13 +405,13 @@ class CustomerController extends Controller
                                 $hiddenLedgerCustomerCode,
                                 $ledgerGroupId
                             );
-                        
+
                             if (!$result['success']) {
                                 Log::error('Error creating party ledger: ' . $result['message']);
                                 DB::rollBack();
                                 return response()->json([
                                     'status' => false,
-                                    'message' => $result['message'], 
+                                    'message' => $result['message'],
                                     'data' => $customer,
                                 ], 500);
                             }
@@ -419,16 +428,16 @@ class CustomerController extends Controller
                             DB::rollBack();
                             return response()->json([
                                 'status' => false,
-                                'message' =>  $e->getMessage(), 
+                                'message' =>  $e->getMessage(),
                                 'data' => $customer,
                             ], 500);
                         }
-                    } 
+                    }
                 // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $customer->status = $document_status;
             }
-        
+
         } else {
             $document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $customer->document_status = $document_status;
@@ -443,7 +452,7 @@ class CustomerController extends Controller
             'aadhar_attachment' => ['folder' => 'aadhar_attachments', 'clear_existing' => true],
             'other_documents' => ['folder' => 'other_documents', 'clear_existing' => true],
         ];
-        
+
         $this->fileUploadHelper->handleFileUploads($request, $customer, $fileConfigs);
 
         $bankInfoData = $validatedData['bank_info'] ?? [];
@@ -478,19 +487,19 @@ class CustomerController extends Controller
                 if (!empty($customerItemData['item_code']) && !empty($customerItemData['item_name'])) {
                     $customer->approvedItems()->create([
                         'item_id' => $customerItemData['item_id'],
-                        'item_code' => $customerItemData['item_code'] ?? null, 
-                        'item_name' => $customerItemData['item_name'] ?? null, 
-                        'item_details' => $customerItemData['item_details'] ?? null, 
-                        'sell_price' => $customerItemData['sell_price'] ?? null, 
+                        'item_code' => $customerItemData['item_code'] ?? null,
+                        'item_name' => $customerItemData['item_name'] ?? null,
+                        'item_details' => $customerItemData['item_details'] ?? null,
+                        'sell_price' => $customerItemData['sell_price'] ?? null,
                         'uom_id' => $customerItemData['uom_id']?? null,
                        'organization_id' => $validatedData['organization_id']?? null,
                         'group_id' => $validatedData['group_id']?? null,
                         'company_id' => $validatedData['company_id']?? null,
                     ]);
-                } 
+                }
             }
         }
-        
+
         DB::commit();
 
         return response()->json([
@@ -508,7 +517,7 @@ class CustomerController extends Controller
             ], 500);
         }
     }
-    
+
     public function show($id)
     {
         // Implement the logic if needed
@@ -526,11 +535,11 @@ class CustomerController extends Controller
             ->where('source_id', $id)
             ->where('revision_number', $request->revisionNumber)
             ->firstOrFail();
-            $ogCustomer = Customer::findOrFail($id);    
+            $ogCustomer = Customer::findOrFail($id);
         } else {
             $customer = Customer::with(['erpOrganizationType', 'salesPerson','subcategory', 'bankInfos', 'notes', 'contacts', 'addresses', 'compliances', 'approvedItems', 'currency', 'paymentTerm', 'ledgerGroup', 'group', 'company', 'organization', 'ledger', 'contraLedger', 'parentdCustomer'])
             ->findOrFail($id);
-            $ogCustomer = Customer::findOrFail($id);  
+            $ogCustomer = Customer::findOrFail($id);
         }
         $gstStateId = $customer->gst_state_id;
         $state = $gstStateId ? State::find($gstStateId) : null;
@@ -565,7 +574,7 @@ class CustomerController extends Controller
             }
         }
         if ($ledgerGroups->isEmpty() && $createLedger == 1) {
-            $ledgerGroups = Group::where('status', 1)->get(); 
+            $ledgerGroups = Group::where('status', 1)->get();
         }
 
         if ($ledgerGroups->isEmpty()) {
@@ -590,7 +599,7 @@ class CustomerController extends Controller
             if (isset($services['current_book'])) {
                 $book=$services['current_book'];
                 if ($book) {
-                    $parameters = new stdClass(); 
+                    $parameters = new stdClass();
                     foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                         $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                         $parameters->{$paramName} = $param;
@@ -668,7 +677,7 @@ class CustomerController extends Controller
                 $validatedData['organization_id'] = null;
             }
              // Insert Book ID (if current_book exists)
-             if (isset($services['current_book'])) { 
+             if (isset($services['current_book'])) {
                 $book = $services['current_book'];
                 if ($book) {
                     $validatedData['book_id'] = $book->id;
@@ -683,14 +692,14 @@ class CustomerController extends Controller
             $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
-        $companyName = $validatedData['company_name'] ?? ''; 
+        $companyName = $validatedData['company_name'] ?? '';
         $validatedData['display_name'] = $companyName;
         if ($request->input('document_status') === 'submitted') {
             $validatedData['status'] =  $validatedData['status'] ?? ConstantHelper::ACTIVE;
         } else {
             $validatedData['status'] = ConstantHelper::DRAFT;
         }
-        
+
         $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
         if (!$gstnNo) {
             $validatedData['deregistration_date'] = null;
@@ -725,7 +734,7 @@ class CustomerController extends Controller
         $amendRemarks = $request->amend_remarks ?? null;
         if (($customer->document_status == ConstantHelper::APPROVED || $customer->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
             && $actionType == 'amendment') {
-                
+
             $revisionData = [
                 ['model_type' => 'header', 'model_name' => 'Customer', 'relation_column' => ''],
                 ['model_type' => 'detail', 'model_name' => 'CustomerItem', 'relation_column' => 'customer_id'],
@@ -767,7 +776,7 @@ class CustomerController extends Controller
                         $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
                         $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
                         $ledgerGroupId = $request->input('ledger_group_id');
-                
+
                         if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
                             try {
                                 $result = Helper::createPartyLedger(
@@ -776,13 +785,13 @@ class CustomerController extends Controller
                                     $hiddenLedgerCustomerCode,
                                     $ledgerGroupId
                                 );
-                            
+
                                 if (!$result['success']) {
                                     Log::error('Error creating party ledger: ' . $result['message']);
                                     DB::rollBack();
                                     return response()->json([
                                         'status' => false,
-                                        'message' => $result['message'], 
+                                        'message' => $result['message'],
                                         'data' => $customer,
                                     ], 500);
                                 }
@@ -799,11 +808,11 @@ class CustomerController extends Controller
                                 DB::rollBack();
                                 return response()->json([
                                     'status' => false,
-                                    'message' =>  $e->getMessage(), 
+                                    'message' =>  $e->getMessage(),
                                     'data' => $customer,
                                 ], 500);
                             }
-                        } 
+                        }
                     // ** END: Call createPartyLedger if conditions are met **
                 } else {
                     $customer->status = $statusAfterApproval;
@@ -824,7 +833,7 @@ class CustomerController extends Controller
                         $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
                         $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
                         $ledgerGroupId = $request->input('ledger_group_id');
-                
+
                         if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
                             try {
                                 $result = Helper::createPartyLedger(
@@ -833,13 +842,13 @@ class CustomerController extends Controller
                                     $hiddenLedgerCustomerCode,
                                     $ledgerGroupId
                                 );
-                            
+
                                 if (!$result['success']) {
                                     Log::error('Error creating party ledger: ' . $result['message']);
                                     DB::rollBack();
                                     return response()->json([
                                         'status' => false,
-                                        'message' => $result['message'], 
+                                        'message' => $result['message'],
                                         'data' => $customer,
                                     ], 500);
                                 }
@@ -856,11 +865,11 @@ class CustomerController extends Controller
                                 DB::rollBack();
                                 return response()->json([
                                     'status' => false,
-                                    'message' =>  $e->getMessage(), 
+                                    'message' =>  $e->getMessage(),
                                     'data' => $customer,
                                 ], 500);
                             }
-                        } 
+                        }
                     // ** END: Call createPartyLedger if conditions are met **
                 } else {
                     $customer->status = $document_status;
@@ -872,9 +881,9 @@ class CustomerController extends Controller
             $customer->document_status = $document_status;
             $customer->status = $document_status;
         }
-        
+
         $customer->save();
-       
+
          $fileConfigs = [
             'pan_attachment' => ['folder' => 'pan_attachments', 'clear_existing' => true],
             'tin_attachment' => ['folder' => 'tin_attachments', 'clear_existing' => true],
@@ -884,12 +893,12 @@ class CustomerController extends Controller
 
         $this->fileUploadHelper->handleFileUploads($request, $customer, $fileConfigs);
 
-        
+
         $bankInfoData = $validatedData['bank_info'] ?? [];
         if (!empty($bankInfoData)) {
             $this->commonService->updateBankInfo($bankInfoData, $customer);
         }
-        
+
         $notesData = $validatedData['notes'] ?? [];
         if (!empty($notesData['remark'])) {
             $this->commonService->createNote($notesData, $customer,$user);
@@ -922,7 +931,7 @@ class CustomerController extends Controller
                                 'item_code' => $customerItemData['item_code'],
                                 'item_name' => $customerItemData['item_name'],
                                 'item_details' => $customerItemData['item_details'] ?? null,
-                                'sell_price' => $customerItemData['sell_price'] ?? null, 
+                                'sell_price' => $customerItemData['sell_price'] ?? null,
                                 'uom_id' => $customerItemData['uom_id']?? null,
                                 'organization_id' => $validatedData['organization_id']?? null,
                                 'group_id' => $validatedData['group_id']?? null,
@@ -940,7 +949,7 @@ class CustomerController extends Controller
                             'item_code' => $customerItemData['item_code'],
                             'item_name' => $customerItemData['item_name'],
                             'item_details' => $customerItemData['item_details'] ?? null,
-                            'sell_price' => $customerItemData['sell_price'] ?? null, 
+                            'sell_price' => $customerItemData['sell_price'] ?? null,
                             'uom_id' => $customerItemData['uom_id']?? null,
                             'organization_id' => $validatedData['organization_id']?? null,
                             'group_id' => $validatedData['group_id']?? null,
@@ -950,7 +959,7 @@ class CustomerController extends Controller
                     }
                 }
             }
-        
+
             $itemsToDelete = array_diff($existingCustomerItems, $newItems);
             if ($itemsToDelete) {
                 $customer->approvedItems()->whereIn('id', $itemsToDelete)->delete();
@@ -1016,14 +1025,14 @@ class CustomerController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        return view('procurement.customer.import'); 
+        return view('procurement.customer.import');
     }
 
 
     public function import(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-    
+
         try {
             $request->validate([
                 'file' => 'required|mimes:xlsx,xls|max:30720',
@@ -1034,9 +1043,9 @@ class CustomerController extends Controller
                     'message' => 'No file uploaded.',
                 ], 400);
             }
-    
+
             $file = $request->file('file');
-    
+
             try {
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
             } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
@@ -1045,7 +1054,7 @@ class CustomerController extends Controller
                     'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
                 ], 400);
             }
-    
+
             $sheet = $spreadsheet->getActiveSheet();
             $rowCount = $sheet->getHighestRow() - 1;
             if ($rowCount > 10000) {
@@ -1060,20 +1069,20 @@ class CustomerController extends Controller
                     'message' => 'The uploaded file is empty.',
                 ], 400);
             }
-    
+
             UploadCustomerMaster::where('user_id', $user->auth_user_id)->delete();
-    
-            $import = new CustomerImport($this->itemImportExportService); 
+
+            $import = new CustomerImport($this->itemImportExportService);
             Excel::import($import, $file);
-    
+
             $successfulCustomers = $import->getSuccessfulCustomers();
             $failedCustomers = $import->getFailedCustomers();
             $mailData = [
                 'modelName' => 'Customer',
                 'successful_items' => $successfulCustomers,
                 'failed_items' => $failedCustomers,
-                'export_successful_url' => route('customers.export.successful'), 
-                'export_failed_url' => route('customers.export.failed'), 
+                'export_successful_url' => route('customers.export.successful'),
+                'export_failed_url' => route('customers.export.failed'),
             ];
             if (count($failedCustomers) > 0) {
                 $message = 'Record import failed. Some records were not imported.';
@@ -1084,7 +1093,7 @@ class CustomerController extends Controller
             }
             if ($user->email) {
                 try {
-                    Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                    Mail::to($user->email)->send(new ImportComplete( $mailData));
                 } catch (Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
@@ -1095,7 +1104,7 @@ class CustomerController extends Controller
                 'successful_customers' => $successfulCustomers,
                 'failed_customers' => $failedCustomers,
             ], 200);
-    
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
@@ -1116,10 +1125,10 @@ class CustomerController extends Controller
         $customers = Customer::with(['category', 'subcategory', 'currency', 'paymentTerms'])
             ->whereIn('company_name', $uploadCustomers->pluck('company_name'))
             ->get();
-    
+
         return Excel::download(new CustomersExport($customers, $this->itemImportExportService), "successful-customers.xlsx");
     }
-    
+
     public function exportFailedCustomers()
     {
         $user = Helper::getAuthenticatedUser();
@@ -1220,12 +1229,12 @@ class CustomerController extends Controller
         }
     }
 
-    
+
     public function destroy($id)
     {
         try {
             $customer = Customer::findOrFail($id);
-    
+
             $referenceTables = [
                 'erp_addresses' => ['addressable_id'],
                 'erp_contacts' => ['contactable_id'],
@@ -1233,11 +1242,11 @@ class CustomerController extends Controller
                 'erp_notes' => ['noteable_id'],
                 'erp_customer_items' => ['customer_id'],
                 'erp_compliances' => ['morphable_id'],
-                
+
             ];
-    
+
             $result = $customer->deleteWithReferences($referenceTables);
-    
+
             if (!$result['status']) {
                 return response()->json([
                     'status' => false,
@@ -1245,12 +1254,12 @@ class CustomerController extends Controller
                     'referenced_tables' => $result['referenced_tables'] ?? []
                 ], 400);
             }
-    
+
             return response()->json([
                 'status' => true,
                 'message' =>'Record deleted successfully.',
             ], 200);
-    
+
         } catch (Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1258,14 +1267,14 @@ class CustomerController extends Controller
             ], 500);
         }
     }
-    
-    public function getStates($country_id) 
+
+    public function getStates($country_id)
     {
         $states = State::where('country_id', $country_id)->get();
         return response()->json($states);
     }
 
-    public function getCities($state_id) 
+    public function getCities($state_id)
     {
         $cities = City::where('state_id', $state_id)->get();
         return response()->json($cities);
@@ -1281,15 +1290,15 @@ class CustomerController extends Controller
             'compliances' => $compliances
         ]);
     }
-    
+
     public function getComplianceById($id)
     {
         $compliance = Compliance::with('media')->find($id);
-        
+
         if (!$compliance) {
             return response()->json(['error' => 'Compliance not found'], 404);
         }
-    
+
         return response()->json($compliance);
     }
 
@@ -1309,5 +1318,5 @@ class CustomerController extends Controller
                 ->get(['id', 'company_name','customer_code']);
         }
         return response()->json($customers);
-    } 
+    }
 }

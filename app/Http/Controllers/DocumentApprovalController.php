@@ -30,6 +30,7 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
 use App\Lib\Services\WHM\PickingJob;
 use App\Lib\Services\WHM\PutawayJob;
+use App\Lib\Services\WHM\RGRJob;
 use App\Lib\Services\WHM\UnloadingJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Bom;
@@ -1647,7 +1648,7 @@ class DocumentApprovalController extends Controller
                 ConstantHelper::APPROVED,
                 ConstantHelper::APPROVAL_NOT_REQUIRED
             ])) {
-                (new WhmJob)->createJob($doc->id, 'App\Models\ErpRgr');
+                (new RGRJob)->createJob($doc->id, 'App\Models\ErpRgr');
             }
             DB::commit();
 

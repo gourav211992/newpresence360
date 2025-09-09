@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Auth;
 use App\Helpers\Helper;
 
 class Organization extends Model
 {
     use HasFactory;
+
+    protected $appends = ['full_logo_path'];
 
     public function company()
     {
@@ -69,11 +70,17 @@ class Organization extends Model
     {
         return $this->hasMany(Customer::class);
     }
-    
+
     public function compliances()
     {
         // dd($this->morphone(Compliance::class,'morphable'));
         return $this->morphone(Compliance::class, 'morphable');
+    }
+
+    public function getFullLogoPathAttribute(){
+        return $this->logo_path
+            ? env('ADMIN_URL').'/storage/'.$this->logo_path
+            : null;
     }
 
 }

@@ -175,7 +175,7 @@
                                                         <label class="form-label">Reference from</label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        @if (isset($scrap->reference_type) && $scrap->reference_type)
+                                                        @if (isset($scrap->reference_type) && $scprocurement_type_paramrap->reference_type)
                                                             @if ($scrap->reference_type == 'pslip')
                                                                 <button {{ $createEditDisabled }} type="button" class="btn btn-outline-primary btn-sm mb-0 psSelect" @if (!$buttons['draft'] || !$buttons['submit']) disabled @endif>
                                                                     <i data-feather="plus-square"></i>

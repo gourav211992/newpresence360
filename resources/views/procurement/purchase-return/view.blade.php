@@ -978,10 +978,8 @@
             let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    // console.log(data.data);
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
-                        // console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1393,7 +1391,7 @@
             $('.form-check-input:checked').each(function(index, item) {
                 let tr = $(item).closest('tr');
                 let trIndex = tr.index();
-                let detail_id = Number($(tr).find('[name*="[detail_id]"]').val()) || 0;
+                let detail_id = Number($(tr).find('[name*="[pr_dtl_id]"]').val()) || 0;
                 let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
                 if (detail_id > 0 && mrn_detail_id > 0) {
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });
@@ -1962,7 +1960,6 @@
         {
             const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
             const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
-            console.log(bookId, documentId);
 
             const postingApiUrl = "{{route('purchase-return.post')}}"
             if (bookId && documentId) {
@@ -1978,7 +1975,6 @@
                     }),
                     success: function(data) {
                         const response = data.data;
-                        console.log('response', response);
                         if (response.status) {
                             Swal.fire({
                                 title: 'Success!',
@@ -2118,11 +2114,9 @@
 
         // Generate EInvoice
         $(document).on('click', '#eEnvoiceBtn', (e) => {
-            console.log('einvoice');
             let actionUrl = '{{ route("purchase-return.generate-einvoice") }}'+ '?id='+'{{$mrn->id}}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    console.log(data);
                     if(data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',
@@ -2144,12 +2138,10 @@
 
         // Generate E Way Bill
         $(document).on('click', '#eWayBillBtn', (e) => {
-            // console.log('ewaybill');
 
             let actionUrl = '{{ route("purchase-return.generate-ewaybill") }}'+ '?id='+'{{$mrn->id}}';
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
-                    console.log(data);
                     if(data.status == 'error') {
                         Swal.fire({
                             title: 'Error!',

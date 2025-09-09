@@ -118,7 +118,7 @@ class JoItem extends Model
         return collect($processedData);
     }
 
-    public function getAvlStock($storeId, $subStoreId = null)
+    public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
         $itemAttributes = $this -> item_attributes_array();

@@ -85,8 +85,12 @@ class ErpRgrItem extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-     public function uniqueCodes()
+    public function uniqueCodes()
     {
         return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
+    }
+    public function segregation()
+    {
+        return $this->hasOne(ErpRgrItemSegregation::class, 'rgr_item_id');
     }
 }

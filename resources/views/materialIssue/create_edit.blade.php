@@ -464,6 +464,12 @@
             <i data-feather="plus-square"></i> Purchase Indent
         </button>
     </div>
+    <div class="col-auto action-button" id="pslip_order_selection">
+        <input type="hidden" id="pslip_header_pull" value ="{{ App\Helpers\ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS }}">
+        <button onclick="openHeaderPullModal('pslip');" disabled type="button" id="select_pslip_button" class="btn btn-outline-primary btn-sm mb-0">
+            <i data-feather="plus-square"></i> Production Slip
+        </button>
+    </div>
 </div>
 
 </div>
@@ -573,8 +579,8 @@
                                                                         <input type = "hidden" value = "{{$orderItem -> from_store_id}}" name = "item_store_from[{{$orderItemIndex}}]" />
 
 
-                                                                        <td><input type="text" id = "item_qty_{{$orderItemIndex}}" value = "{{$orderItem -> issue_qty}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, {{$orderItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{$orderItem -> max_qty_attribute}}"/></td>
-                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" value = "{{$orderItem -> rate}}" name = "item_rate[{{$orderItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, {{$orderItemIndex}});"/></td>
+                                                                        <td><input type="text" id = "item_qty_{{$orderItemIndex}}" value = "{{$orderItem -> issue_qty}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, {{$orderItemIndex}});" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);" max = "{{$orderItem -> max_qty_attribute}}"/></td>
+                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" value = "{{$orderItem -> rate}}" name = "item_rate[{{$orderItemIndex}}]" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, {{$orderItemIndex}});"/></td>
                                                                         <td><input type="text" id = "item_value_{{$orderItemIndex}}" value = "{{$orderItem -> total_item_amount}}" readonly class="form-control mw-100 text-end item_values_input" /></td>
                                                                         <td>
                                                                         <div class="d-flex">
@@ -897,6 +903,7 @@
 @include('materialIssue.partials.jo_pull_modal');
 @include('materialIssue.partials.pwo_pull_modal');
 @include('materialIssue.partials.pi_pull_modal');
+@include('materialIssue.partials.pslip_pull_modal');
 
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -1018,8 +1025,8 @@
                 <input type = "hidden" value = "${selectedDeptId}" name = "item_department_id[${newIndex}]" id = "item_user_id_input_${newIndex}" />
                 <input type = "hidden" value = "${selectedUserId}" name = "item_user_id[${newIndex}]" id = "item_department_id_input_${newIndex}" />
 
-               <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
-               <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, ${newIndex});"/></td>
+               <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);"/></td>
+               <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, ${newIndex});"/></td>
                <td><input type="text" id = "item_value_${newIndex}" readonly class="form-control mw-100 text-end item_values_input" /></td>
                <td>
                <div class="d-flex">
@@ -1055,7 +1062,7 @@
 
         function deleteItemRows()
         {
-            var deletedItemIds = JSON.parse(localStorage.getItem('deletedSiItemIds'));
+            var deletedItemIds = JSON.parse(localStorage.getItem('deletedItemIds') ? localStorage.getItem('deletedItemIds') : '[]');
             const allRowsCheck = document.getElementsByClassName('item_row_checks');
             let deleteableElementsId = [];
             for (let index = allRowsCheck.length - 1; index >= 0; index--) {  // Loop in reverse order
@@ -1073,7 +1080,7 @@
             for (let index = 0; index < deleteableElementsId.length; index++) {
                 document.getElementById(deleteableElementsId[index])?.remove();
             }
-            localStorage.setItem('deletedSiItemIds', JSON.stringify(deletedItemIds));
+            localStorage.setItem('deletedItemIds', JSON.stringify(deletedItemIds));
             const allRowsNew = document.getElementsByClassName('item_row_checks');
             if (allRowsNew.length > 0) {
                 disableHeader();
@@ -1362,6 +1369,17 @@
                             selectionPopupElement.style.display = ""
                         }
                     }
+                    if (selectSingleVal == 'pslip') {
+                        var selectionSectionElement = document.getElementById('selection_section');
+                        if (selectionSectionElement) {
+                            selectionSectionElement.style.display = "";
+                        }
+                        var selectionPopupElement = document.getElementById('pslip_order_selection');
+                        if (selectionPopupElement)
+                        {
+                            selectionPopupElement.style.display = ""
+                        }
+                    }
                     if (selectSingleVal == 'd') {
                         document.getElementById('add_item_section').style.display = "";
                     }
@@ -1468,6 +1486,14 @@
                     piButton.disabled = false;
                 }
             }
+            let pslipButton = document.getElementById('select_pslip_button');
+            if (pslipButton) {
+                if (issueType == "Sub Contracting" || issueType == "Job Work") {
+                    pslipButton.disabled = true;
+                } else {
+                    pslipButton.disabled = false;
+                }
+            }
             let leaseButton = document.getElementById('select_pwo_button');
             if (leaseButton) {
                 leaseButton.disabled = false;
@@ -1517,7 +1543,6 @@
             });
             return;
         }
-        console.log('openHeaderPullModal called with type:', type);
         if (type === 'mo') {
             openPullType = "mo";
             $("#rescdule").modal('show');
@@ -1527,6 +1552,9 @@
         } else if (type === 'jo') {
             openPullType = "jo";
             $("#rescduleJo").modal('show');
+        }else if (type === 'pslip') {
+            openPullType = "pslip";
+            $("#rescdulePslip").modal('show');
         }else {
             openPullType = "pi";
             $("#rescdulePi").modal('show');
@@ -1678,6 +1706,8 @@
         } else if (type === 'pi') {
             departmentOrStoreKey = 'department_code';
             tableSelector = '#pi_orders_table';
+        } else if (type === 'pslip') {
+            tableSelector = '#pslip_orders_table';
         } else if (type == "jo") {
             tableSelector = '#jo_orders_table';
         }
@@ -1722,7 +1752,7 @@
                 { data: 'department_code', name: 'department_code', render: renderData, className: 'no-wrap' },
                 { data: 'requester_name', name: 'requester_name', render: renderData, className: 'no-wrap' }
             );
-        } else if (type === 'mo') {
+        } else if (type === 'mo' || type == 'pslip') {
             columns.push(
                 { data: 'store_location_code', name: 'store_location_code', render: renderData, className: 'no-wrap' },
                 { data: 'sub_store_code', name: 'sub_store_code', render: renderData, className: 'no-wrap' },
@@ -1785,6 +1815,7 @@
             requester_user_id: "#user_id_input",
             station_id: "#station_to_id_input",
             vendor_id : $("#vendor_id_input"),
+            pslip_pull_type : $("#pslip_issue_type")
         };
 
         // Destroy existing table if any
@@ -1849,7 +1880,6 @@
 
     function processOrder()
     {
-        console.log(openPullType, "IPE");
         const allCheckBoxes = document.getElementsByClassName('pull_checkbox');
         const docType = $("#service_id_input").val();
         const apiUrl = "{{route('material.issue.process.items')}}";
@@ -1881,7 +1911,10 @@
                     doc_type: openPullType,
                     document_details : JSON.stringify(documentDetails),
                     store_id : $("#store_from_id_input").val(),
-                    mi_type : $("#issue_type_input").val()
+                    sub_store_id : $("#sub_store_from_id_input").val(),
+                    station_id : $("#station_from_id_input").val(),
+                    mi_type : $("#issue_type_input").val(),
+                    pslip_issue_type : $("#pslip_issue_type").val()
                 },
                 success: function(data) {
                     const currentOrders = data.data;
@@ -1896,8 +1929,17 @@
                             if (!$("#sub_store_to_id_input").val()) {
                                 $("#sub_store_to_id_input").val(currentOrder?.sub_store_id);
                             }
-                            if (!$("#station_to_id_input").val()) {
-                                $("#staiton_to_id_input").val(currentOrder?.station_id);
+                            if (!$("#station_to_id_input").val() && currentOrder?.station_id && currentOrder?.station_name) {
+                                // Clear previous options if needed
+                                $("#station_to_id_input").empty().append(
+                                    $("<option>", {
+                                        value: currentOrder?.station_id,
+                                        text: currentOrder?.station_name
+                                    })
+                                );
+
+                                // Now set the value
+                                $("#station_to_id_input").val(currentOrder?.station_id);
                             }
                             //
 
@@ -1923,7 +1965,6 @@
                             // deleteItemRows();
                             if (true) {
                                 currentOrder.items.forEach((item, itemIndex) => {
-                                    console.log(item, "ITEM");
                                     let selectedStockType = 'R';
                                     if (openPullType == 'mo') {
                                         if (item?.rm_type && item?.rm_type === 'rm') {
@@ -1931,6 +1972,10 @@
                                         } else if (item?.rm_type && item?.rm_type === 'sf') {
                                             selectedStockType = 'W';
                                         }
+                                    }
+                                    let pslipIssueTypeElement = ``;
+                                    if (item?.pslip_issue_type) {
+                                        pslipIssueTypeElement = `<input type = "hidden" value = "${item.pslip_issue_type}" name = "pslip_issue_type[${currentOrderIndexVal}]" />`;
                                     }
                                     // item.balance_qty = item.mi_balance_qty;
                                     if (Number(item.avl_stock) < Number(item.mi_balance_qty)){
@@ -1941,6 +1986,10 @@
                                     if (openPullType == "pwo") {
                                         itemIdKeyName = "pwo_item_id";
                                         itemIdKeyId = "pwo_id";
+                                    }
+                                    if (openPullType == "pslip") {
+                                        itemIdKeyName = "pslip_item_id";
+                                        itemIdKeyId = "pslip_id";
                                     }
                                     if (openPullType == "pi") {
                                         itemIdKeyName = "pi_item_id";
@@ -2000,7 +2049,7 @@
                                             <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[${currentOrderIndexVal}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" item-locations = "[]">
                                             <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
                                             <input type = "hidden" value = "${item?.id}" id = "${itemIdKeyId}_${currentOrderIndexVal}" name = "${itemIdKeyName}[${currentOrderIndexVal}]">
-
+                                            ${pslipIssueTypeElement}
                                         </td>
 
                                         <td class="poprod-decpt">
@@ -2031,8 +2080,8 @@
                                         <input type = "hidden" value = "${currentOrder?.user_id}" name = "item_user_id[${currentOrderIndexVal}]" id = "item_user_id_input_${currentOrderIndexVal}" />
                                         <input type = "hidden" value = "${currentOrder?.department_id}" name = "item_user_id[${currentOrderIndexVal}]" id = "item_department_id_input_${currentOrderIndexVal}" />
 
-                                        <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.mi_balance_qty}" max = "${item?.mi_balance_qty}"/></td>
-                                        <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}" oninput = "changeItemRate(this, ${currentOrderIndexVal});" /></td>
+                                        <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);" value = "${item?.mi_balance_qty}" max = "${item?.mi_balance_qty}"/></td>
+                                        <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end decimal-6" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}" oninput = "changeItemRate(this, ${currentOrderIndexVal});" /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" readonly class="form-control mw-100 text-end item_values_input" value = "${item?.mi_balance_qty * item?.rate}" /></td>
                                         <td>
                                         <div class="d-flex">
@@ -2175,7 +2224,7 @@
 
             // Optional: limit decimal places to 2
             if (this.value.indexOf('.') !== -1) {
-                this.value = this.value.substring(0, this.value.indexOf('.') + 3);
+                this.value = this.value.substring(0, this.value.indexOf('.') + 7);
             }
         });
     });

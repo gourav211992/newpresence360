@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Helpers\RGR\Constants as RgrConstants;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\FileUploadTrait;
 
 class ErpRgrItemSegregation extends Model
 {
-    use HasFactory;
+    use HasFactory,FileUploadTrait;
 
     protected $appends = ['segregation_status'];
 
@@ -52,5 +53,10 @@ class ErpRgrItemSegregation extends Model
         if ($isWrongProduct) {
             $statuses[] = RgrConstants::RGR_SEGREGATION_WRONG_PRODUCT;
         }
+    }
+
+     public function media()
+    {
+        return $this->morphMany(ErpRgrMedia::class, 'model');
     }
 }

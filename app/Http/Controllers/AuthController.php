@@ -18,12 +18,13 @@ class AuthController extends Controller
         //     'email' => "pawanchhapola123@gmail.com",
         //     'password' => Hash::make("1234567890"),
         // ]);
-        if (Auth::check()) {
-            return redirect()->intended('/');
-        }
-        else {
-            return view('auth.login');
-        }
+
+        // if (Auth::check()) {
+        //     return redirect()->intended('/');
+        // }
+        // else {
+        //     return view('auth.login');
+        // }
     }
 
     public function login(Request $request)

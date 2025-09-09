@@ -38,17 +38,15 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('*', function ($view) {
 
-            $user = Helper::getAuthenticatedUser();
+            $user = request()->user();
+            // $user = Helper::getAuthenticatedUser();
+            // $profileUser = $user->authUser();
+
             if ($user) {
+                $user = Helper::getAuthenticatedUser();
                 $organizationId = $user->organization_id;
                 // Fetch organization menus based on services
-                $menues = OrganizationMenu::with(['childMenus' => function($query) use ($user) {
-                        $query->where('group_id', $user->organization->group_id);
-                    }])
-                    ->where('group_id', $user->organization->group_id)
-                    ->whereNull('parent_id')
-                    ->orderBy('sequence','ASC')->get();
-
+                $menues = [];
 
                 // Fetch user organization mappings
                 $mappings = $user -> access_rights_org;
@@ -67,7 +65,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with([
                     'authSessionUser' => $user,
                     'menues' => $menues,
-                    'organizations' => $mappings,
+                    'organizations' => $mappings ,
                     'organization_id' => $organizationId,
                     'orgLogo' => $orgLogo,
                     'logedinUser'=> $user,

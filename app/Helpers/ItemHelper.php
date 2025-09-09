@@ -647,11 +647,12 @@ class ItemHelper
 
         //Repeatedly add Stock to every Organization, Location and Store
         $authUser = Helper::getAuthenticatedUser();
+        // dd($authUser);
         $orgIds = [];
         if ($organizationId) {
             $orgIds[] = $organizationId;
         } else {
-            $orgIds = $authUser->access_rights_org->pluck('organization_id')->toArray();
+            $orgIds = $authUser->organizations?->pluck('id')->toArray();
             array_push($orgIds, $authUser->organization_id);
         }
         //Retrieve all Organizations

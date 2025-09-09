@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\FileUploadTrait;
 
 class ErpRepItem extends Model
 {
+    use FileUploadTrait;
     protected $table = 'erp_rep_items';
 
     protected $fillable = [
@@ -67,7 +69,7 @@ class ErpRepItem extends Model
         return $this->hasMany(ErpRepItemDefectLog::class, 'rep_item_id');
     }
 
-    public function media()
+     public function media()
     {
         return $this->morphMany(ErpRepMedia::class, 'model');
     }

@@ -129,10 +129,11 @@
                         <select class="form-select select2" name="organization_id" id="organization_id">
                             <option value="">Select</option>
                             @forelse ($mappedOrganizations as $organization)
-                                <option value="{{ $organization->organization_id }}"
-                                    {{ $organization->organization_id == (request('organization_id') ? request('organization_id') : $authUser->organization_id) ? 'selected' : '' }}>
-                                    {{ $organization->organization->name }}
+                                <option value="{{ $organization->id }}"
+                                    {{ $organization->id == (request('organization_id') ? request('organization_id') : $authUser->organization_id) ? 'selected' : '' }}>
+                                    {{ $organization->name }}
                                 </option>
+
                             @empty
                             @endforelse
                         </select>

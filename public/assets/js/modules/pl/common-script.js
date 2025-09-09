@@ -289,6 +289,10 @@ function disableHeader()
     if (piButton) {
         piButton.disabled = true;
     }
+    let pslipbutton = document.getElementById('select_pslip_button');
+    if (pslipbutton) {
+        pslipbutton.disabled = true;
+    }
     let leaseButton = document.getElementById('select_pwo_button');
     if (leaseButton) {
         leaseButton.disabled = true;
@@ -358,6 +362,10 @@ function enableHeader()
     let piButton = document.getElementById('select_pi_button');
     if (piButton) {
         piButton.disabled = false;
+    }
+    let pslipbutton = document.getElementById('select_pslip_button');
+    if (pslipbutton) {
+        pslipbutton.disabled = true;
     }
     let leaseButton = document.getElementById('select_pwo_button');
     if (leaseButton) {
@@ -719,6 +727,7 @@ function enableDisableQtButton()
     let moButton = document.getElementById('select_mo_button');
     let joButton = document.getElementById('select_jo_button');
     let piButton = document.getElementById('select_pi_button');
+    let pslipbutton = document.getElementById('select_pslip_button');
     let dnButton = document.getElementById('select_dn_button');
     let lrButton = document.getElementById('select_lorry_button');
     let leaseButton = document.getElementById('select_lease_button');
@@ -745,6 +754,9 @@ function enableDisableQtButton()
         }
         if (piButton) {
             piButton.disabled = false;
+        }
+        if (pslipbutton) {
+            pslipbutton.disabled = false;
         }
         if (dnButton) {
             dnButton.disabled = false;
@@ -786,6 +798,9 @@ function enableDisableQtButton()
         }
         if (piButton) {
             piButton.disabled = true;
+        }
+        if (pslipbutton) {
+            pslipbutton.disabled = true;
         }
         if (dnButton) {
             dnButton.disabled = true;
@@ -998,6 +1013,17 @@ function implementBookParameters(paramData)
                         selectionPopupElement.style.display = ""
                     }
                 }
+                if (selectSingleVal == 'pslip') {
+                    var selectionSectionElement = document.getElementById('selection_section');
+                    if (selectionSectionElement) {
+                        selectionSectionElement.style.display = "";
+                    }
+                    var selectionPopupElement = document.getElementById('pslip_order_selection');
+                    if (selectionPopupElement)
+                    {
+                        selectionPopupElement.style.display = ""
+                    }
+                }
                 if (selectSingleVal == 'plist') {
                     var selectionSectionElement = document.getElementById('selection_section');
                     if (selectionSectionElement) {
@@ -1122,7 +1148,11 @@ function setReject()
 }
 function setFormattedNumericValue(element)
 {
-    element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(4)
+    if (element.classList.contains('decimal-6')) {
+        element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(6)
+    } else {
+        element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(4)
+    }
 }
 
 $(document).on('click', '#amendmentSubmit', (e) => {
@@ -1159,7 +1189,7 @@ $(document).ready(function() {
 
         // Optional: limit decimal places to 2
         if (this.value.indexOf('.') !== -1) {
-            this.value = this.value.substring(0, this.value.indexOf('.') + 3);
+            this.value = this.value.substring(0, this.value.indexOf('.') + 7);
         }
     });
 });
@@ -1364,7 +1394,11 @@ document.addEventListener('input', function (e) {
 
         // Limit to 2 decimal places
         if (parts[1]?.length > 6) {
-            value = parts[0] + '.' + parts[1].substring(0, 2);
+            if (e.target.classList.contains('decimal-6')) {
+                value = parts[0] + '.' + parts[1].substring(0, 6);
+            } else {
+                value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
         }
 
         // Prevent exceeding the max limit
@@ -2336,7 +2370,7 @@ function changeItemQty(element, index)
                 text: 'Qty cannot be greater than confirmed stock',
                 icon: 'error',
             });
-            element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(4)
+            element.value = (parseFloat(maxInputVal ? maxInputVal  : 0)).toFixed(6)
             // return;
         }
     }
@@ -2515,8 +2549,12 @@ document.addEventListener('input', function (e) {
         }
 
         // Limit to 2 decimal places
-        if (parts[1]?.length > 2) {
-            value = parts[0] + '.' + parts[1].substring(0, 2);
+         if (parts[1]?.length > 6) {
+            if (e.target.classList.contains('decimal-6')) {
+                value = parts[0] + '.' + parts[1].substring(0, 6);
+            } else {
+                value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
         }
 
         // Prevent exceeding the max limit

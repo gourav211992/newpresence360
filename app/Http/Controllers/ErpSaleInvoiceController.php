@@ -2996,7 +2996,7 @@ class ErpSaleInvoiceController extends Controller
             //Create or in edit draft mode (Show all possible values)
             $pslipItemIds = ErpPslipItem::where('so_item_id', $soItemId) -> get() -> pluck('id') -> toArray();
             $bundles = ErpPslipItemDetail::whereIn('pslip_item_id', $pslipItemIds) -> when($request -> dn_item_id, function ($subQuery) use($request) {
-                $subQuery -> whereNull('dn_item_id') -> orWhere('dn_item_id', $request -> dn_item_id);
+                $subQuery -> where('dn_item_id', $request -> dn_item_id);
             }) -> when(!$request -> dn_item_id, function ($subQuery) {
                 $subQuery -> whereNull('dn_item_id');
             }) -> get();

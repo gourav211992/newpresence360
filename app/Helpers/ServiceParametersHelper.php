@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\RGR\Constants as RGRConstants;
+use App\Helpers\Inventory\MaterialIssue\Constants as MIConstants;
 use App\Helpers\ASN\Constants as ASNConstants;
 
 /**
@@ -134,6 +135,8 @@ class ServiceParametersHelper
     const STATION_WISE_CONSUMPTION_VALUES = ["yes", "no"];
     const SO_TRACKING_REQUIRED = "so_tracking_required";
     const SO_TRACKING_REQUIRED_VALUES = ['yes', 'no'];
+    //Repair Order (RMFG)
+    const OK_TO_RECIEVE_BOOK_PARAM = "ok_to_recieve_series";
     /**
      * Constant Array for all Service Parameters
      */
@@ -172,7 +175,7 @@ class ServiceParametersHelper
         self::PROCUREMENT_TYPE_PARAM => 'Procurement Type',
         self::BOM_BATCH_INHERIT_REQUIRED => 'Batch Inheritance Required',
         self::PO_PROCUREMENT_TYPE => 'Procurement Type',
-
+        self::OK_TO_RECIEVE_BOOK_PARAM => 'Ok To Receive Series'
     ];
 
     // Service Parameters Mapping
@@ -211,6 +214,7 @@ class ServiceParametersHelper
         self::PARTIAL_DELIVERY_ALLOWED => self::PARTIAL_DELIVERY_ALLOWED_VALUES,
         self::BOM_BATCH_INHERIT_REQUIRED => self::BOM_BATCH_INHERIT_REQUIRED_VALUES,
         self::INSPECTION_REQUIRED_PARAM => self::INSPECTION_REQUIRED_PARAM_VALUES,
+        self::OK_TO_RECIEVE_BOOK_PARAM => []
     ];
     const SO_SERVICE_PARAMETERS = [
         [
@@ -2623,50 +2627,6 @@ class ServiceParametersHelper
         ]
     ];
     /*mrn PB EXPENSE_ADVISE*/
-    const MI_SERVICE_PARAMTERS = [
-        [
-            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::MO_SERVICE_ALIAS, ConstantHelper::PI_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //Default selected value(s)
-            'is_multiple' => true, // Whether or not to allow multiple selection
-            'service_level_visibility' => true, // Whether or not to show this parameter in UI
-        ],
-        [
-            "name" => self::REFERENCE_FROM_SERIES_PARAM,
-            "applicable_values" => [],
-            "default_value" => [],
-            'is_multiple' => true,
-            'service_level_visibility' => false
-        ],
-        [
-            "name" => self::BACK_DATE_ALLOW_PARAM,
-            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::FUTURE_DATE_ALLOW_PARAM,
-            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::ISSUE_TYPE_PARAM,
-            "applicable_values" => self::ISSUE_TYPE_VALUES,
-            "default_value" => self::ISSUE_TYPE_VALUES,
-            'is_multiple' => true,
-            'service_level_visibility' => true
-        ],
-        [
-            "name" => self::REQUESTER_TYPE_PARAM,
-            "applicable_values" => self::REQUESTER_TYPE_VALUES,
-            "default_value" => ['Department'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
-    ];
     const MR_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
@@ -2834,7 +2794,7 @@ class ServiceParametersHelper
         ConstantHelper::JOURNAL_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::CONTRA_VOUCHER => self::COMMON_SERVICE_PARAMETERS,
         ConstantHelper::OPENING_BALANCE => self::COMMON_SERVICE_PARAMETERS,
-        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MI_SERVICE_PARAMTERS,
+        MIConstants::SERVICE_ALIAS => MIConstants::SERVICE_PARAMETERS,
         ConstantHelper::ITEM_SERVICE_ALIAS => self::ITEM_SERVICE_PARAMETERS,
         ConstantHelper::LEDGERS_SERVICE_ALIAS => self::LEDGER_SERVICE_PARAMETERS,
         ConstantHelper::VENDOR_SERVICE_ALIAS => self::VENDOR_SERVICE_PARAMETERS,

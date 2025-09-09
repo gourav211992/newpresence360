@@ -2,40 +2,41 @@
 
 namespace App\Http\Controllers\PurchaseIndent;
 
-use App\Helpers\BookHelper;
-use App\Helpers\ConstantHelper;
-use App\Helpers\Helper;
-use App\Helpers\InventoryHelper;
-use App\Helpers\ItemHelper;
-use App\Helpers\ServiceParametersHelper;
-use App\Helpers\UserHelper;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\PiRequest;
-use App\Models\Address;
-use App\Models\AttributeGroup;
-use App\Models\ErpSaleOrder;
-use App\Models\Bom;
-use App\Models\ErpSoItem;
-use App\Models\Item;
-use App\Models\Organization;
-use App\Models\PiItem;
-use App\Models\PiItemAttribute;
-use App\Models\PiSoMapping;
-use App\Models\PurchaseIndent;
-use App\Models\BomDetail;
-use App\Models\PurchaseIndentMedia;
-use App\Models\PiSoMappingItem;
-use App\Models\ErpSoItemBom;
-use App\Models\Unit;
-use App\Models\Vendor;
-use App\Models\Attribute;
-use Carbon\Carbon;
 use DB;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use PDF;
 use stdClass;
+use Carbon\Carbon;
+use App\Models\Bom;
+use App\Models\Item;
+use App\Models\Unit;
+use App\Models\PiItem;
+use App\Models\Vendor;
+use App\Helpers\Helper;
+use App\Models\Address;
+use App\Models\Attribute;
+use App\Models\BomDetail;
+use App\Models\ErpSoItem;
+use App\Helpers\BookHelper;
+use App\Helpers\ItemHelper;
+use App\Helpers\UserHelper;
+use App\Models\PiSoMapping;
+use App\Models\ErpSaleOrder;
+use App\Models\ErpSoItemBom;
+use App\Models\Organization;
+use App\Services\BomService;
+use Illuminate\Http\Request;
+use App\Models\AttributeGroup;
+use App\Models\PurchaseIndent;
+use App\Helpers\ConstantHelper;
+use App\Models\PiItemAttribute;
+use App\Models\PiSoMappingItem;
+use App\Helpers\InventoryHelper;
+use App\Http\Requests\PiRequest;
 use Yajra\DataTables\DataTables;
+use App\Models\PurchaseIndentMedia;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
+use App\Helpers\ServiceParametersHelper;
 
 class PiController extends Controller
 {
@@ -1426,7 +1427,9 @@ class PiController extends Controller
     public function processSoItemSubmit(Request $request)
     {
         $storeId = $request->store_id ?? null;
-        $selectedData = $request->selectedData;
+        $selectedData = $request->selectedData ?? $request->selected_items ?? [];
+        $soItems = [];
+
         if (is_array($selectedData)) {
             $soItems = $selectedData;
         } elseif (is_string($selectedData)) {
@@ -1435,11 +1438,47 @@ class PiController extends Controller
                 $soItems = $decoded;
             }
         }
-        $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false;
+
+        $isAttribute = intval($request->is_attribute) ?? 0;
+        $extendedItems = $soItems;
+
+        if (!$isAttribute) {
+            foreach ($soItems as $index => $item) {
+                if (!empty($item['main_so_item']) && !empty($item['so_item_ids'])) {
+                    $soSubItems = ErpSoItem::where('sale_order_id', $item['so_id'])
+                        ->whereIn('id', $item['so_item_ids'])
+                        ->get();
+
+                    $newItems = [];
+                    unset($item['so_item_ids']);
+
+                    foreach ($soSubItems as $soItem) {
+                        $newItem = $item;
+                        $newItem['item_id']    = $soItem->item_id;
+                        $newItem['item_name']  = $soItem->item_name;
+                        $newItem['item_code']  = $soItem->item_code;
+                        $newItem['uom_id']     = $soItem->uom_id;
+                        $newItem['uom_name']   = $soItem->uom->name;
+                        $newItem['total_qty']  = $soItem->order_qty;
+                        $newItem['so_item_id'] = $soItem->id;
+                        $newItem['attribute']  = $soItem->item_attributes_array();
+                        $newItems[] = $newItem;
+                    }
+
+                    array_splice($extendedItems, $index, 1, $newItems);
+                }
+            }
+        }
+
+        $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes';
+
         if ($soTrackingRequired) {
-            foreach ($soItems as &$piSoItemMapping) {
+            foreach ($extendedItems as &$piSoItemMapping) {
                 $attributes = array_map(function ($item) {
-                    return ['attribute_id' => $item['id'], 'attribute_value' => $item['values_data'][0]['id'] ?? null];
+                    return [
+                        'attribute_id'    => $item['id'],
+                        'attribute_value' => $item['values_data'][0]['id'] ?? null
+                    ];
                 }, $piSoItemMapping['attributes'] ?? []);
 
                 $datas = PiSoMapping::where('item_id', $piSoItemMapping['item_id'])
@@ -1455,15 +1494,30 @@ class PiController extends Controller
                         }
                     })
                     ->first();
+
                 if ($datas?->bomDetail) {
-                    $piSoItemMapping['remark'] = $datas?->bomDetail?->remark;
+                    $piSoItemMapping['remark'] = $datas->bomDetail->remark;
                 }
                 unset($piSoItemMapping);
             }
         }
-        $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems, 'soTrackingRequired' => $soTrackingRequired, 'storeId' => $storeId])->render();
-        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
+
+        $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1 : 1;
+        $html = view('procurement.pi.partials.item-row-so', [
+            'soItems'            => $extendedItems,
+            'soTrackingRequired' => $soTrackingRequired,
+            'storeId'            => $storeId,
+            'rowCount'           => $rowCount,
+            'is_pull'            => true,
+        ])->render();
+
+        return response()->json([
+            'data'    => ['pos' => $html],
+            'status'  => 200,
+            'message' => "fetched!"
+        ]);
     }
+
 
     public function revokeDocument(Request $request)
     {
@@ -1642,5 +1696,86 @@ class PiController extends Controller
             })
             ->rawColumns(['attributes', 'delivery_schedule', 'status'])
             ->make(true);
+    }
+
+    public function analyzeSoItem(Request $request)
+    {
+        $ids = json_decode($request->ids, true) ?? [];
+        $ids = array_values(array_unique($ids));
+        $isAttribute = intval($request->is_attribute) ?? 0;
+
+        if (!$isAttribute) {
+            $selectedData = json_decode($request->selected_items, true);
+            $ids = ErpSoItem::where(function ($query) use ($selectedData) {
+                foreach ($selectedData as $selectedItem) {
+                    $query->orWhere(function ($q) use ($selectedItem) {
+                        $q->where('sale_order_id', $selectedItem['sale_order_id'])
+                            ->where('item_id', $selectedItem['item_id']);
+                    });
+                }
+            })->pluck('id')->toArray();
+        }
+
+        $soItems = ErpSoItem::whereIn('id', $ids)->get();
+        $soItemIds = $soItems->pluck('id')->toArray();
+
+        $bomService = new BomService;
+        $femifishedItems = $bomService->getRawMaterialBreakdown($soItemIds, 'semi');
+
+        if (!$isAttribute) {
+            $temp = [];
+            foreach ($femifishedItems as $soItemId => $item) {
+                $fg = $item['semi_finished_goods']['fg'];
+                $key = $fg['so_id'] . '_' . $fg['bom_id'];
+                $temp[$key][] = [
+                    'so_item_id' => $soItemId,
+                    'fg' => $fg
+                ];
+            }
+
+            $grouped = [];
+            foreach ($temp as $key => $items) {
+                if (count($items) > 0) {
+                    $soId = $items[0]['fg']['so_id'];
+                    $bomId = $items[0]['fg']['bom_id'];
+                    $fg = $items[0]['fg'];
+                    $fg['so_item_ids'] = [$items[0]['so_item_id']];
+                    for ($i = 1; $i < count($items); $i++) {
+                        $fg['total_qty'] += (float) $items[$i]['fg']['total_qty'];
+                        $fg['so_item_ids'][] = $items[$i]['so_item_id'];
+                    }
+                    $fg['so_item_ids'] = implode(',', $fg['so_item_ids']);
+                    if (count($items) > 1) {
+                        $fg['attribute'] = [];
+                    }
+                    $grouped[$soId] = [
+                        'semi_finished_goods' => [
+                            'fg' => $fg
+                        ]
+                    ];
+                }
+            }
+            $femifishedItems = $grouped;
+        } else {
+            $newGrouped = [];
+            foreach ($femifishedItems as $soItemId => $femifishedItem) {
+                $fg = $femifishedItem['semi_finished_goods']['fg'];
+                $fg['so_item_id'] = $soItemId;
+                $newGrouped[$soItemId] = [
+                    'semi_finished_goods' => [
+                        'fg' => $fg
+                    ]
+                ];
+            }
+            $femifishedItems = $newGrouped;
+        }
+
+        $html = view('procurement.pi.partials.analyze-item', [
+            'femifishedItems' => $femifishedItems,
+            'isAttribute' => $isAttribute
+            //  'rowCount' => $rowCount
+        ])->render();
+
+        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
 }

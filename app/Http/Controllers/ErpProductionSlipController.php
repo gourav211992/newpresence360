@@ -236,8 +236,9 @@ class ErpProductionSlipController extends Controller
                 $ogDoc = $doc;
             }
 
+
             if(!$doc) {
-                return back()->with('error', 'The provided documnet id is invalid.');
+                return redirect('/production-slip')->with('error', 'The provided documnet id is invalid.');
             }
 
             $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -324,7 +325,7 @@ class ErpProductionSlipController extends Controller
 
     public function store(PslipRequest $request)
     {
-    
+
         $consuptions = $request->cons;
         $productionSlipId = isset($request->id) ? $request->id : null;
         if(!$productionSlipId && !$consuptions)

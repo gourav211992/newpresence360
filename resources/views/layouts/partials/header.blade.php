@@ -7,7 +7,9 @@
                     <div class="bookmark-wrapper d-flex align-items-center">
                         <ul class="nav navbar-nav headerlogo">
                             @if (isset($orgLogo))
-                                <li> <img src="{{ $orgLogo ? $orgLogo : url('/img/thepresence360_logo.svg')}}" alt="Logo"/></li>
+                                <li>
+                                    <img src="{{ $orgLogo ? $orgLogo : url('/img/thepresence360_logo.svg')}}" alt="Logo"/>
+                                </li>
                             @endif
                         </ul>
                         <ul class="nav navbar-nav left-baricontop">
@@ -33,22 +35,22 @@
 
                     <ul class="nav navbar-nav align-items-center ms-auto">
 
-                        @if(!empty($organizations) && count($organizations) > 0)
-                        <li class="nav-item d-none d-lg-block select-organization-menu">
+                        @if(isset($iamOrganizations) && count($iamOrganizations))                        <li class="nav-item d-none d-lg-block select-organization-menu">
                             <form action="{{ route('update-organization') }}" method="POST">
                                 @csrf
 
                                 <select class="form-select" name="organization_id" id="organization" onchange="this.form.submit()">
                                     <option value="">-- Select Organization --</option>
-                                    @foreach ($organizations as $mapping)
-                                        <option value="{{ $mapping->organization?->id }}"
-                                            {{ $mapping->organization?->id == $organization_id ? 'selected' : '' }}>
-                                            {{ $mapping->organization?->name }}
+                                    @foreach ($iamOrganizations as $org)
+                                        <option value="{{ $org->id }}"
+                                            {{ $org->id == $organization_id ? 'selected' : '' }}>
+                                            {{ $org->name }}
                                         </option>
                                     @endforeach
                                 </select>
                             </form>
                         </li>
+
                         <li class="nav-item d-none d-lg-block select-organization-menu">
                             <form action="{{ route('update-organization') }}" method="POST">
                                 @csrf
@@ -70,18 +72,16 @@
                         @endif
 
 
-                        <li class="nav-item d-none d-lg-block">
+                        {{-- <li class="nav-item d-none d-lg-block">
                             <div class="theme-switchbox">
-
                                 <div class="themeswitchstyle">
                                     <span class="dark-lightmode"><i data-feather="moon"></i></span>
                                     <span class="day-lightmode"><i data-feather="sun"></i></span>
                                 </div>
-
                             </div>
-                        </li>
+                        </li> --}}
 
-                        @include('layouts.notification.notification')
+                        {{-- @include('layouts.notification.notification') --}}
                         {{-- <li class="nav-item dropdown dropdown-notification me-25"><a class="nav-link" href="#"
                                 data-bs-toggle="dropdown"><i class="ficon" data-feather="bell"></i><span
                                     class="badge rounded-pill bg-danger badge-up">5</span></a>
@@ -199,7 +199,7 @@
                                     </span>
                                 </a>
                             <div class="dropdown-menu drop-newmenu dropdown-menu-end" aria-labelledby="dropdown-user">
-                                <a class="dropdown-item" href="#"><i class="me-50" data-feather="user"></i>
+                                {{-- <a class="dropdown-item" href="#"><i class="me-50" data-feather="user"></i>
                                     Profile</a>
                                 <a class="dropdown-item" href="#"><i class="me-50"
                                         data-feather="credit-card"></i>
@@ -210,17 +210,14 @@
                                         data-feather="check-circle"></i>
                                     Approval</a>
                                 <a class="dropdown-item" href="#"><i class="me-50" data-feather="tool"></i>
-                                    Setting</a>
+                                    Setting</a> --}}
                                 <a class="dropdown-item" href="{{ env("AUTH_URL", "") }}logout" ><i
                                         class="me-50" data-feather="power"></i> Logout</a>
 
-                                <!-- <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                    style="display: none;">
-                                    {{ csrf_field() }}
-                                </form> -->
+
                             </div>
                         </li>
-                        <li class="nav-item dropdown dropdown-notification">
+                        {{-- <li class="nav-item dropdown dropdown-notification">
                             <a class="nav-link d-inline-block drivebtnsect" href="#" data-bs-toggle="dropdown">
                                 <img src="{{ url('/img/menuiconlist.png') }}" />
                             </a>
@@ -308,7 +305,7 @@
                                     </div>
                                 </li>
                             </ul>
-                        </li>
+                        </li> --}}
                     </ul>
                 </div>
             </div>

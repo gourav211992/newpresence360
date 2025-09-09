@@ -12,21 +12,22 @@ class AccessRightsService
         $this->user = request()->user();
 
         $cacheKey = 'oauth_data_'. $this->user->auth_user_id;
+        return [];
 
-        return cache()->remember($cacheKey, 20 * 60, function () {
-            $this->user->load([
-                'organizations:id,name,alias,group_id,company_id',
-                'organization:id,name,alias,group_id,company_id'
-            ]);
+        // return cache()->remember($cacheKey, 20 * 60, function () {
+        //     $this->user->load([
+        //         'organizations:id,name,alias,group_id,company_id',
+        //         'organization:id,name,alias,group_id,company_id'
+        //     ]);
 
-            return [
-                'oauthMenu' => $this->getMenus(), 
-                'oauthPermissions' => $this->getPermissions(), 
-                'oauthRoles' => $this->getRoles(), 
-                'oauthUser' => $this->user,
-                'oauthOrganizations' => $this->user->organizations
-            ];
-        });
+        //     return [
+        //         'oauthMenu' => $this->getMenus(), 
+        //         'oauthPermissions' => $this->getPermissions(), 
+        //         'oauthRoles' => $this->getRoles(), 
+        //         'oauthUser' => $this->user,
+        //         'oauthOrganizations' => $this->user->organizations
+        //     ];
+        // });
     }
 
     public function getRoles()

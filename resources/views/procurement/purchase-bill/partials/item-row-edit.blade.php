@@ -4,7 +4,7 @@
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][header_id]" value="{{$item->header_id}}">
-      <input type="hidden" name="components[{{$rowCount}}][detail_id]" value="{{$item->id}}">
+      <input type="hidden" name="components[{{$rowCount}}][pb_dtl_id]" value="{{$item->id}}">
       <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->mrn_detail_id}}">
       <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->header?->mrn_header_id}}">
       <td class="customernewsection-form">

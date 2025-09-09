@@ -68,8 +68,8 @@ Route::group(['middleware' => ['apiresponse']], function () {
         // Create or Update consignees
         Route::post('/consignees', [FurlencoController::class, 'consigneeStoreOrUpdate']);
 
-        // Create or Update consignees
-        // Route::post('/consignees', [FurlencoController::class, 'storeOrUpdate']);
+        // Trip/Sales Order Creation
+        Route::post('/create/sale-orders', [FurlencoController::class, 'createSaleOrders']);
 
         /**
          * Book Module Routes

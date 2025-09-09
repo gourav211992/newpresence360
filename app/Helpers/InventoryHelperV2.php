@@ -425,10 +425,9 @@ class InventoryHelperV2
             }
             $isIssueStockDelete = 1;
         }
-
         if ($isIssueStockDelete) {
-            if (count($issueStock->attributes) > 0) {
-                $issueStock?->attributes?->delete();
+            if(count($issueStock->attributes) > 0){
+                $issueStock?->attributes()->delete();
             }
             $issueStock->delete();
         }

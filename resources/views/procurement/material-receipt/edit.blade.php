@@ -1139,6 +1139,7 @@
                                             <th>Leadger Name</th>
                                             <th class="text-end">Debit</th>
                                             <th class="text-end">Credit</th>
+                                            <th class="text-end">Due Date</th>
                                         </tr>
                                     </thead>
                                     <tbody id="posting-table"></tbody>
@@ -2403,6 +2404,7 @@
                             <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                             <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                             <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end">${voucherDetail.due_date ? moment(voucherDetail.due_date).format('D/M/Y') : ''}</td>
                             </tr>
                             `
                         });

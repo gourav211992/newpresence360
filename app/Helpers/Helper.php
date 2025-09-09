@@ -2,8 +2,6 @@
 
 namespace App\Helpers;
 
-use App\Models\ErpSaleInvoiceHistory;
-use Illuminate\Support\Facades\Cookie;
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
 use App\Models\FixedAssetRegistration;
@@ -11,8 +9,6 @@ use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\AuthUser;
 use Illuminate\Validation\Rule;
 use App\Models\CostCenterOrgLocations;
-use App\Models\Address;
-use App\Models\Bom;
 use App\Models\Book;
 use App\Models\BookLevel;
 use App\Models\BookType;
@@ -29,7 +25,6 @@ use App\Models\MrnDetail;
 use App\Models\ErpFinancialYear;
 use App\Models\Group;
 use App\Models\HomeLoan;
-use App\Models\Item;
 use App\Models\ItemDetail;
 use App\Models\Ledger;
 use App\Models\LoanDisbursement;
@@ -47,17 +42,12 @@ use App\Models\ServiceMenu;
 use App\Models\Services;
 use Exception;
 use App\Models\OrganizationBookParameter;
-use App\Models\OrganizationGroup;
 use App\Models\PLGroups;
 use App\Models\RecoveryLoan;
 use App\Models\User;
 use App\Models\Voucher;
-use App\Models\ErpStore;
-use App\Models\ErpMasterPolicy;
 use App\Models\ErpOrganizationMasterPolicy;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -65,13 +55,8 @@ use Illuminate\Support\Facades\Route;
 // use Request;
 use Illuminate\Http\Request;
 use stdClass;
-use Symfony\Component\Mime\Part\Multipart\MixedPart;
 use Illuminate\Support\Str;
 
-use App\Models\ErpSaleInvoice;
-use App\Models\ErpInvoiceItem;
-use App\Models\PRHeader;
-use App\Models\PRDetail;
 use App\Models\Contact;
 use App\Models\BankInfo;
 use App\Models\Note;
@@ -79,8 +64,8 @@ use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
 use App\Models\ErpFyMonth;
 use App\Models\MrnAssetDetail;
+use P360\Core\Interfaces\TagCacheInterface;
 use App\Models\PbHeader;
-use Monolog\Handler\IFTTTHandler;
 
 class Helper
 {
@@ -2682,19 +2667,31 @@ class Helper
 
     public static function getAuthenticatedUser()
     {
-        //
-        // $authUser = AuthUser::find(5);
-        // Auth::guard('web')->login(User::find(2));
-        // auth() -> user() -> authenticable_type = $authUser->authenticable_type;
-        // auth() -> user() -> auth_user_id = $authUser->id;
-        return request()->user();
-        if (Auth::guard('web')->check()) {
-            return Auth::guard('web')->user();
-        } elseif (Auth::guard('web2')->check()) {
-            return Auth::guard('web2')->user();
-        } else {
-            return request()->user();
-        }
+
+        $authUser = request()->user();
+
+        $ck = "iam:{$authUser->group_id}:{$authUser->id}";
+        $ttl = 1200; // 20 minutes; adjust or use forever with manual busting
+
+        $user = app(TagCacheInterface::class)->remember(
+            key: $ck . ':get-authenticated-user',
+            ttl: $ttl,
+            callback: function () use ($authUser) {
+                $user = $authUser->authUser();
+                $user->authenticable_type = $authUser->authenticable_type;
+                $user->auth_user_id = $authUser->id;
+                $user->db_name = $authUser->db_name;
+                // $user->current_organization_id = $authUser->organization_id;
+                return $user;
+            },
+            tags: [
+                'get-authenticated-user',
+                "group:{$authUser->group_id}",
+                "user:{$authUser->id}",
+            ]
+        );
+
+        return $user;
     }
 
     public static function getOrgWiseUserAndEmployees($organizationId)
@@ -4205,7 +4202,6 @@ class Helper
             {
                 $mrn_id = $mrn_id;
             }
-            
             $assets = MrnHeader::where('id', $mrn_id)
                 ->whereHas('items', function ($q) {
                     $q->where('basic_value', '>', 0) // must have positive basic_value
@@ -4255,7 +4251,7 @@ class Helper
 
                 $glPostingBookId = $glPostingBookParam->parameter_value[0];
 
-                foreach ($mrn_assets as $mrn_asset) 
+                foreach ($mrn_assets as $mrn_asset)
                 {
                     $category_id = $mrn_asset->asset_category_id;
                     $asset_name = $mrn_asset->asset_name;
@@ -4337,13 +4333,12 @@ class Helper
 
                      if(!empty($alias) && ($alias == ConstantHelper::PB_SERVICE_ALIAS))
                     {
-                        $currentValue = $mrn_detail->pb_item_value; 
+                        $currentValue = $mrn_detail->pb_item_value;
                     }
                     else
                     {
                         $currentValue = $mrn_detail->basic_value + $mrn_detail->header_exp_amount;
                     }
-                    
                     $depreciationPercentage = $setup->salvage_percentage ?? $organization->dep_percentage ?? null;
                     $salvageValue = round($currentValue * ($depreciationPercentage / 100), 2);
                     $method = $organization->dep_method;
@@ -4369,7 +4364,7 @@ class Helper
                     {
                         $totalqty += $batch->inventory_uom_qty;
                         $singlevalue = round($currentValue/$totalqty, 2);
-                         
+
                     }
 
                      $offset = 0;
@@ -4439,7 +4434,7 @@ class Helper
                                 $asset->current_value,
                                 $asset->salvage_value
                             );
-                            
+
 
                             $mrn_asset->salvage_value = $salvageValue;
                             $mrn_asset->asset_code = $asset_code;

@@ -214,13 +214,13 @@ Route::get('/clear', function () {
 
 Route::get('/lorry-receipt/approve/{id}/{email}', [ErpLorryReceiptController::class, 'approveReceipt'])->name('lorry-receipt.approve');
 
-Route::get('/testing', [TestingController::class, 'testing']);
+// Route::get('/testing', [TestingController::class, 'testing']);
 
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+// Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+// Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
+// Route::post('/register', [AuthController::class, 'register']);
 
 // Route::get('/pos/report', [PoController::class, 'poReport'])->name('po.report');
 
@@ -286,11 +286,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/notification/read/{id}', [NotificationController::class, 'markAsRead'])->name('notification.read');
     Route::get('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
 
-
-    // Route::controller(CustomerController::class)->group(function () {
-    //     Route::get('/', 'index');
-    //     Route::get('/customer/create', 'create')->name('customer.create');
-    // });
 
     Route::post('uploadVouchers', [PaymentVoucherController::class, 'uploadVouchers'])->name('uploadVouchers');
     Route::get('receipt-vouchers/{type}', [PaymentVoucherController::class, 'index'])->name('paymentVoucher.receipt');
@@ -662,6 +657,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
 
             Route::get('get-so', 'getSo')->name('get.so');
+            Route::get('analyze-so-item', 'analyzeSoItem')->name('analyze.so-item');
             Route::get('process-so-item', 'processSoItem')->name('process.so-item');
             Route::post('process-so-item-submit', 'processSoItemSubmit')->name('process.so-item.submit');
             Route::get('get-selected-department', 'getSelectedDepartment')->name('get.selected.department');
@@ -2421,7 +2417,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/pick-list/posting/get', [ErpPlController::class, 'getPostingDetails'])->name('PL.posting.get');
     Route::post('/pick-list/post', [ErpPlController::class, 'postPL'])->name('PL.post');
     Route::post('/pick-list/import', [ErpPlController::class, 'import'])->name('PL.import');
-    
+
     //Trip Plan
     Route::get('/trip-plan', [ErpTripPlanController::class, 'index'])->name('trip-plan.index');
     Route::get('/trip-plan/create', [ErpTripPlanController::class, 'create'])->name('trip-plan.create');
@@ -2841,7 +2837,7 @@ Route::middleware(['user.auth'])->group(function () {
     ->name('fixed-asset-rdv');
     Route::post('get-fixed-asset-rdv-response', [ITDepreciationController::class, 'getFixedAssetRDVResponse'])
     ->name('get-fixed-asset-rdv-response');
-    
+
 
     Route::resource('fixed-asset/split', SplitController::class)->names([
         'index' => 'finance.fixed-asset.split.index',
@@ -3208,7 +3204,7 @@ Route::middleware(['user.auth'])->group(function () {
     // generate IRN
     Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
 
-   
+
 
 
     //For testing purpose -> Stock reservation case , please ignore, will remove

@@ -29,7 +29,7 @@ class Voucher extends Model
     {
         static::addGlobalScope('defaultLocation', function ($builder) {
             $locs = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray()??[];
-            $builder->whereIn('location',$locs);
+            $builder->whereIn('erp_vouchers.location',$locs);
         });
 
         static::updated(function ($voucher) {

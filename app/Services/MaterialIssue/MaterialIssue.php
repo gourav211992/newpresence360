@@ -6,69 +6,12 @@ use App\Helpers\ConstantHelper;
 use App\Lib\Services\WHM\MaterialIssueWhmJob;
 use App\Models\Configuration;
 use App\Models\ErpMaterialIssueHeader;
-use App\Models\ErpMiItem;
-use App\Models\ErpPwoItem;
-use App\Models\JobOrder\JoItem;
-use App\Models\JobOrder\JoProduct;
-use App\Models\MoItem;
-use App\Models\PiItem;
+use App\Helpers\Inventory\MaterialIssue\Constants as MIConstants;
+use App\Helpers\Inventory\StockReservation;
+use App\Helpers\InventoryHelper;
 
 class MaterialIssue
 {
-    public function deleteItem(ErpMiItem $miItem) : array
-    {
-        // MFG ORDER
-        if (isset($miItem -> mo_item_id)) {
-            //Back update in MO ITEM
-            $moItem = MoItem::find($miItem -> mo_item_id);
-            if (isset($moItem)) {
-                $moItem -> mi_qty = $moItem -> mi_qty - $miItem -> issue_qty;
-                $moItem -> save();
-            }
-        }
-        //PWO
-        if (isset($miItem -> pwo_item_id)) {
-            //Back update in PWO ITEM
-            $pwoItem = ErpPwoItem::find($miItem -> pwo_item_id);
-            if (isset($pwoItem)) {
-                $pwoItem -> mi_qty = $pwoItem -> mi_qty - $miItem -> issue_qty;
-                $pwoItem -> save();
-            }
-        }
-        //PURCHASE INDENT
-        if (isset($miItem -> pi_item_id)) {
-            //Back update in PI ITEM
-            $piItem = PiItem::find($miItem -> pi_item_id);
-            if (isset($piItem)) {
-                $piItem -> mi_qty = $piItem -> mi_qty - $miItem -> issue_qty;
-                $piItem -> save();
-            }
-        }
-        //JO (SUB CONTRACTING)
-        if (isset($miItem -> jo_item_id)) {
-            //Back update in JO ITEM
-            $joItem = JoItem::find($miItem -> jo_item_id);
-            if (isset($joItem)) {
-                $joItem -> mi_qty = $joItem -> mi_qty - $miItem -> issue_qty;
-                $joItem -> save();
-            }
-        }
-        //JO (JOB WORK)
-        if (isset($miItem -> jo_product_id)) {
-            //Back update in JO ITEM
-            $joProduct = JoProduct::find($miItem -> jo_product_id);
-            if (isset($joProduct)) {
-                $joProduct -> mi_qty = $joProduct -> mi_qty - $miItem -> issue_qty;
-                $joProduct -> save();
-            }
-        }
-        // Delete all Attributes
-        $miItem->attributes()->delete();
-        //Final item delete
-        $miItem->delete();
-        return ['status' => 'success', 'message' => ''];
-    }
-
     public function createWhmJob(ErpMaterialIssueHeader $mi, $user)
     {
         // Get configuration detail
@@ -83,5 +26,41 @@ class MaterialIssue
             //Issue - Picking Job
             (new MaterialIssueWhmJob)->createJob($mi->id,'App\Models\ErpMaterialIssueHeader', CommonHelper::PICKING);
         }
+    }
+
+    public function maintainStockLedger(ErpMaterialIssueHeader $materialIssue) : string
+    {
+        $items = $materialIssue->items;
+        //Seperate Issue and Receive Item Ids
+        $itemIds = $items -> pluck('id') -> toArray();
+        $issueDetailIds = $itemIds;
+        $receiptDetailIds = $itemIds;
+        //UIC Scan enabled - Create Job, Reserve Stock (No Issue/ Receive)
+        if ($materialIssue -> enforce_uic_scanning == 'yes')
+        {
+            $stockReservation = StockReservation::stockReservation(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $items);
+            if ($stockReservation['status'] == 'error') {
+                return $stockReservation['message'];
+            }
+            return "";
+        }
+        //Now Issue first
+        $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
+         if ($issueRecords['status'] == 'error') {
+            return $issueRecords['message'];
+        } else {
+            return "";
+        }
+        //Now Recieve
+        $receivableIssueTypes = [MIConstants::LOCATION_TRANSFER, MIConstants::SUB_LOCATION_TRANSFER, MIConstants::SUB_CONTRACTING, MIConstants::JOB_ORDER];
+        if (in_array($materialIssue->issue_type, $receivableIssueTypes)) {
+            $receiveRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
+            if ($receiveRecords['status'] == 'error') {
+                return $receiveRecords['message'];
+            } else {
+                return "";
+            }
+        }
+        return "";
     }
 }

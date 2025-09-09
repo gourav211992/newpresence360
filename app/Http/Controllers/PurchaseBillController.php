@@ -449,7 +449,6 @@ class PurchaseBillController extends Controller
                     $totalValueAfterDiscount += $itemValueAfterDiscount;
                     $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $uom = Unit::find($component['uom_id'] ?? null);
-                    $mrn_detail_id = null;
                     $so_id = null;
                     $pbItemArr[] = [
                         'header_id' => $pb->id,
@@ -561,7 +560,7 @@ class PurchaseBillController extends Controller
 
                     $mrnDtl = MrnDetail::find($pbDetail->mrn_detail_id);
                     if ($mrnDtl) {
-                        $mrnDtl->pb_item_value = ($pbDetail->basic_value - ($pbDetail->discount_amount + $pbDetail->header_discount_amount));
+                        $mrnDtl->pb_item_value = ($pbDetail->basic_value - ($pbDetail->discount_amount + $pbDetail->header_discount_amount)) + $pbDetail->header_exp_amount;
                         $mrnDtl->save();
                     }
                     $_key = $_key + 1;
@@ -1597,8 +1596,12 @@ class PurchaseBillController extends Controller
     public function taxCalculation(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
+        $location = ErpStore::find($request->location_id ?? null);
         $organization = $user->organization;
-        $firstAddress = $organization->addresses->first();
+        $firstAddress = $location?->address ?? null;
+        if(!$firstAddress) {
+            $firstAddress = $organization?->addresses->first();
+        }
         if ($firstAddress) {
             $companyCountryId = $firstAddress->country_id;
             $companyStateId = $firstAddress->state_id;

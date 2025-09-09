@@ -26,10 +26,8 @@
                         <div class="form-group breadcrumb-right">
                             <a href="javascript: history.go(-1)" class="btn btn-secondary btn-sm"><i
                                     data-feather="arrow-left-circle"></i> Back</a>
-                            @if (!isset($book -> non_edit) || !$book -> non_edit)
                             <button type="submit" form="book-form" class="btn btn-primary btn-sm"><i
                                     data-feather="check-circle"></i>Submit</button>
-                            @endif
                         </div>
                     </div>
                 </div>

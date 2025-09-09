@@ -87,7 +87,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
         if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
-            $policyData = Helper::getPolicyByServiceId($serviceId);
+            $policyData = Helper::getPolicyByServiceId($serviceId, $this->user);
             if ($policyData && isset($policyData['policyLevelData'])) {
                 $policyLevelData = $policyData['policyLevelData'];
                 $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
@@ -159,7 +159,14 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                         $attributeName = $row["attribute_{$i}_name"];
                         $attributeValue = $row["attribute_{$i}_value"];
                         $requiredBom = $row["attribute_{$i}_bom_required"] ?? null;
-                        $allChecked = ($row["attribute_{$i}_all_checked"] ?? 'N') === 'Y' ? 1 : 0;
+                        $allChecked = 0;
+                        if ($attributeName) {
+                            if (empty($attributeValue)) {
+                                $allChecked = 1;
+                            } else {
+                                $allChecked = ($row["attribute_{$i}_all_checked"] ?? 'N') === 'Y' ? 1 : 0;
+                            }
+                        }
                         if ($attributeName) {
                             $attributes[] = [
                                 'name' => $attributeName,

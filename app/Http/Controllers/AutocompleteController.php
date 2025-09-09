@@ -79,6 +79,7 @@ use Illuminate\Console\Events\CommandStarting;
 use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Helpers\SubStore\Constants as SubStoreConstants;
 use App\Helpers\PackingList\Constants as PackingListConstants;
+use App\Models\ErpProductionSlip;
 
 class AutocompleteController extends Controller
 {
@@ -985,6 +986,20 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'book_name', 'book_code']);
                 }
+            }  elseif ($type === 'book_pslip') {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $subQuery = Helper::getBookSeries(ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS);
+                $results = $subQuery->where('book_name', 'LIKE', "%$term%")
+                    ->when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('id', $applicableBookIds);
+                    })
+                    ->get(['id', 'book_name', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = $subQuery
+                        ->limit(10)
+                        ->get(['id', 'book_name', 'book_code']);
+                }
             }  elseif ($type === 'book_jo') {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
                 $subQuery = Helper::getBookSeries(ConstantHelper::JO_SERVICE_ALIAS);
@@ -1374,6 +1389,35 @@ class AutocompleteController extends Controller
 
 
                 }
+            } else if ($type === "sale_order_document_pslip") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
+                $so_ids = ErpPslipItem::whereHas('header', function ($query) {
+                })->pluck('so_id')->unique()->toArray();
+                $results = ErpSaleOrder::query()
+                    ->whereIn(
+                        'id', $so_ids)
+                    ->when($term, function ($query) use ($term) {
+                        if (preg_match('/^(.*?)\s*\((.*?)\)$/', $term, $matches)) {
+                            $bookCode = trim($matches[1]);
+                            $documentNumber = trim($matches[2]);
+
+                            $query->where('book_code', $bookCode)
+                                ->where('document_number', $documentNumber);
+                        } else {
+                            $query->where(function ($q) use ($term) {
+                                $q->where('document_number', 'LIKE', "%$term%")
+                                ->orWhere('book_code', 'LIKE', "%$term%");
+                            });
+                        }
+                    })
+                    ->get(['id', 'book_code', 'document_number']);
+
+
+                if ($results->isEmpty()) {
+                    $results = ErpSaleOrder::query()
+                        ->whereIn('id', $so_ids)
+                        ->get(['id', 'book_code', 'document_number']);
+                }
             } else if ($type === "sale_order_document_pi") {
                 $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id??0);
                 $so_ids = PiItem::whereHas('header', function ($query) {
@@ -1747,6 +1791,22 @@ class AutocompleteController extends Controller
                     ->get(['id', 'document_number','book_code']);
                 if ($results->isEmpty()) {
                     $results = MfgOrder::limit(10)
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                        ->get(['id', 'document_number','book_code']);
+                    }
+            }  else if ($type === "pslip_document") {
+                $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
+                $results = ErpProductionSlip::where('document_number', 'LIKE', "%$term%")
+                    -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
+                        $applicableQuery -> whereIn('book_id', $applicableBookIds);
+                    })
+                    -> whereIn('document_status', [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED])
+                    ->get(['id', 'document_number','book_code']);
+                if ($results->isEmpty()) {
+                    $results = ErpProductionSlip::limit(10)
                     -> when($request -> header_book_id, function ($applicableQuery) use($applicableBookIds) {
                         $applicableQuery -> whereIn('book_id', $applicableBookIds);
                     })
@@ -2230,7 +2290,7 @@ class AutocompleteController extends Controller
                     ->where('value', 'like', '%' . $term . '%')
                     ->get(['id', 'value']);
             } elseif ($type === 'stock_orgs') {
-                $orgIds = $authUser -> access_rights_org -> pluck('organization_id') -> toArray();
+                $orgIds = $authUser ?-> organizations ?-> pluck('id') -> toArray();
                 array_push($orgIds, $authUser -> organization_id);
                 $results = Organization::select('id', 'name') -> whereIn('id', $orgIds)
                     -> where('status', ConstantHelper::ACTIVE)

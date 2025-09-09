@@ -223,8 +223,7 @@ class CommonHelper
             $type = ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS;
         }elseif($morphableType == 'App\Models\ErpMaterialIssueHeader'){
             $type = ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME;
-        }
-        elseif($morphableType == 'App\Models\ErpRgr'){
+        }elseif($morphableType == 'App\Models\ErpRgr'){
             $type = RgrConstant::SERVICE_ALIAS;
         }else{
             $type = '';

@@ -915,7 +915,7 @@ class InventoryHelper
             if($bookType == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME){
                 $qty = @$documentItemLocation->inventory_uom_qty;
                 $documentHeader = ErpMaterialIssueHeader::find($documentItemLocation->material_issue_id);
-                $detailId = ($transactionType == 'receipt') ? $documentItemLocation->mi_item_id : $documentItemLocation->id;
+                $detailId = $documentItemLocation->id;
                 $documentDetail = ErpMiItem::with(['header', 'attributes'])->find($detailId);
                 $stockLedger->vendor_id = @$documentHeader->vendor_id;
                 $stockLedger->vendor_code = @$documentHeader->vendor_code;
@@ -2987,9 +2987,8 @@ class InventoryHelper
         $user = Helper::getAuthenticatedUser();
         $invoiceLedger = [];
         // try{
-            $documentItemLocations = ErpMiItemLocation::where('material_issue_id',$documentHeaderId)
-                ->whereIn('mi_item_id',$documentDetailId)
-                ->where('type', 'to')
+            $documentItemLocations = ErpMiItem::where('material_issue_id',$documentHeaderId)
+                ->whereIn('id',$documentDetailId)
                 ->get();
             $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('document_header_id',$documentHeaderId)
@@ -3008,7 +3007,7 @@ class InventoryHelper
             foreach ($documentItemLocations as $documentItemLocation) {
                 $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
                     ->where('document_header_id',$documentHeaderId)
-                    ->where('document_detail_id',$documentItemLocation -> mi_item_id)
+                    ->where('document_detail_id',$documentItemLocation -> id)
                     ->where('book_type','=',$bookType)
                     ->where('transaction_type','=',$transactionType)
                     // ->where('document_status','draft')
@@ -3019,7 +3018,7 @@ class InventoryHelper
                     // $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
                     $issueStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                         ->where('document_header_id',$documentHeaderId)
-                        ->where('document_detail_id',$documentItemLocation -> mi_item_id)
+                        ->where('document_detail_id',$documentItemLocation -> id)
                         ->where('book_type','=',$bookType)
                         ->where('transaction_type','=','issue')
                         ->first();

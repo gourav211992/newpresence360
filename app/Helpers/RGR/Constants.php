@@ -36,6 +36,13 @@ class Constants
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
+        [
+            "name" => ServiceParametersHelper::OK_TO_RECIEVE_BOOK_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => false,
+            'service_level_visibility' => false
+        ],
     ];
 
     const RGR_SEGREGATION_WRONG_PRODUCT = "Wrong Product";

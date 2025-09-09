@@ -117,7 +117,7 @@
                                                     <div class="col-md-5 action-button">
                                                         <button type="button"
                                                             class="btn btn-outline-primary btn-sm mb-0 pickupSelect"><i
-                                                                data-feather="plus-square"></i>Pickup Schedul</button>
+                                                                data-feather="plus-square"></i>Pickup Schedule</button>
                                                     </div>
                                                 </div>
 

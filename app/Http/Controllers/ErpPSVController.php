@@ -549,23 +549,38 @@ class ErpPSVController extends Controller
                 }
 
                    
-                if(is_array($items))
-                {
+                // Determine item attributes from request or items array
+                
+                if (is_array($items)) {
                     $itemAtts = $items['item_attributes'] ?? [];
-                }
-                else
-                {
-                    $itemAtts = isset($request->item_attributes[$itemKey]) ? json_decode($request->item_attributes[$itemKey],true) : ($items['item_attributes'] ?? []);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($itemAtts)) {
-                        
-                    }
-                    else {
-                        return response() -> json([
+                } else {
+                    $itemAtts = isset($request->item_attributes[$itemKey]) 
+                        ? json_decode($request->item_attributes[$itemKey], true) 
+                        : ($items['item_attributes'] ?? []);
+
+                    // Check if JSON decoding failed
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($itemAtts)) {
+                        return response()->json([
                             'message' => 'Item No. ' . ($itemKey + 1) . ' has invalid attributes',
                             'error' => ''
                         ], 422);
                     }
                 }
+
+                // Check if item requires attributes
+                $itemRequiredAtts = $item->itemAttributes ?: [];
+                if (!empty($itemRequiredAtts)) {
+                    // Compare counts or better yet, compare keys/names to ensure all required attributes are selected
+                    if (count($itemRequiredAtts) !== count($itemAtts)) {
+                        DB::rollBack(); // rollback transaction if using one
+                        return response()->json([
+                            'message' => 'Item No. ' . ($itemKey + 1) . ' does not have all required attributes selected',
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+
+                // Proceed with saving or processing $item and $itemAtts
                 foreach ($itemAtts as $attribute) {
                     $attribute = is_array($attribute)? $attribute : $attribute->toArray();  
                     $attributeVal = "";

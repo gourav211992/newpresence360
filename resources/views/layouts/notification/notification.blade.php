@@ -1,9 +1,9 @@
 
 @php
-use App\Helpers\Helper;
-$user = get_class(Helper::getAuthenticatedUser());
+// use App\Helpers\Helper;
+// $user = get_class(Helper::getAuthenticatedUser());
 @endphp
-<li class="nav-item dropdown dropdown-notification me-25">
+{{-- <li class="nav-item dropdown dropdown-notification me-25">
     <a class="nav-link" href="#" data-bs-toggle="dropdown">
         <i class="ficon" data-feather="bell"></i><span
             class="badge rounded-pill bg-danger badge-up count">@if(!empty($user::find(Helper::getAuthenticatedUser()->id)) && !empty($user::find(Helper::getAuthenticatedUser()->id)->unreadNotifications) ) {{ $user::find(Helper::getAuthenticatedUser()->id)->unreadNotifications->count() }} @endif</span>
@@ -60,4 +60,4 @@ $user = get_class(Helper::getAuthenticatedUser());
         </li>
     </ul>
     @endif
-</li>
+</li> --}}

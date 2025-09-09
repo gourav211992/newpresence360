@@ -68,6 +68,8 @@ use stdClass;
 use Yajra\DataTables\DataTables;
 use App\Helpers\Configuration\Helper as ConfigurationHelper;
 use App\Helpers\Configuration\Constants as ConfigurationConstant;
+use App\Models\ErpPslipItem;
+use App\Services\MaterialIssue\MiDelete;
 
 class ErpMaterialIssueController extends Controller
 {
@@ -392,13 +394,14 @@ class ErpMaterialIssueController extends Controller
             $groupId = $organization ?-> group_id ?? null;
             $companyId = $organization ?-> company_id ?? null;
             $itemAttributeIds = [];
+            //Currency Check
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($organization -> currency -> id, $request -> document_date);
             if ($currencyExchangeData['status'] == false) {
                 return response()->json([
                     'message' => $currencyExchangeData['message']
                 ], 422); 
             }
-
+            //Create Case
             if (!$request -> material_issue_id)
             {
                 $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
@@ -455,25 +458,20 @@ class ErpMaterialIssueController extends Controller
                         ['model_type' => 'header', 'model_name' => 'ErpMaterialIssueHeader', 'relation_column' => ''],
                         ['model_type' => 'detail', 'model_name' => 'ErpMiItem', 'relation_column' => 'material_issue_id'],
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpMiItemAttribute', 'relation_column' => 'mi_item_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpMiItemLocation', 'relation_column' => 'mi_item_id'],
                     ];
                     $a = Helper::documentAmendment($revisionData, $materialIssue->id);
 
                 }
-                $keys = ['deletedSiItemIds', 'deletedAttachmentIds'];
+                $keys = ['deletedItemIds', 'deletedAttachmentIds'];
                 $deletedData = [];
 
                 foreach ($keys as $key) {
                     $deletedData[$key] = json_decode($request->input($key, '[]'), true);
                 }
-
-                if (count($deletedData['deletedSiItemIds'])) {
-                    $miItems = ErpMiItem::whereIn('id',$deletedData['deletedSiItemIds'])->get();
-                    # all ted remove item level
-                    foreach($miItems as $miItem) {
-                        $miService -> deleteItem($miItem);
-                    }
-                }
+                //Delete Items
+                $deletedItemIds = $deletedData['deletedItemIds'];
+                $miDeleteService = new MiDelete();
+                $miDeleteService -> deleteByRequest($deletedItemIds, $materialIssue);
 
             } else { //Create
                 $materialIssue = ErpMaterialIssueHeader::create([
@@ -606,6 +604,8 @@ class ErpMaterialIssueController extends Controller
                                 'pi_item_id' => isset($request -> pi_item_id[$itemKey]) ? $request -> pi_item_id[$itemKey] : null,
                                 'jo_item_id' => isset($request -> jo_item_id[$itemKey]) ? $request -> jo_item_id[$itemKey] : null,
                                 'jo_product_id' => isset($request -> jo_product_id[$itemKey]) ? $request -> jo_product_id[$itemKey] : null,
+                                'pslip_item_id' => isset($request -> pslip_item_id[$itemKey]) ? $request -> pslip_item_id[$itemKey] : null,
+                                'pslip_issue_type' => isset($request -> pslip_issue_type[$itemKey]) ? $request -> pslip_issue_type[$itemKey] : null,
                                 'user_id' => isset($request -> item_user_id[$itemKey]) ? $request -> item_user_id[$itemKey] : null,
                                 'department_id' => isset($request -> item_department_id[$itemKey]) ? $request -> item_department_id[$itemKey] : null,
                                 'item_code' => $item -> item_code,
@@ -670,6 +670,8 @@ class ErpMaterialIssueController extends Controller
                             'pi_item_id' => $itemDataValue['pi_item_id'],
                             'jo_item_id' => $itemDataValue['jo_item_id'],
                             'jo_product_id' => $itemDataValue['jo_product_id'],
+                            'pslip_item_id' => $itemDataValue['pslip_item_id'],
+                            'pslip_issue_type' => $itemDataValue['pslip_issue_type'],
                             'item_code' => $itemDataValue['item_code'],
                             'item_name' => $itemDataValue['item_name'],
                             'hsn_id' => $itemDataValue['hsn_id'],
@@ -750,6 +752,18 @@ class ErpMaterialIssueController extends Controller
                                 $joProduct -> save();
                             }
                         }
+                        if (isset($request -> pslip_item_id[$itemDataKey]) && isset($request -> pslip_issue_type[$itemDataKey])) {
+                            //Back update in Pslip Item
+                            $pslipItem = ErpPslipItem::find($request -> pslip_item_id[$itemDataKey]);
+                            if (isset($pslipItem)) {
+                                $qtyKey = 'mi_accepted_qty';
+                                if ($request -> pslip_issue_type[$itemDataKey] === 'B') {
+                                    $qtyKey = 'mi_subprime_qty';
+                                }
+                                $pslipItem -> {$qtyKey} = ($pslipItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
+                                $pslipItem -> save();
+                            }
+                        }
                         //Item Attributes
                         if (isset($request -> item_attributes[$itemDataKey])) {
                             $attributesArray = json_decode($request -> item_attributes[$itemDataKey], true);
@@ -786,60 +800,7 @@ class ErpMaterialIssueController extends Controller
                                     'error' => ''
                                 ], 422);
                             }
-                        }  
-                        // Item Locations (only in case of DN and Inv CUM DN)
-                        // if (isset($request -> item_locations[$itemDataKey])) {
-                        //     $baseUomQty = ItemHelper::convertToBaseUom($miItem -> item_id, $itemDataValue['uom_id'], $miItem -> issue_qty ?? 0);
-                        //     $attributeIds = ErpMiItemAttribute::where('material_issue_id', $materialIssue -> id) -> where('mi_item_id', $miItem -> id) -> get() -> pluck('attr_value') -> toArray();
-                        //     $storeWiseStockData = InventoryHelper::fetchStockSummary($miItem -> item_id, $attributeIds ?? [], $itemDataValue['uom_id'] ?? null, $baseUomQty ?? 0, $fromStore ?-> id ?? null, null, null, null);
-                        //     if ($storeWiseStockData['records'] && count($storeWiseStockData) > 0) {
-                        //         ErpMiItemLocation::where('material_issue_id', $materialIssue -> id) -> where('mi_item_id', $miItem -> id) -> where('type', 'from') -> delete();
-                        //         $totalItemQty = 0;
-                        //         foreach ($storeWiseStockData['records'] as $itemLocationKey => $itemLocationData) {
-                        //             $totalItemQty += $itemLocationData['allocated_quantity_alt_uom'];
-                        //             if ($totalItemQty <= $miItem -> issue_qty) {
-                        //                 continue;
-                        //             } else {
-                        //                 DB::rollBack();
-                        //                 return response() -> json([
-                        //                     'message' => '',
-                        //                     'errors' => array(
-                        //                         'item_qty.'. $itemDataKey => 'Store quantity exceeds item quantity'
-                        //                     )
-                        //                 ], 422);
-                        //             }
-                                    
-                        //         }
-                        //     }
-                        //     //To Location
-                            // $toLocation = ErpStore::find($request -> item_store_to[$itemDataKey]);
-                            ErpMiItemLocation::where('material_issue_id', $materialIssue -> id) -> where('mi_item_id', $miItem -> id) -> where('type', 'to') -> delete();
-                            ErpMiItemLocation::create([
-                                'material_issue_id' => $materialIssue -> id,
-                                'mi_item_id' => $miItem -> id,
-                                'item_id' => $miItem -> item_id,
-                                'item_code' => $miItem -> item_code,
-                                'store_id' => $toStore ?-> id,
-                                'store_code' => $toStore ?-> store_name,
-                                'rack_id' => null,
-                                'rack_code' => null,
-                                'shelf_id' => null,
-                                'shelf_code' => null,
-                                'bin_id' => null,
-                                'bin_code' => null,
-                                'quantity' => $miItem -> issue_qty,
-                                'type' => "to",
-                                'inventory_uom_qty' => ItemHelper::convertToBaseUom($miItem -> item_id, $miItem -> uom_id, (float)$miItem -> issue_qty)
-                            ]);
-                        //     // if (isset($request -> item_locations_to[$itemDataKey])) {
-                        //     //     $toLocationsArray = json_decode($request -> item_locations_to[$itemDataKey], true);
-                        //     //     if (json_last_error() === JSON_ERROR_NONE && is_array($toLocationsArray)) {
-                        //     //         foreach ($toLocationsArray as $toLoc) {
-                                        
-                        //     //         }  
-                        //     //     }
-                        //     // }
-                        // }
+                        }
                     }
                 } else {
                     DB::rollBack();
@@ -951,14 +912,15 @@ class ErpMaterialIssueController extends Controller
                         $mediaFiles = $materialIssue->uploadDocuments($singleFile, 'material_issue', false);
                     }
                 }
-                $errorMessage = self::maintainStockLedger($materialIssue);
+                //Stock Ledger Impact
+                $errorMessage = $miService->maintainStockLedger($materialIssue);
                 if ($errorMessage) {     
                     DB::rollBack();
                     return response() -> json([
                         'message' => $errorMessage
                     ], 422);
                 }
-                //Job
+                //Job - (Ignore amendment case)
                 $miService -> createWhmJob($materialIssue, $authUser);
                 
                 DB::commit();
@@ -980,102 +942,9 @@ class ErpMaterialIssueController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
-                'error' => $ex->getMessage() . ' at ' . $ex -> getLine() . ' in ' . $ex -> getFile(),
+                'error' => $ex->getMessage(),
             ], 500);
         }
-    }
-
-    private static function maintainStockLedger(ErpMaterialIssueHeader $materialIssue)
-    {        
-        $items = $materialIssue->items;
-        $issueDetailIds = $items -> pluck('id') -> toArray();
-        $receiptDetailIds = [];
-        foreach ($items as $item) {
-            $tosubStore = ErpSubStore::find($item -> to_sub_store_id);
-            if (isset($tosubStore) && ($tosubStore -> type === ConstantHelper::STOCKK || 
-            $tosubStore -> type === ConstantHelper::SHOP_FLOOR || $tosubStore -> type === ConstantHelper::VENDOR_STORE)) {
-                array_push($receiptDetailIds, $item -> id);
-                //Store Lot no also
-                $lotNumber = InventoryHelper::generateLotNumber($materialIssue -> document_date, $materialIssue -> book_code, $materialIssue -> document_number);
-                ErpMiItemLotDetail::updateOrCreate(
-                    [
-                        'mi_item_id' => $item->id,
-                        'lot_number' => $lotNumber,
-                    ],
-                    [
-                        'lot_qty' => $item->issue_qty,
-                        'total_lot_qty' => $item->issue_qty,
-                        'inventory_uom_qty' => ItemHelper::convertToBaseUom($item -> item_id, $item -> uom_id, $item->issue_qty),
-                        'original_receipt_date' => $materialIssue->document_date,
-                    ]
-                );
-            }
-        }
-        if ($materialIssue -> enforce_uic_scanning == 'yes')
-        {
-            $stockReservation = StockReservation::stockReservation(ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue -> id, $items);
-            if ($stockReservation['status'] == 'error') {
-                return $stockReservation['message'];
-            }
-            return "";
-        }
-        $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
-        if(isset($issueRecords['data']) && count($issueRecords['data']) > 0){
-            ErpMiItemLocation::where('material_issue_id', $materialIssue->id)
-                ->whereIn('mi_item_id', $issueDetailIds)
-                ->where('type', 'from')
-                ->delete();
-
-            foreach($issueRecords['data'] as $val){
-                $miItem = ErpMiItem::where('id', @$val->issuedBy->document_detail_id) -> first();
-
-                ErpMiItemLocation::create([
-                    'material_issue_id' => $materialIssue -> id,
-                    'mi_item_id' => @$val->issuedBy->document_detail_id,
-                    'item_id' => $val -> issuedBy -> item_id,
-                    'item_code' => $val -> issuedBy -> item_code,
-                    'store_id' => $val -> issuedBy -> store_id,
-                    'store_code' => $val -> issuedBy -> store,
-                    'rack_id' => $val -> issuedBy -> rack_id,
-                    'rack_code' => $val -> issuedBy -> rack,
-                    'shelf_id' => $val -> issuedBy -> shelf_id,
-                    'shelf_code' => $val -> issuedBy -> shelf,
-                    'bin_id' => $val -> issuedBy -> bin_id,
-                    'bin_code' => $val -> issuedBy -> bin,
-                    'quantity' => ItemHelper::convertToAltUom($val -> issuedBy -> item_id, $miItem ?-> uom_id ?? $val->issuedBy?->inventory_uom_id, $val -> issuedBy -> issue_qty),
-                    'type' => "from",
-                    'inventory_uom_qty' => $val -> issuedBy -> issue_qty
-                ]);
-            }
-            // $stockLedgers = StockLedger::where('book_type',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME)
-            //                     ->where('document_header_id',$materialIssue->id)
-            //                     ->where('organization_id',$materialIssue->organization_id)
-            //                     ->where('transaction_type','issue')
-            //                     ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
-            //                     ->groupBy('document_detail_id')
-            //                     ->get();
-
-            // foreach($stockLedgers as $stockLedger) {
-            //     $miItem = ErpMiItem::find($stockLedger->document_detail_id);
-            //     $miItem->rate = floatval($stockLedger->cost) / floatval($miItem->inventory_uom_qty);
-            //     $miItem->total_item_amount = floatval($stockLedger->cost);
-            //     $miItem->save();
-            // }
-        } else {
-            return $issueRecords['message'];
-        }
-        if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
-            if ($materialIssue -> to_sub_store ?-> is_warehouse_required) {
-                return "";
-            }
-            $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
-            if ($issueRecords['status'] == 'error') {
-                return $issueRecords['message'];
-            } else {
-                return "";
-            }
-        }
-        return "";
     }
 
     public function revokeMaterialIssue(Request $request)
@@ -1130,6 +999,7 @@ class ErpMaterialIssueController extends Controller
         try {
             $selectedIds = $request->selected_ids ?? [];
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
+            $pslipType = $request -> pslip_pull_type ?? "";
 
             // Build the base query
             $baseQuery = match ($request->doc_type) {
@@ -1153,7 +1023,7 @@ class ErpMaterialIssueController extends Controller
 
                 ConstantHelper::PWO_SERVICE_ALIAS => ErpPwoItem::with(['header', 'attributes', 'uom'])
                     ->whereHas('header', function ($query) use ($request, $applicableBookIds, $selectedIds) {
-                        $referedHeaderId = ErpProductionSlip::whereIn('id', $selectedIds)->first()?->header?->id;
+                        $referedHeaderId = ErpProductionWorkOrder::whereIn('id', $selectedIds)->first()?->header?->id;
                         $query->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
                             ->when($request->store_id, fn($q) => $q->where('location_id', $request->store_id))
                             ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
@@ -1213,6 +1083,23 @@ class ErpMaterialIssueController extends Controller
 
                     default => null,
                 },
+                ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS => ErpPslipItem::with(['header', 'attributes', 'uom'])
+                    ->whereHas('header', function ($query) use ($request, $applicableBookIds, $selectedIds) {
+                        $referedHeaderId = ErpProductionSlip::whereIn('id', $selectedIds)->first()?->header?->id;
+                        $query->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
+                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id))
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('book_id', $applicableBookIds)
+                            ->where('fg_sub_store_id', $request->store_id);
+                    })
+                    ->when($pslipType === 'A', function ($aStockQuery) {
+                        $aStockQuery -> whereColumn('accepted_qty', '>', 'mi_accepted_qty');
+                    })->when($pslipType === 'B', function ($bStockQuery) {
+                        $bStockQuery -> whereColumn('subprime_qty', '>', 'mi_subprime_qty');
+                    })
+                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds)),
 
                 default => null,
             };
@@ -1293,8 +1180,18 @@ class ErpMaterialIssueController extends Controller
                     }
                     return $name;
                 })
-                ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
-                ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
+                ->addColumn('store_location_code', function($item) use($request) {
+                    if ($request -> doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
+                        return $item->header?->store?->store_name ?? '';
+                    }
+                    return $item->header?->store_location?->store_name ?? '';
+                })
+                ->addColumn('sub_store_code', function ($item) use($request) {
+                    if ($request -> doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
+                        return $item->header?->sub_fg_store?->name ?? '';
+                    }
+                    return $item->header?->sub_store?->name ?? '';
+                })
                 ->addColumn('department_code', fn($item) => $item->header?->department?->name ?? '')
                 ->addColumn('requester_name', fn($item) => $item?->header && method_exists($item->header, 'requester_name') ? $item->header->requester_name() : '')
                 ->addColumn('station_name', function ($item) use($request) {
@@ -1306,21 +1203,35 @@ class ErpMaterialIssueController extends Controller
                     return $item->header?->station?->name ?? '';
                 })
                 ->addColumn('avl_stock', function ($item) use ($request) {
-                    return number_format($item->getAvlStock(
-                        $request->store_id_from,
-                        $request->sub_store_id_from ?? null,
-                        $request->station_id_from ?? null
-                    ),6);
+                         return number_format($item->getAvlStock(
+                            $request->store_id_from,
+                            $request->sub_store_id_from ?? null,
+                            $request->station_id_from ?? null
+                        ),6);
                 })
-                ->editColumn('qty', function ($item) use ($request) {
+                ->editColumn('qty', function ($item) use ($request, $pslipType) {
                     if ($request->mi_type === ConstantHelper::TYPE_JOB_ORDER) {
                         return number_format($item->order_qty, 6);
+                    }else if ($request->doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
+                        if ($pslipType === 'B') {
+                            return number_format($item->subprime_qty, 6);
+                        } else {
+                            return number_format($item->accepted_qty, 6);
+                        }
                     } else {
                         return (number_format($item->qty,6));
                     }
                 })
-                ->editColumn('mi_balance_qty', function ($item) use ($request) {
-                    return (number_format($item->mi_balance_qty,6));
+                ->editColumn('mi_balance_qty', function ($item) use ($request, $pslipType) {
+                    if ($request -> doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
+                        if ($pslipType === 'B') {
+                            return (number_format($item->mi_balance_subprime_qty,6));
+                        } else {
+                            return (number_format($item->mi_balance_accepted_qty,6));
+                        }
+                    } else {
+                        return (number_format($item->mi_balance_qty,6));
+                    }
                 })
                 ->addColumn('attributes_array', function ($item) use ($request) {
                     if(in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])){
@@ -1412,6 +1323,17 @@ class ErpMaterialIssueController extends Controller
                         }]);
                 }])
                 ->get();
+            } else if ($request -> doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS) {
+                $headers = ErpProductionSlip::whereHas('items', function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id);
+                })
+                ->with(['items' => function ($mappingQuery) use ($request) {
+                    $mappingQuery->whereIn('id', $request->items_id)
+                        ->with(['item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                }])
+                ->get();
             }
             foreach ($headers as &$header) {
                 if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
@@ -1423,11 +1345,20 @@ class ErpMaterialIssueController extends Controller
                 }
                 foreach ($header -> items as &$item) {
                     $item -> item_attributes_array = $item -> item_attributes_array();
-                    $item -> avl_stock = $item -> getAvlStock($request -> store_id);
+                    $item -> avl_stock = $item -> getAvlStock($request -> store_id, $request -> sub_store_id ?? null, $request -> station_id ?? null);
                     if ($request -> doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
                         if ($item -> rm_type === 'sf') {
                             $item -> item -> item_name .= ('-' . $item -> station ?-> name);
                         }
+                    $item -> station_name = $item ?-> station ?-> name;
+                    }
+                    if ($request -> doc_type === ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS){
+                        if ($request -> pslip_issue_type === 'B') {
+                            $item -> mi_balance_qty = $item -> mi_subprime_balance_qty;
+                        } else {
+                            $item -> mi_balance_qty = $item -> mi_accepted_balance_qty;
+                        }
+                        $item -> pslip_issue_type = $request -> pslip_issue_type;
                     }
                 }
             }

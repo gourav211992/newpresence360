@@ -121,6 +121,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/get-service-items', 'getServiceItems')->name('service.items.list');
         Route::get('/get-repair-action','getRepairAction')->name('get.repair.action');
         Route::get('/get-vendors', 'getVendors')->name('vendors.get');
+        Route::get('get-repair-defects-count/{store_id}', 'getDefectStatusCounts')->name('repair-orders.defects.counts');
         Route::post('/repair-action', 'repairAction')->name('repair.action');
     });
      

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\FileUploadTrait;
 
 class ErpRepItemDefectLog extends Model
 {
+    use FileUploadTrait;
     protected $table = 'erp_rep_item_defect_logs';
 
     protected $fillable = [
@@ -25,5 +27,9 @@ class ErpRepItemDefectLog extends Model
     public function repairOrder()
     {
         return $this->belongsTo(ErpRepairOrder::class, 'repair_order_id');
+    }
+    public function media()
+    {
+        return $this->morphMany(ErpRepMedia::class, 'model');
     }
 }

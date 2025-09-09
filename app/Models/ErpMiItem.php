@@ -23,6 +23,8 @@ class ErpMiItem extends Model
         'mo_item_id',
         'pwo_item_id',
         'pi_item_id',
+        'pslip_item_id',
+        'pslip_issue_type',
         'department_id',
         'department_code',
         'user_name',

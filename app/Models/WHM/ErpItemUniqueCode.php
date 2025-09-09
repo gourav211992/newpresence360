@@ -7,15 +7,17 @@ use App\Models\Employee;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
+use App\Models\ErpRepMedia;
 use App\Models\Item;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\FileUploadTrait;
 
 class ErpItemUniqueCode extends Model
 {
-    use HasFactory;
+    use HasFactory,FileUploadTrait;
     protected $connection = 'mysql';
     protected $table = 'erp_item_unique_codes';
     protected $fillable = [
@@ -117,4 +119,10 @@ class ErpItemUniqueCode extends Model
 
         return $decoded;
     }
+
+     public function media()
+    {
+        return $this->morphMany(ErpRepMedia::class, 'model');
+    }
+
 }

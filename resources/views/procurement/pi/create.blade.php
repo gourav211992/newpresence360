@@ -36,8 +36,7 @@
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" data-module="pi" method="POST" action="{{ route('pi.store') }}"
-        data-redirect="/purchase-indent" enctype="multipart/form-data">
+    <form class="ajax-input-form" data-module="pi" method="POST" action="{{ route('pi.store') }}" data-redirect="/purchase-indent" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="procurement_type_param" id="procurement_type_param" value="all">
         <input type="hidden" name="procurement_type" id="procurement_type" value="rm">
@@ -69,13 +68,10 @@
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
                                 <input type="hidden" name="document_status" id="document_status">
-                                <button type="button" onClick="javascript: history.go(-1)"
-                                    class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
+                                <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
                                     Back</button>
-                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
-                                    name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
-                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
-                                    value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                             </div>
                         </div>
                     </div>
@@ -88,8 +84,7 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div
-                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
@@ -99,8 +94,7 @@
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Series <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="book_id" name="book_id">
@@ -114,24 +108,18 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Indent No <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Indent No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="document_number" class="form-control"
-                                                            id="document_number">
+                                                        <input type="text" name="document_number" class="form-control" id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Indent Date <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Indent Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control"
-                                                            value="{{ date('Y-m-d') }}" name="document_date"
-                                                            min = "{{ $current_financial_year['start_date'] }}"
-                                                            max = "{{ $current_financial_year['end_date'] }}">
+                                                        <input type="date" class="form-control" value="{{ date('Y-m-d') }}" name="document_date" min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}">
                                                     </div>
                                                 </div>
                                                 {{-- <div class="row align-items-center mb-1">
@@ -144,8 +132,7 @@
                         </div> --}}
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Location <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Location <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="store_id" name="store_id">
@@ -156,30 +143,25 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1 d-none"
-                                                    id = "department_id_header">
+                                                <div class="row align-items-center mb-1 d-none" id = "department_id_header">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Requester</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" id="sub_store_id"
-                                                            name="sub_store_id">
+                                                        <select class="form-select" id="sub_store_id" name="sub_store_id">
                                                             <option value="">Select</option>
                                                         </select>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1 d-none" id = "user_id_header">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Requester <span
-                                                                class="text-danger">*</span></label>
+                                                        <label class="form-label">Requester <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" id="user_id" name="user_id"
-                                                            oninput = "setSelectedDepartment();">
+                                                        <select class="form-select" id="user_id" name="user_id" oninput = "setSelectedDepartment();">
                                                             <option value="">Select</option>
                                                             @foreach ($users as $user)
-                                                                <option value="{{ $user->id }}"
-                                                                    {{ $selecteduserId == $user->id ? 'selected' : '' }}>
+                                                                <option value="{{ $user->id }}" {{ $selecteduserId == $user->id ? 'selected' : '' }}>
                                                                     {{ ucfirst($user->name) }}</option>
                                                             @endforeach
                                                         </select>
@@ -190,9 +172,7 @@
                                                         <label class="form-label">Reference from</label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button"
-                                                            class="btn btn-outline-primary btn-sm mb-0 soSelect"><i
-                                                                data-feather="plus-square"></i> Sale Order</button>
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 soSelect"><i data-feather="plus-square"></i> Sale Order</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -211,19 +191,15 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-sm-end">
-                                                    <button type="button" id="importItem" class="mx-1 btn btn-sm btn-outline-primary importItem"
-                                                     onclick="openImportItemModal('create')">
+                                                    <button type="button" id="importItem" class="mx-1 btn btn-sm btn-outline-primary importItem" onclick="openImportItemModal('create')">
                                                         <i data-feather="upload"></i>
                                                         Import Item
-                                                    </button>  
-                                                    <a href="javascript:;" id="deleteBtn"
-                                                        class="btn btn-sm btn-outline-danger me-50">
+                                                    </button>
+                                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtn"
-                                                        class="btn btn-sm btn-outline-primary">
+                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
                                                         <i data-feather="plus"></i> Add Item</a>
-                                                    <a href="#" onclick = "copyItemRow();" id = "copy_item_section"
-                                                        style = "display:none;" class="btn btn-sm btn-outline-primary">
+                                                    <a href="#" onclick = "copyItemRow();" id = "copy_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary">
                                                         <i data-feather="copy"></i> Copy Item</a>
                                                 </div>
                                             </div>
@@ -231,19 +207,13 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable"
-                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                                        data-json-key="components_json"
-                                                        data-row-selector="tr[id^='row_']">
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" data-json-key="components_json" data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input"
-                                                                            id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="Email">
+                                                                        <label class="form-check-label" for="Email"></label>
                                                                     </div>
                                                                 </th>
                                                                 <th width="200px">Item Code</th>
@@ -269,9 +239,9 @@
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
                                                                                 <td class="p-0">
-                                                                                    <h6
-                                                                                        class="text-dark mb-0 bg-light-primary py-1 px-50">
-                                                                                        <strong>Item Details</strong></h6>
+                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
+                                                                                        <strong>Item Details</strong>
+                                                                                    </h6>
                                                                                 </td>
                                                                             </tr>
                                                                             <tr>
@@ -295,12 +265,8 @@
                                                             <div class="col-md-4">
                                                                 <div class="mb-1">
                                                                     <label class="form-label">Upload Document</label>
-                                                                    <input type="file" name="attachment[]"
-                                                                        class="form-control"
-                                                                        onchange = "addFiles(this,'main_order_file_preview')"
-                                                                        multiple>
-                                                                    <span
-                                                                        class = "text-primary small">{{ __('message.attachment_caption') }}</span>
+                                                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_order_file_preview')" multiple>
+                                                                    <span class = "text-primary small">{{ __('message.attachment_caption') }}</span>
                                                                 </div>
                                                             </div>
                                                             <div class = "col-md-6" style = "margin-top:19px;">
@@ -312,8 +278,7 @@
                                                     <div class="col-md-12">
                                                         <div class="mb-1">
                                                             <label class="form-label">Final Remarks</label>
-                                                            <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control"
-                                                                placeholder="Enter Remarks here..."></textarea>
+                                                            <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here..."></textarea>
 
                                                         </div>
                                                     </div>
@@ -357,8 +322,7 @@
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" {{-- data-bs-dismiss="modal" --}}
-                        class="btn btn-primary submitAttributeBtn">Select</button>
+                    <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
                 </div>
             </div>
         </div>
@@ -446,7 +410,6 @@
         </div>
     </div>
 
-
     {{-- Item Remark Modal --}}
     <div class="modal fade" id="itemRemarkModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -475,12 +438,17 @@
 
     {{-- Taxes --}}
     @include('procurement.pi.partials.so-modal')
+    @include('procurement.pi.partials.analyze-modal')
     @include('procurement.pi.partials.so-modal-submit')
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{ asset('assets/js/modules/common-attr-ui.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/js/modules/pi.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
+    <script>
+        var analyzeSoItemUrl = '{{ route('pi.analyze.so-item') }}';
+        let processSoActionUrl = '{{ route('pi.process.so-item.submit') }}';
+    </script>
     <script>
         setTimeout(() => {
             $("#book_id").trigger('change');
@@ -624,6 +592,7 @@
                 $("#department_id_header").addClass('d-none');
                 $("#requester_type").val('User');
             }
+
             let soTrackingRequired = parameters?.so_tracking_required || '';
             $("#so_tracking_required").val(soTrackingRequired);
             if (soTrackingRequired.includes('yes')) {
@@ -912,7 +881,7 @@
                 let sub_store_id = $("#sub_store_id").val() || '';
                 let actionUrl = '{{ route('pi.get.itemdetail') }}' + '?item_id=' + itemId + '&selectedAttr=' + JSON
                     .stringify(selectedAttr) + '&remark=' + remark + '&uom_id=' + uomId + '&qty=' + qty +
-                    '&store_id='+store_id+'&sub_store_id='+sub_store_id;
+                    '&store_id=' + store_id + '&sub_store_id=' + sub_store_id;
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
                         if (data.status == 200) {
@@ -1323,10 +1292,11 @@
                     let dataItem = JSON.parse($(item).attr('data-item'));
                     selectedData.push(dataItem);
                 });
+
                 if (selectedData.length) {
                     let soTracking = $("#so_tracking_required").val() || '';
                     let storeId = $("#store_id").val() || '';
-                    fetch('{{ route('pi.process.so-item.submit') }}', {
+                    fetch(processSoActionUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1457,170 +1427,170 @@
                 updateDropdown(storeId);
             }
         }, 100);
-    // Opens import modal with store/type/header context
-    function openImportItemModal(type) {
-        const storeId = $('#store_id').val();
-        if (!storeId) {
-            Swal.fire({
-                title: 'Error!',
-                text: 'Please select a store first.',
-                icon: 'error',
-            });
-            return false;
-        }
-
-        // Reset file and modal state
-        $('#fileUpload').val('');
-        $('#fileNameDisplay').hide();
-        $('#proceedBtn').hide();
-        $('#upload-error').hide();
-        $('#uploadProgress').addClass('d-none');
-        $('#uploadProgressBar').css('width', '0%').text('0%');
-
-        // Open modal and inject hidden fields
-        $("#importItemModal").modal('show');
-        const form = $('#importItemModal').find('form');
-        form.find('input[name="store_id"], input[name="type"], input[name="po_header_id"]').remove();
-        form.append(`<input type="hidden" name="store_id" value="${storeId}">`);
-        form.append(`<input type="hidden" name="type" value="${type}">`);
-    }
-
-    $(function() {
-        // Handle file selection
-        $(document).on('change', '#fileUpload', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            handleFileSelected(file);
-        });
-        let parsedValidRows = [];
-        // Proceed button AJAX upload
-        $(document).on('click', '#proceedBtn', function () {
-            const fileInput = $('#fileUpload')[0];
-            if (!fileInput.files.length) {
-                displayError('Please select a file to upload.');
-                return;
+        // Opens import modal with store/type/header context
+        function openImportItemModal(type) {
+            const storeId = $('#store_id').val();
+            if (!storeId) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please select a store first.',
+                    icon: 'error',
+                });
+                return false;
             }
-            const file = fileInput.files[0];
-            let formData = new FormData();
-            formData.append('attachment', file);
 
-            // Add any extra data if needed (store_id/type/po_header_id)
-            $('#importItemModal input[type=hidden]').each(function() {
-                formData.append($(this).attr('name'), $(this).val());
-            });
-            $('#upload-error').hide().html('');
-            $('#uploadProgress').removeClass('d-none');
+            // Reset file and modal state
+            $('#fileUpload').val('');
+            $('#fileNameDisplay').hide();
+            $('#proceedBtn').hide();
+            $('#upload-error').hide();
+            $('#uploadProgress').addClass('d-none');
             $('#uploadProgressBar').css('width', '0%').text('0%');
 
-            $.ajax({
-                url: "{{ route('generic.import.save', ['alias' => 'purchase-indent']) }}",
-                type: "POST",
-                data: formData,
-                processData: false,
-                contentType: false,
-                xhr: function () {
-                    let xhr = new window.XMLHttpRequest();
-                    xhr.upload.addEventListener("progress", function (evt) {
-                        if (evt.lengthComputable) {
-                            const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                            $('#uploadProgressBar').css('width', percentComplete + '%').text(percentComplete + '%');
-                        }
-                    }, false);
-                    return xhr;
-                },
-                success: function (response) {
-                    $('#uploadProgressBar').addClass('bg-success').text('Uploaded');
+            // Open modal and inject hidden fields
+            $("#importItemModal").modal('show');
+            const form = $('#importItemModal').find('form');
+            form.find('input[name="store_id"], input[name="type"], input[name="po_header_id"]').remove();
+            form.append(`<input type="hidden" name="store_id" value="${storeId}">`);
+            form.append(`<input type="hidden" name="type" value="${type}">`);
+        }
 
-                    const validRows = response.data.valid || [];
-                    const invalidRows = response.data.invalid || [];
-                    const headers = response.headers || {};
-
-                    // Update valid count
-                    $('#valid-count').text(`(${validRows.length})`);
-                    $('#invalid-count').text(`(${invalidRows.length})`);
-
-                    // Show preview section
-                    $('#parsedPreview').removeClass('d-none').show();
-
-                    // Build table headers dynamically
-                    function buildHeaderRow(headersMap, target) {
-                        let headerHtml = '';
-                        for (const key in headersMap) {
-                            headerHtml += `<th>${headersMap[key]}</th>`;
-                        }
-                        headerHtml += `<th>Row</th><th>Errors</th>`;
-                        $(target).html(headerHtml);
-                    }
-
-                    buildHeaderRow(headers, '#valid-table-header');
-                    buildHeaderRow(headers, '#invalid-table-header');
-
-                    // Build table body
-                    function buildTableRows(data, headersMap) {
-                        return data.map(row => {
-                            let rowHtml = '<tr>';
-                            for (const key in headersMap) {
-                                rowHtml += `<td>${row[key] ?? ''}</td>`;
-                            }
-                            rowHtml += `<td>${row.row_number ?? ''}</td>`;
-                            if (row.errors?.length) {
-                                const errors = row.errors.map(e => `<li>${e}</li>`).join('');
-                                rowHtml += `<td><ul class="mb-0">${errors}</ul></td>`;
-                            } else {
-                                rowHtml += `<td>-</td>`;
-                            }
-                            rowHtml += '</tr>';
-                            return rowHtml;
-                        }).join('');
-                    }
-                    parsedValidRows = validRows;
-                    $('#valid-table-body').html(buildTableRows(validRows, headers));
-                    $('#invalid-table-body').html(buildTableRows(invalidRows, headers));
-                    $("#submitBtn").removeClass('d-none');
-                    window.lastParsedImport = {
-                        valid: validRows,
-                        invalid: invalidRows,
-                        headers: headers
-                    };
-                    Swal.fire({
-                        title: 'Success!',
-                        text: response.message || 'File uploaded and parsed successfully.',
-                        icon: 'success',
-                    });
-                },
-                error: function (xhr) {
-                    $('#upload-error').removeClass('d-none').text(xhr.responseJSON?.message || 'Upload failed');
-                    $('#uploadProgress').addClass('d-none');
-                    $('#uploadProgressBar').removeClass('bg-success').css('width', '0%').text('0%');
-                }
+        $(function() {
+            // Handle file selection
+            $(document).on('change', '#fileUpload', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                handleFileSelected(file);
             });
-        });
-        
+            let parsedValidRows = [];
+            // Proceed button AJAX upload
+            $(document).on('click', '#proceedBtn', function() {
+                const fileInput = $('#fileUpload')[0];
+                if (!fileInput.files.length) {
+                    displayError('Please select a file to upload.');
+                    return;
+                }
+                const file = fileInput.files[0];
+                let formData = new FormData();
+                formData.append('attachment', file);
 
-        // $('#submitBtn').on('click', function () {
-        //     const validRows = window.lastParsedImport?.valid || [];
-        //     const headers = window.lastParsedImport?.headers || {};
-        //     const tbody = $('#item_header');
-        //     console.log('table',tbody);
-        //     tbody.empty(); // Clear existing rows
-        //     let currentIndex = tbody.find('tr').length;
-        //     console.log('validRows', validRows);
-        //     validRows.forEach((row, i) => {
-        //         console.log('Processing row:', row);
-        //         const index = currentIndex + i;
-        //         const itemId = row.item_id || '';
-        //         const itemCode = row.item_code || '';
-        //         const itemName = row.item_name || '';
-        //         const uomId = row.uom_id || '';
-        //         const uomName = row.uom_name || '';
-        //         const rate = row.rate || 0;
-        //         const physicalQty = row.qty || 0;
-        //         const remarks = row.remarks || '';
-        //         const attributeValue = row.attribute_value || '';
-        //         const attributeGroupId = row.attribute_group_id || '';
-        //         const itemValue = (rate * physicalQty).toFixed(2);
+                // Add any extra data if needed (store_id/type/po_header_id)
+                $('#importItemModal input[type=hidden]').each(function() {
+                    formData.append($(this).attr('name'), $(this).val());
+                });
+                $('#upload-error').hide().html('');
+                $('#uploadProgress').removeClass('d-none');
+                $('#uploadProgressBar').css('width', '0%').text('0%');
 
-        //         const rowHtml = `
+                $.ajax({
+                    url: "{{ route('generic.import.save', ['alias' => 'purchase-indent']) }}",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        let xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function(evt) {
+                            if (evt.lengthComputable) {
+                                const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                                $('#uploadProgressBar').css('width', percentComplete + '%').text(percentComplete + '%');
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function(response) {
+                        $('#uploadProgressBar').addClass('bg-success').text('Uploaded');
+
+                        const validRows = response.data.valid || [];
+                        const invalidRows = response.data.invalid || [];
+                        const headers = response.headers || {};
+
+                        // Update valid count
+                        $('#valid-count').text(`(${validRows.length})`);
+                        $('#invalid-count').text(`(${invalidRows.length})`);
+
+                        // Show preview section
+                        $('#parsedPreview').removeClass('d-none').show();
+
+                        // Build table headers dynamically
+                        function buildHeaderRow(headersMap, target) {
+                            let headerHtml = '';
+                            for (const key in headersMap) {
+                                headerHtml += `<th>${headersMap[key]}</th>`;
+                            }
+                            headerHtml += `<th>Row</th><th>Errors</th>`;
+                            $(target).html(headerHtml);
+                        }
+
+                        buildHeaderRow(headers, '#valid-table-header');
+                        buildHeaderRow(headers, '#invalid-table-header');
+
+                        // Build table body
+                        function buildTableRows(data, headersMap) {
+                            return data.map(row => {
+                                let rowHtml = '<tr>';
+                                for (const key in headersMap) {
+                                    rowHtml += `<td>${row[key] ?? ''}</td>`;
+                                }
+                                rowHtml += `<td>${row.row_number ?? ''}</td>`;
+                                if (row.errors?.length) {
+                                    const errors = row.errors.map(e => `<li>${e}</li>`).join('');
+                                    rowHtml += `<td><ul class="mb-0">${errors}</ul></td>`;
+                                } else {
+                                    rowHtml += `<td>-</td>`;
+                                }
+                                rowHtml += '</tr>';
+                                return rowHtml;
+                            }).join('');
+                        }
+                        parsedValidRows = validRows;
+                        $('#valid-table-body').html(buildTableRows(validRows, headers));
+                        $('#invalid-table-body').html(buildTableRows(invalidRows, headers));
+                        $("#submitBtn").removeClass('d-none');
+                        window.lastParsedImport = {
+                            valid: validRows,
+                            invalid: invalidRows,
+                            headers: headers
+                        };
+                        Swal.fire({
+                            title: 'Success!',
+                            text: response.message || 'File uploaded and parsed successfully.',
+                            icon: 'success',
+                        });
+                    },
+                    error: function(xhr) {
+                        $('#upload-error').removeClass('d-none').text(xhr.responseJSON?.message || 'Upload failed');
+                        $('#uploadProgress').addClass('d-none');
+                        $('#uploadProgressBar').removeClass('bg-success').css('width', '0%').text('0%');
+                    }
+                });
+            });
+
+
+            // $('#submitBtn').on('click', function () {
+            //     const validRows = window.lastParsedImport?.valid || [];
+            //     const headers = window.lastParsedImport?.headers || {};
+            //     const tbody = $('#item_header');
+            //     console.log('table',tbody);
+            //     tbody.empty(); // Clear existing rows
+            //     let currentIndex = tbody.find('tr').length;
+            //     console.log('validRows', validRows);
+            //     validRows.forEach((row, i) => {
+            //         console.log('Processing row:', row);
+            //         const index = currentIndex + i;
+            //         const itemId = row.item_id || '';
+            //         const itemCode = row.item_code || '';
+            //         const itemName = row.item_name || '';
+            //         const uomId = row.uom_id || '';
+            //         const uomName = row.uom_name || '';
+            //         const rate = row.rate || 0;
+            //         const physicalQty = row.qty || 0;
+            //         const remarks = row.remarks || '';
+            //         const attributeValue = row.attribute_value || '';
+            //         const attributeGroupId = row.attribute_group_id || '';
+            //         const itemValue = (rate * physicalQty).toFixed(2);
+
+            //         const rowHtml = `
         //         <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');">
         //             <input type="hidden" id="po_item_id_${index}" name="po_item_id[]" value="">
         //             <td class="customernewsection-form">
@@ -1672,67 +1642,67 @@
         //                 <input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]" value="${remarks}">
         //             </td>
         //         </tr>`;
-        //         tbody.append(rowHtml);
-        //         // setItemAttributes(`items_dropdown_${index}`, index, false);
-        //         setAttributesUI(index);
-        //         onItemClick(index);
-        //         console.log('Row added:', rowHtml);
-        //     });
-        //     console.log('Parsed valid rows:', parsedValidRows);
-        //     renderIcons()
-        //     $('#importItemModal').modal('hide');
-        // });
+            //         tbody.append(rowHtml);
+            //         // setItemAttributes(`items_dropdown_${index}`, index, false);
+            //         setAttributesUI(index);
+            //         onItemClick(index);
+            //         console.log('Row added:', rowHtml);
+            //     });
+            //     console.log('Parsed valid rows:', parsedValidRows);
+            //     renderIcons()
+            //     $('#importItemModal').modal('hide');
+            // });
 
-        $('#submitBtn').on('click', function () {
-            console.log('Submit button clicked');
-            const validRows = window.lastParsedImport?.valid || [];
-            const headers = window.lastParsedImport?.headers || {};
-            const tbody = $('#item_header');
-            
-            let currentIndex = tbody.find('tr').length;
+            $('#submitBtn').on('click', function() {
+                console.log('Submit button clicked');
+                const validRows = window.lastParsedImport?.valid || [];
+                const headers = window.lastParsedImport?.headers || {};
+                const tbody = $('#item_header');
 
-            validRows.forEach((row, i) => {
-                console.log('Processing row:', row);
-                const index = currentIndex + i;
+                let currentIndex = tbody.find('tr').length;
 
-                const itemId       = row.item_id || '';
-                const itemCode     = row.item_code || '';
-                const itemName     = row.item_name || '';
-                const uomId        = row.uom_id || '';
-                const uomName      = row.uom_name || '';
-                const rate         = row.rate || 0;
-                const requiredQty  = row.required_qty || 0;
-                const remarks      = row.remarks || '';
-                const vendorId     = row.vendor || '';
-                const vendorName   = row.vendor_name || '';
+                validRows.forEach((row, i) => {
+                    console.log('Processing row:', row);
+                    const index = currentIndex + i;
 
-                // normalize attributes (can be object or array)
-                let attributes = [];
-                if (Array.isArray(row.item_attribute_array)) {
-                    attributes = row.item_attribute_array;
-                } else if (row.item_attribute_array && typeof row.item_attribute_array === 'object') {
-                    attributes = [row.item_attribute_array];
-                }
+                    const itemId = row.item_id || '';
+                    const itemCode = row.item_code || '';
+                    const itemName = row.item_name || '';
+                    const uomId = row.uom_id || '';
+                    const uomName = row.uom_name || '';
+                    const rate = row.rate || 0;
+                    const requiredQty = row.required_qty || 0;
+                    const remarks = row.remarks || '';
+                    const vendorId = row.vendor || '';
+                    const vendorName = row.vendor_name || '';
 
-                const itemValue = (rate * requiredQty).toFixed(2);
+                    // normalize attributes (can be object or array)
+                    let attributes = [];
+                    if (Array.isArray(row.item_attribute_array)) {
+                        attributes = row.item_attribute_array;
+                    } else if (row.item_attribute_array && typeof row.item_attribute_array === 'object') {
+                        attributes = [row.item_attribute_array];
+                    }
 
-                const attributesHtml = attributes.map(attr => {
-                    const groupId   = attr.attribute_group_id;
-                    const groupName = attr.group_name;
-                    const selected  = (attr.values_data || []).find(v => v.selected);
+                    const itemValue = (rate * requiredQty).toFixed(2);
 
-                    if (!selected) return ''; // skip if no selected value
+                    const attributesHtml = attributes.map(attr => {
+                        const groupId = attr.attribute_group_id;
+                        const groupName = attr.group_name;
+                        const selected = (attr.values_data || []).find(v => v.selected);
 
-                    return `
+                        if (!selected) return ''; // skip if no selected value
+
+                        return `
                         <input type="hidden"
                             name="components[${index}][attr_group_id][${groupId}][${selected.id}][attr_name]"
                             value="${selected.id}"
                             data-attr-group-id="${groupId}"
                             class="comp_attribute">
                     `;
-                }).join('');
+                    }).join('');
 
-                const rowHtml = `
+                    const rowHtml = `
                     <tr id="row_${index}" data-index="${index}">
                         <td class="customernewsection-form">
                             <div class="form-check form-check-primary custom-checkbox">
@@ -1780,102 +1750,106 @@
                         </td>
                         <td>
                             ${typeof soTrackingRequired !== 'undefined' && soTrackingRequired ? `
-                                <input readonly type="text" name="components[${index}][so_no]" class="form-control mw-100 mb-25" value="${row.so_no || ''}" />
-                            ` : ''}
+                                    <input readonly type="text" name="components[${index}][so_no]" class="form-control mw-100 mb-25" value="${row.so_no || ''}" />
+                                ` : ''}
                         </td>
                         <td>
                             <input type="text" name="components[${index}][remark]" class="form-control mw-100 mb-25" value="${remarks}"/>
                         </td>
                     </tr>
                 `;
-                tbody.append(rowHtml);
+                    tbody.append(rowHtml);
 
-                // auto-select newly added row & unselect others
-                const newRow = tbody.find(`tr[data-index="${index}"]`);
-                newRow.addClass('trselected').siblings().removeClass('trselected');
-                initializeAutocomplete2('.comp_item_code');
-                initAutocompVendor("[name*='[vendor_code]']");
-                newRow.find(`input[name="components[${index}][qty]"]`).trigger('change');
-                // also trigger the click event if needed
-                newRow.trigger('click');
-                setAttributesUIHelper(index,"#itemTable");
+                    // auto-select newly added row & unselect others
+                    const newRow = tbody.find(`tr[data-index="${index}"]`);
+                    newRow.addClass('trselected').siblings().removeClass('trselected');
+                    initializeAutocomplete2('.comp_item_code');
+                    initAutocompVendor("[name*='[vendor_code]']");
+                    newRow.find(`input[name="components[${index}][qty]"]`).trigger('change');
+                    // also trigger the click event if needed
+                    newRow.trigger('click');
+                    setAttributesUIHelper(index, "#itemTable");
 
+                });
+                $("#importItemModal").modal('hide');
             });
-            $("#importItemModal").modal('hide');
-        });
 
-        // Cancel button
-        $('#cancelBtn').on('click', function () {
-            $('#fileUpload').val('');
-            $('#fileNameDisplay').hide();
-            $('#upload-error').hide();
-            $('#proceedBtn').hide();
-        });
+            // Cancel button
+            $('#cancelBtn').on('click', function() {
+                $('#fileUpload').val('');
+                $('#fileNameDisplay').hide();
+                $('#upload-error').hide();
+                $('#proceedBtn').hide();
+            });
 
-        // Sample download button
-        $('#sampleBtn').on('click', function () {
-            $.ajax({
-                url: "{{ route('generic.import.sample.download', ['alias' => 'purchase-indent']) }}",
-                type: "GET",
-                xhrFields: { responseType: 'blob' },
-                success: function (data, status, xhr) {
-                    let disposition = xhr.getResponseHeader('Content-Disposition');
-                    let filename = "sample_import.xlsx";
-                    if (disposition && disposition.indexOf('filename=') !== -1) {
-                        let matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                        if (matches?.[1]) {
-                            filename = matches[1].replace(/['"]/g, '');
+            // Sample download button
+            $('#sampleBtn').on('click', function() {
+                $.ajax({
+                    url: "{{ route('generic.import.sample.download', ['alias' => 'purchase-indent']) }}",
+                    type: "GET",
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function(data, status, xhr) {
+                        let disposition = xhr.getResponseHeader('Content-Disposition');
+                        let filename = "sample_import.xlsx";
+                        if (disposition && disposition.indexOf('filename=') !== -1) {
+                            let matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                            if (matches?.[1]) {
+                                filename = matches[1].replace(/['"]/g, '');
+                            }
                         }
+                        const blob = new Blob([data], {
+                            type: xhr.getResponseHeader('Content-Type')
+                        });
+                        const link = document.createElement('a');
+                        link.href = window.URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    },
+                    error: function() {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to download sample file.',
+                            icon: 'error',
+                        });
                     }
-                    const blob = new Blob([data], { type: xhr.getResponseHeader('Content-Type') });
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                },
-                error: function () {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Failed to download sample file.',
-                        icon: 'error',
-                    });
-                }
+                });
             });
+
+            function handleFileSelected(file) {
+                const fileName = file.name;
+                const fileSize = file.size;
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                const ALLOWED_EXTENSIONS = ['xls', 'xlsx'];
+                const MAX_FILE_SIZE = 30 * 1024 * 1024;
+
+                $('#upload-error').hide().html('');
+
+                if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
+                    displayError(`Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
+                    $('#fileUpload').val('');
+                    return;
+                }
+
+                if (fileSize > MAX_FILE_SIZE) {
+                    displayError(`File too large. Max allowed size is ${MAX_FILE_SIZE / (1024 * 1024)} MB.`);
+                    $('#fileUpload').val('');
+                    return;
+                }
+
+                $('#selectedFileName').text(fileName);
+                $('#fileNameDisplay').removeClass('d-none').show();
+                $('#proceedBtn').show();
+            }
+
+            function displayError(message) {
+                $('#upload-error').html(message).removeClass('d-none').show();
+                $('#fileNameDisplay').hide();
+                $('#proceedBtn').hide();
+            }
         });
-
-        function handleFileSelected(file) {
-            const fileName = file.name;
-            const fileSize = file.size;
-            const fileExtension = fileName.split('.').pop().toLowerCase();
-            const ALLOWED_EXTENSIONS = ['xls', 'xlsx'];
-            const MAX_FILE_SIZE = 30 * 1024 * 1024;
-
-            $('#upload-error').hide().html('');
-
-            if (!ALLOWED_EXTENSIONS.includes(fileExtension)) {
-                displayError(`Invalid file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
-                $('#fileUpload').val('');
-                return;
-            }
-
-            if (fileSize > MAX_FILE_SIZE) {
-                displayError(`File too large. Max allowed size is ${MAX_FILE_SIZE / (1024 * 1024)} MB.`);
-                $('#fileUpload').val('');
-                return;
-            }
-
-            $('#selectedFileName').text(fileName);
-            $('#fileNameDisplay').removeClass('d-none').show();
-            $('#proceedBtn').show();
-        }
-
-        function displayError(message) {
-            $('#upload-error').html(message).removeClass('d-none').show();
-            $('#fileNameDisplay').hide();
-            $('#proceedBtn').hide();
-        }
-    });
     </script>
 @endsection

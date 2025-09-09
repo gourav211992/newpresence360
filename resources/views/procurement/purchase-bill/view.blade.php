@@ -803,7 +803,6 @@
                 return response.json().then(data => {
                     if (data.status == 200) {
                         const parameters = data.data.parameters;
-                        console.log('parameters', parameters);
                         setServiceParameters(parameters);
 
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
@@ -1206,7 +1205,7 @@
             $('.form-check-input:checked').each(function(index, item) {
                 let tr = $(item).closest('tr');
                 let trIndex = tr.index();
-                let detail_id = Number($(tr).find('[name*="[detail_id]"]').val()) || 0;
+                let detail_id = Number($(tr).find('[name*="[pb_dtl_id]"]').val()) || 0;
                 let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
                 if (detail_id > 0 && mrn_detail_id > 0) {
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });

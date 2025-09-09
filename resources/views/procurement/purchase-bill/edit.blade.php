@@ -797,6 +797,7 @@
 											<th>Leadger Name</th>
                                             <th class="text-end">Debit</th>
                                             <th class="text-end">Credit</th>
+                                            <th class="text-end">Due Date</th>
 										</tr>
 									</thead>
 									<tbody id="posting-table"></tbody>
@@ -1327,7 +1328,7 @@
             $('.form-check-input:checked').each(function(index, item) {
                 let tr = $(item).closest('tr');
                 let trIndex = tr.index();
-                let detail_id = Number($(tr).find('[name*="[detail_id]"]').val()) || 0;
+                let detail_id = Number($(tr).find('[name*="[pb_dtl_id]"]').val()) || 0;
                 let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
                 if (detail_id > 0 && mrn_detail_id > 0) {
                     mrnItemIds.push({ index: trIndex + 1, mrn_detail_id: mrn_detail_id });
@@ -1403,7 +1404,7 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let pb_detail_id = $(tr).find("input[name*='[detail_id]']").val() || '';
+            let pb_detail_id = $(tr).find("input[name*='[pb_dtl_id]']").val() || '';
             let actionUrl = '{{route("purchase-bill.item.attr")}}'+'?item_id='+itemId+'&pb_detail_id='+pb_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
@@ -1452,7 +1453,7 @@
                 mrn_header_id: getVal("[name*='[mrn_header_id]']"),
                 mrn_detail_id: getVal("[name*='[mrn_detail_id]']"),
                 header_id: getVal("[name*='[header_id]']"),
-                detail_id: getVal("[name*='[detail_id]']"),
+                detail_id: getVal("[name*='[pb_dtl_id]']"),
                 so_detail_id: getVal("[name*='[so_detail_id]']"),
                 header_store_id: store_id,
                 return_type: return_type,
@@ -1866,6 +1867,7 @@
                             <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                             <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
                             <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                            <td class="text-end">${voucherDetail.due_date ? moment(voucherDetail.due_date).format('D/M/Y') : ''}</td>
                             </tr>
                             `
                         });

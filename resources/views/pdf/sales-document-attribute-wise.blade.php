@@ -22,7 +22,11 @@
             <tr>
                 <!-- Organization Logo (Left) -->
                 <td style="vertical-align: top;">
-                    <img src="{{$orgLogo}}" height="50px" alt="">
+                    @if (isset($orgLogo) && $orgLogo)
+                        <img src="{!! $orgLogo !!}" alt="" height="50px" />
+                    @else
+                        <img src="{{ $imagePath }}" height="50px" alt="">
+                    @endif
                 </td>
 
                 <!--  {{$type}} Text (Center) -->
