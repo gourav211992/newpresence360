@@ -144,7 +144,10 @@ class DispatchController extends Controller
                 ->pluck('uid')
                 ->toArray();
         
-        $pendingTasksQuery = ErpItemUniqueCode::whereIn('morphable_id',$plitemIds)
+        $pendingTasksQuery = ErpItemUniqueCode::with(['vendor' => function ($q) {
+                $q->select('id', 'vendor_code', 'company_name');
+            }])
+        ->whereIn('morphable_id',$plitemIds)
         ->where('job_type',CommonHelper::PICKING)
         ->where('doc_type',CommonHelper::RECEIPT);
 
@@ -159,7 +162,7 @@ class DispatchController extends Controller
             });
         }
 
-        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status')
+        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
         ->get();
 
         return [

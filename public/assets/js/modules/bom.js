@@ -351,7 +351,9 @@ function qtyEnabledDisabled() {
                     qtyDisabled = true;
                 }
             });
-            $(item).find("[name*='[qty]']").attr('readonly',Boolean(qtyDisabled));
+            if(isEdit){
+                $(item).find("[name*='[qty]']").attr('readonly',Boolean(qtyDisabled));
+            }
             if(qtyDisabled) {
                 $(item).find("[name*='[qty]']").val('');
             }
@@ -369,7 +371,10 @@ $('#attribute').on('hidden.bs.modal', function () {
       if(!$("#consumption_method").val().includes('manual')) {
          $(`[name="components[${rowCount}][qty]"]`).closest('td').find('.consumption_btn button').trigger('click');
        } else {
-         $(`[name="components[${rowCount}][qty]"]`).val('').focus();
+        if(isEdit){
+            $(`[name="components[${rowCount}][qty]"]`).val('').focus();
+       }
+
        }
    }
 });

@@ -26,22 +26,8 @@ class PickingJob
         $trnstype = CommonHelper::getJobTransactionType($namespace);
 
         // Step 2: Get or Create Job (prevents duplicate job on edit)
-        $job = ErpWhmJob::firstOrCreate(
-            [
-                'morphable_type' => $namespace,
-                'morphable_id' => $header->id,
-                'type' => $type,
-            ],
-            [
-                'organization_id' => $header->organization_id,
-                'group_id' => $header->group_id,
-                'company_id' => $header->company_id,
-                'status' => CommonHelper::PENDING,
-                'trns_type' => $trnstype,
-                'store_id' => isset($header->store_id) ? $header->store_id : NULL,
-                'sub_store_id' => isset($header->main_sub_store_id) ? $header->main_sub_store_id : NULL,
-            ]
-        );
+        $subStoreId = isset($header->main_sub_store_id) ? $header->main_sub_store_id : NULL;
+        $job = (new WhmJob())->createJob($header, $namespace, $type, $trnstype, $header->store_id, $subStoreId, NULL, NULL, NULL);
     }
     
     private function generateUniqueUid($length = 15)

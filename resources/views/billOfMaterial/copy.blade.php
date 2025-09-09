@@ -478,6 +478,8 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
 @section('scripts')
 <script>
     var canView = {{ $canView ? 'true' : 'false' }};
+    var isEdit = {{ $isEdit ? 'true' : 'false' }};
+
 </script>
 <script type="text/javascript" src="{{asset('assets/js/modules/bom.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>

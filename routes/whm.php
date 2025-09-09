@@ -31,7 +31,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/get-structure-mapping', 'getStructureMapping')->name('whm.get-structure-mapping');
         Route::get('/get-jobs', 'getJobs')->name('whm.get-jobs');//Testing
         Route::get('/get-unique-codes', 'getUniqueCodes')->name('whm.get-unique-codes');//Testing
-        Route::get('/get-storage-points', 'getStoragePoints')->name('whm.get-storage-points');//Testing
+        Route::get('/get-item-storage', 'getItemStorage')->name('whm.get-item-storage');//Testing
         Route::get('/get-configuration', 'getConfiguration')->name('whm.get-configuration');//Testing
         Route::get('/storage-points', 'storagePoints')->name('whm.storage-points');
         Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');

@@ -1940,7 +1940,6 @@ class Helper
                 }
             }
         }
-       
         //Return error message if set
         if ($message) {
             return [
@@ -1991,7 +1990,6 @@ class Helper
                     ->where('min_value', '<=', $docValue)
                     ->orderBy('level')
                     ->first();
-                   
                 if ($checNextLevel) {
                     $nextLevel = $checNextLevel->level;
                     $approvalStatus = ConstantHelper::PARTIALLY_APPROVED;
@@ -2040,14 +2038,12 @@ class Helper
         // }
 
         if ($actionType == 'submit') {
-            
             $approvalWorkflow = ApprovalWorkflow::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->whereHas('level', function ($level) use ($currentLevel) {
                     $level->where('level', $currentLevel);
                 })->where('user_id', '!=', $createdBy)
                 ->get();
-                // dd($approvalWorkflow);
             if (count($approvalWorkflow) == 0) {
                 $approvalStatus = ConstantHelper::APPROVAL_NOT_REQUIRED;
             } else {

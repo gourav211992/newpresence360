@@ -645,6 +645,8 @@ class PicklistTaskController extends Controller
 
         $pendingTasksQuery = ErpItemUniqueCode::with(['storagePoint' => function($q){
                 $q->select('id', 'storage_number');
+            },'vendor' => function ($q) {
+                $q->select('id', 'vendor_code', 'company_name');
             }])
             ->whereIn('morphable_id',$mrnIds)
             ->whereIn('trns_type',$transType)
@@ -664,7 +666,7 @@ class PicklistTaskController extends Controller
                 });
             }
 
-        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id','storage_point_id','packet_no','total_packets')
+        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id','storage_point_id','packet_no','total_packets','vendor_id')
             ->get();
 
         return [

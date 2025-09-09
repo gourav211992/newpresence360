@@ -1655,7 +1655,8 @@ class BomController extends Controller
             'componentWasteRequired' => $componentWasteRequired,
             'componentOverheadRequired' => $componentOverheadRequired,
             'consumption_method' => $consumption_method,
-            'canView' => $canView
+            'canView' => $canView,
+            'isEdit'=>true,
         ])->render();
 
         $specifications = collect();

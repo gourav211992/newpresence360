@@ -416,7 +416,7 @@ class IndexController extends Controller
         ];
     }
 
-    public function getStoragePoints(Request $request){
+    public function getItemStorage(Request $request){
         $validator = Validator::make($request->all(),[
             'item_id' => ['required'],
             'store_id' => ['required'],
@@ -435,7 +435,8 @@ class IndexController extends Controller
             );
 
         return [
-            "data" => $response['data']
+            'data' => $response,
+            'message' => 'Data fetched successfully.',
         ];
     }
 }
