@@ -415,4 +415,27 @@ class IndexController extends Controller
             "data" => $structures
         ];
     }
+
+    public function getStoragePoints(Request $request){
+        $validator = Validator::make($request->all(),[
+            'item_id' => ['required'],
+            'store_id' => ['required'],
+            'sub_store_id' => ['required'],
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $response = StoragePointHelper::getStoragePoints(
+                $request->item_id,
+                null,
+                $request->store_id,
+                $request->sub_store_id
+            );
+
+        return [
+            "data" => $response['data']
+        ];
+    }
 }

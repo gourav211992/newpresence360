@@ -79,6 +79,7 @@
                             <th class="text-end">Unplanned Qty</th>
                             <th class="text-end">Avl Stk</th>
                             <th class="text-end">Planned Qty</th>
+                            <th class="text-end">Picked Qty</th>
                             <th>Rate.</th>
                             <th>Customer</th>
                         </tr>

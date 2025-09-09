@@ -68,49 +68,8 @@ class PickingJob
         $namespace = get_class($detail);
         $storeId = $job->store_id;
         $subStoreId = $job->sub_store_id;
-        
-        foreach ($packets as $packet) {
-            $newRecord = ErpItemUniqueCode::create([
-                'uid' => $this->generateUniqueUid(),
-                'job_id' => $jobId,
-                'organization_id' => $header->organization_id,
-                'group_id' => $header->group_id,
-                'company_id' => $header->company_id,
-                'morphable_type' => $namespace,
-                'morphable_id' => $detail->id,
-                'job_type' => $jobType,
-                'trns_type' => $job->trns_type,
-                'doc_type' => CommonHelper::ISSUE,
-                'doc_no' => $header->document_number ?? null,
-                'doc_date' => $header->document_date ?? null,
-                'book_id' => $header->book_id ?? null,
-                'store_id' =>$storeId ?? null,
-                'sub_store_id' => $subStoreId ?? null,
-                'book_code' => $header->book_code ?? null,
-                'item_attributes' => json_encode($attributes),
-                'item_id' => $detail->item_id,
-                'item_name' => $detail->item->item_name,
-                'item_code' => $detail->item_code,
-                'vendor_id' => $packet->vendor_id,
-                'batch_id' => $packet->batch_id,
-                'batch_number' => $packet->batch_number,
-                'manufacturing_year' => $packet->manufacturing_year,
-                'expiry_date' => $packet->expiry_date,
-                'serial_no' => $packet->serial_no,
-                'item_uid' => $packet->item_uid, 
-                'storage_point_id' => Null, 
-                'type' => 'qr',
-                'qty' => 1,
-                'status' => CommonHelper::SCANNED,
-                'created_at' => now(),
-                'updated_at' => now(),
-                'action_by' => $userId,
-                'action_at' => now()
-            ]);
 
-            $packet->utilized_id = $newRecord->uid;
-            $packet->save();
-        }
+        (new WhmJob())->copyExistingQrCodes($packets, $job, $header, $namespace, $detail->id, $jobType, $job->trns_type, CommonHelper::ISSUE, $storeId, $subStoreId, NULL, NULL, NULL, NULL, CommonHelper::SCANNED);
     }
 
     public function generateQRCodes($subStoreId,$job,$storeId = null)

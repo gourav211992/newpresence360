@@ -31,6 +31,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/get-structure-mapping', 'getStructureMapping')->name('whm.get-structure-mapping');
         Route::get('/get-jobs', 'getJobs')->name('whm.get-jobs');//Testing
         Route::get('/get-unique-codes', 'getUniqueCodes')->name('whm.get-unique-codes');//Testing
+        Route::get('/get-storage-points', 'getStoragePoints')->name('whm.get-storage-points');//Testing
         Route::get('/get-configuration', 'getConfiguration')->name('whm.get-configuration');//Testing
         Route::get('/storage-points', 'storagePoints')->name('whm.storage-points');
         Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');
@@ -88,6 +89,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/bin/validate-qr', 'validateQr')->name('whm.bin.validate-qr');
         Route::post('/bin/transfer', 'binTransfer')->name('whm.bin.transfer');
         Route::post('/bin/scan-packets', 'scanPackets')->name('whm.bin.scan-packets');
+        Route::get('/bin/validate-storage-point', 'validatePoint')->name('whm.bin.validate-storage-point');
     });
 
     Route::controller(StockLookoutController::class)->group(function () {

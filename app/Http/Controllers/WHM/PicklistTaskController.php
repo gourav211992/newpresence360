@@ -319,7 +319,7 @@ class PicklistTaskController extends Controller
                 $query->where('storage_point_id', $storagePointId);
             })
             ->where('item_id',$detail->item_id)
-            ->whereNull('utilized_id')
+            // ->whereNull('utilized_id')
             ->whereIn('morphable_id',$mrnIds)
             ->whereIn('trns_type', $transType)
             ->pluck('item_uid')
@@ -347,13 +347,13 @@ class PicklistTaskController extends Controller
             ]);
         }
 
-        $count = count($request->packet_ids);
-        $stockRes = StockReservation::validateReservedStock($job->trns_type,$job->morphable_id,$request->pl_item_id,$count);
-        if($stockRes['status'] == 'error'){
-            throw ValidationException::withMessages([
-                'pl_item_id' => [$stockRes['message']],
-            ]);
-        }
+        // $count = count($request->packet_ids);
+        // $stockRes = StockReservation::validateReservedStock($job->trns_type,$job->morphable_id,$request->pl_item_id,$count);
+        // if($stockRes['status'] == 'error'){
+        //     throw ValidationException::withMessages([
+        //         'pl_item_id' => [$stockRes['message']],
+        //     ]);
+        // }
        
 
         \DB::beginTransaction();
@@ -370,6 +370,30 @@ class PicklistTaskController extends Controller
             $header = $job->morphable;
             (new PickingJob())->scanQRCodes($detail, $header, $job, $request->packet_ids, $storagePointId, $user, CommonHelper::PICKING, $transType);
 
+            $scannedPackets = ErpItemUniqueCode::where('job_id', $request->job_id)
+                ->where('status', CommonHelper::SCANNED)
+                ->where('job_type', CommonHelper::PICKING)
+                ->get();
+
+            $count = count($scannedPackets);
+            $noOfPackets = optional($detail->item)->storage_uom_count ?? 1;
+            $inventoryQty = (int) $detail->inventory_uom_qty;
+
+            $qty = $count/$noOfPackets;
+            $stockRes = StockReservation::validateReservedStock($job->trns_type,$job->morphable_id,$request->pl_item_id,$qty);
+            if($stockRes['status'] == 'error'){
+                throw ValidationException::withMessages([
+                    'pl_item_id' => [$stockRes['message']],
+                ]);
+            }
+                                
+            foreach ($scannedPackets->groupBy('packet_no') as $packetNo => $qrs) {
+                if ($qrs->count() > $inventoryQty) {
+                    throw ValidationException::withMessages([
+                        'packet_data.' . $packetNo => "You can only scan $inventoryQty quantity per packet. Already scanned: " . $qrs->count(),
+                    ]);
+                }
+            }
 
             \DB::commit();
             return [
@@ -640,7 +664,7 @@ class PicklistTaskController extends Controller
                 });
             }
 
-        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id','storage_point_id')
+        $pendingTasks = $pendingTasksQuery->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id','storage_point_id','packet_no','total_packets')
             ->get();
 
         return [

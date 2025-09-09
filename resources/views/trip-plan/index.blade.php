@@ -30,7 +30,7 @@
                             {{'Create'}}
                         </a> 
                         @endif
-                        <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'pl']) }}"><i data-feather="bar-chart-2"></i>Report</a>
+                        <!-- <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'pl']) }}"><i data-feather="bar-chart-2"></i>Report</a> -->
 
                     </div>
                 </div>
@@ -48,9 +48,9 @@
                                                 <th>Date</th>
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
+                                                <th>Transport Mode.</th>
+                                                <th>Transporter.</th>
                                                 <th>Location</th>
-                                                <th>Main Store</th>
-                                                <th>Staging Store</th>
                                                 <th>Rev No</th>
                                                 <th>Items</th>
                                                 <th style = 'text-align:center'>Status</th>
@@ -127,18 +127,26 @@
                $(td).addClass('no-wrap');
             }
         },
+        { data: 'transport_mode', name: 'transport_mode', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'transporter_name', name: 'transporter_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
         { data: 'store', name: 'store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                 $(td).addClass('no-wrap');
             }
         },
-        { data: 'main_sub_store', name: 'main_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                $(td).addClass('no-wrap');
-            }
-        },
-        { data: 'staging_sub_store', name: 'staging_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                $(td).addClass('no-wrap');
-            }
-        },
+        // { data: 'main_sub_store', name: 'main_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        //         $(td).addClass('no-wrap');
+        //     }
+        // },
+        // { data: 'staging_sub_store', name: 'staging_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        //         $(td).addClass('no-wrap');
+        //     }
+        // },
         { data: 'revision_number', name: 'revision_number', render: renderData, orderable: true, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }

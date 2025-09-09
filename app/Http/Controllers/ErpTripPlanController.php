@@ -40,6 +40,7 @@ use App\Models\ErpSoItem;
 use App\Models\ErpSoItemDelivery;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
+use App\Models\EwayBillMaster;
 use App\Models\Hsn;
 use App\Models\Item;
 use App\Models\MfgOrder;
@@ -228,7 +229,10 @@ class ErpTripPlanController extends Controller
         $stations = Station::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
-        
+        $transportationModes = EwayBillMaster::where('status', 'active')
+            ->where('type', '=', 'transportation-mode')
+            ->orderBy('id', 'ASC')
+            ->get();
         $data = [
             'user' => $user,
             'services' => $servicesBooks['services'],
@@ -238,6 +242,7 @@ class ErpTripPlanController extends Controller
             'typeName' => $typeName,
             'stores' => $stores,
             'vendors' => $vendors,
+            'transportationModes' => $transportationModes,
             'stations' => $stations,
             'departments' => $departments['departments'],
             'selectedDepartmentId' => $departments['selectedDepartmentId'],
@@ -311,6 +316,10 @@ class ErpTripPlanController extends Controller
                     }
                 }
             }
+            $transportationModes = EwayBillMaster::where('status', 'active')
+                ->where('type', '=', 'transportation-mode')
+                ->orderBy('id', 'ASC')
+            ->get();
             $departments = UserHelper::getDepartments($user -> auth_user_id);
             $users = AuthUser::select('id', 'name') -> where('organization_id', $user -> organization_id) 
             -> where('status', ConstantHelper::ACTIVE) -> get();   
@@ -330,6 +339,7 @@ class ErpTripPlanController extends Controller
                 'stores' => $stores,
                 'vendors' => $vendors,
                 'stations' => $stations,
+                'transportationModes' => $transportationModes,
                 'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($doc -> media_files)) : 10,
                 'services' => $servicesBooks['services'],
                 'departments' => $departments['departments'],
@@ -409,7 +419,7 @@ class ErpTripPlanController extends Controller
             $mainSubStore = ErpSubStore::find($request->main_sub_store_id ?? null);
             $stagingSubStore = ErpSubStore::find($request->staging_sub_store_id ?? null);
             $enforceUicScanning = ConfigurationHelper::getConfigurationValueOfOrg(ConfigurationConstant::ORG_CONFIG_ENFORCE_UIC_SCANNING, $organizationId);
-
+            $transportdata = EwayBillMaster::find($request->transport_mode ?? null);
             // Prepare header payload (covering fillables; null-safe)
             $headerPayload = [
                 'organization_id'       => $organizationId,
@@ -447,7 +457,8 @@ class ErpTripPlanController extends Controller
                 'reference_number'      => $request->reference_number ?? null,
 
                 // transport fields (typo-safe for tranporter_name)
-                'transport_mode'        => $request->transport_mode ?? null,
+                'transport_mode_id'     => $transportdata->id ?? null,
+                'transport_mode'        => $transportdata->description ?? null,
                 'vehicle_number'        => $request->vehicle_number ?? null,
                 'transporter_name'      => $request->transporter_name ?? $request->tranporter_name ?? null,
                 'challan_number'        => $request->challan_number ?? null,

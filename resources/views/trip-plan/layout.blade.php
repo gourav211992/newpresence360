@@ -233,15 +233,14 @@
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="mb-1">
-                                                <label class="form-label">Transportation Mode <span class="text-danger">*</span></label>
-                                                <input type="text" id = "transport_mode" name = "transport_mode" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input disable_on_edit" autocomplete="off" value = "{{isset($order) ? $order -> transport_mode : ''}}"
-                                                >
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-1">
-                                                <label class="form-label">Vehicle Number</label>
-                                                <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "vehicle_number" name = "vehicle_number" value = "{{isset($order) ? $order -> vehicle_number : ''}}" />
+                                                <label class="form-label">Transport Mode<span class="text-danger">*</span></label>
+                                                <select class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "transport_mode" name = "transport_mode" value = "{{isset($order) ? $order -> transport_mode : ''}}" >
+                                                    @foreach($transportationModes as $transportationMode)
+                                                        <option {{isset($order) && $order -> transport_mode_id == $transportationMode -> id ? 'selected' : ''}} value="{{$transportationMode->id}}">
+                                                            {{ucfirst($transportationMode->description)}}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
@@ -252,7 +251,13 @@
                                         </div>
                                         <div class="col-md-3">
                                             <div class="mb-1">
-                                                <label class="form-label">Challan Number<span class="text-danger">*</span></label>
+                                                <label class="form-label">Vehicle Number</label>
+                                                <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "vehicle_number" name = "vehicle_number" value = "{{isset($order) ? $order -> vehicle_number : ''}}" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-1">
+                                                <label class="form-label">Driver Name<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "challan_number" name = "challan_number" value = "{{isset($order) ? $order -> challan_number : ''}}" />
                                             </div>
                                         </div>

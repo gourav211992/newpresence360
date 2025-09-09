@@ -689,7 +689,7 @@ class InventoryReportController extends Controller
 
     public function summaryReportFilter(Request $request)
     {
-        dd($request->all());
+        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->where('status', ConstantHelper::ACTIVE)

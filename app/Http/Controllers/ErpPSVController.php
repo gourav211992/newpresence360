@@ -229,7 +229,7 @@ class ErpPSVController extends Controller
         $firstService = $servicesBooks['services'][0];
         $typeName = ConstantHelper::PSV_SERVICE_ALIAS;
         $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
-        $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR , ConstantHelper::VENDOR_STORE]);
         $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg() 
         -> where('status', ConstantHelper::ACTIVE) -> get();
         $departments = UserHelper::getDepartments($user -> auth_user_id);

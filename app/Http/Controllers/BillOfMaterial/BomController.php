@@ -1000,6 +1000,7 @@ class BomController extends Controller
             'componentOverheadRequired' => in_array('yes', array_map('strtolower', $parameters['component_overhead_required'] ?? [])),
             'consumption_method' => ($parameters['consumption_method'][0] ?? '') !== 'manual',
             'isCopy' => true,
+            'isEdit' => true,
         ]);
     }
 

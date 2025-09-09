@@ -80,7 +80,7 @@ function populateOrderTable(orders) {
             const $balanceQtyCell = $row.find('.balance-qty-cell');
 
             function createValidatedInput(norder, savedQty = null) {
-                const currentQty = Math.min(norder.item.balance_qty, norder.avl_stock) || '0.00';
+                const currentQty = Math.min(norder.item.planned_balance_qty, norder.avl_stock) || '0.00';
 
                 const $input = $(`<input type="number" name="planned_qty[]" class="form-control" value="${savedQty ?? currentQty}" max="${currentQty}" />`);
 
@@ -123,7 +123,7 @@ function populateOrderTable(orders) {
                     if (currentInput.length) {
                         prevBalanceMap.set(norder.id, currentInput.val());
                     }
-                    $balanceQtyCell.text(norder.item.balance_qty || '0.00');
+                    $balanceQtyCell.text(norder.item.planned_balance_qty || '0.00');
                 }
             });
 

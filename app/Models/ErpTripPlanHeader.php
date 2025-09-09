@@ -41,6 +41,7 @@ class ErpTripPlanHeader extends Model
         'revision_date',
         'approval_level',
         'reference_number',
+        'transport_mode_id',
         'transport_mode',
         'vehicle_number',
         'transporter_name',

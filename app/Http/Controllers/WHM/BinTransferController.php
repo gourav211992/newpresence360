@@ -278,4 +278,39 @@ class BinTransferController extends Controller
             'data' => $item
         ];
     }
+
+    public function validatePoint(Request $request){
+        $validator = Validator::make($request->all(),[
+            'storage_number' => ['required'],
+            'sub_store_id' => ['required'],
+            'store_id' => ['required'],
+        ],[
+            'storage_number.required' => 'Storage number is required',
+            'sub_store_id.required' => 'Sub store is required',
+            'store_id.required' => 'Store is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $storageNumber = $request->input('storage_number');
+        $storagePoint = \DB::table('erp_wh_details')
+            ->where('sub_store_id',$request->sub_store_id)
+            ->where('store_id',$request->store_id)
+            ->where('storage_number', $request->storage_number)
+            ->first();
+
+        
+        if (!$storagePoint) {
+            throw ValidationException::withMessages([
+                'storage_number' => ['Storage point not found.'],
+            ]);
+        }
+
+        return [
+            'data' => $storagePoint,
+            'message' => "Storage point details fetched successfully.", $storageNumber,
+        ];
+    }
 }

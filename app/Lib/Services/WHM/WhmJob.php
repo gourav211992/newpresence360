@@ -463,7 +463,7 @@ class WhmJob
     }
 
 
-    public function copyExistingQrCodes($existingQRCodes, $job, $header, $morphableType, $morphableId, $jobType, $trnstype, $docType, $storeId, $subStoreId, $batch = NULL, $referenceType = NULL, $referenceDetailId = NULL, $referenceNo = NULL){
+    public function copyExistingQrCodes($existingQRCodes, $job, $header, $morphableType, $morphableId, $jobType, $trnstype, $docType, $storeId, $subStoreId, $batch = NULL, $referenceType = NULL, $referenceDetailId = NULL, $referenceNo = NULL, $status = CommonHelper::PENDING){
         foreach ($existingQRCodes as $code) {
             $newRecord = ErpItemUniqueCode::create([
                 'uid' => $this->generateUniqueUid(),
@@ -490,13 +490,14 @@ class WhmJob
                 'item_uid' => $code->item_uid, 
                 'packet_no' => $code->packet_no,
                 'total_packets' => $code->total_packets,
-                'batch_id' => $batch ? $batch->id : NULL,
-                'batch_number' => $batch ? $batch->batch_number : NULL,
-                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : NULL,
-                'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : NULL,
+                'batch_id' => $batch ? $batch->id : $code->batch_id,
+                'batch_number' => $batch ? $batch->batch_number : $code->batch_number,
+                'manufacturing_year' => $batch ? ($batch->manufacturing_year == 0 ? NULL : $batch->manufacturing_year) : $code->manufacturing_year,
+                'expiry_date' => $batch ? ($batch->expiry_date ? date('Y-m-d',strtotime($batch->expiry_date)) : NULL) : $code->expiry_date,
+                'serial_no' => $code->serial_no,
                 'type' => 'qr',
                 'qty' => 1,
-                'status' => CommonHelper::PENDING,
+                'status' => $status,
                 'reference_type' => $referenceType,
                 'reference_detail_id' => $referenceDetailId,
                 'reference_no' => $referenceNo,

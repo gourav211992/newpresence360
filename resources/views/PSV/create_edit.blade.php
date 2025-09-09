@@ -1526,7 +1526,7 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                     dataType: 'json',
                     data: {
                     store_id: storeId,
-                    types : "{{ App\Helpers\ConstantHelper::STOCKK }}",
+                    types : ['Stock', 'Shop floor','Vendor','Other'],
                     },
                     success: function(data) {
                     console.log('Sub-stores fetched successfully:', data);
@@ -4347,7 +4347,7 @@ document.addEventListener('input', function (e) {
                 short = true;
             }
             //Retrieve character length of attribute name
-            let currentStringLength = short ? Number(attrArr.short_name.length) : Number(attrArr.group_name.length);
+            let currentStringLength = short ? Number(attrArr?.short_name?.length) : Number(attrArr?.group_name?.length);
             let currentSelectedValue = '';
             attrArr.values_data.forEach((attrVal) => {
                 if (attrVal.selected === true) {
@@ -4365,6 +4365,7 @@ document.addEventListener('input', function (e) {
             } else {
                 //Get the remaining length
                 let remainingLength =  15 - attrTotalChar;
+                console.log(attrArr);
                 //Only show the data if remaining length is greater than 3
                 if (remainingLength >= 3) {
                     attributeUI += `<span class="badge rounded-pill badge-light-primary"><strong>${short ? attrArr.short_name.substring(0, remainingLength - 1) : attrArr.group_name.substring(0, remainingLength - 1)}..</strong></span>`
@@ -4540,12 +4541,26 @@ document.addEventListener('input', function (e) {
         // Import valid rows into main table
         $('#submitBtn').on('click', function () {
             const validRows = window.lastParsedImport?.valid || [];
+            const headers = window.lastParsedImport?.headers || {};
             const tbody = $('#item_header');
-            tbody.empty();
-
+            console.log('table',tbody);
+            tbody.empty(); // Clear existing rows
+            let currentIndex = tbody.find('tr').length;
+            console.log('validRows', validRows);
             validRows.forEach((row, i) => {
-                const index = tbody.find('tr').length + i;
-                const itemValue = (row.rate * row.physical_qty).toFixed(2);
+                console.log('Processing row:', row);
+                const index = currentIndex + i;
+                const itemId = row.item_id || '';
+                const itemCode = row.item_code || '';
+                const itemName = row.item_name || '';
+                const uomId = row.uom_id || '';
+                const uomName = row.uom_name || '';
+                const rate = row.rate || 0;
+                const physicalQty = row.physical_qty || 0;
+                const remarks = row.remarks || '';
+                const attributeValue = row.attribute_value || '';
+                const attributeGroupId = row.attribute_group_id || '';
+                const itemValue = (rate * physicalQty).toFixed(2);
 
                 const rowHtml = `
                 <tr id="item_row_${index}" class="item_header_rows" onclick="onItemClick('${index}');">
@@ -4557,39 +4572,62 @@ document.addEventListener('input', function (e) {
                         </div>
                     </td>
                     <td class="poprod-decpt">
-                        <input type="text" id="items_dropdown_${index}" name="item_code[${index}]" value="${row.item_code ?? ''}" readonly class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input">
+                        <input type="text" id="items_dropdown_${index}" name="item_code[${index}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${row.item_name ?? ''}" data-code="${row.item_code ?? ''}" data-id="${row.item_id ?? ''}" hsn_code="${row.hsn_code ?? ''}" item-name="${row.item_name ?? ''}" specs='${JSON.stringify(row.specifications ?? [])}' attribute-array='${JSON.stringify(row.item_attribute_array ?? [])}' value="${row.item_code ?? ''}" readonly>
                         <input type="hidden" name="item_id[]" id="items_dropdown_${index}_value" value="${row.item_id ?? ''}">
                     </td>
-                    <td><input type="text" id="items_name_${index}" value="${row.item_name ?? ''}" name="item_name[${index}]" class="form-control mw-100" readonly></td>
                     <td>
-                        <button id="attribute_button_${index}" type="button" class="btn p-25 btn-sm btn-outline-secondary" onclick="setItemAttributes('items_dropdown_${index}', '${index}', false);" data-bs-toggle="modal" data-bs-target="#attribute">Attributes</button>
-                        <input type="hidden" name="attribute_value_${index}" value="${row.attribute_value ?? ''}">
+                        <input type="text" id="items_name_${index}" class="form-control mw-100" value="${itemName}" name="item_name[${index}]" readonly>
+                    </td>
+                    <td id="attribute_section_${index}">
+                        <button id="attribute_button_${index}" type="button" class="btn p-25 btn-sm btn-outline-secondary"" onclick="setItemAttributes('items_dropdown_${index}', '${index}', false);" data-bs-toggle="modal" data-bs-target="#attribute">Attributes</button>
+                        <input type="hidden" name="attribute_value_${index}" value="${attributeValue}">
                     </td>
                     <td>
                         <select class="form-select" name="uom_id[]" id="uom_dropdown_${index}">
-                            <option value="${row.uom_id ?? ''}" selected>${row.uom_name ?? ''}</option>
+                            <option value="${uomId}" selected>${uomName}</option>
                         </select>
                     </td>
-                    <td class="numeric-alignment"><input type="text" id="item_physical_qty_${index}" value="${row.physical_qty ?? 0}" name="item_physical_qty[${index}]" class="form-control mw-100 text-end" oninput="setVariance(this, ${index});setValue(${index});"></td>
-                    <td class="numeric-alignment"><input type="text" id="item_confirmed_qty_${index}" value="0.00" name="item_confirmed_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
-                    <td class="numeric-alignment"><input type="text" id="item_unconfirmed_qty_${index}" value="0.00" name="item_unconfirmed_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
-                    <td class="numeric-alignment"><input type="text" id="item_variance_qty_${index}" value="${row.physical_qty ?? 0}" name="item_balance_qty[${index}]" class="form-control mw-100 text-end" readonly></td>
-                    <td class="numeric-alignment"><input type="text" id="item_rate_${index}" value="${row.rate ?? 0}" name="item_rate[${index}]" class="form-control mw-100 text-end" oninput="setValue(${index});"></td>
-                    <td class="numeric-alignment"><input type="text" id="item_value_${index}" value="${itemValue}" name="item_value[${index}]" class="form-control mw-100 text-end" readonly></td>
-                    <td><input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]" value="${row.remarks ?? ''}"></td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_physical_qty_${index}" value="${physicalQty}" name="item_physical_qty[${index}]" class="form-control mw-100 text-end" oninput="setVariance(this, ${index});setValue(${index});">
+                    </td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_confirmed_qty_${index}" value="0.00" name="item_confirmed_qty[${index}]" class="form-control mw-100 text-end" readonly>
+                    </td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_unconfirmed_qty_${index}" value="0.00" name="item_unconfirmed_qty[${index}]" class="form-control mw-100 text-end" readonly>
+                    </td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_variance_qty_${index}" value="${physicalQty}" name="item_balance_qty[${index}]" class="form-control mw-100 text-end" readonly>
+                    </td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_rate_${index}" value="${rate}" name="item_rate[${index}]" class="form-control mw-100 text-end" oninput="setValue(${index});">
+                    </td>
+                    <td class="numeric-alignment">
+                        <input type="text" id="item_value_${index}" value="${itemValue}" name="item_value[${index}]" class="form-control mw-100 text-end" readonly>
+                    </td>
+                    <td>
+                        <div class="d-flex">
+                            <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick="setItemRemarks('item_remarks_${index}');">
+                                <span data-bs-toggle="tooltip" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="item_remarks_${index}" name="item_remarks[${index}]" value="${remarks}">
+                    </td>
                 </tr>`;
                 tbody.append(rowHtml);
-
-                // Post-append init functions
+                // Post-append initializations
                 initializeAutocomplete1("items_dropdown_" + index, index);
                 onItemClick(index);
+                const itemCodeInput = document.getElementById('items_dropdown_' + index);
+                const uomCodeInput = document.getElementById('uom_dropdown_' + index);
+                itemCodeInput.addEventListener('input', () => checkStockData(index));
+                uomCodeInput.addEventListener('input', () => checkStockData(index));
                 setAttributesUI(index);
             });
-
+            renderIcons()
             $(".Item_Search_section").hide();
             $('#importItemModal').modal('hide');
         });
-
         // Cancel button
         $('#cancelBtn').on('click', function () {
             $('#fileUpload').val('');
