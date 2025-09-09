@@ -398,18 +398,21 @@ class ErpLorryReceiptController extends Controller
             $lr->remarks           = $request->remarks;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
+           
             if ($request->status == ConstantHelper::SUBMITTED) 
             {
                     $bookId = $request->book_id;
                     $docId = $lr->id;
                     $remarks = $lr->remarks;
                     $attachments = $request->file('attachment');
-                    $currentLevel = $lr->approval_level;
+                    $currentLevel = $lr->approval_level ?? 1;
                     $revisionNumber = $lr->revision_number ?? 0;
                     $actionType = 'submit'; // Approve // reject // submit
                     $modelName = get_class($lr);
                     $totalValue = $lr->total_charges ?? 0;
+                    
                     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                    
                     $lr->document_status = $approveDocument['approvalStatus'] ?? $lr->status;
                     $lr->save();
             } 
