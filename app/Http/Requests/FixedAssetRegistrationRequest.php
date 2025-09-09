@@ -111,6 +111,7 @@ class FixedAssetRegistrationRequest extends FormRequest
                     'asset_name' => 'required|string',
                     'asset_code' => 'required|string', // Unique rule without exclusion
                     'status' => 'required|string',
+                    'vendor_id' => 'nullable|integer',
                 ];
             }
         }

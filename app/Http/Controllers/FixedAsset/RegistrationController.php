@@ -144,7 +144,7 @@ class RegistrationController extends Controller
             $q->where('is_asset', 1);
         })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
-        $vendors = Vendor::select('id', 'display_name as name')->get();
+        $vendors = Vendor::select('id', 'display_name as name','currency_id')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
@@ -212,6 +212,12 @@ class RegistrationController extends Controller
             'revision_number' => 0,
             'asset_code' => $code,
             'current_value_after_dep' => $request->current_value,
+            'brand_name'=>$request->brand_name,
+            'model_no'=>$request->model_no,
+            'batch_number'=>$request->batch_number,
+            'manufactering_year'=>$request->manufactering_year,
+            'vendor_id'=>$request->vendor_id,
+            'tax'=>$request->tax,
         ];
 
         $data = array_merge($request->all(), $additionalData);

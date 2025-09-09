@@ -335,13 +335,21 @@
                                                         </div>
                                                     </div>
 
-
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Current Value <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control" required
+                                                                name="current_value" id="current_value"
+                                                                value="{{ old('current_value') }}" oninput="updateDepreciationValues()" />
+                                                        </div>
+                                                    </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="{{ old('quantity') }}" readonly />
+                                                                id="quantity" value="{{ old('quantity') }}" oninput="updateDepreciationValues()" />
                                                         </div>
                                                     </div>
 
@@ -452,15 +460,7 @@
 
 
 
-                                                    <div class="col-md-3">
-                                                        <div class="mb-1">
-                                                            <label class="form-label">Current Value <span
-                                                                    class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" required
-                                                                name="current_value" id="current_value"
-                                                                value="{{ old('current_value') }}" readonly />
-                                                        </div>
-                                                    </div>
+                                                    
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Total Dep. <span
@@ -480,6 +480,58 @@
                                 <div class="row customernewsection-form">
                                     <div class="col-md-12">
                                         <div class="card quation-card">
+                                            <div class="card-header newheader d-flex justify-content-between align-items-center">
+                                                <h4 class="card-title mb-0">Item Details</h4>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Brand Name </label>
+                                                            <input type="text" class="form-control indian-number" name="brand_name"
+                                                                id="brand_name"
+                                                                required />
+                                                        </div>
+                                                    </div>
+                                                      
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Model No </label>
+                                                            <input type="text" class="form-control indian-number" name="model_no"
+                                                                id="model_no"
+                                                             required />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Batch Number </label>
+                                                            <input type="text" class="form-control indian-number" name="batch_number"
+                                                                id="batch_number"
+                                                                required />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Manufactering Year </label>
+                                                            <input type="text" class="form-control" name="manufactering_year"
+                                                                id="manufactering_year"
+                                                                required />
+                                                        </div>
+                                                    </div>
+
+
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                  </div>
+
+                                <div class="row customernewsection-form">
+                                    <div class="col-md-12">
+                                        <div class="card quation-card">
                                             <div class="card-header newheader">
                                                 <div>
                                                     <h4 class="card-title">Vendor Details</h4>
@@ -489,30 +541,25 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Vendor <span
-                                                                    class="text-danger">*</span></label>
-                                                            <select class="form-select" disabled
-                                                                style="pointer-events: none;" id="vendor" required>
+                                                            <label class="form-label">Vendor </label>
+                                                            <select class="form-select" id="vendor" name="vendor_id" required>
                                                                 <option value="">Select</option>
                                                                 @foreach ($vendors as $vendor)
-                                                                    <option value="{{ $vendor->id }}" {{ old('vendor') ? 'selected' : '' }}>
+                                                                    <option value="{{ $vendor->id }}" data-country="{{ $vendor->currency_id }}" {{ old('vendor') == $vendor->id ? 'selected' : '' }}>
                                                                         {{ $vendor->name }}
                                                                     </option>
                                                                 @endforeach
                                                             </select>
-                                                            <input type="hidden" name="vendor_id" id="vendor_id"
-                                                                value="{{ old('vendor') }}">
 
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Currency <span
-                                                                    class="text-danger">*</span></label>
-                                                            <select class="form-select" disabled id="currency" required>
+                                                            <label class="form-label">Currency </label>
+                                                            <select class="form-select" id="currency" disabled required>
                                                                 <option value="">Select</option>
                                                                 @foreach ($currencies as $currency)
-                                                                    <option value="{{ $currency->id }}" {{ old('currency') ? 'selected' : '' }}>
+                                                                    <option value="{{ $currency->id }}" {{ old('currency') == $currency->id ? 'selected' : '' }}>
                                                                         {{ $currency->name }}
                                                                     </option>
                                                                 @endforeach
@@ -527,7 +574,7 @@
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no" value=""
-                                                                readonly />
+                                                                 />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3 d-none">
@@ -535,44 +582,37 @@
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="supplier_invoice_date" id="supplier_invoice_date"
-                                                                readonly />
+                                                                 />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Sub Total <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Sub Total </label>
                                                             <input type="text" class="form-control" name="sub_total"
-                                                                id="sub_total" value="" required readonly />
+                                                                id="sub_total" value="" required />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label w-100">Tax <span
-                                                                    class="text-danger">*</span>
-                                                                <a href="#taxdetail" id="infoBtn" class="float-end"
-                                                                    data-bs-toggle="modal">
-                                                                    <i data-feather="info"></i>
-                                                                </a>
+                                                            <label class="form-label w-100">Tax 
+                                                                <input type="text" class="form-control" name="tax_amount"
+                                                                id="tax_amount" value="" required />
                                                             </label>
-                                                            <input type="text" class="form-control" name="tax" id="tax"
-                                                                value="" required readonly />
+                                                            
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Purchase Amt <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Purchase Amt </label>
                                                             <input type="text" class="form-control" name="purchase_amount"
                                                                 id="purchase_amount" value="" required readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Book Date <span
-                                                                    class="text-danger">*</span></label>
+                                                            <label class="form-label">Book Date </label>
                                                             <input type="date" class="form-control" name="book_date"
-                                                                id="book_date" required readonly />
+                                                                id="book_date" required />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1802,6 +1842,58 @@
 
             });
         </script>
+        <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const vendorSelect = document.getElementById('vendor');
+    const currencySelect = document.getElementById('currency');
+    const currencyIdInput = document.getElementById('currency_id');
+
+    function updateCurrency() {
+        const selectedOption = vendorSelect.options[vendorSelect.selectedIndex];
+        const currencyId = selectedOption.getAttribute('data-country');
+
+        if (currencyId) {
+            currencySelect.value = currencyId;
+            currencyIdInput.value = currencyId;
+        } else {
+            currencySelect.value = '';
+            currencyIdInput.value = '';
+        }
+
+        currencySelect.disabled = !currencyId;
+    }
+
+    // Initial update in case old() data exists
+    updateCurrency();
+
+    // Update currency when vendor changes
+    vendorSelect.addEventListener('change', updateCurrency);
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const subTotalInput = document.getElementById('sub_total');
+    const taxAmountInput = document.getElementById('tax_amount');
+    const purchaseAmountInput = document.getElementById('purchase_amount');
+
+    function calculatePurchaseAmount() {
+        const subTotal = parseFloat(subTotalInput.value) || 0;
+        const taxAmount = parseFloat(taxAmountInput.value) || 0;
+        const purchaseAmount = subTotal + taxAmount;
+
+        purchaseAmountInput.value = purchaseAmount.toFixed(2);
+    }
+
+    // Listen to changes in sub total and tax amount
+    subTotalInput.addEventListener('input', calculatePurchaseAmount);
+    taxAmountInput.addEventListener('input', calculatePurchaseAmount);
+
+    // Initial calculation in case old values are pre-filled
+    calculatePurchaseAmount();
+});
+</script>
+
+
 
     @endsection
 @endsection

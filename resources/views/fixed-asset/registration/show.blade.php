@@ -505,7 +505,7 @@
                                                             <label class="form-label">Brand Name <span class="text-danger">*</span></label>
                                                             <input type="text" class="form-control indian-number" name="brand_name"
                                                                 id="brand_name"
-                                                                value="{{ $data?->mrnDetail?->assetDetail?->brand_name }}" required />
+                                                                value="{{ $data?->mrnDetail ? $data?->mrnDetail?->assetDetail?->brand_name : $data->brand_name }}" required />
                                                         </div>
                                                     </div>
                                                       
@@ -516,16 +516,16 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control indian-number" name="model_no"
                                                                 id="model_no"
-                                                                value="{{ $data?->mrnDetail?->assetDetail?->model_no }}" required />
+                                                                value="{{ $data?->mrnDetail ? $data?->mrnDetail?->assetDetail?->model_no  : $data->model_no}}" required />
                                                         </div>
                                                     </div>
-
+                                                    
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Batch Number <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control indian-number" name="batch_number"
-                                                                id="batch_number" value="{{ $sub_assets[0]?->batch_number }}"
+                                                                id="batch_number" value="{{ $data->batch_number ? $data->batch_number : $sub_assets[0]?->batch_number }}"
                                                                 required />
                                                         </div>
                                                     </div>
@@ -534,7 +534,7 @@
                                                             <label class="form-label">Manufactering Year <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="manufactering_year"
-                                                                id="manufactering_year" value="{{ $sub_assets[0]?->manufacturing_year }}"
+                                                                id="manufactering_year" value="{{ $data->manufactering_year ? $data->manufactering_year : $sub_assets[0]?->manufactering_year }}"
                                                                 required />
                                                         </div>
                                                     </div>
@@ -545,7 +545,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                  </div>
 
                                 <div class="row customernewsection-form" @if($buttons['reference'] && $data->reference_series!="mrn") hidden @endif> 
                                     <div class="col-md-12">
@@ -555,6 +555,7 @@
                                                     <h4 class="card-title">Vendor Details</h4>
                                                 </div>
                                             </div>
+                                           
                                             <div class="card-body">
                                                 <div class="row">
                                                     <div class="col-md-3">
