@@ -629,9 +629,8 @@
             $('#organization_id').on('change', function () {
                 var orgId = $(this).val();
                 var locationSelect = $('#location_id');
-                console.log(allLocations, orgId);
+               
                 if (orgId) {
-                    console.log(allLocations, orgId);
                     allLocations.forEach(function (loc) {
                         if (loc.organization_id == orgId) {
                             locationSelect.append('<option value="' + loc.id + '">' + loc
@@ -732,93 +731,225 @@
 
         let checklistRowRef = null;
 
+        // Global variables for checklist context
+        let currentChecklistRowRef = null;
+        let currentRowId = null;
+        let checklistContexts = {}; // Store context for each row
+        let portionChecklistData = {}; // Store checklist ID and name for each portion
+        
         $(document).on('click', '.open-checklist-modal', function () {
-            checklistRowRef = $(this).closest('tr');
-
-            // Get current selection from hidden input in the row
-            let selected = checklistRowRef.find('.selected-checklists').val().split(',').filter(Boolean);
-
-            console.log(selected)
-            // Uncheck all first
-            $('#checklist .modal-body input[type="checkbox"]').prop('checked', false);
-
-            // Pre-check those which are already selected
-            $('#checklist .modal-body input[type="checkbox"]').each(function () {
-                if (selected.includes($(this).val())) {
-                    $(this).prop('checked', true);
-                }
-            });
-
+            currentChecklistRowRef = $(this).closest('tr');
+            currentRowId = getRowIdFromElement(currentChecklistRowRef);
+            
+            console.log('Opening checklist modal for row:', currentRowId);
+            
+            // Reset modal completely when switching rows
+            resetChecklistModal();
+            
+            // Load existing selections for this specific row
+            loadExistingChecklistSelections();
+            
             $('#checklist').modal('show');
-
-            $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
-                console.log('erer');
+            
+            // Handle select all checkbox
+            $('.myrequesttablecbox thead input[type="checkbox"]').off('change').on('change', function () {
                 var tbody = $(this).closest('table').find('tbody');
                 var checked = $(this).is(':checked');
                 tbody.find('input.form-check-input').prop('checked', checked);
             });
         });
-
-        $('#checklist').on('hide.bs.modal', function (e) {
-            // Only proceed if we just clicked submit
-            if ($(document.activeElement).hasClass('btn-primary')) {
-                let selectedIds = [];
-                let selectedNames = [];
-                let selectedData = [];
-
-                $('#checklist .modal-body input[type="checkbox"]:checked').each(function () {
-                    const checklistId = $(this).val();
-                    const checklistName = $(this).closest('tr').find('td:nth-child(2)').text().trim();
-                    const checklistDesc = $(this).closest('tr').find('td:nth-child(3)').text().trim() || null;
-                    const checklistType = $(this).closest('tr').find('td:nth-child(4)').text().trim() || null;
-
-                    selectedIds.push(checklistId);
-                    selectedNames.push(checklistName);
-                    selectedData.push({
-                        id: checklistId,
-                        name: checklistName,
-                        description: checklistDesc,
-                        type: checklistType
-                    });
-                });
-
-                // Store data in hidden field in row
-                if (checklistRowRef) {
-                    const rowId = checklistRowRef.data('row-id');
-
-                    let badgesHtml = '';
-                    selectedNames.slice(0, 2).forEach(function (name) {
-                        badgesHtml +=
-                            `<span class="badge rounded-pill badge-light-primary">${name}</span> `;
-                    });
-
-                    if (selectedNames.length > 2) {
-                        badgesHtml +=
-                            `<span class="badge rounded-pill badge-light-primary">+${selectedNames.length - 2}</span>`;
-                    }
-
-                    // Create hidden inputs for each checklist
-                    let hiddenInputs = '';
-                    selectedData.forEach(function (checklist, index) {
-                        hiddenInputs += `
-                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][id]" value="${checklist.id}">
-                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][name]" value="${checklist.name}">
-                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][description]" value="${checklist.description || ''}">
-                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][type]" value="${checklist.type || ''}">
-                                `;
-                    });
-
-                    console.log(selectedIds)
-                    // Put badges and button back in the cell
-                    checklistRowRef.find('.checklist-cell').html(
-                        `<span class="checklist-badges">${badgesHtml}</span>
-                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                                <input type="hidden" class="selected-checklists" value="${selectedIds.join(',')}" />
-                                ${hiddenInputs}`
-                    );
+        
+        /**
+         * Get row ID from maintenance row element
+         */
+        function getRowIdFromElement(rowElement) {
+            // Try to get row ID from data attribute first
+            let rowId = rowElement.data('row-id');
+            if (rowId) return rowId;
+            
+            // Fallback: extract from input name attribute
+            const firstInput = rowElement.find('input, select').first();
+            if (firstInput.length) {
+                const inputName = firstInput.attr('name');
+                if (inputName) {
+                    const match = inputName.match(/maintenance\[(.*?)\]/);
+                    if (match) return match[1];
                 }
             }
+            
+            return null;
+        }
+        
+        /**
+         * Reset checklist modal to clean state
+         */
+        function resetChecklistModal() {
+            // Clear all checkboxes
+            $('#checklist .modal-body input[type="checkbox"]').prop('checked', false);
+            
+            // Reset all dropdowns to first option
+            $('#checkListPortion select').val('Select').trigger('change');
+            
+            // Clear all table bodies
+            $('#checkListPortion tbody').empty();
+            
+            // Clear stored portion checklist data
+            portionChecklistData = {};
+            
+            console.log('Checklist modal reset for row:', currentRowId);
+        }
+        
+        /**
+         * Load existing checklist selections for current row
+         */
+        function loadExistingChecklistSelections() {
+            if (!currentChecklistRowRef) return;
+            
+            const selectedIds = currentChecklistRowRef.find('.selected-checklists').val();
+            if (selectedIds) {
+                const ids = selectedIds.split(',').filter(Boolean);
+                
+                // Pre-check existing selections when modal content loads
+                setTimeout(() => {
+                    $('#checklist .modal-body input[type="checkbox"]').each(function () {
+                        if (ids.includes($(this).val())) {
+                            $(this).prop('checked', true);
+                        }
+                    });
+                }, 100);
+                
+                console.log('Loaded existing selections for row:', currentRowId, ids);
+            }
+        }
+
+        /**
+         * Handle checklist modal close - save selections
+         */
+        $('#checklist').on('hide.bs.modal', function (e) {
+            // Only proceed if submit button was clicked
+            if ($(document.activeElement).hasClass('btn-primary')) {
+                saveChecklistSelections(e);
+            }
         });
+        
+        /**
+         * Save checklist selections to the maintenance row
+         */
+        function saveChecklistSelections(e) {
+            if (!currentRowId || !currentChecklistRowRef) {
+                console.error('No active row for checklist selection');
+                return;
+            }
+            
+            const selectedData = collectSelectedChecklistData();
+            
+            // Validate that at least one checklist is selected
+            if (selectedData.length === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Checklist Required',
+                    text: 'Please select at least one checklist!',
+                    confirmButtonColor: '#7367F0'
+                });
+                return false;
+            }
+            
+            // Update the row with selected checklist data
+            updateRowWithChecklistData(selectedData);
+            
+            console.log('Saved checklist selections for row:', currentRowId, selectedData);
+        }
+        
+        /**
+         * Collect selected checklist data from modal
+         * Only collect essential IDs - backend will fetch details
+         */
+        function collectSelectedChecklistData() {
+            const selectedData = [];
+            
+            console.log('Collecting data from all portions:', portionChecklistData);
+            
+            // Loop through each portion and collect checked items
+            $('#checkListPortion .checklist-portion, #checkListPortion .row').each(function() {
+                const portionRow = $(this);
+                let portionId = portionRow.attr('id');
+                
+                // Handle the default first portion that might not have an ID
+                if (!portionId) {
+                    portionId = 'portion_default';
+                }
+                
+                // Get the stored checklist data for this portion
+                const portionData = portionChecklistData[portionId];
+                if (!portionData) {
+                    console.log('No stored data for portion:', portionId);
+                    return; // Skip this portion
+                }
+                
+                const mainChecklistId = portionData.checklistId;
+                const mainChecklistName = portionData.checklistName;
+                
+                console.log('Processing portion:', portionId, 'with checklist:', mainChecklistId, mainChecklistName);
+                
+                // Find checked checkboxes in this portion
+                portionRow.find('input[type="checkbox"]:checked').each(function () {
+                    const checklistDetailId = $(this).val();
+                    
+                    if (checklistDetailId) {
+                        selectedData.push({
+                            checklist_id: mainChecklistId,
+                            checklist_detail_id: checklistDetailId,
+                            main_checklist_name: mainChecklistName
+                        });
+                        
+                        console.log('Added item:', {
+                            checklist_id: mainChecklistId,
+                            checklist_detail_id: checklistDetailId,
+                            main_checklist_name: mainChecklistName
+                        });
+                    }
+                });
+            });
+            
+            console.log('Final collected checklist data:', selectedData);
+            return selectedData;
+        }
+        
+        /**
+         * Update maintenance row with checklist data
+         */
+        function updateRowWithChecklistData(selectedData) {
+            const selectedIds = selectedData.map(item => item.checklist_detail_id);
+            const mainChecklistName = selectedData.length > 0 ? selectedData[0].main_checklist_name : '';
+            
+            // Create badge display
+            let badgesHtml = '';
+            if (mainChecklistName) {
+                badgesHtml = `<span class="badge rounded-pill badge-light-primary">${mainChecklistName}</span>`;
+                if (selectedData.length > 1) {
+                    badgesHtml += ` <span class="badge rounded-pill badge-light-primary">+${selectedData.length - 1}</span>`;
+                }
+            }
+            
+            // Create hidden inputs for form submission (only essential IDs)
+            let hiddenInputs = '';
+            selectedData.forEach(function (item, index) {
+                hiddenInputs += `
+                    <input type="hidden" name="maintenance[${currentRowId}][checklists][${index}][checklist_id]" value="${item.checklist_id}">
+                    <input type="hidden" name="maintenance[${currentRowId}][checklists][${index}][checklist_detail_id]" value="${item.checklist_detail_id}">
+                `;
+            });
+            
+            // Update the checklist cell
+            currentChecklistRowRef.find('.checklist-cell').html(
+                `<span class="checklist-badges">${badgesHtml}</span>
+                <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
+                <input type="hidden" class="selected-checklists" value="${selectedIds.join(',')}" />
+                ${hiddenInputs}`
+            );
+        }
+
 
         // Track selected checklist IDs across all sections
         let selectedChecklistIds = [];
@@ -855,7 +986,6 @@
             // Update all dropdowns to exclude selected checklists
             updateAllDropdowns();
             
-            console.log('Updated selectedChecklistIds:', selectedChecklistIds);
         });
 
         // Handle search button click for checklist details
@@ -871,7 +1001,23 @@
                 return;
             }
             
-            console.log('Selected Checklist ID:', checklistId);
+            // Get the portion ID to store checklist data per portion
+            const portionRow = $(this).closest('.row');
+            let portionId = portionRow.attr('id');
+            if (!portionId) {
+                // If no ID, create one for the first portion
+                portionId = 'portion_default';
+                portionRow.attr('id', portionId);
+            }
+            
+            // Store the selected checklist ID and name for this specific portion
+            portionChecklistData[portionId] = {
+                checklistId: checklistId,
+                checklistName: dropdown.find('option:selected').text()
+            };
+            
+            console.log('Search clicked - storing for portion:', portionId, 'ID:', checklistId, 'Name:', dropdown.find('option:selected').text());
+            console.log('All portion data:', portionChecklistData);
             
             // AJAX call to get checklist details
             $.ajax({
@@ -886,6 +1032,7 @@
                         const tbody = $(this).closest('.row').find('tbody');
                         tbody.empty();
 
+                        const checkListName = response.data.checklist_name;
                         const checklists = response.data.checklist || [];
                         const details = response.data.details || [];
 
@@ -893,7 +1040,9 @@
                             checklists.forEach(checklist => {
                                 // Match detail for this checklist
                                 const detail = details.find(d => d.checklist_id === checklist.id);
-
+                                
+                                console.log("check the id of checklist here",checklist.id);
+                                
                                 const tableRow = `
                                     <tr>
                                         <td class="customernewsection-form">
@@ -908,6 +1057,12 @@
                                             <span class="badge rounded-pill badge-light-info">
                                                 ${checklist.data_type || ''}
                                             </span>
+                                        </td>
+                                         <td style="display: none">
+                                            ${checkListName}
+                                        </td>
+                                        <td style="display:none">
+                                            ${checklist.id}
                                         </td>
                                     </tr>
                                 `;
@@ -944,7 +1099,7 @@
                 }
             });
             
-            console.log('Currently selected in all portions:', allSelectedIds);
+            
             
             // Update each dropdown
             $('#checkListPortion select').each(function() {
@@ -1050,106 +1205,87 @@
         }
 
         // Collect checklist data and associate with maintenance rows
+        /**
+         * Collect checklist data from all maintenance rows for form submission
+         * This function is called before form submission to gather all checklist data
+         */
         function collectChecklistData() {
-            let checklistData = [];
-            let detailIdCounter = 1;
+            let allChecklistData = [];
             
-            // Loop through all checklist portions
-            $('#checkListPortion .row').each(function(index) {
-                const portion = $(this);
-                const checklistId = portion.find('select').val();
-                const checklistName = portion.find('select option:selected').text();
+            // Loop through all maintenance rows
+            $('#maintenanceRows tr').each(function() {
+                const row = $(this);
+                const rowId = getRowIdFromElement(row);
                 
-                // Only include if a checklist is selected
-                if (checklistId && checklistId !== 'Select') {
-                    // Add all items from this checklist
-                    portion.find('tbody tr').each(function(itemIndex) {
-                        const row = $(this);
-                        checklistData.push({
-                            checklist_id: checklistId,
-                            checklist_detail_id: detailIdCounter,
-                            name: row.find('td:nth-child(2)').text().trim(),
-                            description: row.find('td:nth-child(3)').text().trim(),
-                            type: row.find('td:nth-child(4)').text().trim()
-                        });
-                        detailIdCounter++;
+                if (rowId) {
+                    // Get checklist data from hidden inputs in this row
+                    const checklistInputs = row.find('input[name^="maintenance[' + rowId + '][checklists]"]');
+                    
+                    let rowChecklistData = {};
+                    checklistInputs.each(function() {
+                        const input = $(this);
+                        const name = input.attr('name');
+                        const value = input.val();
+                        
+                        // Parse the input name to extract index and field
+                        const match = name.match(/maintenance\[.*?\]\[checklists\]\[(\d+)\]\[(.*?)\]/);
+                        if (match) {
+                            const index = match[1];
+                            const field = match[2];
+                            
+                            if (!rowChecklistData[index]) {
+                                rowChecklistData[index] = {};
+                            }
+                            rowChecklistData[index][field] = value;
+                        }
+                    });
+                    
+                    // Add to overall data if this row has checklists
+                    Object.values(rowChecklistData).forEach(checklist => {
+                        if (checklist.checklist_id && checklist.checklist_detail_id) {
+                            allChecklistData.push(checklist);
+                        }
                     });
                 }
             });
             
-            return checklistData;
+            console.log('Collected checklist data from all rows:', allChecklistData);
+            return allChecklistData;
         }
 
         // Update maintenance rows with checklist data
+        /**
+         * Update checklist inputs before form submission
+         * This function ensures all checklist data is properly formatted for submission
+         */
         function updateChecklistInputs() {
+            // The checklist data is already stored in hidden inputs within each row
+            // This function can be used for any final validation or processing
             const checklistData = collectChecklistData();
-            console.log('Collected Checklist Data:', checklistData);
             
-            // Find the first maintenance row (assuming checklists belong to first maintenance)
-            const firstMaintenanceRow = $('#maintenanceRows tr').first();
-            console.log('First Maintenance Row Found:', firstMaintenanceRow.length > 0);
+            console.log('Final checklist data for form submission:', checklistData);
+            console.log('Total checklist items across all maintenance rows:', checklistData.length);
             
-            if (firstMaintenanceRow.length > 0) {
-                // Try different ways to find row ID
-                let rowId = firstMaintenanceRow.find('input').first().attr('name');
-                if (!rowId) {
-                    rowId = firstMaintenanceRow.find('select').first().attr('name');
+            // Validation: Ensure each checklist item has required IDs
+            let isValid = true;
+            checklistData.forEach((item, index) => {
+                if (!item.checklist_id || !item.checklist_detail_id) {
+                    console.error(`Checklist item ${index} missing required IDs:`, item);
+                    isValid = false;
                 }
-                if (!rowId) {
-                    rowId = firstMaintenanceRow.find('input, select').first().attr('name');
-                }
-                
-                console.log('Row ID:', rowId);
-                console.log('All inputs in row:', firstMaintenanceRow.find('input, select').length);
-                
-                // If still no rowId, let's try to find it from any element with name attribute
-                if (!rowId) {
-                    firstMaintenanceRow.find('[name]').each(function() {
-                        const elementName = $(this).attr('name');
-                        console.log('Found element with name:', elementName);
-                        if (elementName && elementName.includes('maintenance[')) {
-                            rowId = elementName;
-                            return false; // Break the loop
-                        }
-                    });
-                }
-                
-                if (rowId) {
-                    const rowKeyMatch = rowId.match(/maintenance\[(.*?)\]/);
-                    if (rowKeyMatch) {
-                        const rowKey = rowKeyMatch[1];
-                        console.log('Row Key:', rowKey);
-                        
-                        // Clear existing checklist inputs for this maintenance row
-                        $(`input[name^="maintenance[${rowKey}][checklists]"]`).remove();
-                        
-                        // Add checklist data to this maintenance row
-                        checklistData.forEach(function(item, index) {
-                            const checklistIdInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][checklist_id]" value="${item.checklist_id}">`;
-                            const checklistDetailIdInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][checklist_detail_id]" value="${item.checklist_detail_id}">`;
-                            const nameInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][name]" value="${item.name}">`;
-                            const descriptionInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][description]" value="${item.description}">`;
-                            const typeInput = `<input type="hidden" name="maintenance[${rowKey}][checklists][${index}][type]" value="${item.type}">`;
-                            
-                            firstMaintenanceRow.append(checklistIdInput);
-                            firstMaintenanceRow.append(checklistDetailIdInput);
-                            firstMaintenanceRow.append(nameInput);
-                            firstMaintenanceRow.append(descriptionInput);
-                            firstMaintenanceRow.append(typeInput);
-                            
-                            console.log(`Added checklist item ${index}:`, item);
-                        });
-                        
-                        console.log('Total checklist items added:', checklistData.length);
-                    } else {
-                        console.log('No valid maintenance row key found in:', rowId);
-                    }
-                } else {
-                    console.log('No row ID found in maintenance row');
-                }
-            } else {
-                console.log('No maintenance rows found');
+            });
+            
+            if (!isValid) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Checklist Data Error',
+                    text: 'Some checklist items are missing required information. Please review your selections.',
+                    confirmButtonColor: '#7367F0'
+                });
+                return false;
             }
+            
+            return true;
         }
 
         // Make functions globally accessible
@@ -1283,13 +1419,15 @@
             }
         });
 
+      
+
         $(document).on('change', '.item-code-dropdown', function () {
             let selectedOption = $(this).find('option:selected');
             let itemName = selectedOption.data('name') || '';
             $(this).closest('tr').find('.item-name-input').val(itemName);
 
             let selectedItem = items.find(item => item.id === parseInt(selectedOption.val()));
-            console.log(selectedItem, selectedOption.val())
+            
             if (selectedItem) {
                 $('#part-detail-name').html(selectedItem.item_name);
                 $('#part-detail-hsn').html(selectedItem.hsn_id);
@@ -1494,8 +1632,10 @@
                 return false;
             }
 
-            // Collect and update checklist data before submission
-            updateChecklistInputs();
+            // Validate and update checklist data before submission
+            if (!updateChecklistInputs()) {
+                return false; // Stop form submission if validation fails
+            }
 
             // If draft, confirm with user
             if (status === 'draft') {

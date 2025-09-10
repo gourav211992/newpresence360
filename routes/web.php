@@ -3181,6 +3181,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('amend/{id}', [ErpEquipmentController::class, 'amendment'])->name('equipment.amendment');
         Route::post('/get-asset-codes-by-book', [ErpEquipmentController::class, 'getFixedAssetCodesByBookId'])->name('equipment.get-asset-codes-by-book');
         Route::post('/get-checklist-details', [ErpEquipmentController::class, 'getChecklistDetails'])->name('equipment.get-checklist-details');
+        Route::post('/popup-checklist-data', [ErpEquipmentController::class, 'getPopupChecklistData'])->name('equipment.popup-checklist-data');
         Route::post('/search-checklists', [ErpEquipmentController::class, 'searchChecklists'])->name('equipment.search-checklists');
     });
 

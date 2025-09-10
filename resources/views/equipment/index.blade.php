@@ -77,7 +77,7 @@
 
                 $first = $equipment->maintenanceDetails->sortBy('start_date')->first();
         
-                if ($equipment->document_status === 'approved') {
+                if ($equipment->equipment_status === 'approved') {
                  
                     $approvedDetail = $equipment->maintenanceDetails->sortByDesc('start_date')->first();
                     
@@ -119,12 +119,12 @@
                 }
             @endphp
 
-            {{ $lastMaintDate ? $lastMaintDate->format('Y-m-d') : '' }}
+            {{ $lastMaintDate ? $lastMaintDate->format('d-m-Y') : '' }}
         </td>
 
         {{-- Maint Due Date --}}
         <td>
-            {{ $dueDate ? $dueDate->format('Y-m-d') : '' }}
+            {{ $dueDate ? $dueDate->format('d-m-Y') : '' }}
         </td>
 
         <td class="tableactionnew">

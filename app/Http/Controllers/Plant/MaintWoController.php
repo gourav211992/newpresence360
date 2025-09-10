@@ -343,7 +343,6 @@ class MaintWoController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
         $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
@@ -450,7 +449,7 @@ class MaintWoController extends Controller
                         \Log::error('Error processing checklist data: ' . $e->getMessage());
                     }
                 }
-
+                $workOrder->doc_no = $request->document_number;
                 $workOrder->save();
 
                 if ($workOrder->document_status != ConstantHelper::DRAFT) {

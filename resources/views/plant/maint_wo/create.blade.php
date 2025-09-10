@@ -321,27 +321,7 @@
                               </thead>
                               <tbody class="mrntableselectexcel1">
                                 {{-- dynamically populated by JS (populateChecklistTable) --}}
-                                <tr>
-                                  <td>1</td>
-                                  <td colspan="2" class="poprod-decpt p-50"><strong class="font-small-4">Greasing and Oiling</strong></td>
-                                </tr>
-                                <tr>
-                                  <td></td>
-                                  <td class="ps-1">Checklist 1</td>
-                                  <td class="poprod-decpt">
-                                    <input type="text" placeholder="Enter Text" class="form-control mw-100" />
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td></td>
-                                  <td class="ps-1">Checklist 2</td>
-                                  <td class="poprod-decpt">
-                                    <div class="form-check form-check-primary custom-checkbox ms-50">
-                                      <input type="checkbox" class="mt-25 form-check-input" id="Email">
-                                      <label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
-                                    </div>
-                                  </td>
-                                </tr>
+                               
                               </tbody>
                             </table>
                           </div>
